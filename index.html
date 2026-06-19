@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Conglobal Time Input</title>
+  <style>
+    :root {
+      --black: #000;
+      --gray: #d9d9d9;
+      --green: #e2f0d9;
+      --yellow: #ffff00;
+      --pink: #ffc7ce;
+      --blue: #9dc3e6;
+      --logo: #004a64;
+      --muted: #9b9b9b;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: #fff;
+      color: #000;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 16px;
+      overflow-x: hidden;
+    }
+
+    .page-switcher {
+      width: 100%;
+      display: flex;
+      gap: 4px;
+      align-items: center;
+      padding: 6px 8px;
+      background: #111;
+      border-bottom: 2px solid #000;
+    }
+
+    .page-switcher a {
+      min-width: 118px;
+      height: 28px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid #777;
+      background: #e7e6e6;
+      color: #000;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .page-switcher a.active {
+      background: #ffff00;
+      border-color: #ffff00;
+    }
+
+    .sheet {
+      width: 100%;
+      max-width: 1180px;
+      overflow-x: hidden;
+      padding-bottom: 26px;
+    }
+
+    .metrics {
+      width: 100%;
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      margin-bottom: 12px;
+      font-size: clamp(13px, 1.9vw, 19px);
+      font-weight: 900;
+      text-align: center;
+    }
+
+    .metric {
+      min-height: 48px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      border-right: 2px solid #fff;
+      line-height: 1.18;
+    }
+
+    .metric.yellow {
+      background: var(--yellow);
+    }
+
+    .metric.pink {
+      background: var(--pink);
+    }
+
+    .metric.blue {
+      background: var(--blue);
+    }
+
+    .metric input {
+      width: 100%;
+      height: 24px;
+      border: 0;
+      outline: 0;
+      background: transparent;
+      font: inherit;
+      font-weight: 900;
+      text-align: center;
+    }
+
+    .metric input:focus {
+      background: #fff2cc;
+      box-shadow: inset 0 0 0 2px #ffc000;
+    }
+
+    .time-table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      font-size: clamp(11px, 1.45vw, 14px);
+    }
+
+    .time-table col.employee { width: 18%; }
+    .time-table col.off { width: 15%; }
+    .time-table col.note { width: 12%; }
+    .time-table col.time { width: 17%; }
+    .time-table col.actual { width: 7%; }
+
+    .time-table th,
+    .time-table td {
+      height: 22px;
+      padding: 0 3px;
+      border-bottom: 1px solid #000;
+      line-height: 21px;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+
+    .time-table th {
+      background: var(--gray);
+      border-top: 2px solid #000;
+      border-bottom: 2px solid #000;
+      font-weight: 900;
+      text-align: center;
+    }
+
+    .time-table th.section-name {
+      text-align: left;
+    }
+
+    .name {
+      background: #fff;
+    }
+
+    .name.scheduled {
+      background: var(--green);
+    }
+
+    .center {
+      text-align: center;
+    }
+
+    .time-cell {
+      background: #fff;
+    }
+
+    .time-cell input {
+      width: 100%;
+      height: 21px;
+      padding: 0 4px;
+      border: 0;
+      outline: 0;
+      background: transparent;
+      font: inherit;
+      text-align: center;
+    }
+
+    .time-cell input:focus {
+      background: #fff2cc;
+      box-shadow: inset 0 0 0 2px #ffc000;
+    }
+
+    .time-cell input.imported {
+      background: #ddebf7;
+      box-shadow: inset 0 0 0 1px #9dc3e6;
+    }
+
+    .time-cell input.imported:focus {
+      background: #d9eaf7;
+      box-shadow: inset 0 0 0 2px #5b9bd5;
+    }
+
+    .time-cell input.missing-lunch {
+      background: #fff2cc;
+      box-shadow: none;
+      font-weight: 900;
+    }
+
+    .actual-cell {
+      text-align: center;
+      font-weight: 900;
+    }
+
+    .spacer-row td {
+      height: 22px;
+      border-bottom: 2px solid #000;
+    }
+
+    .section-divider td {
+      height: 22px;
+      border-bottom: 0;
+    }
+
+    @media (max-width: 760px) {
+      .page-switcher {
+        padding: 5px;
+      }
+
+      .page-switcher a {
+        min-width: 96px;
+        font-size: 12px;
+      }
+
+      .metrics {
+        font-size: 11px;
+      }
+
+      .time-table th,
+      .time-table td {
+        padding: 0 2px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <nav class="page-switcher" aria-label="Workbook pages">
+    <a href="roster.html">Roster</a>
+    <a class="active" href="time-input.html">Time Input</a>
+    <a href="dayforce.html">Dayforce</a>
+  </nav>
+
+  <main class="sheet">
+    <section class="metrics" aria-label="Daily performance goals">
+      <div class="metric yellow"><span>UPDATE LIFTS</span><input id="updateLifts" type="number" min="0" value="339" aria-label="Update lifts count" /></div>
+      <div class="metric yellow"><span>UPDATE FLIPS</span><input id="updateFlips" type="number" min="0" value="5" aria-label="Update flips count" /></div>
+      <div class="metric yellow"><span>SHIFT END</span><input id="shiftEnd" inputmode="numeric" placeholder="1500" aria-label="Shift end time" /></div>
+      <div class="metric pink"><span>CURRENT LPMH</span><span id="currentLpmh">0.0</span></div>
+      <div class="metric blue"><span>LPH NEEDED</span><span id="lphNeeded">0.0</span></div>
+      <div class="metric blue"><span>LIFTS NEEDED</span><span id="liftsNeeded">0</span></div>
+      <div class="metric blue"><span>LIFTS REMAIN</span><span id="liftsRemain">0</span></div>
+    </section>
+
+    <table class="time-table" aria-label="Manual or imported time input">
+      <colgroup>
+        <col class="employee" />
+        <col class="off" />
+        <col class="note" />
+        <col class="time" />
+        <col class="time" />
+        <col class="time" />
+        <col class="actual" />
+      </colgroup>
+      <tbody>
+        <tr>
+          <th class="section-name">1st SHIFT [12 sch]</th>
+          <th>Off Days</th>
+          <th>NOTE</th>
+          <th>Start</th>
+          <th>Lunch</th>
+          <th>End</th>
+          <th>ACTUAL</th>
+        </tr>
+        <tr><td class="name">Branford Alton</td><td class="center">Mon, Tues</td><td class="center">-</td><td class="time-cell"><input aria-label="Branford Alton start" /></td><td class="time-cell"><input aria-label="Branford Alton lunch" /></td><td class="time-cell"><input aria-label="Branford Alton end" /></td><td></td></tr>
+        <tr><td class="name">Castruita Armando</td><td class="center">Wed, Thurs</td><td class="center">-</td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">Frazer Dacoyea</td><td class="center">Mon, Tues</td><td class="center">-</td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">Citizen Dante</td><td class="center">Thurs, Fri</td><td class="center">-</td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">Towler Dematrius</td><td class="center">Thurs, Fri</td><td class="center">-</td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">Stewart Dexter</td><td class="center">Sat, Sun</td><td class="center">-</td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">Gardner Dorrean</td><td class="center">Tues, Wed</td><td class="center">-</td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">Thomas Henry</td><td class="center">Sat, Sun</td><td class="center">-</td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">Brown James</td><td class="center">Thurs, Fri</td><td class="center">-</td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">Herrera Jose</td><td class="center">Sat, Sun</td><td class="center">-</td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">Player Keyston</td><td class="center">Mon, Sun</td><td class="center">-</td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">Hickman Makia</td><td class="center">Mon, Sun</td><td class="center">-</td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">Dever Mikey</td><td class="center">Tues, Wed</td><td class="center">-</td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">Wanza Myles</td><td class="center">Mon, Tues</td><td class="center">-</td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">Romero Nelson</td><td class="center">Tues, Wed</td><td class="center">-</td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">Nava Ramon</td><td class="center">Sat, Sun</td><td class="center">-</td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">Tran Tyler</td><td class="center">Thurs, Fri</td><td class="center">-</td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr class="spacer-row"><td></td><td></td><td class="center">-</td><td></td><td></td><td></td><td></td></tr>
+
+        <tr>
+          <th class="section-name">SECOND SHIFT</th>
+          <th>Off Days</th>
+          <th>NOTE</th>
+          <th>Start</th>
+          <th>Lunch</th>
+          <th>End</th>
+          <th></th>
+        </tr>
+        <tr><td class="name">Carruthers Timothy</td><td class="center">Mon, Sun</td><td class="center">-</td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">Caceres Virula Victor</td><td class="center">Mon, Tues</td><td class="center">-</td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">Keme Aweri Jr.</td><td class="center">Mon, Tues</td><td class="center">-</td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">Hosey Kevin</td><td class="center">Mon, Tues</td><td class="center">-</td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">Brown Brandy</td><td class="center">Wed, Thurs</td><td class="center">-</td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">Mejia Aaron</td><td class="center">Thurs, Fri</td><td class="center">-</td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">Bookman Derrell</td><td class="center">Thurs, Fri</td><td class="center">-</td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">Hopkins Alexander</td><td class="center">Mon, Sun</td><td class="center">-</td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">McDaniel Charles</td><td class="center">Fri, Sat</td><td class="center">-</td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">Tingle Jason</td><td class="center">Sat, Sun</td><td class="center">-</td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">Contrerras Marco</td><td class="center">Sat, Sun</td><td class="center">-</td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">Benavides Robert</td><td class="center">Wed, Sun</td><td class="center">-</td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">Urtado Ernest</td><td class="center">Tues, Wed</td><td class="center">-</td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">Johnson Messiah</td><td class="center">Tues, Thurs</td><td class="center">-</td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">Gilder Rufus II</td><td class="center">Tues, Wed</td><td class="center">-</td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">Echendu Chimenierm</td><td class="center">Wed, Thurs</td><td class="center">-</td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">Delgado Jose</td><td class="center">Fri, Sat</td><td class="center">-</td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr class="spacer-row"><td></td><td></td><td class="center">-</td><td></td><td></td><td></td><td></td></tr>
+
+        <tr>
+          <th class="section-name">GATE</th>
+          <th>Off Days</th>
+          <th>OUT</th>
+          <th>Start</th>
+          <th>Lunch</th>
+          <th>End</th>
+          <th>ACTUAL</th>
+        </tr>
+        <tr><td class="name">Candace Warren</td><td class="center">Sat, Sun</td><td></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">Connie Johnson</td><td class="center">Sat, Sun</td><td></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">Jarade Douglas</td><td class="center">Sat, Sun</td><td></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">Gregory Watson II</td><td class="center">Sat, Sun</td><td></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">Bryce Alexander</td><td class="center">Thurs, Fri</td><td></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">Naomisha Hunt</td><td class="center">Thurs, Fri, Sat</td><td></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">Ramacacondra Pratt</td><td class="center">Thurs, Fri</td><td></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">Kane Cabral</td><td class="center">Mon, Tues</td><td></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">Tavares Gariet</td><td class="center">Mon, Tues</td><td></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+      </tbody>
+    </table>
+  </main>
+  <script>
+    const dayAliases = {
+      sun: "sun",
+      sunday: "sun",
+      mon: "mon",
+      monday: "mon",
+      tue: "tue",
+      tues: "tue",
+      tuesday: "tue",
+      wed: "wed",
+      weds: "wed",
+      wednesday: "wed",
+      thu: "thu",
+      thur: "thu",
+      thurs: "thu",
+      thursday: "thu",
+      fri: "fri",
+      friday: "fri",
+      sat: "sat",
+      saturday: "sat"
+    };
+
+    const todayKey = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"][new Date().getDay()];
+    const rosterStorageKey = "conglobal-roster-state-v1";
+    const dayforceStorageKey = "conglobal-dayforce-punches-v1";
+    const rosterDayLabels = ["Mon", "Tues", "Wed", "Thurs", "Fri", "Sat", "Sun"];
+    const lpmhGoal = 2.0;
+
+    function parseOffDays(text) {
+      return new Set(text
+        .split(",")
+        .map((item) => item.trim().toLowerCase())
+        .map((item) => dayAliases[item] || dayAliases[item.slice(0, 3)])
+        .filter(Boolean));
+    }
+
+    function updateScheduledHighlights() {
+      document.querySelectorAll(".time-table tr").forEach((row) => {
+        const nameCell = row.querySelector("td.name");
+        if (!nameCell) return;
+
+        const offDaysCell = row.children[1];
+        const offDays = parseOffDays(offDaysCell ? offDaysCell.textContent : "");
+        nameCell.classList.toggle("scheduled", !offDays.has(todayKey));
+      });
+    }
+
+    function getSectionKey(text) {
+      const normalized = text.toLowerCase();
+      if (normalized.includes("1st")) return "first";
+      if (normalized.includes("second")) return "second";
+      if (normalized.includes("gate")) return "gate";
+      return "";
+    }
+
+    function rosterOffDaysLabel(days) {
+      return days
+        .map((day, index) => day === "O" ? rosterDayLabels[index] : "")
+        .filter(Boolean)
+        .join(", ");
+    }
+
+    function updateOffDaysFromRoster() {
+      const saved = localStorage.getItem(rosterStorageKey);
+      if (!saved) return;
+
+      try {
+        const roster = JSON.parse(saved);
+        let sectionKey = "";
+        const rowIndexes = {};
+
+        document.querySelectorAll(".time-table tbody tr").forEach((row) => {
+          const header = row.querySelector("th.section-name");
+          if (header) {
+            sectionKey = getSectionKey(header.textContent);
+            rowIndexes[sectionKey] = 0;
+            return;
+          }
+
+          const nameCell = row.querySelector("td.name");
+          if (!nameCell || !sectionKey || !Array.isArray(roster[sectionKey])) return;
+
+          const sectionRows = roster[sectionKey];
+          const currentIndex = rowIndexes[sectionKey] || 0;
+          const name = nameCell.textContent.trim();
+          const rosterRow = sectionRows.find((employee) => employee.name === name) || sectionRows[currentIndex];
+          rowIndexes[sectionKey] = currentIndex + 1;
+
+          if (!rosterRow || !Array.isArray(rosterRow.days)) return;
+          row.children[1].textContent = rosterOffDaysLabel(rosterRow.days);
+        });
+      } catch (error) {
+        localStorage.removeItem(rosterStorageKey);
+      }
+    }
+
+    function normalizeName(name) {
+      const suffixes = new Set(["jr", "sr", "ii", "iii", "iv"]);
+      return name
+        .trim()
+        .toLowerCase()
+        .replace(/[,.]/g, " ")
+        .replace(/\s+/g, " ")
+        .split(" ")
+        .filter((part) => part && !suffixes.has(part))
+        .sort()
+        .join(" ");
+    }
+
+    function toMilitaryTime(value) {
+      const text = String(value || "").trim();
+      if (!text) return "";
+
+      const match = text.match(/^(\d{1,2}):(\d{2})\s*([ap])m$/i);
+      if (!match) return text;
+
+      let hour = Number(match[1]);
+      const minute = match[2];
+      const period = match[3].toLowerCase();
+
+      if (period === "p" && hour !== 12) hour += 12;
+      if (period === "a" && hour === 12) hour = 0;
+
+      return `${String(hour).padStart(2, "0")}${minute}`;
+    }
+
+    function toMilitaryRange(value) {
+      return String(value || "")
+        .split("-")
+        .map((part) => toMilitaryTime(part.trim()))
+        .filter(Boolean)
+        .join(" - ");
+    }
+
+    function minutesFromMilitary(value) {
+      const text = String(value || "").trim();
+      const match = text.match(/^(\d{1,2})(\d{2})$/);
+      if (!match) return null;
+
+      const hours = Number(match[1]);
+      const minutes = Number(match[2]);
+      if (hours > 23 || minutes > 59) return null;
+      return (hours * 60) + minutes;
+    }
+
+    function hoursUntilShiftEnd(value) {
+      const endMinutes = minutesFromMilitary(value);
+      if (endMinutes === null) return 0;
+
+      const now = new Date();
+      const nowMinutes = (now.getHours() * 60) + now.getMinutes();
+      let remaining = endMinutes - nowMinutes;
+      if (remaining <= 0) remaining += 24 * 60;
+      return remaining / 60;
+    }
+
+    function calculateActualForRow(row) {
+      const inputs = row.querySelectorAll(".time-cell input");
+      if (inputs.length < 3) return;
+
+      const start = minutesFromMilitary(inputs[0].value);
+      const end = minutesFromMilitary(inputs[2].value);
+      const actualCell = row.children[6];
+      if (!actualCell) return;
+      if (start === null || end === null) {
+        actualCell.textContent = "";
+        return;
+      }
+
+      let minutes = end - start;
+      if (minutes < 0) minutes += 24 * 60;
+      if (inputs[1].value.trim().toUpperCase() === "YES") minutes -= 30;
+
+      actualCell.classList.add("actual-cell");
+      actualCell.textContent = minutes > 0 ? (minutes / 60).toFixed(1) : "";
+    }
+
+    function calculateActualHours() {
+      document.querySelectorAll(".time-table tbody tr").forEach(calculateActualForRow);
+      updateCurrentLpmh();
+    }
+
+    function shiftHoursFor(keys) {
+      let sectionKey = "";
+      let total = 0;
+
+      document.querySelectorAll(".time-table tbody tr").forEach((row) => {
+        const header = row.querySelector("th.section-name");
+        if (header) {
+          sectionKey = getSectionKey(header.textContent);
+          return;
+        }
+
+        if (!keys.includes(sectionKey)) return;
+        const actual = Number(row.children[6] ? row.children[6].textContent : "");
+        if (!Number.isNaN(actual)) total += actual;
+      });
+
+      return total;
+    }
+
+    function updateCurrentLpmh() {
+      const lifts = Number(document.getElementById("updateLifts").value) || 0;
+      const flips = Number(document.getElementById("updateFlips").value) || 0;
+      const shiftHours = shiftHoursFor(["first", "second"]);
+      const current = document.getElementById("currentLpmh");
+      const neededRate = document.getElementById("lphNeeded");
+      const needed = document.getElementById("liftsNeeded");
+      const remain = document.getElementById("liftsRemain");
+      const totalMoves = lifts + flips;
+      const currentRate = shiftHours > 0 ? totalMoves / shiftHours : 0;
+      const rate = currentRate.toFixed(1);
+      const neededValue = Math.ceil(shiftHours * lpmhGoal);
+      const remainValue = neededValue - totalMoves;
+      const remainingHours = hoursUntilShiftEnd(document.getElementById("shiftEnd").value);
+      const goalMet = shiftHours > 0 && currentRate >= lpmhGoal;
+      const neededLph = goalMet ? "MET GOAL!" : (remainingHours > 0 ? (Math.max(remainValue, 0) / remainingHours).toFixed(1) : "0.0");
+      current.textContent = `${totalMoves} LIFTS / ${shiftHours.toFixed(1)} HRS = ${rate}`;
+      needed.textContent = String(neededValue);
+      remain.textContent = goalMet ? "MET GOAL!" : String(Math.max(remainValue, 0));
+      neededRate.textContent = neededLph;
+    }
+
+    function applyDayforcePunches() {
+      const saved = localStorage.getItem(dayforceStorageKey);
+      if (!saved) return;
+
+      try {
+        const punches = JSON.parse(saved);
+        if (!Array.isArray(punches)) return;
+
+        const byName = new Map(punches.map((item) => [normalizeName(item.name || ""), item]));
+        document.querySelectorAll(".time-table tbody tr").forEach((row) => {
+          const nameCell = row.querySelector("td.name");
+          if (!nameCell) return;
+
+          const punch = byName.get(normalizeName(nameCell.textContent));
+          if (!punch) return;
+
+          const inputs = row.querySelectorAll(".time-cell input");
+          const lunchValue = toMilitaryRange(punch.lunch);
+          const values = [toMilitaryTime(punch.start), lunchValue ? "YES" : "", toMilitaryTime(punch.end)];
+          inputs.forEach((input, index) => {
+            const hasMissingLunch = index === 1 && !values[index] && (values[0] || values[2]);
+            input.value = hasMissingLunch ? "??" : values[index] || "";
+            input.classList.toggle("imported", Boolean(values[index]) && !hasMissingLunch);
+            input.classList.toggle("missing-lunch", hasMissingLunch);
+          });
+          calculateActualForRow(row);
+        });
+        updateCurrentLpmh();
+      } catch (error) {
+        localStorage.removeItem(dayforceStorageKey);
+      }
+    }
+
+    document.addEventListener("input", (event) => {
+      if (event.target.matches(".time-cell input")) {
+        calculateActualForRow(event.target.closest("tr"));
+        updateCurrentLpmh();
+        return;
+      }
+
+      if (event.target.matches("#updateLifts, #updateFlips, #shiftEnd")) {
+        updateCurrentLpmh();
+      }
+    });
+
+    updateOffDaysFromRoster();
+    applyDayforcePunches();
+    updateScheduledHighlights();
+    calculateActualHours();
+  </script>
+</body>
+</html>
