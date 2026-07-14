@@ -1,0 +1,5074 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Timesheet</title>
+  <style>
+    :root {
+      --ink: #111827;
+      --muted: #6b7280;
+      --soft: #f4f5f8;
+      --line: #e5e7eb;
+      --purple: #312e81;
+      --purple-soft: #eef2ff;
+      --green: #16a34a;
+      --green-soft: #dcfce7;
+      --red: #dc2626;
+      --red-soft: #fee2e2;
+      --gold: #d97706;
+      --violet: #7c3aed;
+      --violet-soft: #ede9fe;
+      --gray-soft: #eef0f3;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body,
+    body * {
+      cursor: default !important;
+    }
+
+    a,
+    button,
+    select,
+    summary,
+    label[for],
+    [role="button"],
+    input[type="button"],
+    input[type="submit"],
+    input[type="reset"],
+    input[type="checkbox"],
+    input[type="radio"],
+    input[type="date"] {
+      cursor: pointer !important;
+    }
+
+    input:not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="checkbox"]):not([type="radio"]):not([type="date"]),
+    textarea,
+    [contenteditable="true"] {
+      cursor: text !important;
+    }
+
+    body {
+      margin: 0;
+      background: #e7e5df;
+      color: var(--ink);
+      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+      font-size: 13px;
+      overflow-x: hidden;
+    }
+
+    .page-switcher {
+      width: 100%;
+      display: flex;
+      gap: 4px;
+      align-items: center;
+      padding: 6px 8px;
+      background: #111;
+      border-bottom: 2px solid #000;
+    }
+
+    .page-switcher a {
+      min-width: 118px;
+      height: 28px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid #777;
+      background: #e7e6e6;
+      color: #000;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .page-switcher a.active {
+      background: #ffff00;
+      border-color: #ffff00;
+    }
+
+    .canvas {
+      min-height: 0;
+      padding: 28px 28px 20px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .panel {
+      width: min(1060px, 100%);
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      background: var(--soft);
+      border-radius: 8px;
+      box-shadow: 0 2px 18px rgba(17, 24, 39, .16);
+      overflow: hidden;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(310px, 1fr) minmax(430px, auto) minmax(142px, .75fr);
+      align-items: flex-end;
+      gap: 16px;
+      padding: 20px 28px 17px;
+      background: #000;
+      color: #fff;
+    }
+
+    .hero-title {
+      min-width: 0;
+    }
+
+    h1 {
+      margin: 3px 0 0;
+      font-size: 23px;
+      line-height: 1.05;
+      white-space: nowrap;
+    }
+
+    .hero-meta {
+      display: contents;
+      color: #c7d2fe;
+      font-size: 15px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .hero-actions {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: clamp(6px, .85vw, 12px);
+      line-height: 1.45;
+    }
+
+    .hero-date {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      color: #c7d2fe;
+      line-height: 1.45;
+      text-align: right;
+    }
+
+    .export-button,
+    .timesheet-tab-button,
+    .schedule-button,
+    .compare-button,
+    .archive-button,
+    .time-off-button,
+    .kpi-toggle-button,
+    .old-view-button {
+      min-width: 86px;
+      height: 28px;
+      padding: 0 10px;
+      border: 1px solid rgba(255, 255, 255, .55);
+      border-radius: 4px;
+      background: #fff;
+      color: #000;
+      font: inherit;
+      font-size: 12px;
+      font-weight: 900;
+      line-height: 1;
+      cursor: pointer;
+    }
+
+    .compare-button {
+      min-width: 82px;
+      background: #fff;
+      color: #000;
+    }
+
+    .timesheet-tab-button {
+      min-width: 86px;
+      background: #fff;
+      color: #000;
+    }
+
+    .hero-actions button.active,
+    .hero-actions button[aria-pressed="true"] {
+      background: #fff2cc;
+      color: #000;
+      border-color: #f6c85f;
+      box-shadow: inset 0 0 0 1px #f6c85f;
+    }
+
+    .schedule-button {
+      min-width: 82px;
+      background: #fff;
+      color: #000;
+    }
+
+    .archive-button {
+      min-width: 80px;
+      background: #fff;
+      color: #000;
+    }
+
+    .time-off-button {
+      min-width: 82px;
+      background: #fff;
+      color: #000;
+    }
+
+    .kpi-toggle-button {
+      min-width: 72px;
+      background: transparent;
+      color: #fff;
+    }
+
+    .kpi-toggle-button.active {
+      background: #fff2cc;
+      color: #000;
+      border-color: #f6c85f;
+    }
+
+    .old-view-button {
+      min-width: 72px;
+      background: transparent;
+      color: #fff;
+    }
+
+    .timesheet-view-switch {
+      display: inline-flex;
+      align-items: stretch;
+      flex: 0 0 auto;
+      gap: 0;
+      overflow: hidden;
+      border: 1px solid #f6c85f;
+      border-radius: 6px;
+      background: #050505;
+      box-shadow: inset 0 0 0 1px rgba(255, 210, 26, .16);
+    }
+
+    .timesheet-view-switch .timesheet-tab-button,
+    .timesheet-view-switch .old-view-button {
+      height: 30px;
+      margin: 0;
+      border: 0;
+      border-radius: 0;
+      background: #050505;
+      color: #fff;
+      box-shadow: none;
+    }
+
+    .timesheet-view-switch .timesheet-tab-button {
+      border-right: 1px solid #f6c85f;
+    }
+
+    .timesheet-view-switch .timesheet-tab-button.active,
+    .timesheet-view-switch .timesheet-tab-button[aria-pressed="true"],
+    .timesheet-view-switch .old-view-button.active,
+    .timesheet-view-switch .old-view-button[aria-pressed="true"] {
+      background: #ffd21a;
+      color: #000;
+      box-shadow: inset 0 0 0 1px #fff0a6;
+    }
+
+    .timesheet-view-switch .timesheet-tab-button:hover,
+    .timesheet-view-switch .timesheet-tab-button:focus,
+    .timesheet-view-switch .old-view-button:hover,
+    .timesheet-view-switch .old-view-button:focus {
+      background: #ffe36b;
+      color: #000;
+      outline: 0;
+    }
+
+    .export-button:hover,
+    .export-button:focus,
+    .timesheet-tab-button:hover,
+    .timesheet-tab-button:focus,
+    .schedule-button:hover,
+    .schedule-button:focus,
+    .compare-button:hover,
+    .compare-button:focus,
+    .archive-button:hover,
+    .archive-button:focus,
+    .time-off-button:hover,
+    .time-off-button:focus,
+    .kpi-toggle-button:hover,
+    .kpi-toggle-button:focus,
+    .old-view-button:hover,
+    .old-view-button:focus {
+      background: #fff2cc;
+      color: #000;
+      outline: 2px solid #f6c85f;
+      outline-offset: 1px;
+    }
+
+    .header-date-input {
+      width: 142px;
+      height: 28px;
+      border: 0;
+      border-radius: 4px;
+      outline: 0;
+      background: transparent;
+      color: #c7d2fe;
+      color-scheme: dark;
+      font: inherit;
+      font-size: 15px;
+      font-weight: 800;
+      line-height: 28px;
+      text-align: center;
+    }
+
+    .header-date-input:focus {
+      background: rgba(255, 255, 255, .12);
+      box-shadow: 0 0 0 2px #f6c85f;
+    }
+
+    .header-date-input::-webkit-calendar-picker-indicator {
+      cursor: pointer;
+      opacity: .85;
+    }
+
+    .prev-timesheet-warning {
+      min-height: 34px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 7px 14px;
+      background: #c00000;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 900;
+      letter-spacing: .04em;
+      text-align: center;
+      text-transform: uppercase;
+    }
+
+    .prev-timesheet-warning[hidden] {
+      display: none;
+    }
+
+    .shift-end-control {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      margin-top: 2px;
+      color: #fff;
+      font-size: 13px;
+    }
+
+    .shift-end-control select,
+    .shift-end-control input {
+      width: 70px;
+      height: 23px;
+      border: 1px solid rgba(255, 255, 255, .35);
+      border-radius: 4px;
+      background: rgba(255, 255, 255, .12);
+      color: #fff;
+      font: inherit;
+      font-family: "SFMono-Regular", Consolas, monospace;
+      font-weight: 800;
+      text-align: center;
+    }
+
+    .shift-end-control option {
+      color: #000;
+    }
+
+    .custom-shift-end {
+      display: none;
+    }
+
+    .custom-shift-end.open {
+      display: inline-block;
+    }
+
+    .kpis {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: clamp(4px, .7vw, 8px);
+      overflow: hidden;
+      padding: 15px clamp(12px, 2.6vw, 28px) 4px;
+    }
+
+    .kpis.hidden {
+      display: none;
+    }
+
+    .kpi {
+      min-width: 0;
+      min-height: 66px;
+      padding: 7px clamp(4px, .9vw, 11px);
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      text-align: center;
+    }
+
+    .kpi.accent {
+      background: var(--purple-soft);
+      border-color: #c7d2fe;
+    }
+
+    .kpi.good {
+      background: #f0fdf4;
+      border-color: #bbf7d0;
+    }
+
+    .kpi.warn {
+      background: #fffbeb;
+      border-color: #fde68a;
+    }
+
+    .kpi.bad {
+      background: #fef2f2;
+      border-color: #fecaca;
+    }
+
+    .kpi-label {
+      width: 100%;
+      color: #9ca3af;
+      font-size: clamp(9px, 1.2vw, 12px);
+      font-weight: 800;
+      letter-spacing: .06em;
+      line-height: 1;
+      text-align: center;
+      text-transform: uppercase;
+    }
+
+    .kpi.accent .kpi-label {
+      color: #6366f1;
+    }
+
+    .kpi.good .kpi-label {
+      color: var(--green);
+    }
+
+    .kpi.warn .kpi-label {
+      color: #a16207;
+    }
+
+    .kpi.bad .kpi-label {
+      color: var(--red);
+    }
+
+    .kpi-value,
+    .kpi input,
+    .kpi select {
+      width: 100%;
+      margin-top: 0;
+      border: 0;
+      outline: 0;
+      background: transparent;
+      color: var(--ink);
+      font: inherit;
+      font-size: clamp(16px, 2vw, 20px);
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+      text-align: center;
+    }
+
+    .kpi input {
+      padding: 0;
+      display: block;
+      height: 22px;
+      text-align: center;
+    }
+
+    .kpi select {
+      height: 28px;
+      padding: 1px 18px 2px;
+      cursor: pointer;
+      line-height: 1.25;
+      text-align: center;
+      text-align-last: center;
+    }
+
+    .kpi option {
+      color: #000;
+      text-align: center;
+    }
+
+    .kpi .custom-shift-end {
+      display: none;
+    }
+
+    .kpi .custom-shift-end.open {
+      display: block;
+      height: 20px;
+      margin-top: 3px;
+      font-size: 14px;
+    }
+
+    .kpi.accent .kpi-value {
+      color: #4338ca;
+    }
+
+    .kpi-value.goal-text {
+      font-size: 18px;
+    }
+
+    .kpi.good .kpi-value {
+      color: #15803d;
+    }
+
+    .kpi.warn .kpi-value {
+      color: #92400e;
+    }
+
+    .kpi.bad .kpi-value {
+      color: #b91c1c;
+    }
+
+    .cards {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 9px 28px 0;
+    }
+
+    .shift-card {
+      --md-grid-columns: repeat(7, minmax(0, 1fr));
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .shift-head {
+      min-height: 26px;
+      display: grid;
+      grid-template-columns: var(--md-grid-columns);
+      align-items: center;
+      gap: clamp(4px, .65vw, 7px);
+      padding: 0 clamp(8px, 1vw, 13px);
+      transition: grid-template-columns .3s ease, gap .3s ease, padding-inline .3s ease;
+      border-top: 2px solid #000;
+      border-bottom: 2px solid #000;
+      border-left: 3px solid #d9d9d9;
+      background: #d9d9d9;
+      color: #000;
+      font-size: 11px;
+      font-weight: 900;
+      text-align: center;
+    }
+
+    .shift-head span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .shift-head .shift-name {
+      text-align: left;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 18px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: var(--gray-soft);
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 800;
+      line-height: 1.15;
+      white-space: nowrap;
+    }
+
+    .pill.in {
+      background: var(--green-soft);
+      color: #15803d;
+    }
+
+    .pill.out,
+    .pill.no-show {
+      background: var(--red-soft);
+      color: #b91c1c;
+    }
+
+    .pill.note,
+    .pill.unpaid,
+    .pill.paid {
+      background: var(--violet-soft);
+      color: #6d28d9;
+      border-radius: 4px;
+      white-space: normal;
+    }
+
+    .shift-stats {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 700;
+      text-align: right;
+    }
+
+    .shift-stats b {
+      color: var(--ink);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .md-row {
+      min-height: 24px;
+      display: grid;
+      grid-template-columns: var(--md-grid-columns);
+      gap: clamp(4px, .65vw, 7px);
+      align-items: center;
+      padding: 0 clamp(8px, 1vw, 13px);
+      transition: grid-template-columns .3s ease, gap .3s ease, padding-inline .3s ease;
+      border-bottom: 1px solid #f5f6f8;
+      border-left: 3px solid #e5e7eb;
+      font-size: 13px;
+      line-height: 1.15;
+    }
+
+    .md-row.in-row {
+      border-left-color: #22c55e;
+    }
+
+    .md-row.out-row {
+      border-left-color: #ef4444;
+      background: #fef2f2;
+    }
+
+    .md-row.out-row .name,
+    .md-row.out-row .time,
+    .md-row.out-row .actual {
+      color: #b91c1c;
+    }
+
+    .md-row.missing-row {
+      border-left-color: #f59e0b;
+      background: #fff2cc;
+    }
+
+    .md-row.invalid-row {
+      border-left-color: #ef4444;
+      background: #fef4f4;
+    }
+
+    .md-row.offday-row {
+      border-left-color: #14b8a6;
+      background: #f0fdfa;
+    }
+
+    .md-row.absence-row {
+      border-left-color: #a78bfa;
+      background: var(--violet-soft);
+    }
+
+    .md-row.unpaid-row {
+      background: var(--violet-soft);
+      border-left-color: #a78bfa;
+    }
+
+    .name {
+      overflow: hidden;
+      color: var(--ink);
+      font-weight: 600;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .off {
+      overflow: hidden;
+      color: #000;
+      font-size: 13.5px;
+      font-weight: 600;
+      text-align: center;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .note-slot {
+      position: relative;
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: visible;
+      text-align: center;
+      white-space: normal;
+    }
+
+    .note-slot::after {
+      content: "";
+      position: absolute;
+      right: 4px;
+      top: 50%;
+      width: 0;
+      height: 0;
+      border-left: 3px solid transparent;
+      border-right: 3px solid transparent;
+      border-top: 4px solid #7a4b00;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(-50%);
+    }
+
+    .note-slot:hover::after {
+      opacity: 1;
+    }
+
+    .note-input {
+      width: 100%;
+      min-width: 0;
+      height: 22px;
+      min-height: 22px;
+      padding: 0 clamp(4px, .7vw, 6px);
+      border: 0;
+      border-radius: 4px;
+      outline: 0;
+      -webkit-appearance: none;
+      appearance: none;
+      background-color: transparent;
+      background-image: none;
+      color: var(--ink);
+      font: inherit;
+      font-size: clamp(11px, 1.15vw, 12px);
+      font-weight: 700;
+      line-height: 22px;
+      text-align: center;
+    }
+
+    .note-input::-webkit-calendar-picker-indicator {
+      display: none !important;
+    }
+
+    .note-input.note,
+    .note-input.paid,
+    .note-input.unpaid {
+      background-color: var(--violet-soft);
+      color: #6d28d9;
+    }
+
+    .note-input.invalid {
+      background-color: var(--red-soft);
+      color: #b91c1c;
+    }
+
+    .note-input.has-note {
+      background-color: #fff2cc;
+      color: #7a4b00;
+    }
+
+    .md-row.absence-row .note-input.has-note,
+    .md-row.absence-row .note-input.paid,
+    .md-row.absence-row .note-input.unpaid {
+      background-color: var(--violet-soft);
+      color: #6d28d9;
+    }
+
+    .note-input:focus {
+      box-shadow: 0 0 0 2px rgba(167, 139, 250, .25);
+    }
+
+    .time {
+      min-width: 0;
+      overflow: hidden;
+      color: var(--green);
+      font-family: "SFMono-Regular", Consolas, monospace;
+      font-size: clamp(12px, 1.25vw, 14px);
+      font-weight: 800;
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .time-edit {
+      width: 100%;
+      height: 22px;
+      min-width: 0;
+      padding: 0 3px;
+      border: 0;
+      outline: 0;
+      background: transparent;
+      color: inherit;
+      font: inherit;
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .time-edit:focus {
+      background: #fff2cc;
+      box-shadow: inset 0 0 0 1px #f6c85f;
+    }
+
+    select.time-edit {
+      padding-right: 12px;
+      cursor: pointer;
+      text-align-last: center;
+    }
+
+    .time-edit.muted::placeholder {
+      color: #c4c7cc;
+      opacity: 1;
+    }
+
+    .time.missing,
+    .name.missing {
+      color: #7a4b00;
+    }
+
+    .time.pending {
+      color: var(--gold);
+    }
+
+    .time.muted {
+      color: #c4c7cc;
+    }
+
+    .actual {
+      color: var(--ink);
+      font-weight: 800;
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .off-footer {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 6px 13px 8px;
+      background: #fcfcfd;
+      color: #9ca3af;
+      font-size: 11px;
+      line-height: 1.45;
+    }
+
+    .off-footer strong {
+      color: var(--muted);
+      letter-spacing: .05em;
+      text-transform: uppercase;
+    }
+
+    .off-chip {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 18px;
+      padding: 2px 9px;
+      border-radius: 4px;
+      background: #f1f3f6;
+      color: #64748b;
+      font-size: 11px;
+      font-weight: 800;
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    .legend {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-top: 0;
+      padding: 10px 28px;
+      border-top: 1px solid var(--line);
+      background: #fff;
+      color: #9ca3af;
+      font-size: 9px;
+    }
+
+    .legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      white-space: nowrap;
+    }
+
+    .swatch {
+      width: 10px;
+      height: 6px;
+      border-radius: 2px;
+      background: #e5e7eb;
+    }
+
+    .swatch.in { background: #22c55e; }
+    .swatch.out { background: #ef4444; }
+    .swatch.missing { background: #ef4444; }
+    .swatch.absence { background: #a78bfa; }
+    .legend .right {
+      margin-left: auto;
+      font-family: "SFMono-Regular", Consolas, monospace;
+    }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 30;
+      display: none;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 54px 14px 20px;
+      background: rgba(0, 0, 0, .35);
+    }
+
+    .modal-backdrop.open {
+      display: flex;
+    }
+
+    .lpmh-modal {
+      width: min(520px, 100%);
+      max-height: calc(100vh - 80px);
+      overflow: auto;
+      background: #fff;
+      border: 3px solid #000;
+      box-shadow: 0 12px 34px rgba(0, 0, 0, .25);
+    }
+
+    .lpmh-modal header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 8px 10px;
+      background: #000;
+      color: #fff;
+      font-weight: 900;
+    }
+
+    .lpmh-modal button {
+      min-width: 30px;
+      height: 26px;
+      border: 1px solid #fff;
+      background: #e7e6e6;
+      color: #000;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .lpmh-details {
+      display: grid;
+      gap: 1px;
+      padding: 8px;
+      background: #000;
+    }
+
+    .lpmh-row {
+      min-height: 32px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(120px, auto);
+      align-items: center;
+      gap: 10px;
+      padding: 0 10px;
+      background: #fff;
+      font-weight: 900;
+    }
+
+    .lpmh-row span:last-child {
+      text-align: right;
+    }
+
+    .lpmh-formula {
+      min-height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px 10px;
+      background: #ffc7ce;
+      font-size: 17px;
+      font-weight: 900;
+      text-align: center;
+    }
+
+
+    .inline-tool-panel {
+      width: 100%;
+      margin: 0 auto;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
+      overflow: visible;
+    }
+
+    .inline-tool-panel[hidden] {
+      display: none;
+    }
+
+    .inline-tool-header {
+      display: none;
+    }
+
+    .inline-tool-close {
+      min-width: 54px;
+      height: 28px;
+      border: 1px solid #fff;
+      border-radius: 4px;
+      background: #fff;
+      color: #111827;
+      font: 900 12px/1 Arial, Helvetica, sans-serif;
+      cursor: pointer;
+    }
+
+    .inline-tool-frame {
+      width: min(1320px, 100%);
+      min-height: 0;
+      margin: 0 auto;
+      border: 0;
+      display: block;
+      background: transparent;
+      overflow: hidden;
+    }
+
+    body.inline-tool-open #mdImportTray,
+    body.inline-tool-open #prevTimesheetWarning,
+    body.inline-tool-open #kpiStrip,
+    body.inline-tool-open #shiftCards,
+    body.inline-tool-open .panel > footer.legend {
+      display: none !important;
+    }
+
+    body.inline-tool-open .inline-tool-panel {
+      margin: 0;
+    }
+
+    @media (max-width: 860px) {
+      .canvas {
+        padding: 10px 10px 14px;
+      }
+
+      .hero,
+      .legend {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .hero {
+        display: flex;
+        gap: 10px;
+      }
+
+      .hero-meta,
+      .shift-stats {
+        text-align: left;
+      }
+
+      .hero-meta {
+        display: flex;
+        align-items: flex-start;
+        justify-content: flex-start;
+        flex-wrap: wrap;
+        gap: 8px;
+        width: 100%;
+      }
+
+      .hero-actions {
+        justify-content: flex-start;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .hero-date {
+        justify-content: flex-start;
+      }
+
+      .kpis {
+        grid-template-columns: repeat(7, minmax(0, 1fr));
+        padding-inline: 10px;
+      }
+
+      .cards {
+        padding-inline: 12px;
+      }
+
+    }
+
+
+    .md-import-tray {
+      display: grid;
+      gap: 0;
+      border-top: 1px solid rgba(255, 255, 255, .08);
+      border-bottom: 1px solid var(--line);
+      background: #eef4fb;
+      color: #0f172a;
+    }
+
+    .md-import-title {
+      min-height: 34px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 8px 18px;
+      background: #d9e8f7;
+      border-bottom: 1px solid #b8cce0;
+      font-size: 14px;
+      font-weight: 900;
+      letter-spacing: .02em;
+      text-transform: uppercase;
+    }
+
+    .md-import-title-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .md-import-tray .md-import-toggle {
+      min-height: 24px;
+      padding: 2px 10px;
+      border: 1px solid #9fb6cc;
+      border-radius: 999px;
+      background: #eef4fb;
+      color: #23435c;
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+
+    .md-import-tray .status,
+    .md-import-tray .preview-count,
+    .md-import-tray .previous-timesheet-status {
+      min-width: 80px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3px 10px;
+      border: 1px solid #c4d4e4;
+      border-radius: 999px;
+      background: #fff;
+      color: #004a64;
+      font-size: 12px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .md-import-tray .push-notice {
+      min-height: 34px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 7px 14px;
+      background: #c00000;
+      color: #fff;
+      border-bottom: 2px solid #000;
+      font-weight: 900;
+      text-align: center;
+    }
+
+    .md-import-tray .push-notice[hidden],
+    .md-import-tray [hidden] {
+      display: none !important;
+    }
+
+    .md-import-tray .import-panel {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 178px;
+      gap: 10px;
+      align-items: start;
+      padding: 10px 18px;
+      background: #f8fbff;
+      border-bottom: 1px solid #d3e0ed;
+    }
+
+    .md-import-tray .file-stack {
+      display: grid;
+      gap: 7px;
+    }
+
+    .md-import-tray .file-row,
+    .md-import-tray .file-control {
+      display: grid;
+      grid-template-columns: 132px minmax(0, 1fr);
+      gap: 8px;
+      align-items: center;
+      font-weight: 900;
+    }
+
+    .md-import-tray .file-control {
+      grid-template-columns: minmax(0, 1fr) 120px;
+    }
+
+    .md-import-tray input[type="file"],
+    .md-import-tray input[type="date"],
+    .md-import-tray select {
+      min-width: 0;
+      height: 28px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      background: #fff;
+      color: #111827;
+      font: inherit;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .md-import-tray .buttons {
+      position: relative;
+      display: grid;
+      gap: 7px;
+    }
+
+    .md-import-tray button {
+      min-height: 30px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      background: #fff;
+      color: #111827;
+      font: inherit;
+      font-size: 12px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .md-import-tray button:hover,
+    .md-import-tray button:focus {
+      background: #fff7cc;
+      outline: 2px solid #f6c85f;
+      outline-offset: 1px;
+    }
+
+    .md-import-tray .secondary,
+    .md-import-tray .clear-menu button {
+      background: #eef2f7;
+    }
+
+    .md-import-tray .clear-split {
+      position: relative;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 30px;
+      gap: 2px;
+    }
+
+    .md-import-tray .clear-split-toggle::before {
+      content: "";
+      display: inline-block;
+      border-left: 4px solid transparent;
+      border-right: 4px solid transparent;
+      border-top: 5px solid #334155;
+      vertical-align: middle;
+    }
+
+    .md-import-tray .clear-menu {
+      position: absolute;
+      top: calc(100% + 4px);
+      right: 0;
+      z-index: 15;
+      width: 180px;
+      display: none;
+      gap: 4px;
+      padding: 6px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      background: #fff;
+      box-shadow: 0 10px 22px rgba(15, 23, 42, .18);
+    }
+
+    .md-import-tray .clear-split.open .clear-menu {
+      display: grid;
+    }
+
+    .md-import-tray .missing-roster-panel,
+    .md-import-tray .excel-preview,
+    .md-import-tray .previous-timesheet-preview {
+      border-top: 1px solid #d3e0ed;
+      background: #fff8df;
+    }
+
+    .md-import-tray .missing-roster-title,
+    .md-import-tray .preview-title {
+      min-height: 34px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 6px 18px;
+      font-weight: 900;
+    }
+
+    .md-import-tray .preview-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .md-import-tray .preview-pill {
+      border-radius: 999px;
+      padding: 0 14px;
+      background: #fff;
+    }
+
+    .md-import-tray .archive-calendar-tools {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .md-import-tray .archive-calendar-tools label {
+      font-size: 11px;
+      color: #7a4b00;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .md-import-tray .archive-calendar-button {
+      min-height: 26px;
+      padding: 0 12px;
+      border-radius: 999px;
+      background: #111827;
+      color: #fff;
+    }
+
+    .md-import-tray .missing-roster-body {
+      display: grid;
+      gap: 4px;
+      padding: 0 8px 8px;
+    }
+
+    .md-import-tray .missing-roster-row {
+      display: grid;
+      grid-template-columns: minmax(150px, 1fr) minmax(180px, 1.3fr) 120px 70px;
+      gap: 6px;
+      align-items: center;
+      min-height: 30px;
+      padding: 3px 5px;
+      border: 1px solid #e5b431;
+      background: #fff;
+      font-weight: 900;
+    }
+
+    .md-import-tray .dayforce-table,
+    .md-import-tray .excel-preview-table,
+    .md-import-tray .previous-timesheet-table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      font-size: 12px;
+    }
+
+    .md-import-tray th {
+      height: 28px;
+      background: #27313d;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .md-import-tray td {
+      min-height: 28px;
+      height: 28px;
+      padding: 2px 6px;
+      border-bottom: 1px solid #d6dee8;
+      background: #fff;
+      text-align: center;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-weight: 800;
+    }
+
+    .md-import-tray .dayforce-table col.name { width: 26%; }
+    .md-import-tray .dayforce-table col.date { width: 14%; }
+    .md-import-tray .dayforce-table col.start,
+    .md-import-tray .dayforce-table col.lunch,
+    .md-import-tray .dayforce-table col.end { width: 14%; }
+    .md-import-tray .dayforce-table col.note { width: 18%; }
+
+    .md-import-tray .name-cell,
+    .md-import-tray td:first-child {
+      background: #e2f0d9;
+      font-weight: 900;
+    }
+
+    .md-import-tray td input {
+      width: 100%;
+      border: 0;
+      outline: 0;
+      background: transparent;
+      color: inherit;
+      font: inherit;
+      font-weight: inherit;
+      text-align: center;
+    }
+
+    .md-import-tray tr.unmatched td {
+      background: #e7c7e8;
+      color: #4f1b58;
+    }
+
+    .md-import-tray .suggestion {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      margin-top: 3px;
+      font-size: 11px;
+      color: #4f1b58;
+      white-space: normal;
+    }
+
+    .md-import-tray .suggestion-actions {
+      display: inline-flex;
+      gap: 3px;
+    }
+
+    .md-import-tray .suggestion-actions button {
+      min-height: 20px;
+      padding: 0 6px;
+      font-size: 10px;
+    }
+
+    .md-import-tray .shift-group-row td {
+      height: 28px;
+      background: #d9e8f7;
+      color: #0f172a;
+      text-align: left;
+      font-weight: 900;
+    }
+
+    .md-import-tray .shift-group-count {
+      margin-left: 8px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: #fff;
+      color: #526174;
+      font-size: 11px;
+    }
+
+    .md-import-tray .excel-preview-wrap {
+      max-height: 320px;
+      overflow: auto;
+      border-top: 1px solid #d3e0ed;
+      background: #fff;
+    }
+
+    .md-import-tray .excel-preview.collapsed .excel-preview-wrap {
+      display: none;
+    }
+
+    .md-import-tray .excel-preview-table {
+      min-width: 980px;
+      table-layout: auto;
+    }
+
+    .md-import-tray .excel-preview-table td,
+    .md-import-tray .excel-preview-table th {
+      min-width: 72px;
+      max-width: 260px;
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    .md-import-tray .excel-preview-table .extracted-name {
+      background: #c6efce;
+      color: #006100;
+      box-shadow: inset 0 0 0 2px #00b050;
+    }
+
+    .md-import-tray .excel-preview-table .header-cell {
+      background: #d9e8f7;
+      color: #0f172a;
+      font-weight: 900;
+    }
+
+    .md-import-tray .empty {
+      padding: 14px 18px;
+      color: #64748b;
+      font-weight: 800;
+      text-align: center;
+    }
+
+    @media (max-width: 860px) {
+      .md-import-tray .import-panel {
+        grid-template-columns: 1fr;
+      }
+
+      .md-import-tray .file-row,
+      .md-import-tray .missing-roster-row {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+</head>
+<body class="inline-tool-open">
+  <main class="canvas">
+    <datalist id="timesheetNoteOptions">
+      <option value="-"></option>
+      <option value="C/O"></option>
+      <option value="SICK"></option>
+      <option value="NO CALL NO SHOW"></option>
+      <option value="VACATION"></option>
+      <option value="LATE"></option>
+      <option value="SENT HOME"></option>
+      <option value="CAME IN OFF DAY"></option>
+      <option value="OPS COVERING"></option>
+      <option value="FLOATING HOLIDAY"></option>
+      <option value="LEFT EARLY APPROVED"></option>
+      <option value="LEFT EARLY?"></option>
+      <option value="OTHER"></option>
+      <option value="UNKNOWN??"></option>
+    </datalist>
+    <section class="panel">
+      <header class="hero">
+        <div class="hero-title">
+          <h1>Time Input - Daily Sheet</h1>
+        </div>
+        <div class="hero-meta">
+          <div class="hero-actions">
+            <button type="button" class="schedule-button" id="schedulePopupButton" aria-pressed="false">Schedule</button>
+            <button type="button" class="archive-button" id="archivePopupButton" aria-pressed="false">Archive</button>
+            <button type="button" class="time-off-button active" id="timeOffPopupButton" aria-pressed="true">FULL VIEW</button>
+            <div class="timesheet-view-switch" role="group" aria-label="Timesheet view">
+              <button type="button" class="timesheet-tab-button" id="timesheetTabButton" aria-pressed="false">Timesheet</button>
+              <button type="button" class="old-view-button" id="oldViewButton" aria-pressed="false">OLD VIEW</button>
+            </div>
+          </div>
+          <div class="hero-date">
+            <input class="header-date-input" id="sheetDateInput" type="date" aria-label="Timesheet date" />
+          </div>
+        </div>
+      </header>
+
+      <section class="inline-tool-panel" id="inlineToolPanel" aria-live="polite">
+        <header class="inline-tool-header">
+          <span id="inlineToolTitle">Time Off</span>
+          <button type="button" class="inline-tool-close" id="closeInlineTool">Close</button>
+        </header>
+        <iframe class="inline-tool-frame" id="inlineToolFrame" title="Time Off" scrolling="no" sandbox="allow-same-origin allow-scripts allow-downloads allow-forms"></iframe>
+      </section>
+
+      <section class="md-import-tray" id="mdImportTray" aria-label="Timesheet import tools">
+        <div class="md-import-title">
+          <span>Import Tools</span>
+          <div class="md-import-title-actions">
+            <span class="status" id="status">Ready</span>
+            <button type="button" class="md-import-toggle" id="mdImportToggle" aria-controls="mdImportPanel" aria-expanded="false">Show</button>
+          </div>
+        </div>
+        <div class="push-notice" id="pushNotice" hidden>
+              Imported data auto-applies to the Timesheet table. Unmatched names stay here for review.
+            </div>
+        
+            <section class="import-panel" id="mdImportPanel" hidden>
+              <div class="file-stack">
+                <div class="file-row">
+                  <span>PUNCH XLSX:</span>
+                  <input type="file" id="fileInput" accept=".xlsx,.xls" />
+                </div>
+                <div class="file-row">
+                  <span>NOTE SCAN XLSX:</span>
+                  <input type="file" id="noteFileInput" accept=".xlsx,.xls" />
+                </div>
+                <div class="file-row">
+                  <span>PREV TIMESHEET:</span>
+                  <div class="file-control">
+                    <input type="file" id="previousTimesheetInput" accept=".xlsx,.xls" />
+                    <span class="previous-timesheet-status" id="previousTimesheetStatus">0.0 HRS</span>
+                  </div>
+                </div>
+              </div>
+              <div class="buttons">
+                <button type="button" id="saveButton" hidden>Auto Apply</button>
+                <div class="clear-split" id="clearSplit">
+                  <button type="button" class="secondary" id="clearDefaultButton">Clear</button>
+                  <button type="button" class="secondary clear-split-toggle" id="clearMenuButton" aria-label="Clear options" aria-expanded="false"></button>
+                  <div class="clear-menu" id="clearMenu">
+                    <button type="button" data-clear-action="punch">Clear Punches</button>
+                    <button type="button" data-clear-action="note">Clear Note Scan</button>
+                    <button type="button" data-clear-action="previous">Clear Prev Time</button>
+                  </div>
+                </div>
+              </div>
+            </section>
+        
+            <section class="missing-roster-panel" id="missingRosterPanel" hidden>
+              <div class="missing-roster-title">
+                <span>Extracted Names Not On Roster</span>
+                <span id="missingRosterCount">0 names</span>
+              </div>
+              <div class="missing-roster-body" id="missingRosterBody"></div>
+            </section>
+        
+            <section class="excel-preview" id="excelPreviewSection" hidden>
+              <div class="preview-title">
+                <div class="preview-left">
+                  <button type="button" class="preview-pill" id="excelPreviewToggle" aria-expanded="false">
+                    Time Entry Import Preview Click to Review
+                  </button>
+                  <div class="archive-calendar-tools">
+                    <label for="archiveCalendarDate">Date</label>
+                    <input id="archiveCalendarDate" type="date" aria-label="Archive calendar date" />
+                    <button type="button" class="archive-calendar-button" id="archiveCalendarButton">Archive Calendar</button>
+                  </div>
+                </div>
+                <span class="preview-count" id="excelPreviewCount">0 out of 0 matched to schedule</span>
+              </div>
+              <div class="excel-preview-wrap" id="excelPreviewWrap">
+                <table class="excel-preview-table" aria-label="Raw Excel preview">
+                  <thead id="excelPreviewHead"></thead>
+                  <tbody id="excelPreviewBody"></tbody>
+                </table>
+              </div>
+            </section>
+        
+            <table class="dayforce-table import-record-table" aria-label="Imported record staging table" hidden>
+              <colgroup>
+                <col class="name" />
+                <col class="date" />
+                <col class="start" />
+                <col class="lunch" />
+                <col class="end" />
+                <col class="note" />
+              </colgroup>
+              <thead>
+                <tr>
+                  <th>Employee</th>
+                  <th>Date</th>
+                  <th>Start</th>
+                  <th>Lunch</th>
+                  <th>End</th>
+                  <th>Note</th>
+                </tr>
+              </thead>
+              <tbody id="previewBody"></tbody>
+            </table>
+            <div class="empty" id="emptyState" hidden>No imported records yet.</div>
+        
+            <section class="previous-timesheet-preview" id="previousTimesheetPreview" hidden>
+              <div class="preview-title">
+                <span>Previous Timesheet Preview</span>
+                <span class="preview-count" id="previousTimesheetPreviewCount">0 rows</span>
+              </div>
+              <table class="dayforce-table previous-timesheet-table" aria-label="Previous timesheet restore preview">
+                <colgroup>
+                  <col class="name" />
+                  <col class="date" />
+                  <col class="time" />
+                  <col class="time" />
+                  <col class="time" />
+                  <col class="actual" />
+                </colgroup>
+                <thead>
+                  <tr>
+                    <th>Employee</th>
+                    <th>Date</th>
+                    <th>Start</th>
+                    <th>Lunch</th>
+                    <th>End</th>
+                    <th>Actual</th>
+                  </tr>
+                </thead>
+                <tbody id="previousTimesheetPreviewBody"></tbody>
+              </table>
+            </section>
+      </section>
+
+      <div class="prev-timesheet-warning" id="prevTimesheetWarning" hidden>
+        Prev Timesheet Not Imported
+      </div>
+
+      <section class="kpis hidden" id="kpiStrip" aria-label="Daily performance goals">
+        <label class="kpi">
+          <div class="kpi-label">Lifts</div>
+          <input id="updateLifts" type="number" min="0" value="339" aria-label="Update lifts count" />
+        </label>
+        <label class="kpi">
+          <div class="kpi-label">Flips</div>
+          <input id="updateFlips" type="number" min="0" value="5" aria-label="Update flips count" />
+        </label>
+        <label class="kpi">
+          <div class="kpi-label">Shift End</div>
+          <select id="shiftEndSelect" aria-label="Shift end preset">
+            <option value="1500">1500</option>
+            <option value="2400">2400</option>
+            <option value="other">Other</option>
+          </select>
+          <input class="custom-shift-end" id="shiftEndOther" inputmode="numeric" maxlength="4" placeholder="0000" aria-label="Custom shift end time" />
+        </label>
+        <div class="kpi">
+          <div class="kpi-label">Lifts Needed</div>
+          <div class="kpi-value" id="liftsNeeded">0</div>
+        </div>
+        <button type="button" class="kpi accent" id="currentLpmhButton" aria-haspopup="dialog" aria-controls="lpmhModal">
+          <div class="kpi-label">Current LPMH</div>
+          <div class="kpi-value" id="currentLpmh">0.0</div>
+        </button>
+        <div class="kpi" id="lphNeededCard">
+          <div class="kpi-label">LPH Needed</div>
+          <div class="kpi-value" id="lphNeeded">0.0</div>
+        </div>
+        <div class="kpi" id="liftsRemainCard">
+          <div class="kpi-label">Lifts Remain</div>
+          <div class="kpi-value" id="liftsRemain">0</div>
+        </div>
+      </section>
+
+      <section class="cards" id="shiftCards" aria-label="Timesheet shift cards"></section>
+
+      <footer class="legend">
+        <span><span class="swatch in"></span>Clocked in</span>
+        <span><span class="swatch out"></span>Clocked out</span>
+        <span><span class="swatch"></span>Scheduled open</span>
+        <span><span class="swatch missing"></span>Exception</span>
+        <span><span class="swatch absence"></span>Off-day / absence</span>
+        <span class="right">?? lunch pending / projected out uses current time</span>
+      </footer>
+    </section>
+  </main>
+
+  <div class="modal-backdrop" id="lpmhModal" aria-hidden="true">
+    <section class="lpmh-modal" role="dialog" aria-modal="true" aria-labelledby="lpmhModalTitle">
+      <header>
+        <div id="lpmhModalTitle">CURRENT LPMH</div>
+        <button type="button" id="closeLpmhModal">X</button>
+      </header>
+      <div class="lpmh-details" id="lpmhDetails"></div>
+    </section>
+  </div>
+
+  <script>
+    const dayAliases = {
+      sun: "sun", sunday: "sun",
+      mon: "mon", monday: "mon",
+      tue: "tue", tues: "tue", tuesday: "tue",
+      wed: "wed", weds: "wed", wednesday: "wed",
+      thu: "thu", thur: "thu", thurs: "thu", thursday: "thu",
+      fri: "fri", friday: "fri",
+      sat: "sat", saturday: "sat"
+    };
+
+    const todayKey = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"][new Date().getDay()];
+    const rosterStorageKey = "conglobal-roster-state-v1";
+    const rosterAdditionsKey = "conglobal-roster-additions-v1";
+    const dayforceStorageKey = "conglobal-dayforce-punches-v1";
+    const previousTimesheetStorageKey = "conglobal-previous-timesheet-hours-v1";
+    const timesheetSettingsKey = "conglobal-timesheet-settings-v1";
+    const timesheetNotesKey = "conglobal-timesheet-notes-v1";
+    const timeOffStorageKey = "conglobal-time-off-calendar-v1";
+    const timeOffReasonLabels = {
+      SIC: "Sick",
+      VAC: "Vacation",
+      FLO: "Floating Holiday",
+      HOL: "Holiday"
+    };
+    const rosterDayLabels = ["Mon", "Tues", "Wed", "Thurs", "Fri", "Sat", "Sun"];
+    const lpmhGoal = 2.0;
+    const cards = document.getElementById("shiftCards");
+    const lpmhModal = document.getElementById("lpmhModal");
+    const lpmhDetails = document.getElementById("lpmhDetails");
+    const prevTimesheetWarning = document.getElementById("prevTimesheetWarning");
+
+    function readTimesheetSettings() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(timesheetSettingsKey) || "null");
+        return saved && typeof saved === "object" ? saved : {};
+      } catch (error) {
+        localStorage.removeItem(timesheetSettingsKey);
+        return {};
+      }
+    }
+
+    function writeTimesheetSettings() {
+      localStorage.setItem(timesheetSettingsKey, JSON.stringify({
+        lifts: Number(document.getElementById("updateLifts").value) || 0,
+        flips: Number(document.getElementById("updateFlips").value) || 0,
+        shiftEndMode: document.getElementById("shiftEndSelect").value,
+        shiftEndCustom: document.getElementById("shiftEndOther").value.trim(),
+        kpisVisible: false,
+        sheetDate: selectedSheetDateValue()
+      }));
+    }
+
+    function applyTimesheetSettings() {
+      const settings = readTimesheetSettings();
+      if (settings.lifts !== undefined) document.getElementById("updateLifts").value = settings.lifts;
+      if (settings.flips !== undefined) document.getElementById("updateFlips").value = settings.flips;
+      if (settings.shiftEndMode) document.getElementById("shiftEndSelect").value = settings.shiftEndMode;
+      if (settings.shiftEndCustom !== undefined) document.getElementById("shiftEndOther").value = settings.shiftEndCustom;
+      if (settings.sheetDate) document.getElementById("sheetDateInput").value = settings.sheetDate;
+    }
+
+    function setKpisVisible(visible, shouldSave = false) {
+      const strip = document.getElementById("kpiStrip");
+      const button = document.getElementById("kpiToggleButton");
+      strip.classList.toggle("hidden", !visible);
+      if (button) {
+        button.classList.toggle("active", visible);
+        button.setAttribute("aria-expanded", String(visible));
+        button.textContent = visible ? "Hide KPIs" : "KPIs";
+      }
+      if (shouldSave) writeTimesheetSettings();
+      scheduleColumnBalance();
+    }
+
+    const defaultRoster = {
+      first: [
+        ["Branford Alton", "Mon, Tues"],
+        ["Castruita Armando", "Wed, Thurs"],
+        ["Frazer Dacoyea", "Mon, Tues"],
+        ["Citizen Dante", "Thurs, Fri"],
+        ["Towler Demetrius", "Thurs, Fri"],
+        ["Stewart Dexter", "Sat, Sun"],
+        ["Gardner Dorrean", "Tues, Wed"],
+        ["Thomas Henry", "Sat, Sun"],
+        ["Brown James", "Thurs, Fri"],
+        ["Herrera Jose", "Sat, Sun"],
+        ["Player Keyston", "Mon, Sun"],
+        ["Hickman Makia", "Mon, Sun"],
+        ["Dever Mikey", "Tues, Wed"],
+        ["Wanza Myles", "Mon, Tues"],
+        ["Romero Nelson", "Tues, Wed"],
+        ["McDaniel Charles", "Fri, Sat"],
+        ["Nava Ramon", "Sat, Sun"],
+        ["Tran Tyler", "Thurs, Fri"]
+      ],
+      second: [
+        ["Carruthers Timothy", "Mon, Sun"],
+        ["Caceres Virula Victor", "Mon, Tues"],
+        ["Keme Aweri Jr.", "Mon, Tues"],
+        ["Hosey Kevin", "Mon, Tues"],
+        ["Brown Brandy", "Wed, Thurs"],
+        ["Mejia Aaron", "Thurs, Fri"],
+        ["Bookman Derrell", "Thurs, Fri"],
+        ["Hopkins Alexander", "Mon, Sun"],
+        ["Tingle Jason", "Sat, Sun"],
+        ["Contreras Marco", "Sat, Sun"],
+        ["Benavides Robert", "Wed, Sun"],
+        ["Urtado Ernest", "Tues, Wed"],
+        ["Johnson Messiah", "Tues, Thurs"],
+        ["Gilder Rufus II", "Tues, Wed"],
+        ["Echendu Chimenierm", "Wed, Thurs"],
+        ["Delgado Jose", "Fri, Sat"]
+      ],
+      gate: [
+        ["Candace Warren", "Sat, Sun"],
+        ["Connie Johnson", "Sat, Sun"],
+        ["Jarade Douglas", "Sat, Sun"],
+        ["Gregory Watson II", "Sat, Sun"],
+        ["Bryce Alexander", "Thurs, Fri"],
+        ["Naomisha Hunt", "Thurs, Fri, Sat"],
+        ["Ramacacondra Pratt", "Thurs, Fri"],
+        ["Kane Cabral", "Mon, Tues"],
+        ["Tavares Gariet", "Mon, Tues"]
+      ]
+    };
+
+    const shiftLabels = {
+      first: "1st Shift",
+      second: "2nd Shift",
+      gate: "Gate",
+      mechanics: "Mechanics",
+      managers: "Managers"
+    };
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, (char) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+      }[char]));
+    }
+
+    function normalizeName(name) {
+      const suffixes = new Set(["jr", "sr", "ii", "iii", "iv"]);
+      return String(name || "")
+        .trim()
+        .toLowerCase()
+        .replace(/[,.]/g, " ")
+        .replace(/\bcontrerras\b/g, "contreras")
+        .replace(/\s+/g, " ")
+        .split(" ")
+        .filter((part) => part && !suffixes.has(part))
+        .sort()
+        .join(" ");
+    }
+
+    function readManualNotes() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(timesheetNotesKey) || "{}");
+        return saved && typeof saved === "object" && !Array.isArray(saved) ? saved : {};
+      } catch (error) {
+        localStorage.removeItem(timesheetNotesKey);
+        return {};
+      }
+    }
+
+    function getManualNote(name) {
+      const key = normalizeName(name);
+      if (!key) return "";
+      return String(readManualNotes()[key] || "").trim();
+    }
+
+    function isRealNoteValue(value) {
+      const text = String(value || "").trim();
+      return Boolean(text && text !== "-");
+    }
+
+    function saveManualNote(name, value) {
+      const key = normalizeName(name);
+      if (!key) return;
+      const notes = readManualNotes();
+      const text = String(value || "").trim();
+      if (isRealNoteValue(text)) notes[key] = text;
+      else delete notes[key];
+      localStorage.setItem(timesheetNotesKey, JSON.stringify(notes));
+    }
+
+    function noteInputHtml(name, value, className = "") {
+      const classes = ["note-input", className, isRealNoteValue(value) ? "has-note" : ""].filter(Boolean).join(" ");
+      return `<input type="text" class="${classes}" list="timesheetNoteOptions" autocomplete="off" data-note-name="${escapeHtml(name)}" value="${escapeHtml(value)}" placeholder="" aria-label="${escapeHtml(name)} note" title="Select a note or type custom text" />`;
+    }
+
+    function parseOffDays(text) {
+      return new Set(String(text || "")
+        .split(",")
+        .map((item) => item.trim().toLowerCase())
+        .map((item) => dayAliases[item] || dayAliases[item.slice(0, 3)])
+        .filter(Boolean));
+    }
+
+    function rosterOffDaysLabel(days) {
+      return days
+        .map((day, index) => day === "O" ? rosterDayLabels[index] : "")
+        .filter(Boolean)
+        .join(", ");
+    }
+
+    function migrateMcDanielToDays(state) {
+      if (!state || !Array.isArray(state.second)) return state;
+      if (!Array.isArray(state.first)) state.first = [];
+      const alreadyOnDays = state.first.some((employee) => normalizeName(employee.name || "") === "charles mcdaniel");
+      const secondIndex = state.second.findIndex((employee) => normalizeName(employee.name || "") === "charles mcdaniel");
+      if (secondIndex === -1) return state;
+      const [employee] = state.second.splice(secondIndex, 1);
+      if (!alreadyOnDays) state.first.push(employee);
+      localStorage.setItem(rosterStorageKey, JSON.stringify(state));
+      return state;
+    }
+
+    function readRosterAdditions() {
+      try {
+        const additions = JSON.parse(localStorage.getItem(rosterAdditionsKey) || "[]");
+        return Array.isArray(additions) ? additions : [];
+      } catch (error) {
+        localStorage.removeItem(rosterAdditionsKey);
+        return [];
+      }
+    }
+
+    function buildRoster() {
+      const roster = Object.fromEntries(Object.entries(defaultRoster).map(([key, rows]) => [
+        key,
+        rows.map(([name, offDays]) => ({ name, offDays }))
+      ]));
+
+      try {
+        const saved = localStorage.getItem(rosterStorageKey);
+        if (saved) {
+          const state = migrateMcDanielToDays(JSON.parse(saved));
+          ["first", "second", "gate", "mechanics", "managers"].forEach((key) => {
+            if (!Array.isArray(state[key])) return;
+            roster[key] = state[key]
+              .filter((employee) => employee && employee.name)
+              .map((employee) => ({
+                name: employee.name,
+                offDays: Array.isArray(employee.days) ? rosterOffDaysLabel(employee.days) : ""
+              }));
+          });
+        }
+      } catch (error) {
+        localStorage.removeItem(rosterStorageKey);
+      }
+
+      const seen = new Set(Object.values(roster).flat().map((employee) => normalizeName(employee.name)));
+      readRosterAdditions().forEach((addition) => {
+        if (!addition || !addition.name) return;
+        const key = addition.shift || "first";
+        const nameKey = normalizeName(addition.name);
+        if (!nameKey || seen.has(nameKey)) return;
+        if (!Array.isArray(roster[key])) roster[key] = [];
+        roster[key].push({
+          name: addition.name,
+          offDays: Array.isArray(addition.days) ? rosterOffDaysLabel(addition.days) : ""
+        });
+        seen.add(nameKey);
+      });
+
+      return roster;
+    }
+
+    function toMilitaryTime(value) {
+      const text = String(value || "").trim();
+      if (!text) return "";
+      const match = text.match(/^(\d{1,2}):(\d{2})\s*([ap])m$/i);
+      if (!match) return text;
+      let hour = Number(match[1]);
+      const minute = match[2];
+      const period = match[3].toLowerCase();
+      if (period === "p" && hour !== 12) hour += 12;
+      if (period === "a" && hour === 12) hour = 0;
+      return `${String(hour).padStart(2, "0")}${minute}`;
+    }
+
+    function minutesFromMilitary(value) {
+      const text = String(value || "").trim();
+      const match = text.match(/^(\d{1,2})(\d{2})$/);
+      if (!match) return null;
+      const hours = Number(match[1]);
+      const minutes = Number(match[2]);
+      if (hours > 24 || minutes > 59 || (hours === 24 && minutes !== 0)) return null;
+      return (hours * 60) + minutes;
+    }
+
+    function militaryFromMinutes(value) {
+      const minutes = ((Math.round(value) % 1440) + 1440) % 1440;
+      const hours = Math.floor(minutes / 60);
+      const mins = minutes % 60;
+      return `${String(hours).padStart(2, "0")}${String(mins).padStart(2, "0")}`;
+    }
+
+    function currentMinutes() {
+      const now = new Date();
+      return (now.getHours() * 60) + now.getMinutes();
+    }
+
+    function currentMilitaryTime() {
+      return militaryFromMinutes(currentMinutes());
+    }
+
+    function dayKeyFromDateValue(value) {
+      const text = String(value || "").trim();
+      if (!text) return "";
+      const dayNameMatch = text.match(/^([a-z]{3,9})\b/i);
+      const explicitDay = dayNameMatch ? dayAliases[dayNameMatch[1].toLowerCase()] : "";
+      if (explicitDay) return explicitDay;
+      const match = text.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+      const date = match
+        ? new Date(Number(match[3].length === 2 ? `20${match[3]}` : match[3]), Number(match[1]) - 1, Number(match[2]))
+        : new Date(text);
+      if (Number.isNaN(date.getTime())) return "";
+      return ["sun", "mon", "tue", "wed", "thu", "fri", "sat"][date.getDay()];
+    }
+
+    function readPunches() {
+      try {
+        const punches = JSON.parse(localStorage.getItem(dayforceStorageKey) || "[]");
+        return Array.isArray(punches) ? punches : [];
+      } catch (error) {
+        localStorage.removeItem(dayforceStorageKey);
+        return [];
+      }
+    }
+
+    function writePunches(punches) {
+      localStorage.setItem(dayforceStorageKey, JSON.stringify(Array.isArray(punches) ? punches : []));
+    }
+
+    function readTimeOffCalendar() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(timeOffStorageKey) || "{}");
+        return saved && typeof saved === "object" && !Array.isArray(saved) ? saved : {};
+      } catch (error) {
+        localStorage.removeItem(timeOffStorageKey);
+        return {};
+      }
+    }
+
+    function timeOffReasonText(entry) {
+      const code = String(entry?.code || "").trim().toUpperCase();
+      const reason = String(entry?.reason || "").replace(/\s+/g, " ").trim();
+      return reason || timeOffReasonLabels[code] || code;
+    }
+
+    function isUnpaidTimeOff(entry) {
+      return /\bunpaid\b|without pay/i.test([
+        entry?.code,
+        entry?.reason,
+        entry?.location,
+        entry?.sheet
+      ].join(" "));
+    }
+
+    function timeOffHours(entry) {
+      const value = Number(entry?.hours || entry?.duration || entry?.absenceHours || 0);
+      return Number.isFinite(value) && value > 0 ? value : 8;
+    }
+
+    function selectedTimeOffLookup(dateKey = selectedSheetDateValue()) {
+      const entries = readTimeOffCalendar()[dateKey] || [];
+      const lookup = new Map();
+      if (!Array.isArray(entries)) return lookup;
+
+      entries.forEach((entry) => {
+        const key = normalizeName(entry?.name || "");
+        const reason = timeOffReasonText(entry);
+        if (!key || !reason) return;
+        const current = lookup.get(key) || { notes: [], paid: false, unpaid: false, hours: 0 };
+        const reasonKey = reason.toLowerCase();
+        if (!current.notes.some((note) => note.toLowerCase() === reasonKey)) current.notes.push(reason);
+        if (isUnpaidTimeOff(entry)) {
+          current.unpaid = true;
+        } else {
+          current.paid = true;
+          current.hours += timeOffHours(entry);
+        }
+        lookup.set(key, current);
+      });
+
+      return lookup;
+    }
+
+    function localDateInputValue(date = new Date()) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      return year + "-" + month + "-" + day;
+    }
+
+    function dateFromInputValue(value) {
+      const match = String(value || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if (!match) return new Date();
+      const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+      return Number.isNaN(date.getTime()) ? new Date() : date;
+    }
+
+    function selectedSheetDateValue() {
+      const input = document.getElementById("sheetDateInput");
+      return input && input.value ? input.value : localDateInputValue();
+    }
+
+    function dayKeyFromInputDate(value) {
+      return ["sun", "mon", "tue", "wed", "thu", "fri", "sat"][dateFromInputValue(value).getDay()];
+    }
+
+    function selectedSheetDateLabel(options = { weekday: "short", month: "short", day: "numeric", year: "numeric" }) {
+      return dateFromInputValue(selectedSheetDateValue()).toLocaleDateString(undefined, options);
+    }
+
+    function initializeSheetDate() {
+      const input = document.getElementById("sheetDateInput");
+      if (input && !input.value) input.value = localDateInputValue();
+    }
+
+    function todayDateLabel() {
+      return selectedSheetDateLabel({ month: "numeric", day: "numeric", year: "numeric" });
+    }
+
+    function punchHasContent(punch) {
+      return Boolean(punch && (punch.start || punch.end || punch.lunch || punch.note || punch.reason || punch.absencePaid || punch.absenceUnpaid));
+    }
+
+    function normalizeClockEditValue(value) {
+      const text = String(value || "").trim();
+      if (!text || text === "Missing?") return "";
+      const converted = toMilitaryTime(text);
+      const compact = String(converted || "").replace(/\D/g, "");
+      if (/^\d{3,4}$/.test(compact)) return compact.padStart(4, "0");
+      return String(converted || text).trim();
+    }
+
+    function normalizeLunchEditValue(value) {
+      const text = String(value || "").trim().toUpperCase();
+      return text === "-" ? "" : text;
+    }
+
+    function saveTimeEdit(name, field, value) {
+      const key = normalizeName(name);
+      if (!key || !field) return;
+      const punches = readPunches();
+      let index = punches.findIndex((punch) => normalizeName(punch.name || "") === key);
+      let nextValue = "";
+      if (field === "start" || field === "end") nextValue = normalizeClockEditValue(value);
+      else if (field === "lunch") nextValue = normalizeLunchEditValue(value);
+      else return;
+      if (index === -1 && !nextValue) return;
+      if (index === -1) {
+        punches.push({ name, date: todayDateLabel() });
+        index = punches.length - 1;
+      }
+      const punch = punches[index];
+      punch.name = punch.name || name;
+      punch.date = punch.date || todayDateLabel();
+      if (nextValue) punch[field] = nextValue;
+      else delete punch[field];
+      if (!punchHasContent(punch)) punches.splice(index, 1);
+      writePunches(punches);
+    }
+    function previousShiftHours() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(previousTimesheetStorageKey) || "null");
+        return saved && typeof saved.hours === "number" ? Math.max(Number(saved.hours) || 0, 0) : 0;
+      } catch (error) {
+        localStorage.removeItem(previousTimesheetStorageKey);
+        return 0;
+      }
+    }
+
+    function updatePreviousTimesheetWarning() {
+      prevTimesheetWarning.hidden = previousShiftHours() > 0;
+    }
+
+    function shouldCheckMissingStart(shiftKey) {
+      if (shiftKey === "gate") return false;
+      if (shiftKey === "second") return currentMinutes() >= minutesFromMilitary("1500");
+      return true;
+    }
+
+    function sheetDateIsToday() {
+      return selectedSheetDateValue() === localDateInputValue();
+    }
+
+    function relativeMinutesForShift(value, startValue) {
+      const minutes = minutesFromMilitary(value);
+      if (minutes === null) return null;
+      const startMinutes = minutesFromMilitary(startValue);
+      if (startMinutes !== null && minutes < startMinutes) return minutes + 1440;
+      return minutes;
+    }
+
+    function endIsFutureForCurrentSheet(startValue, endValue) {
+      if (!sheetDateIsToday()) return false;
+      const startMinutes = minutesFromMilitary(startValue);
+      const endMinutes = relativeMinutesForShift(endValue, startValue);
+      if (startMinutes === null || endMinutes === null) return false;
+      let nowMinutes = currentMinutes();
+      if (nowMinutes < startMinutes) nowMinutes += 1440;
+      return endMinutes > nowMinutes;
+    }
+
+    function actualHours(startValue, lunch, endValue) {
+      const start = minutesFromMilitary(startValue);
+      const end = minutesFromMilitary(endValue);
+      if (start === null || end === null) return 0;
+      let minutes = end - start;
+      if (minutes < 0) minutes += 1440;
+      if (String(lunch).toUpperCase() === "YES") minutes -= 30;
+      return minutes > 0 ? minutes / 60 : 0;
+    }
+
+    function paidNoteHoursForText(value) {
+      return /\bfloating holidays?\b|\bflo\b|\bvacations?\b|\bvac\b|\bsick\b|\bsic\b|\bholidays?\b|\bhol\b|\bpto\b/i.test(String(value || "")) ? 8 : 0;
+    }
+
+    function shiftStartForShift(shiftKey) {
+      if (shiftKey === "second") return "1500";
+      if (shiftKey === "gate" || shiftKey === "mechanics") return "0600";
+      return "0300";
+    }
+
+    function endFromStartAndHours(start, hours) {
+      const startMinutes = minutesFromMilitary(start);
+      if (startMinutes === null) return "";
+      return militaryFromMinutes(startMinutes + (Number(hours || 0) * 60));
+    }
+
+    function combineNotes(...values) {
+      const seen = new Set();
+      return values
+        .flatMap((value) => String(value || "").split(","))
+        .map((value) => value.trim())
+        .filter(isRealNoteValue)
+        .filter((value) => {
+          const key = value.toLowerCase();
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        })
+        .join(", ");
+    }
+
+    function rowRank(row) {
+      if (row.scheduled && row.hasClockIn && !row.purpleAbsence) return 0;
+      if (!row.scheduled && row.hasClockIn) return 1;
+      if (row.purpleAbsence) return 2;
+      if (row.scheduled && !row.hasClockIn) return 3;
+      return 4;
+    }
+
+    function makeRows() {
+      const roster = buildRoster();
+      const punches = new Map(readPunches().map((punch) => [normalizeName(punch.name || ""), punch]));
+      const selectedDate = selectedSheetDateValue();
+      const selectedDayKey = dayKeyFromInputDate(selectedDate);
+      const timeOff = selectedTimeOffLookup(selectedDate);
+
+      return Object.fromEntries(Object.entries(roster).map(([shiftKey, employees]) => {
+        const rows = employees.map((employee) => {
+          const punch = punches.get(normalizeName(employee.name)) || null;
+          const timeOffEntry = timeOff.get(normalizeName(employee.name)) || null;
+          const workdayKey = punch ? dayKeyFromDateValue(punch.date) || selectedDayKey : selectedDayKey;
+          const scheduled = !parseOffDays(employee.offDays).has(workdayKey);
+          const note = combineNotes(
+            punch && (punch.note || punch.reason),
+            timeOffEntry && timeOffEntry.notes.join(", ")
+          );
+          const manualNote = getManualNote(employee.name);
+          const punchStart = toMilitaryTime(punch ? punch.start : "");
+          const punchEnd = toMilitaryTime(punch ? punch.end : "");
+          const hasPunchClockTime = Boolean(punchStart || punchEnd);
+          const timeOffApplies = Boolean(timeOffEntry && !hasPunchClockTime);
+          const timeOffPaidHours = timeOffApplies && timeOffEntry.paid ? timeOffEntry.hours || 8 : 0;
+          const start = punchStart || (timeOffPaidHours ? shiftStartForShift(shiftKey) : "");
+          const end = punchEnd || (timeOffPaidHours ? endFromStartAndHours(start, timeOffPaidHours) : "");
+          const rawLunch = String((punch && punch.lunch) || (timeOffPaidHours ? "NO" : "")).trim();
+          const noLunch = rawLunch.toUpperCase() === "NO";
+          const hasClockIn = minutesFromMilitary(start) !== null;
+          const hasEndValue = minutesFromMilitary(end) !== null;
+          const futureEnd = hasClockIn && hasEndValue && !timeOffPaidHours && endIsFutureForCurrentSheet(start, end);
+          const hasClockOut = hasEndValue && !futureEnd;
+          const tempEnd = hasClockIn && !hasClockOut ? currentMilitaryTime() : "";
+          const lunchText = rawLunch.toUpperCase();
+          const lunch = noLunch ? "NO" : (rawLunch ? (["YES", "??"].includes(lunchText) ? lunchText : "YES") : (start || end ? "??" : ""));
+          const workedHours = actualHours(start, lunch, hasClockOut ? end : tempEnd);
+          const paidNoteHours = paidNoteHoursForText([manualNote, note].join(" "));
+          const paidNoteAbsence = paidNoteHours > 0 || Boolean(timeOffApplies && timeOffEntry.paid);
+          const extraPaidHours = workedHours > 0 || timeOffPaidHours ? 0 : paidNoteHours;
+          const actual = workedHours + extraPaidHours;
+          const hasClockTime = Boolean(start || end);
+          const cameInOffDay = !scheduled && hasPunchClockTime;
+          const unpaidAbsence = Boolean((punch && punch.absenceUnpaid) || (timeOffApplies && timeOffEntry.unpaid && !timeOffEntry.paid));
+          const paidAbsence = Boolean(punch && punch.absencePaid) || paidNoteAbsence;
+          const purpleAbsence = paidAbsence || unpaidAbsence || /\bfloating holidays?\b|\bvacations?\b|\bsick\b|\bholidays?\b|\bpto\b|\bunpaid\b/i.test(note);
+          const invalid = Boolean((start && minutesFromMilitary(start) === null) || (end && minutesFromMilitary(end) === null));
+          const missing = shouldCheckMissingStart(shiftKey) && scheduled && !note && !manualNote && !hasClockIn;
+          let status = "OPEN";
+          if (invalid) status = "INVALID";
+          else if (unpaidAbsence) status = "UNPAID";
+          else if (paidAbsence) status = "PAID";
+          else if (missing) status = "NO SHOW";
+          else if (hasClockIn && !hasClockOut) status = "IN";
+          else if (hasClockIn && hasClockOut) status = "OUT";
+          else if (!scheduled) status = "OFF";
+
+          return {
+            ...employee,
+            shiftKey,
+            scheduled,
+            note,
+            start,
+            lunch,
+            end,
+            tempEnd,
+            actual,
+            hasClockIn,
+            hasClockOut,
+            cameInOffDay,
+            purpleAbsence,
+            unpaidAbsence,
+            paidAbsence,
+            invalid,
+            missing,
+            status
+          };
+        });
+
+        rows.sort((a, b) => rowRank(a) - rowRank(b) || a.name.localeCompare(b.name));
+        return [shiftKey, rows];
+      }));
+    }
+
+    function rowClass(row) {
+      const classes = ["md-row"];
+      if (row.status === "IN") classes.push("in-row");
+      if (row.status === "OUT") classes.push("out-row");
+      if (row.cameInOffDay) classes.push("offday-row");
+      if (row.missing) classes.push("missing-row");
+      if (row.invalid) classes.push("invalid-row");
+      if (row.purpleAbsence || row.paidAbsence) classes.push("absence-row");
+      if (row.unpaidAbsence) classes.push("unpaid-row");
+      return classes.join(" ");
+    }
+
+    function noteHtml(row) {
+      const notes = [];
+      if (row.note) notes.push(row.note);
+      if (row.cameInOffDay) notes.push("Came In Off Day");
+      if (row.invalid) notes.push("Invalid");
+
+      const manualNote = getManualNote(row.name);
+      const displayValue = manualNote || notes.join(", ");
+      let noteClass = "";
+      if (row.invalid) noteClass = "invalid";
+      else if (row.unpaidAbsence) noteClass = "unpaid";
+      else if (row.paidAbsence || row.purpleAbsence) noteClass = "paid";
+      else if (row.cameInOffDay || notes.length) noteClass = "note";
+      return noteInputHtml(row.name, displayValue, noteClass);
+    }
+
+    function lunchSelectHtml(row) {
+      const options = ["", "NO", "YES", "??"];
+      return `<select class="time time-edit lunch-edit${row.lunch === "??" ? " pending" : ""}" data-time-name="${escapeHtml(row.name)}" data-time-field="lunch" aria-label="${escapeHtml(row.name)} lunch">${options.map((option) => `<option value="${escapeHtml(option)}" ${String(row.lunch || "") === option ? "selected" : ""}>${escapeHtml(option || "-")}</option>`).join("")}</select>`;
+    }
+
+    function renderEmployeeRow(row) {
+      const endClass = row.hasClockOut ? "" : " muted";
+      return `
+        <div class="${rowClass(row)}">
+          <span class="name ${row.missing ? "missing" : ""}">${escapeHtml(row.name)}</span>
+          <span class="off">${escapeHtml(row.offDays)}</span>
+          <span class="note-slot">${noteHtml(row)}</span>
+          <input class="time time-edit ${row.missing ? "missing" : ""}" data-time-name="${escapeHtml(row.name)}" data-time-field="start" value="${escapeHtml(row.start)}" placeholder="${escapeHtml(row.missing ? "Missing?" : "")}" inputmode="numeric" maxlength="8" aria-label="${escapeHtml(row.name)} start" />
+          ${lunchSelectHtml(row)}
+          <input class="time time-edit${endClass}" data-time-name="${escapeHtml(row.name)}" data-time-field="end" value="${escapeHtml(row.end)}" placeholder="${escapeHtml(row.hasClockOut ? "" : row.tempEnd)}" inputmode="numeric" maxlength="8" aria-label="${escapeHtml(row.name)} end" />
+          <span class="actual">${row.actual ? row.actual.toFixed(1) : ""}</span>
+        </div>
+      `;
+    }
+    function sectionStats(rows, shiftKey) {
+      const activeScheduled = rows.filter((row) => row.scheduled && !row.paidAbsence && !row.unpaidAbsence);
+      const scheduled = activeScheduled.length;
+      const here = activeScheduled.filter((row) => row.hasClockIn && !row.hasClockOut).length;
+      const out = activeScheduled.filter((row) => !(row.hasClockIn && !row.hasClockOut)).length;
+      const actual = rows.reduce((sum, row) => sum + row.actual, 0);
+      const visibleRows = rows.filter((row) => !(row.status === "OFF" && !row.note));
+      const offRows = rows.filter((row) => row.status === "OFF" && !row.note);
+      return { scheduled, here, out, actual, visibleRows, offRows, shiftKey };
+    }
+
+    function shiftHeaderLabel(shiftKey) {
+      if (shiftKey === "first") return "1st SHIFT";
+      if (shiftKey === "second") return "2ND SHIFT";
+      return String(shiftLabels[shiftKey] || shiftKey).toUpperCase();
+    }
+
+    function renderShiftCard(shiftKey, rows) {
+      const stats = sectionStats(rows, shiftKey);
+      const offList = stats.offRows.length
+        ? stats.offRows.map((row) => `<span class="off-chip">${escapeHtml(row.name)}</span>`).join("")
+        : `<span class="off-chip">None</span>`;
+      const body = stats.visibleRows.length
+        ? stats.visibleRows.map(renderEmployeeRow).join("")
+        : `<div class="off-footer"><strong>No rows</strong></div>`;
+
+      return `
+        <section class="shift-card">
+          <header class="shift-head">
+            <span class="shift-name">${escapeHtml(`${shiftHeaderLabel(shiftKey)} [${stats.scheduled} sch]`)}</span>
+            <span>Off Days</span>
+            <span>NOTE</span>
+            <span>${escapeHtml(`${stats.here} HERE, ${stats.out} OUT`)}</span>
+            <span>Lunch</span>
+            <span>End</span>
+            <span>${escapeHtml(`Actual ${stats.actual.toFixed(1)}`)}</span>
+          </header>
+          ${body}
+          <div class="off-footer"><strong>${escapeHtml(`OFF - ${stats.offRows.length}`)}</strong>${offList}</div>
+        </section>
+      `;
+    }
+
+    const equalGridColumns = "repeat(7, minmax(0, 1fr))";
+    let columnBalanceFrame = 0;
+    let measureCanvas = null;
+
+    function textWidthForElement(element, text) {
+      if (!measureCanvas) measureCanvas = document.createElement("canvas");
+      const context = measureCanvas.getContext("2d");
+      const style = window.getComputedStyle(element);
+      context.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+      const padding = (parseFloat(style.paddingLeft) || 0) + (parseFloat(style.paddingRight) || 0);
+      return context.measureText(String(text || "")).width + padding + 4;
+    }
+
+    function cellOverflowAmount(cell) {
+      const input = cell.querySelector("input");
+      const target = input || cell;
+      const requiredWidth = input
+        ? textWidthForElement(input, input.value || input.placeholder || "")
+        : target.scrollWidth;
+      return Math.max(0, requiredWidth - target.clientWidth);
+    }
+
+    function balanceShiftCardColumns(card) {
+      const rows = Array.from(card.querySelectorAll(".shift-head, .md-row"));
+      if (!rows.length) return;
+      const overflows = Array(7).fill(0);
+
+      rows.forEach((row) => {
+        Array.from(row.children).slice(0, 7).forEach((cell, index) => {
+          overflows[index] = Math.max(overflows[index], cellOverflowAmount(cell));
+        });
+      });
+
+      if (Math.max(...overflows) < 2) {
+        card.style.setProperty("--md-grid-columns", equalGridColumns);
+        return;
+      }
+
+      const columns = overflows.map((amount) => {
+        const boost = Math.min(.42, amount / 130);
+        return "minmax(0, " + (1 + boost).toFixed(3) + "fr)";
+      });
+      card.style.setProperty("--md-grid-columns", columns.join(" "));
+    }
+
+    function balanceColumnWidths() {
+      const shiftCards = Array.from(document.querySelectorAll(".shift-card"));
+      shiftCards.forEach((card) => card.style.setProperty("--md-grid-columns", equalGridColumns));
+      requestAnimationFrame(() => {
+        shiftCards.forEach(balanceShiftCardColumns);
+      });
+    }
+
+    function scheduleColumnBalance() {
+      cancelAnimationFrame(columnBalanceFrame);
+      columnBalanceFrame = requestAnimationFrame(balanceColumnWidths);
+    }
+    function shiftEndValue() {
+      const preset = document.getElementById("shiftEndSelect").value;
+      if (preset !== "other") return preset;
+      return document.getElementById("shiftEndOther").value.trim().padStart(4, "0");
+    }
+
+    function hoursUntilShiftEnd(value) {
+      const endMinutes = minutesFromMilitary(value);
+      if (endMinutes === null) return 0;
+      let remaining = endMinutes - currentMinutes();
+      if (remaining <= 0) remaining += 1440;
+      return remaining / 60;
+    }
+
+    function currentLpmhBreakdown(rowsByShift) {
+      const lifts = Number(document.getElementById("updateLifts").value) || 0;
+      const flips = Number(document.getElementById("updateFlips").value) || 0;
+      const firstHours = (rowsByShift.first || []).reduce((sum, row) => sum + row.actual, 0);
+      const secondHours = (rowsByShift.second || []).reduce((sum, row) => sum + row.actual, 0);
+      const currentHours = firstHours + secondHours;
+      const previousHours = previousShiftHours();
+      const shiftHours = currentHours + previousHours;
+      const totalMoves = Math.max(lifts + flips, 0);
+      const currentRate = shiftHours > 0 ? totalMoves / shiftHours : 0;
+      const neededValue = Math.ceil(shiftHours * lpmhGoal);
+      const remainValue = neededValue - totalMoves;
+      const remainingHours = hoursUntilShiftEnd(shiftEndValue());
+      const goalMet = shiftHours > 0 && currentRate >= lpmhGoal;
+      const neededLph = goalMet ? "MET GOAL!" : (remainingHours > 0 ? (Math.max(remainValue, 0) / remainingHours).toFixed(1) : "0.0");
+      return { lifts, flips, currentHours, previousHours, shiftHours, totalMoves, currentRate, neededValue, remainValue, remainingHours, goalMet, neededLph };
+    }
+
+    function updateMetrics(rowsByShift) {
+      const details = currentLpmhBreakdown(rowsByShift);
+      const lphNeededValue = document.getElementById("lphNeeded");
+      const liftsRemainValue = document.getElementById("liftsRemain");
+      document.getElementById("currentLpmh").textContent = details.currentRate.toFixed(1);
+      lphNeededValue.textContent = details.neededLph;
+      document.getElementById("liftsNeeded").textContent = String(details.neededValue);
+      liftsRemainValue.textContent = details.goalMet ? "MET GOAL!" : String(Math.max(details.remainValue, 0));
+      lphNeededValue.classList.toggle("goal-text", details.neededLph === "MET GOAL!");
+      liftsRemainValue.classList.toggle("goal-text", details.goalMet);
+      const currentLpmhCard = document.getElementById("currentLpmhButton");
+      currentLpmhCard.classList.toggle("good", details.currentRate >= lpmhGoal);
+      currentLpmhCard.classList.toggle("bad", details.currentRate < lpmhGoal);
+      for (const card of [document.getElementById("lphNeededCard"), document.getElementById("liftsRemainCard")]) {
+        card.classList.toggle("good", details.goalMet);
+        card.classList.toggle("warn", !details.goalMet);
+      }
+      if (lpmhModal.classList.contains("open")) renderCurrentLpmhDetails(rowsByShift);
+    }
+
+    function renderCurrentLpmhDetails(rowsByShift = makeRows()) {
+      const details = currentLpmhBreakdown(rowsByShift);
+      const rows = [
+        ["Lifts", details.lifts],
+        ["Flips", details.flips],
+        ["Total moves", `${details.lifts} + ${details.flips} = ${details.totalMoves}`],
+        ["Current 1st + 2nd hrs", details.currentHours.toFixed(1)],
+        ["0000-0300 hrs", details.previousHours.toFixed(1)],
+        ["Total hrs", `${details.currentHours.toFixed(1)} + ${details.previousHours.toFixed(1)} = ${details.shiftHours.toFixed(1)}`]
+      ];
+      const formula = `${details.totalMoves} MOVES / ${details.shiftHours.toFixed(1)} HRS = ${details.currentRate.toFixed(1)}`;
+      lpmhDetails.innerHTML = [
+        ...rows.map(([label, value]) => `<div class="lpmh-row"><span>${escapeHtml(label)}</span><span>${escapeHtml(value)}</span></div>`),
+        `<div class="lpmh-formula">${escapeHtml(formula)}</div>`
+      ].join("");
+    }
+
+    function showCurrentLpmhModal() {
+      renderCurrentLpmhDetails(makeRows());
+      lpmhModal.classList.add("open");
+      lpmhModal.setAttribute("aria-hidden", "false");
+    }
+
+    function closeCurrentLpmhModal() {
+      lpmhModal.classList.remove("open");
+      lpmhModal.setAttribute("aria-hidden", "true");
+    }
+
+    function excelCell(value, attrs = "") {
+      return `<td${attrs}>${escapeHtml(value === undefined || value === null ? "" : value)}</td>`;
+    }
+
+    function exportEditableFieldIfNeeded() {
+      const active = document.activeElement;
+      if (active && active.matches && active.matches(".time-edit[data-time-field]")) {
+        saveTimeEdit(active.dataset.timeName || "", active.dataset.timeField || "", active.value);
+      }
+    }
+
+    function exportTimesheetMd() {
+      exportEditableFieldIfNeeded();
+      const rowsByShift = makeRows();
+      const todayLabel = selectedSheetDateLabel();
+      const parts = [
+        '<!DOCTYPE html><html><head><meta charset="UTF-8" />',
+        '<style>',
+        'table{border-collapse:collapse;font-family:Arial,sans-serif;font-size:12px;}td,th{border:1px solid #999;padding:4px 7px;white-space:nowrap;}th{background:#d9d9d9;font-weight:700;} .title{font-size:16px;font-weight:700;background:#000;color:#fff;} .shift{background:#d9d9d9;font-weight:700;} .absence{background:#ede9fe;} .missing{background:#fff2cc;} .off{background:#f1f3f6;color:#64748b;}',
+        '</style></head><body><table>',
+        '<tr>' + excelCell("Time Input - Daily Sheet", ' class="title" colspan="7"') + '</tr>',
+        '<tr>' + excelCell(todayLabel, ' colspan="7"') + '</tr>'
+      ];
+
+      ["first", "second", "gate", "mechanics", "managers"].forEach((shiftKey) => {
+        const rows = rowsByShift[shiftKey] || [];
+        if (!rows.length) return;
+        const stats = sectionStats(rows, shiftKey);
+        parts.push('<tr>' +
+          excelCell(`${shiftHeaderLabel(shiftKey)} [${stats.scheduled} sch]`, ' class="shift"') +
+          excelCell("Off Days", ' class="shift"') +
+          excelCell("Note", ' class="shift"') +
+          excelCell(`${stats.here} HERE, ${stats.out} OUT`, ' class="shift"') +
+          excelCell("Lunch", ' class="shift"') +
+          excelCell("End", ' class="shift"') +
+          excelCell(`Actual ${stats.actual.toFixed(1)}`, ' class="shift"') +
+        '</tr>');
+        stats.visibleRows.forEach((row) => {
+          const noteText = getManualNote(row.name) || row.note || (row.cameInOffDay ? "Came In Off Day" : "") || (row.invalid ? "Invalid" : "");
+          const endText = row.hasClockOut ? row.end : row.tempEnd;
+          const rowClassName = row.purpleAbsence || row.paidAbsence || row.unpaidAbsence ? ' class="absence"' : (row.missing ? ' class="missing"' : "");
+          parts.push('<tr>' +
+            excelCell(row.name, rowClassName) +
+            excelCell(row.offDays, rowClassName) +
+            excelCell(noteText, rowClassName) +
+            excelCell(row.missing ? "Missing?" : row.start, rowClassName) +
+            excelCell(row.lunch, rowClassName) +
+            excelCell(endText, rowClassName) +
+            excelCell(row.actual ? row.actual.toFixed(1) : "", rowClassName) +
+          '</tr>');
+        });
+        if (stats.offRows.length) {
+          parts.push('<tr>' + excelCell(`OFF - ${stats.offRows.length}`, ' class="off"') + excelCell(stats.offRows.map((row) => row.name).join(", "), ' class="off" colspan="6"') + '</tr>');
+        }
+        parts.push('<tr>' + excelCell("", ' colspan="7"') + '</tr>');
+      });
+
+      parts.push('</table></body></html>');
+      const blob = new Blob([parts.join("")], { type: "application/vnd.ms-excel;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      const stamp = new Date().toISOString().slice(0, 10);
+      link.href = url;
+      link.download = `timesheet-md-${stamp}.xls`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    function openOldTimesheetView() {
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({ type: "conglobal-open-old-view-popup" }, "*");
+      } else {
+        window.location.hash = "#time";
+      }
+    }
+
+    function openComparePopup() {
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({ type: "conglobal-open-compare-popup" }, "*");
+      } else {
+        window.location.hash = "#compare";
+      }
+    }
+
+    function openSchedulePopup() {
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({ type: "conglobal-open-schedule-popup" }, "*");
+      } else {
+        window.location.hash = "#roster";
+      }
+    }
+
+    function openArchivePopup() {
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({ type: "conglobal-open-archive-popup" }, "*");
+      } else {
+        window.location.hash = "#archive";
+      }
+    }
+
+    function openTimeOffPopup() {
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({ type: "conglobal-open-time-off-popup" }, "*");
+      } else {
+        window.location.hash = "#timeOff";
+      }
+    }
+
+    function render() {
+      const rowsByShift = makeRows();
+      cards.innerHTML = ["first", "second", "gate", "mechanics", "managers"]
+        .filter((key) => Array.isArray(rowsByShift[key]) && rowsByShift[key].length)
+        .map((key) => renderShiftCard(key, rowsByShift[key]))
+        .join("");
+      updatePreviousTimesheetWarning();
+      updateMetrics(rowsByShift);
+      scheduleColumnBalance();
+    }
+
+    function updateShiftEndMode(shouldRender = true) {
+      const isOther = document.getElementById("shiftEndSelect").value === "other";
+      const custom = document.getElementById("shiftEndOther");
+      custom.classList.toggle("open", isOther);
+      if (isOther) custom.focus();
+      if (shouldRender) render();
+    }
+
+    const inlineToolPanel = document.getElementById("inlineToolPanel");
+    const inlineToolTitle = document.getElementById("inlineToolTitle");
+    const inlineToolFrame = document.getElementById("inlineToolFrame");
+    const closeInlineToolButton = document.getElementById("closeInlineTool");
+    const timesheetTabButton = document.getElementById("timesheetTabButton");
+    const inlineToolButtons = {
+      timesheet: timesheetTabButton,
+      roster: document.getElementById("schedulePopupButton"),
+      archive: document.getElementById("archivePopupButton"),
+      timeOff: document.getElementById("timeOffPopupButton"),
+      time: document.getElementById("oldViewButton")
+    };
+
+    function setActiveTopView(viewId) {
+      Object.entries(inlineToolButtons).forEach(([key, button]) => {
+        if (!button) return;
+        const active = key === viewId;
+        button.classList.toggle("active", active);
+        button.setAttribute("aria-pressed", String(active));
+      });
+    }
+
+    function requestOuterResize() {
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({ type: "conglobal-child-resize" }, "*");
+      }
+    }
+
+    function resizeInlineToolFrame() {
+      if (!inlineToolFrame || inlineToolPanel.hidden) return;
+      let nextHeight = 520;
+      try {
+        const doc = inlineToolFrame.contentDocument;
+        if (doc) {
+          if (doc.documentElement) {
+            doc.documentElement.style.overflow = "hidden";
+            doc.documentElement.style.minHeight = "0";
+          }
+          if (doc.body) {
+            doc.body.style.overflow = "hidden";
+            doc.body.style.minHeight = "0";
+          }
+          const body = doc.body;
+          const bodyRect = body ? body.getBoundingClientRect() : { top: 0 };
+          const contentBottom = body
+            ? Array.from(body.children).reduce((bottom, child) => {
+                const tag = (child.tagName || "").toLowerCase();
+                if (["script", "style"].includes(tag)) return bottom;
+                const style = doc.defaultView.getComputedStyle(child);
+                if (style.display === "none" || style.position === "fixed") return bottom;
+                const rect = child.getBoundingClientRect();
+                const marginBottom = parseFloat(style.marginBottom) || 0;
+                return Math.max(bottom, rect.bottom - bodyRect.top + marginBottom);
+              }, 0)
+            : 0;
+          const fallbackHeight = Math.max(body ? body.scrollHeight : 0, doc.documentElement ? doc.documentElement.scrollHeight : 0);
+          nextHeight = Math.max(contentBottom || fallbackHeight, 120) + 8;
+        }
+      } catch (error) {
+        nextHeight = 760;
+      }
+      inlineToolFrame.style.height = Math.ceil(nextHeight) + "px";
+      requestOuterResize();
+    }
+
+    function attachInlineToolResizeHandlers() {
+      try {
+        const doc = inlineToolFrame.contentDocument;
+        if (!doc) return;
+        doc.addEventListener("input", () => setTimeout(resizeInlineToolFrame, 0));
+        doc.addEventListener("click", () => setTimeout(resizeInlineToolFrame, 0));
+        doc.addEventListener("change", () => setTimeout(resizeInlineToolFrame, 0));
+      } catch (error) {}
+    }
+
+    function closeInlineTool() {
+      inlineToolPanel.hidden = true;
+      document.body.classList.remove("inline-tool-open");
+      inlineToolFrame.removeAttribute("srcdoc");
+      inlineToolFrame.style.height = "520px";
+      setActiveTopView("timesheet");
+      requestOuterResize();
+    }
+
+    window.addEventListener("message", (event) => {
+      if (!event.data || event.data.type !== "conglobal-open-inline-tool") return;
+      inlineToolTitle.textContent = event.data.title || "View";
+      inlineToolFrame.title = event.data.title || "Inline tool";
+      inlineToolFrame.style.background = event.data.background || "#f8fafc";
+      inlineToolPanel.style.background = event.data.background || "#f8fafc";
+      document.body.classList.add("inline-tool-open");
+      setActiveTopView(event.data.pageId || "timesheet");
+      inlineToolPanel.hidden = false;
+      inlineToolFrame.addEventListener("load", () => {
+        attachInlineToolResizeHandlers();
+        resizeInlineToolFrame();
+        setTimeout(resizeInlineToolFrame, 120);
+        setTimeout(resizeInlineToolFrame, 420);
+      }, { once: true });
+      inlineToolFrame.srcdoc = event.data.html || "";
+      requestOuterResize();
+    });
+
+    closeInlineToolButton.addEventListener("click", closeInlineTool);
+    timesheetTabButton.addEventListener("click", closeInlineTool);
+
+    initializeSheetDate();
+
+    document.getElementById("sheetDateInput").addEventListener("change", () => {
+      writeTimesheetSettings();
+      render();
+    });
+
+    document.addEventListener("input", (event) => {
+      if (event.target.matches(".note-input")) {
+        saveManualNote(event.target.dataset.noteName || "", event.target.value);
+        event.target.classList.toggle("has-note", isRealNoteValue(event.target.value));
+        return;
+      }
+
+      if (event.target.matches(".time-edit[data-time-field='start'], .time-edit[data-time-field='end']")) {
+        event.target.value = event.target.value.replace(/[^0-9:apm\s]/gi, "").slice(0, 8);
+        return;
+      }
+
+      if (event.target.matches("#updateLifts, #updateFlips, #shiftEndOther")) {
+        writeTimesheetSettings();
+        render();
+      }
+    });
+
+    document.addEventListener("change", (event) => {
+      if (event.target.matches(".note-input")) render();
+      if (event.target.matches(".time-edit[data-time-field]")) {
+        saveTimeEdit(event.target.dataset.timeName || "", event.target.dataset.timeField || "", event.target.value);
+        render();
+      }
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" && event.target.matches(".time-edit[data-time-field]")) event.target.blur();
+    });
+    window.addEventListener("resize", scheduleColumnBalance);
+
+    document.getElementById("shiftEndSelect").addEventListener("change", () => {
+      writeTimesheetSettings();
+      updateShiftEndMode();
+    });
+    document.getElementById("shiftEndOther").addEventListener("input", (event) => {
+      event.target.value = event.target.value.replace(/\D/g, "").slice(0, 4);
+    });
+    document.getElementById("currentLpmhButton").addEventListener("click", showCurrentLpmhModal);
+    document.getElementById("schedulePopupButton").addEventListener("click", openSchedulePopup);
+    document.getElementById("archivePopupButton").addEventListener("click", openArchivePopup);
+    document.getElementById("timeOffPopupButton").addEventListener("click", openTimeOffPopup);
+    document.getElementById("oldViewButton").addEventListener("click", openOldTimesheetView);
+    document.getElementById("closeLpmhModal").addEventListener("click", closeCurrentLpmhModal);
+    lpmhModal.addEventListener("click", (event) => {
+      if (event.target === lpmhModal) closeCurrentLpmhModal();
+    });
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") closeCurrentLpmhModal();
+    });
+
+    applyTimesheetSettings();
+    setKpisVisible(false, false);
+    updateShiftEndMode(false);
+    openTimeOffPopup();
+    render();
+    setInterval(render, 60000);
+  </script>
+
+  <script>
+    (() => {
+
+    const storageKey = "conglobal-dayforce-punches-v1";
+    const unmatchedStorageKey = "conglobal-dayforce-unmatched-v1";
+    const rosterStorageKey = "conglobal-roster-state-v1";
+    const rosterAdditionsKey = "conglobal-roster-additions-v1";
+    const previousTimesheetStorageKey = "conglobal-previous-timesheet-hours-v1";
+    const pendingPushKey = "conglobal-dayforce-pending-push-v1";
+    const timesheetSettingsKey = "conglobal-timesheet-settings-v1";
+    const archiveSelectedDateKey = "conglobal-archive-selected-date-v1";
+    const previewBody = document.getElementById("previewBody");
+    const emptyState = document.getElementById("emptyState");
+    const status = document.getElementById("status");
+    const mdImportPanel = document.getElementById("mdImportPanel");
+    const mdImportToggle = document.getElementById("mdImportToggle");
+    const pushNotice = document.getElementById("pushNotice");
+    const saveButton = document.getElementById("saveButton");
+    const missingRosterPanel = document.getElementById("missingRosterPanel");
+    const missingRosterCount = document.getElementById("missingRosterCount");
+    const missingRosterBody = document.getElementById("missingRosterBody");
+    const excelPreviewSection = document.getElementById("excelPreviewSection");
+    const excelPreviewToggle = document.getElementById("excelPreviewToggle");
+    const excelPreviewCount = document.getElementById("excelPreviewCount");
+    const excelPreviewHead = document.getElementById("excelPreviewHead");
+    const excelPreviewBody = document.getElementById("excelPreviewBody");
+    const archiveCalendarDate = document.getElementById("archiveCalendarDate");
+    const archiveCalendarButton = document.getElementById("archiveCalendarButton");
+    const previousTimesheetStatus = document.getElementById("previousTimesheetStatus");
+    const previousTimesheetPreview = document.getElementById("previousTimesheetPreview");
+    const previousTimesheetPreviewCount = document.getElementById("previousTimesheetPreviewCount");
+    const previousTimesheetPreviewBody = document.getElementById("previousTimesheetPreviewBody");
+    const clearSplit = document.getElementById("clearSplit");
+    const clearDefaultButton = document.getElementById("clearDefaultButton");
+    const clearMenuButton = document.getElementById("clearMenuButton");
+    const clearMenu = document.getElementById("clearMenu");
+    const importPanelSessionKey = "conglobal-md-import-panel-open-v1";
+
+    function setImportPanelExpanded(expanded, remember = true) {
+      mdImportPanel.hidden = !expanded;
+      mdImportToggle.textContent = expanded ? "Hide" : "Show";
+      mdImportToggle.setAttribute("aria-expanded", String(expanded));
+      if (remember) sessionStorage.setItem(importPanelSessionKey, expanded ? "1" : "0");
+      if (typeof requestOuterResize === "function") requestOuterResize();
+    }
+
+    mdImportToggle.addEventListener("click", () => {
+      setImportPanelExpanded(mdImportPanel.hidden);
+    });
+    setImportPanelExpanded(sessionStorage.getItem(importPanelSessionKey) === "1", false);
+    const shiftLabels = {
+      first: "1st Shift",
+      second: "2ND SHIFT",
+      gate: "Gate",
+      mechanics: "Mechanics",
+      managers: "Managers",
+      unmatched: "Not On Roster"
+    };
+    const rosterShiftKeys = ["first", "second", "gate", "mechanics", "managers"];
+    const defaultRoster = {
+      first: [
+        ["Branford Alton", "Mon, Tues"],
+        ["Castruita Armando", "Wed, Thurs"],
+        ["Frazer Dacoyea", "Mon, Tues"],
+        ["Citizen Dante", "Thurs, Fri"],
+        ["Towler Demetrius", "Thurs, Fri"],
+        ["Stewart Dexter", "Sat, Sun"],
+        ["Gardner Dorrean", "Tues, Wed"],
+        ["Thomas Henry", "Sat, Sun"],
+        ["Brown James", "Thurs, Fri"],
+        ["Herrera Jose", "Sat, Sun"],
+        ["Player Keyston", "Mon, Sun"],
+        ["Hickman Makia", "Mon, Sun"],
+        ["Dever Mikey", "Tues, Wed"],
+        ["Wanza Myles", "Mon, Tues"],
+        ["Romero Nelson", "Tues, Wed"],
+        ["McDaniel Charles", "Fri, Sat"],
+        ["Nava Ramon", "Sat, Sun"],
+        ["Tran Tyler", "Thurs, Fri"]
+      ],
+      second: [
+        ["Carruthers Timothy", "Mon, Sun"],
+        ["Caceres Virula Victor", "Mon, Tues"],
+        ["Keme Aweri Jr.", "Mon, Tues"],
+        ["Hosey Kevin", "Mon, Tues"],
+        ["Brown Brandy", "Wed, Thurs"],
+        ["Mejia Aaron", "Thurs, Fri"],
+        ["Bookman Derrell", "Thurs, Fri"],
+        ["Hopkins Alexander", "Mon, Sun"],
+        ["Tingle Jason", "Sat, Sun"],
+        ["Contreras Marco", "Sat, Sun"],
+        ["Benavides Robert", "Wed, Sun"],
+        ["Urtado Ernest", "Tues, Wed"],
+        ["Johnson Messiah", "Tues, Thurs"],
+        ["Gilder Rufus II", "Tues, Wed"],
+        ["Echendu Chimenierm", "Wed, Thurs"],
+        ["Delgado Jose", "Fri, Sat"]
+      ],
+      gate: [
+        ["Candace Warren", "Sat, Sun"],
+        ["Connie Johnson", "Sat, Sun"],
+        ["Jarade Douglas", "Sat, Sun"],
+        ["Gregory Watson II", "Sat, Sun"],
+        ["Bryce Alexander", "Thurs, Fri"],
+        ["Naomisha Hunt", "Thurs, Fri, Sat"],
+        ["Ramacacondra Pratt", "Thurs, Fri"],
+        ["Kane Cabral", "Mon, Tues"],
+        ["Tavares Gariet", "Mon, Tues"]
+      ],
+      mechanics: [],
+      managers: []
+    };
+
+    function hasPreviewRecords() {
+      return Boolean(previewBody.querySelector("tr.record-row"));
+    }
+
+    function updatePushNotice() {
+      const show = localStorage.getItem(pendingPushKey) === "1" && hasPreviewRecords();
+      pushNotice.hidden = !show;
+      saveButton.classList.toggle("pending-push", show);
+    }
+
+    function notifyTimesheetMdUpdate() {
+      if (typeof window.render === "function") window.render();
+      window.dispatchEvent(new CustomEvent("conglobal-md-import-updated"));
+    }
+
+    function autoApplyPreviewToTimesheet(showStatus = true) {
+      const previewPunches = readPreview();
+      const { accepted, skipped } = rosterValidatedPunches(previewPunches);
+      saveAcceptedPunches(accepted);
+      localStorage.setItem(unmatchedStorageKey, JSON.stringify(Array.from(new Set(skipped))));
+      localStorage.removeItem(pendingPushKey);
+      renderPunches(previewPunches);
+      updatePushNotice();
+      notifyTimesheetMdUpdate();
+      if (showStatus) {
+        status.textContent = skipped.length
+          ? `${accepted.length} applied to Timesheet / ${skipped.length} unmatched`
+          : `${accepted.length} applied to Timesheet`;
+      }
+    }
+
+    function setPendingPush(value) {
+      if (value && hasPreviewRecords()) {
+        localStorage.setItem(pendingPushKey, "1");
+        updatePushNotice();
+        autoApplyPreviewToTimesheet(true);
+        return;
+      }
+      localStorage.removeItem(pendingPushKey);
+      updatePushNotice();
+    }
+
+    function normalizeName(name) {
+      const suffixes = new Set(["jr", "sr", "ii", "iii", "iv"]);
+      return String(name || "")
+        .trim()
+        .toLowerCase()
+        .replace(/[,.]/g, " ")
+        .replace(/\bcontrerras\b/g, "contreras")
+        .replace(/\bdemeatrius\b/g, "demetrius")
+        .replace(/\btowner\b/g, "towler")
+        .replace(/\s+/g, " ")
+        .split(" ")
+        .filter((part) => part && !suffixes.has(part))
+        .sort()
+        .join(" ");
+    }
+
+    function defaultRosterRows() {
+      return Object.entries(defaultRoster).flatMap(([shift, rows]) => (
+        rows.map(([name]) => ({ name, shift }))
+      ));
+    }
+
+    function savedRosterRows(roster) {
+      return rosterShiftKeys.flatMap((shift) => (
+        Array.isArray(roster[shift])
+          ? roster[shift].filter((employee) => employee && employee.name).map((employee) => ({ name: employee.name, shift }))
+          : []
+      ));
+    }
+
+    function hasSavedRosterRows(roster) {
+      return rosterShiftKeys.some((shift) => Array.isArray(roster[shift]) && roster[shift].length);
+    }
+
+    function buildRosterRows() {
+      const rows = [];
+      const seen = new Set();
+      const addRows = (items) => {
+        items.forEach((employee) => {
+          const key = normalizeName(employee.name);
+          if (!key || seen.has(key)) return;
+          seen.add(key);
+          rows.push(employee);
+        });
+      };
+
+      try {
+        const roster = JSON.parse(localStorage.getItem(rosterStorageKey) || "{}");
+        addRows(hasSavedRosterRows(roster) ? savedRosterRows(roster) : defaultRosterRows());
+        const additions = JSON.parse(localStorage.getItem(rosterAdditionsKey) || "[]");
+        if (Array.isArray(additions)) {
+          addRows(additions.filter((employee) => employee && employee.name).map((employee) => ({
+            name: employee.name,
+            shift: employee.shift || "first"
+          })));
+        }
+      } catch (error) {
+        addRows(defaultRosterRows());
+      }
+
+      if (!rows.length) addRows(defaultRosterRows());
+      return rows;
+    }
+
+    function rosterNames() {
+      return buildRosterRows().map((employee) => employee.name);
+    }
+
+    function rosterLookup() {
+      const lookup = new Map();
+      buildRosterRows().forEach((employee) => {
+        lookup.set(normalizeName(employee.name), { name: employee.name, shift: employee.shift || "first" });
+      });
+      return lookup;
+    }
+
+    function payrollDateFromRows(rows) {
+      for (const row of rows.slice(0, 12)) {
+        for (const cell of row) {
+          const text = String(cell || "").trim();
+          const match = text.match(/\bdate\s*:\s*([0-9]{1,2}\/[0-9]{1,2}\/[0-9]{2,4})/i);
+          if (match) return match[1];
+        }
+      }
+      return new Date().toLocaleDateString();
+    }
+
+    function cleanPayrollEmployeeName(value) {
+      return cleanDayforceEmployeeName(value)
+        .replace(/\s+\d{4,}\s*$/, "")
+        .trim();
+    }
+
+    function payrollDisplayName(value) {
+      return displayNameFromDayforce(cleanPayrollEmployeeName(value));
+    }
+
+    function payrollHours(value) {
+      const text = String(value || "").trim();
+      if (!text) return 0;
+      if (/^(x|yes|y|true)$/i.test(text)) return 8;
+
+      const timeMatch = text.match(/^(\d{1,2}):(\d{2})$/);
+      if (timeMatch) return Number(timeMatch[1]) + (Number(timeMatch[2]) / 60);
+
+      const numberMatch = text.match(/-?\d+(\.\d+)?/);
+      if (!numberMatch) return 0;
+      return Math.max(0, Number(numberMatch[0]) || 0);
+    }
+
+    function titleCaseReason(value) {
+      return String(value || "")
+        .toLowerCase()
+        .replace(/\b\w/g, (char) => char.toUpperCase())
+        .replace(/\bPto\b/g, "PTO");
+    }
+
+    function absenceReasonFromHeader(header) {
+      const text = String(header || "").replace(/\s+/g, " ").trim();
+      const normalized = text.toLowerCase();
+      if (!normalized || /^total\b/.test(normalized) || normalized.includes("total overtime")) return "";
+      if (normalized.includes("business day off") && normalized.includes("unpaid")) return "Business Day Off - Unpaid";
+      if (normalized.includes("floating holiday") || /\bfloat\b/.test(normalized)) return "Floating Holiday";
+      if (normalized.includes("vacation")) return "Vacation";
+      if (normalized.includes("sick")) return "Sick";
+      if (normalized.includes("holiday")) return "Holiday";
+      if (normalized.includes("pto")) return "PTO";
+      if (normalized.includes("personal")) return "Personal Day";
+      if (normalized.includes("bereavement")) return "Bereavement";
+      if (normalized.includes("jury")) return "Jury Duty";
+      if (normalized.includes("leave")) return "Leave";
+      if (normalized.includes("day off") || normalized.includes("off day")) return titleCaseReason(text);
+      if (normalized.includes("unpaid") || normalized.includes("without pay")) return titleCaseReason(text);
+      return "";
+    }
+
+    function isUnpaidReason(reason) {
+      return /\bunpaid\b|without pay/i.test(reason);
+    }
+
+    function minutesFromMilitary(value) {
+      const match = String(value || "").match(/^(\d{1,2})(\d{2})$/);
+      if (!match) return 0;
+      return (Number(match[1]) * 60) + Number(match[2]);
+    }
+
+    function militaryFromMinutes(value) {
+      const minutes = ((Math.round(value) % 1440) + 1440) % 1440;
+      const hours = Math.floor(minutes / 60);
+      const mins = minutes % 60;
+      return `${String(hours).padStart(2, "0")}${String(mins).padStart(2, "0")}`;
+    }
+
+    function shiftStartForEmployee(name) {
+      const names = rosterNames();
+      const match = matchRosterName(name, names);
+      const lookup = rosterLookup();
+      const canonical = match.suggestion || name;
+      const shift = lookup.get(normalizeName(canonical))?.shift || "";
+      if (shift === "second") return "1500";
+      if (shift === "gate" || shift === "mechanics") return "0600";
+      return "0300";
+    }
+
+    function endFromStartAndHours(start, hours) {
+      return militaryFromMinutes(minutesFromMilitary(start) + (Number(hours || 0) * 60));
+    }
+
+    function editDistance(a, b) {
+      const dp = Array.from({ length: a.length + 1 }, () => Array(b.length + 1).fill(0));
+      for (let i = 0; i <= a.length; i += 1) dp[i][0] = i;
+      for (let j = 0; j <= b.length; j += 1) dp[0][j] = j;
+      for (let i = 1; i <= a.length; i += 1) {
+        for (let j = 1; j <= b.length; j += 1) {
+          const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+          dp[i][j] = Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1, dp[i - 1][j - 1] + cost);
+        }
+      }
+      return dp[a.length][b.length];
+    }
+
+    function matchRosterName(name, names) {
+      const normalized = normalizeName(name);
+      const exact = names.find((candidate) => normalizeName(candidate) === normalized);
+      if (exact) return { found: true, suggestion: exact, hasSuggestion: true, score: 0 };
+
+      const scored = names
+        .map((candidate) => ({ candidate, score: editDistance(normalized, normalizeName(candidate)) }))
+        .sort((a, b) => a.score - b.score);
+      const best = scored[0] || null;
+      const suggestionLimit = Math.max(2, Math.ceil(normalized.length * 0.35));
+      return {
+        found: false,
+        suggestion: best ? best.candidate : "",
+        hasSuggestion: Boolean(best && best.score <= suggestionLimit),
+        score: best ? best.score : Infinity
+      };
+    }
+
+    function cleanDayforceEmployeeName(value) {
+      return String(value)
+        .replace(/^employee\s*:?\s*/i, "")
+        .replace(/\s+\d{4,}\s*$/, "")
+        .trim();
+    }
+
+    function displayNameFromDayforce(value) {
+      const cleaned = cleanDayforceEmployeeName(value);
+      if (!cleaned.includes(",")) return cleaned;
+
+      const [last, first] = cleaned.split(",").map((part) => part.trim());
+      return `${first} ${last}`.replace(/\s+/g, " ").trim();
+    }
+
+    function normalizePreviousTimesheetName(name) {
+      return normalizeName(String(name || "").replace(/\s+\d{4,}\s*$/, ""));
+    }
+
+    function previousTimesheetImport() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(previousTimesheetStorageKey) || "null");
+        return saved && typeof saved.hours === "number" ? saved : null;
+      } catch (error) {
+        localStorage.removeItem(previousTimesheetStorageKey);
+        return null;
+      }
+    }
+
+    function updatePreviousTimesheetStatus() {
+      const imported = previousTimesheetImport();
+      if (!previousTimesheetStatus) return;
+      if (!imported) {
+        previousTimesheetStatus.textContent = "0.0 HRS";
+        previousTimesheetStatus.title = "";
+        renderPreviousTimesheetPreview([]);
+        return;
+      }
+
+      const rowsText = imported.rows ? ` / ${imported.rows} ROWS` : "";
+      if (imported.source === "timesheet-md-export") {
+        const actual = Number(imported.actualHours || 0).toFixed(1);
+        const previous = Number(imported.hours || 0).toFixed(1);
+        previousTimesheetStatus.textContent = `${actual} ACTUAL / ${previous} PREV${rowsText}`;
+      } else {
+        previousTimesheetStatus.textContent = `${Number(imported.hours || 0).toFixed(1)} HRS${rowsText}`;
+      }
+      previousTimesheetStatus.title = imported.fileName ? `Imported from ${imported.fileName}` : "";
+      renderPreviousTimesheetPreview(Array.isArray(imported.records) ? imported.records : []);
+    }
+
+    function renderPreviousTimesheetPreview(records) {
+      if (!previousTimesheetPreview || !previousTimesheetPreviewBody) return;
+      previousTimesheetPreview.hidden = !records.length;
+      previousTimesheetPreviewCount.textContent = `${records.length} ${records.length === 1 ? "row" : "rows"}`;
+      if (!records.length) {
+        previousTimesheetPreviewBody.innerHTML = "";
+        return;
+      }
+
+      const groups = new Map();
+      records.forEach((record) => {
+        const label = record.shiftLabel || "Previous Timesheet";
+        if (!groups.has(label)) groups.set(label, []);
+        groups.get(label).push(record);
+      });
+
+      previousTimesheetPreviewBody.innerHTML = Array.from(groups.entries()).map(([label, groupRecords]) => [
+        `<tr class="shift-group-row previous-shift-group-row"><td colspan="6">${escapeHtml(label)}<span class="shift-group-count">${groupRecords.length} ${groupRecords.length === 1 ? "record" : "records"}</span></td></tr>`,
+        ...groupRecords.map((record) => `
+          <tr>
+            <td class="name-cell">${escapeHtml(record.name || "")}</td>
+            <td>${escapeHtml(record.date || "")}</td>
+            <td>${escapeHtml(record.start || "")}</td>
+            <td>${escapeHtml(record.lunch || "")}</td>
+            <td>${escapeHtml(record.end || "")}</td>
+            <td><strong>${Number(record.actual ?? record.hours ?? 0).toFixed(1)}</strong></td>
+          </tr>
+        `)
+      ].join("")).join("");
+    }
+
+    function previousTimesheetEligibleNames() {
+      const lookup = rosterLookup();
+      const names = new Set();
+      lookup.forEach((entry, key) => {
+        if (entry.shift !== "second") return;
+        names.add(key);
+      });
+      return names;
+    }
+
+    function previousTimeMinutesFromValue(value) {
+      const text = String(value || "").trim();
+      if (!text) return null;
+
+      const meridianMatch = text.match(/^(\d{1,2}):(\d{2})\s*([ap])m$/i);
+      if (meridianMatch) {
+        let hours = Number(meridianMatch[1]);
+        const minutes = Number(meridianMatch[2]);
+        const period = meridianMatch[3].toLowerCase();
+        if (period === "p" && hours !== 12) hours += 12;
+        if (period === "a" && hours === 12) hours = 0;
+        return (hours * 60) + minutes;
+      }
+
+      const colonMatch = text.match(/^(\d{1,2}):(\d{2})$/);
+      if (colonMatch) {
+        const hours = Number(colonMatch[1]);
+        const minutes = Number(colonMatch[2]);
+        if (hours > 24 || minutes > 59 || (hours === 24 && minutes !== 0)) return null;
+        return (hours * 60) + minutes;
+      }
+
+      const militaryMatch = text.match(/^(\d{1,2})(\d{2})$/);
+      if (!militaryMatch) return null;
+      const hours = Number(militaryMatch[1]);
+      const minutes = Number(militaryMatch[2]);
+      if (hours > 24 || minutes > 59 || (hours === 24 && minutes !== 0)) return null;
+      return (hours * 60) + minutes;
+    }
+
+    function normalizePreviousHeader(value) {
+      return String(value || "").trim().toLowerCase().replace(/\s+/g, " ");
+    }
+
+    function previousColumnIndexFor(row, matchers) {
+      return row.findIndex((cell) => {
+        const text = normalizePreviousHeader(cell);
+        return matchers.some((matcher) => matcher.test(text));
+      });
+    }
+
+    function rowLooksLikePreviousTimeHeader(row) {
+      const normalized = row.map(normalizePreviousHeader);
+      return normalized.some((cell) => /\b(employee|name)\b/.test(cell))
+        && normalized.some((cell) => /\bstart\b/.test(cell))
+        && normalized.some((cell) => /\bend\b/.test(cell));
+    }
+
+    function firstPreviousNameLikeCell(row, excludedIndexes = new Set()) {
+      for (let index = 0; index < row.length; index += 1) {
+        if (excludedIndexes.has(index)) continue;
+        const text = String(row[index] || "").trim();
+        if (!text || /^\d+(\.\d+)?$/.test(text)) continue;
+        if (previousTimeMinutesFromValue(text) !== null) continue;
+        if (/^(yes|no|\?\?|start|end|lunch|actual|note|off days?)$/i.test(text)) continue;
+        if (/\b(mon|tue|wed|thu|fri|sat|sun|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\b/i.test(text) && /\d/.test(text)) continue;
+        return text;
+      }
+      return "";
+    }
+
+    function previousLunchIntervals(value) {
+      const text = String(value || "").trim();
+      if (!text || /^(yes|no|\?\?)$/i.test(text)) return [];
+
+      const parts = text.split(/\s*-\s*/).map((part) => previousTimeMinutesFromValue(part)).filter((part) => part !== null);
+      if (parts.length < 2) return [];
+
+      let [start, end] = parts;
+      if (end <= start) end += 1440;
+      return [[start, end]];
+    }
+
+    function previousOverlapMinutes(start, end, windowStart, windowEnd) {
+      return Math.max(0, Math.min(end, windowEnd) - Math.max(start, windowStart));
+    }
+
+    function previousWindowMinutesForTimes(startValue, endValue, lunchValue) {
+      let start = previousTimeMinutesFromValue(startValue);
+      let end = previousTimeMinutesFromValue(endValue);
+      if (start === null || end === null) return 0;
+      if (end <= start) end += 1440;
+
+      const windows = [[0, 180], [1440, 1620]];
+      const worked = Math.max(...windows.map(([windowStart, windowEnd]) => previousOverlapMinutes(start, end, windowStart, windowEnd)));
+      if (!worked) return 0;
+
+      const lunch = previousLunchIntervals(lunchValue).reduce((sum, [lunchStart, lunchEnd]) => {
+        const shifted = lunchEnd <= 180 && start >= 720 ? [lunchStart + 1440, lunchEnd + 1440] : [lunchStart, lunchEnd];
+        const lunchOverlap = Math.max(...windows.map(([windowStart, windowEnd]) => previousOverlapMinutes(shifted[0], shifted[1], windowStart, windowEnd)));
+        return sum + lunchOverlap;
+      }, 0);
+
+      return Math.max(0, worked - lunch);
+    }
+
+    function firstPreviousDateLikeCell(row) {
+      const value = row.find((cell) => {
+        const text = String(cell || "").trim();
+        return /^(\d{1,2}\/\d{1,2}\/\d{2,4})/.test(text)
+          || /^(sun|mon|tue|tues|wed|thu|thur|thurs|fri|sat)[a-z]*\b/i.test(text);
+      });
+      return String(value || "").trim();
+    }
+
+    function previousRecordFromRow(row, indexes, eligibleNames) {
+      const name = indexes.name >= 0 ? String(row[indexes.name] || "").trim() : firstPreviousNameLikeCell(row, new Set([indexes.start, indexes.lunch, indexes.end]));
+      if (!name || (eligibleNames.size && !eligibleNames.has(normalizePreviousTimesheetName(name)))) return null;
+
+      const start = indexes.start >= 0 ? String(row[indexes.start] || "").trim() : "";
+      const lunch = indexes.lunch >= 0 ? String(row[indexes.lunch] || "").trim() : "";
+      const end = indexes.end >= 0 ? String(row[indexes.end] || "").trim() : "";
+      const hours = previousWindowMinutesForTimes(start, end, lunch) / 60;
+      if (hours <= 0) return null;
+
+      return {
+        name: displayNameFromDayforce(name),
+        date: indexes.date >= 0 ? String(row[indexes.date] || "").trim() : firstPreviousDateLikeCell(row),
+        start,
+        lunch,
+        end,
+        hours
+      };
+    }
+
+    function fallbackPreviousRecordFromRow(row, eligibleNames) {
+      const timeIndexes = [];
+      row.forEach((cell, index) => {
+        if (previousTimeMinutesFromValue(cell) !== null) timeIndexes.push(index);
+      });
+      if (timeIndexes.length < 2) return null;
+
+      const excluded = new Set(timeIndexes);
+      const name = firstPreviousNameLikeCell(row, excluded);
+      if (!name || (eligibleNames.size && !eligibleNames.has(normalizePreviousTimesheetName(name)))) return null;
+
+      const startIndex = timeIndexes[0];
+      const endIndex = timeIndexes[timeIndexes.length - 1];
+      const lunchIndex = timeIndexes.length > 2 ? timeIndexes[1] : -1;
+      const start = String(row[startIndex] || "").trim();
+      const lunch = lunchIndex >= 0 ? String(row[lunchIndex] || "").trim() : "";
+      const end = String(row[endIndex] || "").trim();
+      const hours = previousWindowMinutesForTimes(start, end, lunch) / 60;
+      if (hours <= 0) return null;
+
+      return {
+        name: displayNameFromDayforce(name),
+        date: firstPreviousDateLikeCell(row),
+        start,
+        lunch,
+        end,
+        hours
+      };
+    }
+
+    function previousRecordFromDayforceHeader(rows, rowIndex, eligibleNames) {
+      const row = rows[rowIndex].map((cell) => String(cell || "").trim());
+      if (!rowHasDayforceHeader(row)) return null;
+
+      const next = (rows[rowIndex + 1] || []).map((cell) => String(cell || "").trim());
+      const startIndex = headerIndex(row, "start shift");
+      const startMealIndex = headerIndex(row, "start meal");
+      const endMealIndex = headerIndex(row, "end meal");
+      const endIndex = headerIndex(row, "end shift");
+      const employeeCell = findEmployeeNameCell(rows, rowIndex, startIndex);
+      const employee = displayNameFromDayforce(employeeCell ? employeeCell.value : firstFilledBefore(row, startIndex));
+      if (!employee || (eligibleNames.size && !eligibleNames.has(normalizePreviousTimesheetName(employee)))) return null;
+
+      const lunch = [startMealIndex >= 0 ? next[startMealIndex] : "", endMealIndex >= 0 ? next[endMealIndex] : ""].filter(Boolean).join(" - ");
+      const start = startIndex >= 0 ? next[startIndex] : "";
+      const end = endIndex >= 0 ? next[endIndex] : "";
+      const hours = previousWindowMinutesForTimes(start, end, lunch) / 60;
+      if (hours <= 0) return null;
+
+      return {
+        name: employee,
+        date: firstFilled(next),
+        start,
+        lunch,
+        end,
+        hours
+      };
+    }
+
+    function firstFilledCell(row) {
+      return (row || []).map((cell) => String(cell || "").trim()).find(Boolean) || "";
+    }
+
+    function cleanTimesheetMdNote(value) {
+      const text = String(value || "").trim();
+      return text === "-" ? "" : text;
+    }
+
+    function normalizeTimesheetMdTime(value) {
+      const text = String(value || "").trim();
+      if (!text || /^missing\??$/i.test(text)) return text;
+      const digits = text.replace(/\D/g, "");
+      if (/^\d{1,4}$/.test(digits)) return digits.padStart(4, "0").slice(-4);
+      return text;
+    }
+
+    function timesheetMdActualValue(value) {
+      const cleaned = String(value || "").replace(/[^0-9.-]/g, "");
+      const number = Number(cleaned);
+      return Number.isFinite(number) ? number : 0;
+    }
+
+    function timesheetMdDateFromRows(rows) {
+      for (const row of rows) {
+        const value = firstFilledCell(row);
+        if (/^(sun|mon|tue|tues|wed|thu|thur|thurs|fri|sat)[a-z]*,?\s+/i.test(value) && /\b\d{4}\b/.test(value)) return value;
+        if (/^\d{1,2}\/\d{1,2}\/\d{2,4}$/.test(value)) return value;
+      }
+      return "";
+    }
+
+    function timesheetMdShiftFromHeader(value) {
+      const text = String(value || "").trim();
+      const lower = text.toLowerCase();
+      if (!text) return null;
+      const label = text.replace(/\s*\[[^\]]*\]\s*$/, "").trim();
+      if (/\b1st\b|first/.test(lower)) return { key: "first", label: label || "1st SHIFT" };
+      if (/\b2nd\b|second/.test(lower)) return { key: "second", label: label || "2ND SHIFT" };
+      if (/\bgate\b/.test(lower)) return { key: "gate", label: label || "GATE" };
+      if (/mechanic/.test(lower)) return { key: "mechanics", label: label || "MECHANICS" };
+      if (/manager|\bmgr\b/.test(lower)) return { key: "managers", label: label || "MANAGERS" };
+      if (/shift/.test(lower)) return { key: lower.replace(/[^a-z0-9]+/g, "-") || "timesheet", label: label || text };
+      return null;
+    }
+
+    function rowIsTimesheetMdShiftHeader(row) {
+      const first = String(row[0] || "").trim();
+      const joined = row.map((cell) => String(cell || "").trim().toLowerCase()).join("|");
+      return Boolean(timesheetMdShiftFromHeader(first) && joined.includes("off days") && joined.includes("note"));
+    }
+
+    function rowsLookLikeTimesheetMdExport(rows) {
+      return rows.some((row) => /time input - daily sheet/i.test(firstFilledCell(row)))
+        || rows.some(rowIsTimesheetMdShiftHeader);
+    }
+
+    function parseTimesheetMdExportRows(rows, eligibleNames) {
+      if (!rowsLookLikeTimesheetMdExport(rows)) return null;
+
+      const date = timesheetMdDateFromRows(rows);
+      const records = [];
+      let previousHours = 0;
+      let actualHours = 0;
+      let currentShift = null;
+
+      rows.forEach((row) => {
+        if (!row.some(Boolean)) return;
+        if (rowIsTimesheetMdShiftHeader(row)) {
+          currentShift = timesheetMdShiftFromHeader(row[0]);
+          return;
+        }
+        if (!currentShift) return;
+
+        const name = String(row[0] || "").trim();
+        if (!name || /^off\s*-/i.test(name) || /time input - daily sheet/i.test(name)) return;
+        if (/^(employee|name)$/i.test(name)) return;
+
+        const start = normalizeTimesheetMdTime(row[3]);
+        const lunch = String(row[4] || "").trim();
+        const end = normalizeTimesheetMdTime(row[5]);
+        const actual = timesheetMdActualValue(row[6]);
+        const note = cleanTimesheetMdNote(row[2]);
+        if (!start && !end && !actual && !note) return;
+
+        const record = {
+          source: "previous",
+          restoreSource: "timesheet-md-export",
+          shiftKey: currentShift.key,
+          shiftLabel: currentShift.label,
+          name,
+          date,
+          offDays: String(row[1] || "").trim(),
+          note,
+          start,
+          lunch,
+          end,
+          actual,
+          hours: actual
+        };
+
+        records.push(record);
+        actualHours += actual;
+
+        if (currentShift.key === "second" && eligibleNames.has(normalizePreviousTimesheetName(name))) {
+          previousHours += previousWindowMinutesForTimes(start, end, lunch) / 60;
+        }
+      });
+
+      return records.length ? {
+        source: "timesheet-md-export",
+        hours: previousHours,
+        actualHours,
+        rows: records.length,
+        records
+      } : null;
+    }
+
+    function previousRecordToPreviewPunch(record) {
+      return {
+        source: "previous",
+        name: record.name || "",
+        date: record.date || "",
+        start: record.start || "",
+        lunch: record.lunch || "",
+        end: record.end || "",
+        note: record.note || ""
+      };
+    }
+
+    function inputDateFromPreviousDate(value) {
+      const text = String(value || "").trim();
+      if (!text) return "";
+      const parsed = new Date(text);
+      if (Number.isNaN(parsed.getTime())) return "";
+      const year = parsed.getFullYear();
+      const month = String(parsed.getMonth() + 1).padStart(2, "0");
+      const day = String(parsed.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    }
+
+    function localInputDate(date = new Date()) {
+      const parsed = date instanceof Date ? date : new Date(date);
+      if (Number.isNaN(parsed.getTime())) return "";
+      const year = parsed.getFullYear();
+      const month = String(parsed.getMonth() + 1).padStart(2, "0");
+      const day = String(parsed.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    }
+
+    function inputDateFromPunchDate(value) {
+      const text = String(value || "").trim();
+      if (!text) return "";
+      const monthNames = {
+        jan: 1, january: 1, feb: 2, february: 2, mar: 3, march: 3, apr: 4, april: 4, may: 5,
+        jun: 6, june: 6, jul: 7, july: 7, aug: 8, august: 8, sep: 9, sept: 9, september: 9,
+        oct: 10, october: 10, nov: 11, november: 11, dec: 12, december: 12
+      };
+      let match = text.match(/(?:[A-Za-z]{3,9},?\s*)?([A-Za-z]{3,9})\s+(\d{1,2})(?:,\s*(\d{4}))?/);
+      if (match && monthNames[match[1].toLowerCase()]) {
+        const year = match[3] ? Number(match[3]) : new Date().getFullYear();
+        return `${year}-${String(monthNames[match[1].toLowerCase()]).padStart(2, "0")}-${String(Number(match[2])).padStart(2, "0")}`;
+      }
+      match = text.match(/^(\d{1,2})[\/.-](\d{1,2})(?:[\/.-](\d{2,4}))?/);
+      if (match) {
+        const year = match[3] ? Number(match[3].length === 2 ? "20" + match[3] : match[3]) : new Date().getFullYear();
+        return `${year}-${String(Number(match[1])).padStart(2, "0")}-${String(Number(match[2])).padStart(2, "0")}`;
+      }
+      const direct = /^(\d{4}-\d{1,2}-\d{1,2}|\d{1,2}[\/.-]\d{1,2}[\/.-]\d{2,4})/.test(text) ? inputDateFromPreviousDate(text) : "";
+      if (direct) return direct;
+      return "";
+    }
+
+    function timesheetSettingDate() {
+      try {
+        const settings = JSON.parse(localStorage.getItem(timesheetSettingsKey) || "null") || {};
+        return /^\d{4}-\d{2}-\d{2}$/.test(String(settings.sheetDate || "")) ? settings.sheetDate : "";
+      } catch (error) {
+        return "";
+      }
+    }
+
+    function defaultArchiveCalendarDate() {
+      const previewDate = readPreview().map((punch) => inputDateFromPunchDate(punch.date)).find(Boolean);
+      return previewDate || timesheetSettingDate() || localInputDate();
+    }
+
+    function syncArchiveCalendarDate(force = false) {
+      if (!archiveCalendarDate) return;
+      if (force || archiveCalendarDate.dataset.auto !== "0" || !archiveCalendarDate.value) {
+        archiveCalendarDate.value = defaultArchiveCalendarDate();
+        archiveCalendarDate.dataset.auto = "1";
+      }
+    }
+
+    function openArchiveCalendar() {
+      if (!archiveCalendarDate) return;
+      const dateKey = archiveCalendarDate.value || defaultArchiveCalendarDate();
+      archiveCalendarDate.value = dateKey;
+      localStorage.setItem(archiveSelectedDateKey, dateKey);
+      localStorage.setItem("conglobal-active-page", "archive");
+      status.textContent = `Opening archive calendar for ${dateKey}`;
+      if (window.parent && window.parent !== window) {
+        window.parent.location.hash = "archive";
+      } else {
+        window.location.hash = "archive";
+      }
+    }
+
+    function syncTimesheetMdDateFromPrevious(records) {
+      const firstDate = (records || []).map((record) => record.date).find(Boolean);
+      const sheetDate = inputDateFromPreviousDate(firstDate);
+      if (!sheetDate) return;
+      let settings = {};
+      try {
+        settings = JSON.parse(localStorage.getItem(timesheetSettingsKey) || "null") || {};
+      } catch (error) {
+        settings = {};
+      }
+      settings.sheetDate = sheetDate;
+      localStorage.setItem(timesheetSettingsKey, JSON.stringify(settings));
+    }
+
+    function parsePreviousTimesheetHours(workbook) {
+      const eligibleNames = previousTimesheetEligibleNames();
+      let hours = 0;
+      let matchedRows = 0;
+      const records = [];
+      let actualHours = 0;
+      let source = "previous-window";
+
+      for (const sheetName of workbook.SheetNames) {
+        const rows = sheetRows(workbook, sheetName).map((row) => row.map((cell) => String(cell || "").trim()));
+        const timesheetMdResult = parseTimesheetMdExportRows(rows, eligibleNames);
+        if (timesheetMdResult) return timesheetMdResult;
+      }
+
+      workbook.SheetNames.forEach((sheetName) => {
+        const rows = sheetRows(workbook, sheetName).map((row) => row.map((cell) => String(cell || "").trim()));
+        let indexes = null;
+
+        rows.forEach((row, rowIndex) => {
+          if (!row.some(Boolean)) return;
+
+          const dayforceRecord = previousRecordFromDayforceHeader(rows, rowIndex, eligibleNames);
+          if (dayforceRecord) {
+            hours += dayforceRecord.hours;
+            matchedRows += 1;
+            records.push(dayforceRecord);
+            return;
+          }
+
+          if (rowLooksLikePreviousTimeHeader(row)) {
+            indexes = {
+              name: previousColumnIndexFor(row, [/\bemployee\b/, /\bname\b/]),
+              date: previousColumnIndexFor(row, [/\bdate\b/]),
+              start: previousColumnIndexFor(row, [/\bstart\b/]),
+              lunch: previousColumnIndexFor(row, [/\blunch\b/, /\bmeal\b/]),
+              end: previousColumnIndexFor(row, [/\bend\b/])
+            };
+            return;
+          }
+
+          const record = indexes && indexes.start >= 0 && indexes.end >= 0
+            ? previousRecordFromRow(row, indexes, eligibleNames)
+            : fallbackPreviousRecordFromRow(row, eligibleNames);
+
+          if (record) {
+            hours += record.hours;
+            matchedRows += 1;
+            records.push(record);
+          }
+        });
+      });
+
+      return { source, hours, actualHours: hours, rows: matchedRows, records: records.map((record) => ({ ...record, source: "previous", restoreSource: source })) };
+    }
+
+    function rowHasDayforceHeader(row) {
+      const joined = row.map((cell) => String(cell).toLowerCase()).join("|");
+      return joined.includes("start shift") && joined.includes("end shift");
+    }
+
+    function headerIndex(row, label) {
+      return row.findIndex((cell) => String(cell || "").trim().toLowerCase() === label);
+    }
+
+    function firstFilledBefore(row, endIndex) {
+      for (let index = 0; index < endIndex; index += 1) {
+        const value = String(row[index] || "").trim();
+        if (value) return value;
+      }
+      return "";
+    }
+
+    function isNameCandidate(value) {
+      const text = cleanDayforceEmployeeName(value);
+      if (!text || text.length < 3) return false;
+      if (/^\d+(\.\d+)?$/.test(text)) return false;
+      if (/^\d{1,2}[/:]\d{1,2}/.test(text)) return false;
+      if (/\b(start|end|meal|shift|paid|hours|exception|business|date|department|location|total|time|regular|overtime|report)\b/i.test(text)) return false;
+      if (!/[a-z]/i.test(text)) return false;
+
+      const words = text.replace(/[,.-]/g, " ").trim().split(/\s+/).filter(Boolean);
+      return text.includes(",") || words.length >= 2;
+    }
+
+    function nameCandidateScore(value, rowDistance, sameHeaderRow) {
+      const text = cleanDayforceEmployeeName(value);
+      let score = sameHeaderRow ? 100 : 75;
+      score -= rowDistance * 12;
+      if (text.includes(",")) score += 18;
+      if (/\b[A-Z][a-z]+[\s,]+[A-Z][a-z]+\b/.test(text)) score += 8;
+      if (/\d{4,}/.test(String(value))) score += 4;
+      return score;
+    }
+
+    function findEmployeeNameCell(rows, headerRowIndex, startIndex) {
+      const candidates = [];
+      const headerRow = rows[headerRowIndex] || [];
+      const sameRowLimit = startIndex >= 0 ? startIndex : headerRow.length;
+
+      for (let colIndex = 0; colIndex < sameRowLimit; colIndex += 1) {
+        const value = String(headerRow[colIndex] || "").trim();
+        if (!isNameCandidate(value)) continue;
+        candidates.push({
+          rowIndex: headerRowIndex,
+          colIndex,
+          value,
+          score: nameCandidateScore(value, 0, true)
+        });
+      }
+
+      for (let rowIndex = headerRowIndex - 1; rowIndex >= Math.max(0, headerRowIndex - 4); rowIndex -= 1) {
+        const row = rows[rowIndex] || [];
+        const limit = Math.max(startIndex + 1, row.length);
+        for (let colIndex = 0; colIndex < limit; colIndex += 1) {
+          const value = String(row[colIndex] || "").trim();
+          if (!isNameCandidate(value)) continue;
+          candidates.push({
+            rowIndex,
+            colIndex,
+            value,
+            score: nameCandidateScore(value, headerRowIndex - rowIndex, false)
+          });
+        }
+      }
+
+      candidates.sort((a, b) => b.score - a.score);
+      return candidates[0] || null;
+    }
+
+    function firstFilled(row) {
+      const value = row.find((cell) => String(cell || "").trim());
+      return String(value || "").trim();
+    }
+
+    function parseDayforceMatrix(rows, extractedNameCells = new Set(), headerCells = new Set()) {
+      const punches = [];
+      for (let index = 0; index < rows.length - 1; index += 1) {
+        const row = rows[index].map((cell) => String(cell || "").trim());
+        if (!rowHasDayforceHeader(row)) continue;
+
+        const next = rows[index + 1].map((cell) => String(cell || "").trim());
+        const startIndex = headerIndex(row, "start shift");
+        const startMealIndex = headerIndex(row, "start meal");
+        const endMealIndex = headerIndex(row, "end meal");
+        const endIndex = headerIndex(row, "end shift");
+        const paidIndex = headerIndex(row, "paid hours");
+        const exceptionIndex = headerIndex(row, "exceptions");
+        [startIndex, startMealIndex, endMealIndex, endIndex, paidIndex, exceptionIndex].forEach((colIndex) => {
+          if (colIndex >= 0) headerCells.add(`${index}:${colIndex}`);
+        });
+        const employeeCell = findEmployeeNameCell(rows, index, startIndex);
+        const fallbackEmployee = firstFilledBefore(row, startIndex);
+        const employeeSource = employeeCell ? employeeCell.value : fallbackEmployee;
+        const employee = displayNameFromDayforce(employeeSource);
+        if (!employee) continue;
+        if (employeeCell) {
+          extractedNameCells.add(`${employeeCell.rowIndex}:${employeeCell.colIndex}`);
+        } else if (fallbackEmployee) {
+          const fallbackIndex = row.findIndex((cell) => String(cell || "").trim() === fallbackEmployee);
+          if (fallbackIndex >= 0) extractedNameCells.add(`${index}:${fallbackIndex}`);
+        }
+
+        punches.push({
+          source: "punch",
+          name: employee,
+          date: firstFilled(next),
+          start: startIndex >= 0 ? next[startIndex] || "" : "",
+          lunch: [startMealIndex >= 0 ? next[startMealIndex] : "", endMealIndex >= 0 ? next[endMealIndex] : ""].filter(Boolean).join(" - "),
+          end: endIndex >= 0 ? next[endIndex] || "" : "",
+          paid: paidIndex >= 0 ? next[paidIndex] || "" : "",
+          exceptions: exceptionIndex >= 0 ? next[exceptionIndex] || "" : ""
+        });
+      }
+      return punches;
+    }
+
+    function rawTimeReportDate(rows) {
+      for (const row of rows.slice(0, 12)) {
+        for (const value of row) {
+          const text = String(value || "").trim();
+          const match = text.match(/\bDate Range:\s*(\d{1,2})\/(\d{1,2})\/(\d{2,4})/i);
+          if (match) {
+            const year = match[3].length === 2 ? "20" + match[3] : match[3];
+            return Number(match[1]) + "/" + Number(match[2]) + "/" + year;
+          }
+        }
+      }
+      return "";
+    }
+
+    function rawTimeHeaderInfo(row) {
+      const normalized = row.map((cell) => String(cell || "").trim().toLowerCase());
+      const inIndex = normalized.findIndex((cell) => cell === "in");
+      const outIndex = normalized.findIndex((cell) => cell === "out");
+      const mealInIndex = normalized.findIndex((cell) => cell === "meal in");
+      const mealOutIndex = normalized.findIndex((cell) => cell === "meal out");
+      if (inIndex < 0 || outIndex < 0 || mealInIndex < 0 || mealOutIndex < 0) return null;
+
+      const rawName = String(row[0] || "").trim();
+      if (!isNameCandidate(rawName)) return null;
+      return {
+        nameIndex: 0,
+        inIndex,
+        outIndex,
+        mealInIndex,
+        mealOutIndex,
+        exceptionIndex: normalized.findIndex((cell) => cell === "exceptions")
+      };
+    }
+
+    function rawTimeRowKind(row) {
+      return String(row[1] || "").trim().toLowerCase();
+    }
+
+    function rawTimeFindKindRow(rows, startIndex, kind) {
+      for (let index = startIndex; index < Math.min(rows.length, startIndex + 5); index += 1) {
+        const row = rows[index] || [];
+        if (rawTimeRowKind(row) === kind) return row;
+      }
+      return [];
+    }
+
+    function rawTimeValue(primaryRow, fallbackRow, index) {
+      return String((primaryRow && primaryRow[index]) || (fallbackRow && fallbackRow[index]) || "").trim();
+    }
+
+    function rawTimeDate(value, fallback) {
+      const text = String(value || "").trim();
+      const direct = attendanceDateFromValue(text, "");
+      if (direct) return direct;
+
+      const yearMatch = String(fallback || "").match(/\/(\d{4})$/);
+      const year = yearMatch ? Number(yearMatch[1]) : new Date().getFullYear();
+      const monthNames = {
+        jan: 1, january: 1,
+        feb: 2, february: 2,
+        mar: 3, march: 3,
+        apr: 4, april: 4,
+        may: 5,
+        jun: 6, june: 6,
+        jul: 7, july: 7,
+        aug: 8, august: 8,
+        sep: 9, sept: 9, september: 9,
+        oct: 10, october: 10,
+        nov: 11, november: 11,
+        dec: 12, december: 12
+      };
+      const match = text.match(/\b([A-Za-z]{3,9})\s+(\d{1,2})\b/);
+      if (!match) return fallback || text;
+      const month = monthNames[match[1].toLowerCase()];
+      if (!month) return fallback || text;
+      return month + "/" + Number(match[2]) + "/" + year;
+    }
+
+    function parseRawTimeEntryRows(rows, extractedNameCells = new Set(), headerCells = new Set()) {
+      const punches = [];
+      const reportDate = rawTimeReportDate(rows);
+
+      for (let rowIndex = 0; rowIndex < rows.length; rowIndex += 1) {
+        const row = rows[rowIndex].map((cell) => String(cell || "").trim());
+        const header = rawTimeHeaderInfo(row);
+        if (!header) continue;
+
+        [header.nameIndex, header.inIndex, header.outIndex, header.mealInIndex, header.mealOutIndex, header.exceptionIndex].forEach((colIndex) => {
+          if (colIndex >= 0) headerCells.add(rowIndex + ":" + colIndex);
+        });
+        extractedNameCells.add(rowIndex + ":" + header.nameIndex);
+
+        const rawRow = rawTimeFindKindRow(rows, rowIndex + 1, "raw");
+        const roundedRow = rawTimeFindKindRow(rows, rowIndex + 1, "rounded");
+        const name = displayNameFromDayforce(row[header.nameIndex]);
+        if (!name || (!rawRow.length && !roundedRow.length)) continue;
+
+        const start = attendanceClockFromValue(rawTimeValue(roundedRow, rawRow, header.inIndex));
+        const end = attendanceClockFromValue(rawTimeValue(roundedRow, rawRow, header.outIndex));
+        const mealIn = rawTimeValue(roundedRow, rawRow, header.mealInIndex);
+        const mealOut = rawTimeValue(roundedRow, rawRow, header.mealOutIndex);
+        const lunch = [mealIn, mealOut].filter(Boolean).join(" - ");
+        const note = header.exceptionIndex >= 0 ? rawTimeValue(roundedRow, rawRow, header.exceptionIndex) : "";
+
+        if (!start && !end && !lunch && !note) continue;
+        punches.push({
+          source: "punch",
+          name,
+          date: rawTimeDate(rawTimeValue(rawRow, roundedRow, 0), reportDate),
+          start,
+          lunch,
+          end,
+          note
+        });
+      }
+
+      return punches;
+    }
+
+    function combinedHeader(rows, headerRowIndex, colIndex) {
+      return rows
+        .slice(headerRowIndex, Math.min(rows.length, headerRowIndex + 5))
+        .map((row) => String(row[colIndex] || "").trim())
+        .filter(Boolean)
+        .join(" ");
+    }
+
+    function findPayrollHeader(rows) {
+      for (let rowIndex = 0; rowIndex < Math.min(rows.length, 35); rowIndex += 1) {
+        const row = rows[rowIndex] || [];
+        const employeeIndex = row.findIndex((cell) => String(cell || "").trim().toLowerCase() === "employee");
+        if (employeeIndex === -1) continue;
+
+        const maxColumns = Math.max(...rows.slice(rowIndex, rowIndex + 5).map((item) => item.length), row.length);
+        const reasonColumns = [];
+        for (let colIndex = 0; colIndex < maxColumns; colIndex += 1) {
+          if (colIndex === employeeIndex) continue;
+          const header = combinedHeader(rows, rowIndex, colIndex);
+          const reason = absenceReasonFromHeader(header);
+          if (!reason) continue;
+          reasonColumns.push({ colIndex, reason, header });
+        }
+
+        if (reasonColumns.length) {
+          return { rowIndex, employeeIndex, reasonColumns };
+        }
+      }
+
+      return null;
+    }
+
+    function parsePayrollAbsenceRows(rows, extractedNameCells = new Set(), headerCells = new Set()) {
+      const header = findPayrollHeader(rows);
+      if (!header) return [];
+
+      headerCells.add(`${header.rowIndex}:${header.employeeIndex}`);
+      header.reasonColumns.forEach(({ colIndex }) => {
+        for (let rowIndex = header.rowIndex; rowIndex < Math.min(rows.length, header.rowIndex + 5); rowIndex += 1) {
+          if (String(rows[rowIndex]?.[colIndex] || "").trim()) headerCells.add(`${rowIndex}:${colIndex}`);
+        }
+      });
+
+      const reportDate = payrollDateFromRows(rows);
+      const punches = [];
+      for (let rowIndex = header.rowIndex + 1; rowIndex < rows.length; rowIndex += 1) {
+        const row = rows[rowIndex] || [];
+        const rawName = String(row[header.employeeIndex] || "").trim();
+        if (!rawName || /total|percentage|employee/i.test(rawName)) continue;
+
+        const employee = payrollDisplayName(rawName);
+        if (!employee) continue;
+        extractedNameCells.add(`${rowIndex}:${header.employeeIndex}`);
+
+        const reasons = [];
+        let paidHours = 0;
+        let unpaid = false;
+        header.reasonColumns.forEach(({ colIndex, reason }) => {
+          const hours = payrollHours(row[colIndex]);
+          if (hours <= 0) return;
+          reasons.push(reason);
+          if (isUnpaidReason(reason)) {
+            unpaid = true;
+            return;
+          }
+          paidHours += hours;
+        });
+
+        if (!reasons.length) continue;
+
+        const uniqueReasons = Array.from(new Set(reasons));
+        const note = uniqueReasons.join(", ");
+        const start = paidHours > 0 ? shiftStartForEmployee(employee) : "";
+        const end = paidHours > 0 ? endFromStartAndHours(start, paidHours) : "";
+        punches.push({
+          source: "note",
+          name: employee,
+          date: reportDate,
+          start,
+          lunch: paidHours > 0 ? "NO" : "",
+          end,
+          note,
+          absencePaid: paidHours > 0,
+          absenceUnpaid: unpaid && paidHours === 0,
+          absenceHours: paidHours ? String(paidHours) : ""
+        });
+      }
+
+      return punches;
+    }
+
+    function attendanceHeaderText(value) {
+      return String(value || "").trim().toLowerCase().replace(/\s+/g, " ");
+    }
+
+    function attendanceHeaderInfo(row) {
+      const headers = row.map(attendanceHeaderText);
+      const nameIndex = headers.findIndex((cell) => cell === "full name" || cell === "employee");
+      const timeIndex = headers.findIndex((cell) => ["time in", "start time", "clock in", "clock-in"].includes(cell));
+      if (nameIndex < 0 || timeIndex < 0) return null;
+      return {
+        nameIndex,
+        timeIndex,
+        departmentIndex: headers.findIndex((cell) => cell === "department"),
+        jobIndex: headers.findIndex((cell) => cell === "job")
+      };
+    }
+
+    function attendanceReportDate(rows) {
+      for (const row of rows) {
+        for (const value of row) {
+          const text = String(value || "").trim();
+          const match = text.match(/\bRun Date:\s*(\d{1,2})\/(\d{1,2})\/(\d{2,4})/i);
+          if (!match) continue;
+          const year = match[3].length === 2 ? "20" + match[3] : match[3];
+          return Number(match[1]) + "/" + Number(match[2]) + "/" + year;
+        }
+      }
+      return "";
+    }
+
+    function dateFromExcelSerial(value) {
+      const serial = Number(value);
+      if (!Number.isFinite(serial) || serial < 1) return null;
+      return new Date(Date.UTC(1899, 11, 30) + Math.floor(serial) * 86400000);
+    }
+
+    function dateFromLooseValue(value) {
+      if (value instanceof Date && !Number.isNaN(value.getTime())) return value;
+      const text = String(value || "").trim();
+      const serialDate = /^\d+(?:\.\d+)?$/.test(text) ? dateFromExcelSerial(Number(text)) : null;
+      if (serialDate) return serialDate;
+      const match = text.match(/\b(\d{1,2})\/(\d{1,2})\/(\d{2,4})\b/);
+      if (match) {
+        return new Date(Number(match[3].length === 2 ? "20" + match[3] : match[3]), Number(match[1]) - 1, Number(match[2]));
+      }
+      return null;
+    }
+
+    function formatAttendanceDate(date, fallback = "") {
+      if (!(date instanceof Date) || Number.isNaN(date.getTime())) return fallback;
+      return (date.getUTCMonth() + 1) + "/" + date.getUTCDate() + "/" + date.getUTCFullYear();
+    }
+
+    function attendanceDateFromValue(value, fallback = "") {
+      const date = dateFromLooseValue(value);
+      return date ? formatAttendanceDate(date, fallback) : fallback;
+    }
+
+    function attendanceClockFromValue(value) {
+      if (value instanceof Date && !Number.isNaN(value.getTime())) {
+        return String(value.getHours()).padStart(2, "0") + String(value.getMinutes()).padStart(2, "0");
+      }
+
+      const text = String(value || "").trim();
+      if (!text) return "";
+
+      if (/^\d+(?:\.\d+)?$/.test(text)) {
+        const serial = Number(text);
+        const minutes = Math.round((serial - Math.floor(serial)) * 1440);
+        return militaryFromMinutes(minutes);
+      }
+
+      const military = text.match(/^([01]?\d|2[0-4])([0-5]\d)$/);
+      if (military) return military[1].padStart(2, "0") + military[2];
+
+      const match = text.match(/(\d{1,2}):(\d{2})(?::\d{2})?\s*([ap])?\.?m?\.?/i);
+      if (!match) return "";
+      let hour = Number(match[1]);
+      const minute = match[2];
+      const period = (match[3] || "").toLowerCase();
+      if (period === "p" && hour !== 12) hour += 12;
+      if (period === "a" && hour === 12) hour = 0;
+      return String(hour).padStart(2, "0") + minute;
+    }
+
+    function attendanceSectionLabel(rows, headerRowIndex) {
+      for (let rowIndex = headerRowIndex - 1; rowIndex >= Math.max(0, headerRowIndex - 4); rowIndex -= 1) {
+        const first = attendanceHeaderText(rows[rowIndex]?.[0]);
+        if (["present", "late"].includes(first)) return first;
+      }
+      return "";
+    }
+
+    function attendanceNameIsDataRow(value) {
+      const text = String(value || "").trim();
+      return Boolean(text && !/^employee count:/i.test(text) && !/^(present|late|absent)$/i.test(text) && attendanceHeaderText(text) !== "full name");
+    }
+
+    function parseAttendanceRollCallRows(rows, extractedNameCells = new Set(), headerCells = new Set(), rawRows = rows) {
+      const punches = [];
+      const reportDate = attendanceReportDate(rows);
+
+      for (let rowIndex = 0; rowIndex < rows.length; rowIndex += 1) {
+        const header = attendanceHeaderInfo(rows[rowIndex] || []);
+        if (!header) continue;
+
+        headerCells.add(rowIndex + ":" + header.nameIndex);
+        headerCells.add(rowIndex + ":" + header.timeIndex);
+        if (header.departmentIndex >= 0) headerCells.add(rowIndex + ":" + header.departmentIndex);
+        if (header.jobIndex >= 0) headerCells.add(rowIndex + ":" + header.jobIndex);
+
+        const section = attendanceSectionLabel(rows, rowIndex);
+        if (!["present", "late"].includes(section)) continue;
+
+        for (let dataIndex = rowIndex + 1; dataIndex < rows.length; dataIndex += 1) {
+          const row = rows[dataIndex] || [];
+          if (attendanceHeaderInfo(row)) break;
+
+          const rawName = String(row[header.nameIndex] || "").trim();
+          if (!attendanceNameIsDataRow(rawName)) break;
+
+          const rawClockValue = rawRows[dataIndex]?.[header.timeIndex] ?? row[header.timeIndex] ?? "";
+          const formattedClockValue = row[header.timeIndex] ?? rawClockValue;
+          const start = attendanceClockFromValue(rawClockValue) || attendanceClockFromValue(formattedClockValue);
+          if (!start) continue;
+
+          const name = displayNameFromDayforce(rawName);
+          if (!name) continue;
+
+          extractedNameCells.add(dataIndex + ":" + header.nameIndex);
+          punches.push({
+            source: "punch",
+            name,
+            date: attendanceDateFromValue(rawClockValue, attendanceDateFromValue(formattedClockValue, reportDate)),
+            start,
+            lunch: "",
+            end: "",
+            note: ""
+          });
+        }
+      }
+
+      return punches;
+    }
+
+    function parsePunchWorkbookRows(rows, extractedNameCells = new Set(), headerCells = new Set(), rawRows = rows) {
+      const dayforcePunches = parseDayforceMatrix(rows, extractedNameCells, headerCells);
+      if (dayforcePunches.length) return dayforcePunches;
+
+      const rawTimePunches = parseRawTimeEntryRows(rows, extractedNameCells, headerCells);
+      if (rawTimePunches.length) return rawTimePunches;
+
+      const attendancePunches = parseAttendanceRollCallRows(rows, extractedNameCells, headerCells, rawRows);
+      if (attendancePunches.length) return attendancePunches;
+
+      return rows
+        .map((row, rowIndex) => ({ row, rowIndex }))
+        .filter(({ row }) => row.some((cell) => String(cell || "").trim()))
+        .map(({ row, rowIndex }) => {
+          if (String(row[0] || "").trim() && String(row[0] || "").trim().toLowerCase() !== "employee") {
+            extractedNameCells.add(rowIndex + ":0");
+          }
+          return {
+            source: "punch",
+            name: String(row[0] || "").trim(),
+            date: String(row[1] || "").trim(),
+            start: String(row[2] || "").trim(),
+            lunch: String(row[3] || "").trim(),
+            end: String(row[4] || "").trim()
+          };
+        })
+        .filter((row) => row.name && row.name.toLowerCase() !== "employee");
+    }
+
+    function columnLabel(index) {
+      let label = "";
+      let value = index + 1;
+      while (value > 0) {
+        const remainder = (value - 1) % 26;
+        label = String.fromCharCode(65 + remainder) + label;
+        value = Math.floor((value - 1) / 26);
+      }
+      return label;
+    }
+
+    function previewNameCandidates(value) {
+      const raw = String(value || "").trim();
+      return Array.from(new Set([
+        raw,
+        displayNameFromDayforce(raw),
+        payrollDisplayName(raw)
+      ].map((name) => name.trim()).filter(Boolean)));
+    }
+
+    function previewMatchSummary(rows, extractedNameCells) {
+      const names = rosterNames();
+      const seen = new Set();
+      let total = 0;
+      let matched = 0;
+
+      extractedNameCells.forEach((key) => {
+        const [rowIndexText, colIndexText] = key.split(":");
+        const value = String(rows[Number(rowIndexText)]?.[Number(colIndexText)] || "").trim();
+        if (!value) return;
+
+        const candidates = previewNameCandidates(value);
+        const normalizedKey = normalizeName(candidates[1] || candidates[0]);
+        if (!normalizedKey || seen.has(normalizedKey)) return;
+        seen.add(normalizedKey);
+        total += 1;
+
+        if (candidates.some((candidate) => matchRosterName(candidate, names).found)) {
+          matched += 1;
+        }
+      });
+
+      return { matched, total };
+    }
+
+    function renderExcelPreview(rows, extractedNameCells, headerCells, sheetName) {
+      const nonEmptyRows = rows.filter((row) => row.some((cell) => String(cell || "").trim()));
+      if (!nonEmptyRows.length) {
+        excelPreviewSection.hidden = true;
+        excelPreviewHead.innerHTML = "";
+        excelPreviewBody.innerHTML = "";
+        return;
+      }
+
+      const maxColumns = Math.max(...rows.map((row) => row.length), 1);
+      const summary = previewMatchSummary(rows, extractedNameCells);
+      excelPreviewToggle.title = `${sheetName} Preview`;
+      excelPreviewToggle.setAttribute("aria-label", `${sheetName} preview. Click to review raw time entry import.`);
+      excelPreviewToggle.setAttribute("aria-expanded", "false");
+      excelPreviewCount.textContent = `${summary.matched} out of ${summary.total} matched to schedule`;
+      excelPreviewHead.innerHTML = `
+        <tr>
+          <th class="row-number">#</th>
+          ${Array.from({ length: maxColumns }, (_, index) => `<th>${columnLabel(index)}</th>`).join("")}
+        </tr>
+      `;
+      excelPreviewBody.innerHTML = rows.map((row, rowIndex) => `
+        <tr>
+          <td class="row-number">${rowIndex + 1}</td>
+          ${Array.from({ length: maxColumns }, (_, colIndex) => {
+            const key = `${rowIndex}:${colIndex}`;
+            const value = String(row[colIndex] || "");
+            const classes = [
+              extractedNameCells.has(key) ? "extracted-name" : "",
+              headerCells.has(key) ? "punch-header" : ""
+            ].filter(Boolean).join(" ");
+            return `<td class="${classes}" title="${escapeHtml(value)}">${escapeHtml(value)}</td>`;
+          }).join("")}
+        </tr>
+      `).join("");
+      excelPreviewSection.classList.add("collapsed");
+      excelPreviewSection.hidden = false;
+    }
+
+    function recordSource(record) {
+      const source = String(record.source || "").trim().toLowerCase();
+      if (source === "punch" || source === "note" || source === "previous") return source;
+      return record.absencePaid || record.absenceUnpaid || record.absenceHours || String(record.note || "").trim() ? "note" : "punch";
+    }
+
+    function previewShiftForRecord(punch, names, lookup) {
+      const match = matchRosterName(punch.name, names);
+      const canonical = match.suggestion || punch.name;
+      return lookup.get(normalizeName(canonical))?.shift || "unmatched";
+    }
+
+    function shiftGroupOrder(shift) {
+      const order = ["first", "second", "gate", "mechanics", "managers", "unmatched"];
+      const index = order.indexOf(shift);
+      return index === -1 ? order.length : index;
+    }
+
+    function createShiftGroupRow(shift, count) {
+      const row = document.createElement("tr");
+      row.className = "shift-group-row";
+      row.innerHTML = `<td colspan="6">${escapeHtml(shiftLabels[shift] || shift)}<span class="shift-group-count">${count} ${count === 1 ? "record" : "records"}</span></td>`;
+      return row;
+    }
+
+    function appendImportMessage(message) {
+      const row = document.createElement("tr");
+      row.className = "import-message-row";
+      row.innerHTML = `<td colspan="6">${escapeHtml(message)}</td>`;
+      previewBody.appendChild(row);
+      emptyState.style.display = "none";
+    }
+
+    function createPunchRow(punch, names) {
+      const match = matchRosterName(punch.name, names);
+      const row = document.createElement("tr");
+      row.className = "record-row";
+      row.dataset.source = recordSource(punch);
+      row.dataset.absencePaid = punch.absencePaid ? "1" : "";
+      row.dataset.absenceUnpaid = punch.absenceUnpaid ? "1" : "";
+      row.dataset.absenceHours = punch.absenceHours || "";
+      row.classList.toggle("unmatched", !match.found);
+      if (!match.found && match.hasSuggestion) row.dataset.suggestion = match.suggestion;
+      const suggestion = match.hasSuggestion ? match.suggestion : "No close roster match";
+      const suggestionActions = !match.found ? `
+        <span class="suggestion-actions">
+          ${match.hasSuggestion ? '<button type="button" class="suggestion-yes">YES</button><button type="button" class="suggestion-no">NO</button>' : ''}
+          <button type="button" class="suggestion-ignore">Ignore</button>
+        </span>
+      ` : "";
+      row.innerHTML = `
+        <td class="name-cell"><input value="${escapeHtml(punch.name)}" aria-label="Employee name" />${match.found ? "" : `<span class="suggestion"><span>Try: ${escapeHtml(suggestion)}</span>${suggestionActions}</span>`}</td>
+        <td><input value="${escapeHtml(punch.date)}" aria-label="Punch date" /></td>
+        <td><input value="${escapeHtml(punch.start)}" aria-label="Start punch" /></td>
+        <td><input value="${escapeHtml(punch.lunch)}" aria-label="Lunch punch" /></td>
+        <td><input value="${escapeHtml(punch.end)}" aria-label="End punch" /></td>
+        <td><input value="${escapeHtml(punch.note || "")}" aria-label="Note" /></td>
+      `;
+      return { row, matched: match.found };
+    }
+
+    function renderPunches(punches) {
+      previewBody.innerHTML = "";
+      const names = rosterNames();
+      const lookup = rosterLookup();
+      let unmatched = 0;
+
+      const groups = new Map();
+      punches.forEach((punch) => {
+        const shift = previewShiftForRecord(punch, names, lookup);
+        if (!groups.has(shift)) groups.set(shift, []);
+        groups.get(shift).push(punch);
+      });
+
+      Array.from(groups.entries())
+        .sort(([a], [b]) => shiftGroupOrder(a) - shiftGroupOrder(b))
+        .forEach(([shift, records]) => {
+          previewBody.appendChild(createShiftGroupRow(shift, records.length));
+          records.forEach((punch) => {
+            const { row, matched } = createPunchRow(punch, names);
+            if (!matched) unmatched += 1;
+            previewBody.appendChild(row);
+          });
+      });
+      emptyState.style.display = punches.length ? "none" : "block";
+      status.textContent = unmatched ? `${punches.length} records / ${unmatched} unmatched` : `${punches.length} records`;
+      saveUnmatchedImportsFromPreview();
+      renderMissingRosterActions();
+      updatePushNotice();
+      syncArchiveCalendarDate();
+    }
+
+    function previewRecordKey(record) {
+      return [
+        normalizeName(record.name),
+        String(record.date || "").trim(),
+        String(record.start || "").trim(),
+        String(record.lunch || "").trim(),
+        String(record.end || "").trim(),
+        String(record.note || "").trim().toLowerCase()
+      ].join("|");
+    }
+
+    function appendPreviewRecords(records) {
+      const merged = readPreview();
+      const seen = new Set(merged.map(previewRecordKey));
+      records.forEach((record) => {
+        const key = previewRecordKey(record);
+        if (seen.has(key)) return;
+        seen.add(key);
+        merged.push(record);
+      });
+      return merged;
+    }
+
+    function refreshStatusFromPreview() {
+      const rows = previewBody.querySelectorAll("tr.record-row");
+      const unmatched = previewBody.querySelectorAll("tr.record-row.unmatched").length;
+      status.textContent = unmatched ? `${rows.length} records / ${unmatched} unmatched` : `${rows.length} records`;
+      renderMissingRosterActions();
+    }
+
+    function saveUnmatchedImportsFromPreview() {
+      const names = Array.from(previewBody.querySelectorAll("tr.unmatched .name-cell input"))
+        .map((input) => input.value.trim())
+        .filter(Boolean);
+      localStorage.setItem(unmatchedStorageKey, JSON.stringify(Array.from(new Set(names))));
+    }
+
+    function uniquePreviewMisses() {
+      const names = rosterNames();
+      const seen = new Set();
+      return readPreview().map((punch) => {
+        const match = matchRosterName(punch.name, names);
+        return { punch, match };
+      }).filter(({ punch, match }) => {
+        const key = normalizeName(punch.name);
+        if (match.found || !key || seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+    }
+
+    function renderMissingRosterActions() {
+      const missing = uniquePreviewMisses();
+      missingRosterPanel.hidden = missing.length === 0;
+      missingRosterCount.textContent = `${missing.length} ${missing.length === 1 ? "name" : "names"}`;
+      missingRosterBody.innerHTML = missing.map(({ punch, match }) => {
+        const suggestion = match.hasSuggestion ? match.suggestion : "";
+        return `
+          <div class="missing-roster-row" data-name="${escapeHtml(punch.name)}">
+            <div>${escapeHtml(punch.name)}</div>
+            <div>${suggestion ? `Suggestion: ${escapeHtml(suggestion)} <button type="button" class="convert-name" data-suggestion="${escapeHtml(suggestion)}">Use</button>` : "No close suggestion"}</div>
+            <select class="target-shift" aria-label="Target shift for ${escapeHtml(punch.name)}">
+              <option value="first">1st Shift</option>
+              <option value="second">Second Shift</option>
+              <option value="gate">Gate</option>
+              <option value="mechanics">Mechanics</option>
+              <option value="managers">Managers</option>
+            </select>
+            <button type="button" class="add-roster-name">Add</button>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function rosterStateHasSavedRows(state) {
+      return ["first", "second", "gate", "mechanics", "managers"].some((key) => Array.isArray(state[key]) && state[key].length);
+    }
+
+    function readRosterAdditions() {
+      try {
+        const additions = JSON.parse(localStorage.getItem(rosterAdditionsKey) || "[]");
+        return Array.isArray(additions) ? additions : [];
+      } catch (error) {
+        localStorage.removeItem(rosterAdditionsKey);
+        return [];
+      }
+    }
+
+    function rosterAlreadyHasName(name) {
+      const normalized = normalizeName(name);
+      return rosterNames().some((candidate) => normalizeName(candidate) === normalized);
+    }
+
+    function addNameToRoster(name, shift) {
+      const cleanName = String(name || "").trim();
+      const targetShift = shiftLabels[shift] ? shift : "first";
+      if (!cleanName) return false;
+      if (rosterAlreadyHasName(cleanName)) return true;
+
+      const employee = {
+        name: cleanName,
+        role: "",
+        days: ["W", "W", "W", "W", "W", "W", "W"],
+        shift: targetShift
+      };
+
+      try {
+        const state = JSON.parse(localStorage.getItem(rosterStorageKey) || "{}");
+        if (rosterStateHasSavedRows(state)) {
+          if (!Array.isArray(state[targetShift])) state[targetShift] = [];
+          state[targetShift].push({ name: employee.name, role: employee.role, days: employee.days });
+          localStorage.setItem(rosterStorageKey, JSON.stringify(state));
+          return true;
+        }
+      } catch (error) {
+        localStorage.removeItem(rosterStorageKey);
+      }
+
+      const additions = readRosterAdditions();
+      additions.push(employee);
+      localStorage.setItem(rosterAdditionsKey, JSON.stringify(additions));
+      return true;
+    }
+
+    function renamePreviewEmployee(oldName, newName) {
+      const oldKey = normalizeName(oldName);
+      previewBody.querySelectorAll("tr").forEach((row) => {
+        const nameInput = row.querySelector(".name-cell input");
+        if (nameInput && normalizeName(nameInput.value) === oldKey) {
+          nameInput.value = newName;
+        }
+      });
+      renderPunches(readPreview());
+    }
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, (char) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+      }[char]));
+    }
+
+    function previewRecordFromRow(row) {
+      const inputs = row.querySelectorAll("input");
+      return {
+        source: row.dataset.source || "",
+        name: inputs[0]?.value.trim() || "",
+        date: inputs[1]?.value.trim() || "",
+        start: inputs[2]?.value.trim() || "",
+        lunch: inputs[3]?.value.trim() || "",
+        end: inputs[4]?.value.trim() || "",
+        note: inputs[5] ? inputs[5].value.trim() : "",
+        absencePaid: row.dataset.absencePaid === "1",
+        absenceUnpaid: row.dataset.absenceUnpaid === "1",
+        absenceHours: row.dataset.absenceHours || ""
+      };
+    }
+
+    function readPreview() {
+      return Array.from(previewBody.querySelectorAll("tr.record-row"))
+        .map(previewRecordFromRow)
+        .filter((row) => row.name);
+    }
+
+    function rosterValidatedPunches(records = readPreview()) {
+      const names = rosterNames();
+      const skipped = [];
+      const accepted = records.map((punch) => {
+        const match = matchRosterName(punch.name, names);
+        if (!match.found) {
+          skipped.push(punch.name);
+          return null;
+        }
+
+        const acceptedPunch = {
+          ...punch,
+          name: match.suggestion || punch.name
+        };
+
+        if (acceptedPunch.note && acceptedPunch.absencePaid && acceptedPunch.absenceHours) {
+          acceptedPunch.start = shiftStartForEmployee(acceptedPunch.name);
+          acceptedPunch.lunch = "NO";
+          acceptedPunch.end = endFromStartAndHours(acceptedPunch.start, Number(acceptedPunch.absenceHours));
+        }
+
+        return acceptedPunch;
+      }).filter(Boolean);
+
+      return { accepted, skipped };
+    }
+
+    function readStoredPunches() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(storageKey) || "[]");
+        return Array.isArray(saved) ? saved : [];
+      } catch (error) {
+        localStorage.removeItem(storageKey);
+        return [];
+      }
+    }
+
+    function punchDateKey(record) {
+      return inputDateFromPunchDate(record?.date) || selectedSheetDateValue();
+    }
+
+    function punchIdentityKey(record) {
+      return [
+        punchDateKey(record),
+        normalizeName(record?.name),
+        recordSource(record),
+        String(record?.start || "").trim(),
+        String(record?.lunch || "").trim(),
+        String(record?.end || "").trim(),
+        String(record?.note || "").trim().toLowerCase()
+      ].join("|");
+    }
+
+    function mergePunchesForDates(existing, incoming) {
+      const incomingDates = new Set(incoming.map(punchDateKey).filter(Boolean));
+      const merged = new Map();
+
+      existing.forEach((record) => {
+        const dateKey = punchDateKey(record);
+        if (dateKey && incomingDates.has(dateKey)) return;
+        merged.set(punchIdentityKey(record), record);
+      });
+
+      incoming.forEach((record) => {
+        merged.set(punchIdentityKey(record), record);
+      });
+
+      return Array.from(merged.values());
+    }
+
+    function saveAcceptedPunches(accepted) {
+      const stored = mergePunchesForDates(readStoredPunches(), accepted);
+      localStorage.setItem(storageKey, JSON.stringify(stored));
+      return stored;
+    }
+
+    function replaceAcceptedPunches(accepted) {
+      localStorage.setItem(storageKey, JSON.stringify(accepted));
+      return accepted;
+    }
+
+
+    previewBody.addEventListener("click", (event) => {
+      const yesButton = event.target.closest(".suggestion-yes");
+      const noButton = event.target.closest(".suggestion-no");
+      const ignoreButton = event.target.closest(".suggestion-ignore");
+      if (!yesButton && !noButton && !ignoreButton) return;
+
+      const row = event.target.closest("tr");
+      if (!row) return;
+
+      if (ignoreButton) {
+        const ignored = previewRecordFromRow(row);
+        const ignoredKey = previewRecordKey(ignored);
+        let removed = false;
+        const remaining = readPreview().filter((record) => {
+          if (!removed && previewRecordKey(record) === ignoredKey) {
+            removed = true;
+            return false;
+          }
+          return true;
+        });
+        renderPunches(remaining);
+        setPendingPush(remaining.length > 0);
+        status.textContent = ignored.name ? `Ignored ${ignored.name} / ${remaining.length} records` : `Ignored row / ${remaining.length} records`;
+        return;
+      }
+
+      if (yesButton) {
+        const suggestedName = row.dataset.suggestion || "";
+        const nameInput = row.querySelector(".name-cell input");
+        if (suggestedName && nameInput) {
+          nameInput.value = suggestedName;
+          row.classList.remove("unmatched");
+          row.removeAttribute("data-suggestion");
+        }
+      }
+
+      row.querySelector(".suggestion")?.remove();
+      refreshStatusFromPreview();
+      saveUnmatchedImportsFromPreview();
+      setPendingPush(true);
+    });
+
+    previewBody.addEventListener("input", (event) => {
+      if (!event.target.matches("input")) return;
+      refreshStatusFromPreview();
+      saveUnmatchedImportsFromPreview();
+      setPendingPush(true);
+    });
+
+    missingRosterBody.addEventListener("click", (event) => {
+      const convertButton = event.target.closest(".convert-name");
+      const addButton = event.target.closest(".add-roster-name");
+      if (!convertButton && !addButton) return;
+
+      const row = event.target.closest(".missing-roster-row");
+      if (!row) return;
+
+      const importedName = row.dataset.name || "";
+      if (convertButton) {
+        const suggestion = convertButton.dataset.suggestion || "";
+        if (suggestion) {
+          renamePreviewEmployee(importedName, suggestion);
+          status.textContent = `Converted ${importedName} to ${suggestion}`;
+          setPendingPush(true);
+        }
+        return;
+      }
+
+      if (addButton) {
+        const shift = row.querySelector(".target-shift")?.value || "first";
+        if (addNameToRoster(importedName, shift)) {
+          renderPunches(readPreview());
+          status.textContent = `Added ${importedName} to ${shiftLabels[shift]}`;
+          setPendingPush(true);
+        }
+      }
+    });
+
+    excelPreviewToggle.addEventListener("click", () => {
+      const isCollapsed = excelPreviewSection.classList.toggle("collapsed");
+      excelPreviewToggle.setAttribute("aria-expanded", String(!isCollapsed));
+    });
+
+    archiveCalendarDate.addEventListener("change", () => {
+      archiveCalendarDate.dataset.auto = "0";
+      if (archiveCalendarDate.value) localStorage.setItem(archiveSelectedDateKey, archiveCalendarDate.value);
+    });
+
+    archiveCalendarButton.addEventListener("click", openArchiveCalendar);
+
+    function sheetRows(workbook, sheetName, raw = false) {
+      const sheet = workbook.Sheets[sheetName];
+      return XLSX.utils.sheet_to_json(sheet, { header: 1, raw, defval: "" });
+    }
+
+    function preferredPunchSheetNames(workbook) {
+      const sheet2 = workbook.SheetNames.filter((sheetName) => sheetName.trim().toLowerCase() === "sheet2");
+      return sheet2.length ? sheet2 : workbook.SheetNames;
+    }
+
+    function fileNameStartsWith(file, prefix) {
+      return String(file?.name || "").trim().toLowerCase().startsWith(prefix);
+    }
+
+    function rejectImportFile(input, message) {
+      input.value = "";
+      status.textContent = message;
+    }
+
+    function readWorkbookFromBuffer(buffer) {
+      try {
+        return XLSX.read(buffer, { type: "array" });
+      } catch (error) {
+        const text = new TextDecoder().decode(buffer);
+        return XLSX.read(text, { type: "string" });
+      }
+    }
+
+    document.getElementById("previousTimesheetInput").addEventListener("change", async (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      if (!window.XLSX) {
+        previousTimesheetStatus.textContent = "XLSX ERROR";
+        status.textContent = "XLSX parser unavailable";
+        return;
+      }
+
+      try {
+        const workbook = readWorkbookFromBuffer(await file.arrayBuffer());
+        const result = parsePreviousTimesheetHours(workbook);
+        localStorage.setItem(previousTimesheetStorageKey, JSON.stringify({
+          source: result.source,
+          hours: result.hours,
+          actualHours: result.actualHours,
+          rows: result.rows,
+          records: result.records,
+          fileName: file.name,
+          importedAt: new Date().toISOString()
+        }));
+        const restoreRecords = Array.isArray(result.records) ? result.records.map(previousRecordToPreviewPunch) : [];
+        syncTimesheetMdDateFromPrevious(result.records);
+        if (restoreRecords.length) {
+          renderPunches(appendPreviewRecords(restoreRecords));
+          setPendingPush(true);
+        }
+        updatePreviousTimesheetStatus();
+        const importedHours = result.source === "timesheet-md-export" ? Number(result.actualHours || 0) : Number(result.hours || 0);
+        status.textContent = `Previous timesheet imported: ${importedHours.toFixed(1)} hrs / ${result.rows || 0} rows`;
+      } catch (error) {
+        previousTimesheetStatus.textContent = "IMPORT ERROR";
+        status.textContent = "Previous timesheet import failed";
+      } finally {
+        event.target.value = "";
+      }
+    });
+
+    document.getElementById("fileInput").addEventListener("change", async (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      if (!window.XLSX) {
+        status.textContent = "XLSX parser unavailable";
+        return;
+      }
+
+      const buffer = await file.arrayBuffer();
+      const workbook = readWorkbookFromBuffer(buffer);
+      const targetSheets = preferredPunchSheetNames(workbook);
+      const punches = [];
+      let previewRendered = false;
+
+      targetSheets.forEach((sheetName) => {
+        const rows = sheetRows(workbook, sheetName);
+        const rawRows = sheetRows(workbook, sheetName, true);
+        const extractedNameCells = new Set();
+        const headerCells = new Set();
+        punches.push(...parsePunchWorkbookRows(rows, extractedNameCells, headerCells, rawRows));
+
+        if (!previewRendered) {
+          renderExcelPreview(rows, extractedNameCells, headerCells, sheetName);
+          previewRendered = true;
+        }
+      });
+      renderPunches(punches);
+      setPendingPush(punches.length > 0);
+      if (!punches.length) {
+        status.textContent = "No punch records found in this workbook";
+      }
+    });
+
+    document.getElementById("noteFileInput").addEventListener("change", async (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      if (!fileNameStartsWith(file, "payroll")) {
+        rejectImportFile(event.target, "Note scan import must start with Payroll");
+        return;
+      }
+
+      if (!window.XLSX) {
+        status.textContent = "XLSX parser unavailable";
+        return;
+      }
+
+      const buffer = await file.arrayBuffer();
+      const workbook = XLSX.read(buffer, { type: "array" });
+      const records = [];
+      let fallbackPreview = null;
+      let previewRendered = false;
+
+      workbook.SheetNames.forEach((sheetName) => {
+        const rows = sheetRows(workbook, sheetName);
+        const extractedNameCells = new Set();
+        const headerCells = new Set();
+        const parsed = parsePayrollAbsenceRows(rows, extractedNameCells, headerCells);
+        records.push(...parsed);
+
+        if (!fallbackPreview) {
+          fallbackPreview = { rows, extractedNameCells, headerCells, sheetName };
+        }
+
+        if (!previewRendered && (parsed.length || extractedNameCells.size || headerCells.size)) {
+          renderExcelPreview(rows, extractedNameCells, headerCells, sheetName);
+          previewRendered = true;
+        }
+      });
+
+      if (!previewRendered && fallbackPreview) {
+        renderExcelPreview(fallbackPreview.rows, fallbackPreview.extractedNameCells, fallbackPreview.headerCells, fallbackPreview.sheetName);
+      }
+
+      const merged = appendPreviewRecords(records);
+      renderPunches(merged);
+      setPendingPush(records.length > 0);
+      if (!records.length) {
+        appendImportMessage("No records found from import scan");
+        status.textContent = merged.length ? `${merged.length} records / no records found from import scan` : "No records found from import scan";
+      }
+    });
+
+    document.getElementById("saveButton").addEventListener("click", () => {
+      const previewPunches = readPreview();
+      const { accepted, skipped } = rosterValidatedPunches(previewPunches);
+      saveAcceptedPunches(accepted);
+      localStorage.setItem(unmatchedStorageKey, JSON.stringify(Array.from(new Set(skipped))));
+      renderPunches(previewPunches);
+      setPendingPush(false);
+      notifyTimesheetMdUpdate();
+      const previousCount = accepted.filter((record) => recordSource(record) === "previous").length;
+      const savedText = previousCount ? `Saved ${accepted.length} / restored ${previousCount}` : `Saved ${accepted.length}`;
+      status.textContent = skipped.length ? `${savedText} / skipped ${skipped.length} not on roster` : savedText;
+    });
+
+    function clearRecordsBySource(source, label) {
+      const remaining = readPreview().filter((record) => recordSource(record) !== source);
+      const { accepted, skipped } = rosterValidatedPunches(remaining);
+      replaceAcceptedPunches(accepted);
+      localStorage.setItem(unmatchedStorageKey, JSON.stringify(Array.from(new Set(skipped))));
+      renderPunches(remaining);
+      setPendingPush(false);
+      notifyTimesheetMdUpdate();
+      if (!remaining.length) {
+        excelPreviewSection.hidden = true;
+        excelPreviewHead.innerHTML = "";
+        excelPreviewBody.innerHTML = "";
+      }
+      status.textContent = skipped.length
+        ? `${label} cleared / ${remaining.length} records remain / ${skipped.length} unmatched`
+        : `${label} cleared / ${remaining.length} records remain`;
+    }
+
+    function setClearMenuOpen(open) {
+      clearSplit.classList.toggle("open", open);
+      clearMenuButton.setAttribute("aria-expanded", String(open));
+    }
+
+    function clearPreviousTimesheet() {
+      localStorage.removeItem(previousTimesheetStorageKey);
+      const remaining = readPreview().filter((record) => recordSource(record) !== "previous");
+      const { accepted, skipped } = rosterValidatedPunches(remaining);
+      replaceAcceptedPunches(accepted);
+      localStorage.setItem(unmatchedStorageKey, JSON.stringify(Array.from(new Set(skipped))));
+      renderPunches(remaining);
+      setPendingPush(false);
+      notifyTimesheetMdUpdate();
+      updatePreviousTimesheetStatus();
+      status.textContent = "Previous time cleared";
+    }
+
+    function runClearAction(action) {
+      if (action === "punch") {
+        clearRecordsBySource("punch", "Punches");
+      } else if (action === "note") {
+        clearRecordsBySource("note", "Note scan");
+      } else if (action === "previous") {
+        clearPreviousTimesheet();
+      }
+    }
+
+    [clearDefaultButton, clearMenuButton].forEach((button) => {
+      button.addEventListener("click", (event) => {
+        event.stopPropagation();
+        setClearMenuOpen(!clearSplit.classList.contains("open"));
+      });
+    });
+
+    clearMenu.addEventListener("click", (event) => {
+      const actionButton = event.target.closest("[data-clear-action]");
+      if (!actionButton) return;
+      setClearMenuOpen(false);
+      runClearAction(actionButton.dataset.clearAction);
+    });
+
+    document.addEventListener("click", (event) => {
+      if (!clearSplit.contains(event.target)) setClearMenuOpen(false);
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") setClearMenuOpen(false);
+    });
+
+    try {
+      const saved = JSON.parse(localStorage.getItem(storageKey) || "[]");
+      renderPunches(Array.isArray(saved) ? saved : []);
+    } catch (error) {
+      localStorage.removeItem(storageKey);
+    }
+    updatePreviousTimesheetStatus();
+    })();
+  </script>
+</body>
+</html>

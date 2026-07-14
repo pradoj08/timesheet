@@ -1,0 +1,3273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Time Off</title>
+  <style>
+    :root {
+      --ink: #111827;
+      --muted: #6b7280;
+      --line: #d8dee8;
+      --soft: #f8fafc;
+      --purple: #312e81;
+      --green: #16a34a;
+      --red: #dc2626;
+      --gold: #d97706;
+      --violet: #7c3aed;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: #fff;
+      color: var(--ink);
+      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+      font-size: 13px;
+      overflow-x: hidden;
+    }
+
+    .page-switcher {
+      width: 100%;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      align-items: center;
+      padding: 6px 8px;
+      background: #111;
+      border-bottom: 2px solid #000;
+    }
+
+    .page-switcher a {
+      min-width: 118px;
+      height: 28px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid #777;
+      background: #e7e6e6;
+      color: #000;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .page-switcher a.active {
+      background: #ffff00;
+      border-color: #ffff00;
+    }
+
+    .calendar-shell {
+      width: min(1320px, calc(100% - 34px));
+      min-height: 0;
+      margin: 10px auto 8px;
+      padding: 28px 30px 12px;
+      border: 1px solid #e5e7eb;
+      border-radius: 16px;
+      background: #fff;
+      box-shadow: 0 3px 16px rgba(15, 23, 42, .11);
+      overflow: visible;
+    }
+
+    .calendar-toolbar {
+      min-height: 54px;
+      display: grid;
+      grid-template-columns: minmax(360px, 1fr) auto;
+      gap: 18px;
+      align-items: center;
+      padding: 0 0 18px;
+      border-bottom: 1px solid #eef0f4;
+      background: transparent;
+    }
+
+    .title-block {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    h1 {
+      margin: 0;
+      color: #0f172a;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 49px;
+      font-weight: 500;
+      line-height: 1;
+      letter-spacing: 0;
+    }
+
+    .title-year {
+      color: #0f172a;
+    }
+
+    .month-title {
+      display: none;
+    }
+
+    .import-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 28px;
+      padding: 0 11px;
+      border: 1px solid #d5deea;
+      border-radius: 999px;
+      background: #f8fafc;
+      color: #475569;
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .import-button:hover {
+      background: #eef3f8;
+      border-color: #c7d2df;
+      color: #111827;
+    }
+
+    .import-button input {
+      display: none;
+    }
+
+    .import-status {
+      display: none;
+    }
+
+    .view-toggle {
+      flex: 0 0 auto;
+      display: inline-grid;
+      grid-template-columns: repeat(4, minmax(62px, auto));
+      overflow: hidden;
+      border: 1px solid #d5deea;
+      border-radius: 8px;
+      background: #f8fafc;
+    }
+
+    .view-toggle button {
+      min-height: 30px;
+      padding: 0 9px;
+      border: 0;
+      border-right: 1px solid #d5deea;
+      background: transparent;
+      color: #64748b;
+      font-size: 10px;
+      font-weight: 900;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .view-toggle button:last-child { border-right: 0; }
+    .view-toggle button.active {
+      background: #0f172a;
+      color: #fff;
+    }
+
+    .status-key {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 8px 10px;
+      width: 100%;
+      min-width: 0;
+      padding-top: 2px;
+      overflow-x: visible;
+      color: #475569;
+      font-size: 11px;
+      font-weight: 800;
+      text-align: center;
+      white-space: normal;
+      scrollbar-width: none;
+    }
+
+    .status-key::-webkit-scrollbar { display: none; }
+
+    .status-key span {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .status-key i {
+      width: 9px;
+      height: 9px;
+      display: inline-block;
+      border-radius: 2px;
+    }
+
+    .status-key .sick-color { background: #dc2626; }
+    .status-key .vacation-color { background: #7c3aed; }
+    .status-key .unknown-color { background: #64748b; }
+    .status-key .came-in-color { background: #16a34a; }
+
+    .status-key b { font-weight: 900; }
+    .status-key .crane-key { color: #f4c95d; }
+    .status-key .bn-key { color: #fb923c; }
+    .status-key .sick-key { color: #f87171; }
+    .status-key .vacation-key { color: #c4a7ff; }
+    .status-key .unknown-key { color: #cbd5e1; }
+    .status-key .out-key { color: #cbd5e1; }
+    .status-key .ncns-key { color: #f87171; }
+    .status-key .here-key { color: #4ade80; }
+    .status-key .flip-line-key { color: #22c55e; }
+    .status-key .came-in-key { color: #4ade80; }
+
+    .view-pane[hidden] { display: none !important; }
+    .calendar-shell.list-mode { width: min(1700px, calc(100% - 20px)); }
+    .calendar-shell.three-day-list-mode { width: min(1180px, calc(100% - 20px)); }
+
+    .month-controls {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .legend {
+      display: inline-flex;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 7px 15px;
+      margin-right: 12px;
+      color: #667085;
+      font-size: 18px;
+      font-weight: 500;
+    }
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      white-space: nowrap;
+    }
+
+    .legend-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: currentColor;
+    }
+
+    .legend-item.vac { color: #7c3aed; }
+    .legend-item.sic { color: #c84f5b; }
+    .legend-item.flo { color: #5867b8; }
+    .legend-item.hol { color: #a16207; }
+    .legend-item.work { color: #16804a; }
+    .legend-item.crane { color: #b7791f; }
+    .legend-item.mgr { color: #c05621; }
+
+    button { font: inherit; }
+
+    .icon-button,
+    .secondary-button {
+      height: 38px;
+      border: 1px solid #e2e6ee;
+      border-radius: 9px;
+      background: #fff;
+      color: #0f172a;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .icon-button { width: 38px; }
+    .secondary-button { padding: 0 17px; }
+
+    .calendar-weekdays,
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 0 7px;
+      padding: 0;
+    }
+
+    .calendar-weekdays {
+      padding-top: 16px;
+      padding-bottom: 9px;
+    }
+
+    .weekday {
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      color: #8f96a5;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      padding-left: 10px;
+    }
+
+    .calendar-grid {
+      grid-auto-rows: minmax(150px, auto);
+      row-gap: 8px;
+    }
+
+    .day-cell {
+      min-height: 150px;
+      height: auto;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 6px;
+      padding: 11px 9px 9px;
+      border: 1px solid #dbe2ec;
+      border-radius: 10px;
+      background: #f3f6fb;
+      color: #111827;
+      cursor: pointer;
+      text-align: left;
+    }
+
+    .day-cell:hover {
+      border-color: #cfd8e6;
+      background: #edf2f8;
+    }
+
+
+    .day-cell.current-week {
+      border-color: #ded8bf;
+      background: #fbf8ee;
+    }
+
+    .day-cell.current-week:hover {
+      background: #f8f3df;
+    }
+
+    .day-cell.selected {
+      border-color: #009b95;
+      background: #e5fbf8;
+      box-shadow: inset 0 0 0 1px #009b95;
+    }
+
+    .day-cell.muted,
+    .day-cell.weekend:not(.selected):not(.current-week) {
+      background: #eef1f6;
+    }
+
+    .day-cell.muted {
+      color: #bbc2cf;
+    }
+
+    .day-cell.past-day .timeoff-name {
+      opacity: .35;
+    }
+
+    .day-number {
+      color: inherit;
+      font-size: 13px;
+      font-weight: 750;
+      line-height: 1;
+      margin-bottom: 3px;
+      text-align: left;
+    }
+
+    .timeoff-pill {
+      width: 100%;
+      min-height: 28px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: start;
+      column-gap: 6px;
+      row-gap: 2px;
+      padding: 4px 7px;
+      border: 0;
+      border-left: 3px solid currentColor;
+      border-radius: 6px;
+      background: #f1ebff;
+      color: #6d28d9;
+      font-family: "Segoe UI", Arial, Helvetica, sans-serif;
+      font-stretch: normal;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0;
+      line-height: 1.18;
+      text-align: left;
+      white-space: normal;
+    }
+
+    .timeoff-name {
+      min-width: 0;
+      overflow: visible;
+      text-overflow: clip;
+      white-space: normal;
+      overflow-wrap: anywhere;
+      word-break: normal;
+      line-height: 1.18;
+    }
+
+    .timeoff-location {
+      grid-column: 1 / -1;
+      min-width: 0;
+      color: currentColor;
+      font-size: 10px;
+      font-weight: 500;
+      line-height: 1.05;
+      opacity: .82;
+      overflow-wrap: anywhere;
+    }
+
+    .timeoff-shift {
+      grid-column: 1 / -1;
+      min-width: 0;
+      color: currentColor;
+      font-size: 10px;
+      font-weight: 800;
+      line-height: 1.05;
+      opacity: .9;
+      text-transform: uppercase;
+      overflow-wrap: anywhere;
+    }
+
+    .timeoff-code {
+      align-self: start;
+      justify-self: end;
+      padding-top: 1px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .03em;
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    .timeoff-pill.sic {
+      background: #fdebed;
+      color: #c62f43;
+    }
+
+    .timeoff-pill.vac {
+      background: #f1ebff;
+      color: #6d28d9;
+    }
+
+    .timeoff-pill.flo {
+      background: #edf1ff;
+      color: #4f5fba;
+    }
+
+    .timeoff-pill.hol {
+      background: #fff4d8;
+      color: #a16207;
+    }
+
+    .timeoff-pill.orange-person {
+      background: #fff0dc;
+      color: #c05621;
+    }
+
+    .more-pill {
+      padding-left: 8px;
+      color: #008f87;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .staff-list-view {
+      padding-top: 4px;
+    }
+
+    .staff-week {
+      margin-bottom: 6px;
+      background: transparent;
+    }
+
+    .staff-week-head {
+      min-height: 33px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 6px 10px;
+      background: #0f172a;
+      color: #fff;
+    }
+
+    .staff-week-head strong {
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .staff-week-head span {
+      color: #cbd5e1;
+      font-size: 10px;
+      font-weight: 800;
+    }
+
+    .staff-week-grid {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 2px;
+    }
+
+    .staff-list-view.three-day-mode .staff-week-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .staff-day {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      border: 2px solid #334e7d;
+      background: #fff;
+    }
+
+    .staff-day:last-child { border-right: 2px solid #334e7d; }
+    .staff-day.outside-month { background: #f8fafc; }
+    .staff-day.today { box-shadow: none; }
+    .staff-day.selected {
+      border-color: #009b95;
+      box-shadow: none;
+    }
+
+    .staff-day-button {
+      width: 100%;
+      min-height: 25px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 1px 4px;
+      padding: 3px 4px;
+      border: 0;
+      border-bottom: 1px solid #d8dee8;
+      background: #f1f5f9;
+      color: #0f172a;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .staff-day-button:hover { background: #e8eef6; }
+    .staff-day-button strong {
+      min-width: 0;
+      overflow: hidden;
+      font-size: 14px;
+      font-weight: 900;
+      text-overflow: ellipsis;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .staff-day-button b {
+      font-size: 15px;
+      font-weight: 900;
+    }
+
+    .staff-day-button span {
+      grid-column: 1 / -1;
+      color: #64748b;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .staff-day-button .relative-day-label {
+      color: #334155;
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing: .08em;
+      line-height: 1;
+      text-transform: uppercase;
+    }
+
+    .staff-list-view.three-day-mode .staff-day-button {
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      gap: 6px;
+    }
+
+    .staff-list-view.three-day-mode .staff-day-button .relative-day-label {
+      grid-column: auto;
+      justify-self: start;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .staff-list-view.three-day-mode .staff-day-button b {
+      grid-column: 3;
+      justify-self: end;
+    }
+
+    .staff-shift-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      flex: 1;
+    }
+
+    .staff-shift {
+      min-width: 0;
+      padding: 2px;
+      border-right: 1px solid #e5e7eb;
+    }
+
+    .staff-shift:last-child { border-right: 0; }
+    .staff-shift h3,
+    .staff-support-group h3 {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 2px;
+      margin: 0 0 1px;
+      color: #334155;
+      font-size: 13px;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .staff-shift h3 {
+      margin: -2px -2px 1px;
+      padding: 2px 3px;
+      background: #000;
+      color: #fff;
+      cursor: pointer;
+      transition: background 120ms ease;
+    }
+
+    .staff-shift h3:hover,
+    .staff-shift h3:focus-visible { background: #334155; outline: 2px solid #facc15; outline-offset: -2px; }
+
+    .staff-shift h3 b,
+    .staff-support-group h3 b { color: #0f172a; }
+
+    .staff-shift h3 b { color: #fff; }
+
+    .staff-pill-list {
+      display: grid;
+      gap: 0;
+    }
+
+    .staff-pill {
+      width: 100%;
+      min-width: 0;
+      min-height: 15px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 2px;
+      padding: 1px 2px;
+      border: 1px solid #bde4c9;
+      border-radius: 3px;
+      background: #e8f7ec;
+      color: #166534;
+      font-size: 13px;
+      font-weight: 750;
+      font-family: inherit;
+      line-height: 1.1;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .staff-pill > span {
+      min-width: 0;
+      overflow-wrap: anywhere;
+    }
+
+    .staff-pill small {
+      font-size: 11px;
+      font-weight: 900;
+      line-height: 1;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .staff-pill .crane-flag {
+      color: #b7791f;
+      font-weight: 900;
+    }
+
+    .staff-pill.plain {
+      min-height: 14px;
+      padding: 1px 2px;
+      border-color: transparent;
+      background: transparent;
+      color: #0f172a;
+    }
+
+    .staff-pill.crane {
+      border-color: #e5b94f;
+      background: #fff0bd;
+      color: #7a4b00;
+    }
+
+    .staff-pill.manager {
+      border-color: #f4bf8d;
+      background: #fff0dc;
+      color: #9a4717;
+    }
+
+    .staff-pill.vac {
+      border-color: #d8c5ff;
+      background: #f1ebff;
+      color: #6d28d9;
+    }
+
+    .staff-pill.sic {
+      border-color: #f6c7cd;
+      background: #fdebed;
+      color: #b42338;
+    }
+
+    .staff-pill.flo {
+      border-color: #cad3ff;
+      background: #edf1ff;
+      color: #4f5fba;
+    }
+
+    .staff-pill.hol {
+      border-color: #efd89c;
+      background: #fff4d8;
+      color: #92620a;
+    }
+
+    .staff-pill.other-away {
+      border-color: #d8dee8;
+      background: #eef1f6;
+      color: #475569;
+    }
+
+    .staff-pill.unknown {
+      border-color: #cbd5e1;
+      background: #e2e8f0;
+      color: #334155;
+    }
+
+    .staff-pill.bnsf {
+      border-color: #f6c7cd;
+      background: #fdebed;
+      color: #b42338;
+    }
+
+    .staff-pill.called-off,
+    .staff-pill.ncns {
+      border-color: #f6c7cd;
+      background: #fdebed;
+      color: #b42338;
+    }
+
+    .staff-pill.out {
+      border-color: #cbd5e1;
+      background: #e2e8f0;
+      color: #334155;
+    }
+
+    .staff-pill.came-in {
+      border-color: #86d49c;
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .staff-pill.flip-line {
+      border-color: #86d49c;
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .staff-pill.bn {
+      border-color: #f0a54a;
+      background: #ffedd5;
+      color: #9a3412;
+    }
+
+    .staff-pill .bn-flag {
+      color: #c65d08;
+      font-weight: 900;
+    }
+
+    .staff-pill .status-flag {
+      font-weight: 900;
+    }
+
+    .employee-bank-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 1100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      background: rgba(15, 23, 42, .45);
+    }
+
+    .employee-bank-backdrop.open { display: flex; }
+
+    .employee-bank-dialog {
+      width: min(430px, 100%);
+      overflow: hidden;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      background: #fff;
+      box-shadow: 0 18px 45px rgba(15, 23, 42, .28);
+    }
+
+    .employee-bank-dialog header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      background: #0f172a;
+      color: #fff;
+    }
+
+    .employee-bank-dialog h2 { margin: 0; font-size: 15px; }
+    .employee-bank-dialog header button {
+      width: 26px;
+      height: 26px;
+      border: 1px solid #64748b;
+      border-radius: 4px;
+      background: transparent;
+      color: #fff;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    #offScheduleBackdrop {
+      align-items: flex-start;
+      padding-top: clamp(42px, 8vh, 86px);
+    }
+
+    .off-schedule-dialog { width: min(520px, 100%); }
+    .off-schedule-summary { padding: 10px 12px 0; color: #475569; font-size: 12px; font-weight: 800; }
+    .off-schedule-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; padding: 12px; }
+    .off-schedule-name { min-width: 0; padding: 7px 9px; overflow: hidden; border: 1px solid #cbd5e1; border-radius: 5px; background: #f8fafc; color: #0f172a; font-size: 12px; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
+    .off-schedule-empty { grid-column: 1 / -1; padding: 14px; color: #64748b; font-size: 12px; font-weight: 800; text-align: center; }
+
+    .employee-bank-form {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(130px, .7fr) auto;
+      gap: 8px;
+      padding: 14px;
+    }
+
+    .employee-bank-form label {
+      display: grid;
+      gap: 4px;
+      color: #475569;
+      font-size: 10px;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .employee-bank-form select,
+    .employee-bank-form button {
+      min-height: 34px;
+      border: 1px solid #cbd5e1;
+      border-radius: 5px;
+      background: #fff;
+      color: #0f172a;
+      font: inherit;
+    }
+
+    .employee-bank-form button {
+      align-self: end;
+      padding: 0 14px;
+      border-color: #0f172a;
+      background: #0f172a;
+      color: #fff;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .employee-bank-status {
+      min-height: 27px;
+      padding: 0 14px 12px;
+      color: #475569;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .employee-status-name {
+      padding: 12px 14px 0;
+      color: #0f172a;
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .employee-status-actions {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 7px;
+      padding: 14px;
+    }
+
+    .employee-status-action {
+      min-height: 42px;
+      border: 1px solid #cbd5e1;
+      border-radius: 5px;
+      background: #f8fafc;
+      color: #0f172a;
+      font-size: 11px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .employee-status-action span {
+      display: block;
+      margin-top: 2px;
+      font-size: 9px;
+      font-weight: 800;
+    }
+
+    .employee-status-action.sic,
+    .employee-status-action.calledoff,
+    .employee-status-action.ncns,
+    .employee-status-action.bnsf { border-color: #ef9aa5; background: #fdebed; color: #b42338; }
+    .employee-status-action.vac { border-color: #c4a7ff; background: #f1ebff; color: #6d28d9; }
+    .employee-status-action.here { border-color: #86d49c; background: #dcfce7; color: #166534; }
+    .employee-status-action.flipline { border-color: #86d49c; background: #dcfce7; color: #166534; }
+    .employee-status-action.out,
+    .employee-status-action.unknown { border-color: #aeb9c7; background: #e2e8f0; color: #334155; }
+    .employee-status-action.clear { border-color: #94a3b8; background: #ffffff; color: #475569; }
+    .employee-status-action.active { box-shadow: inset 0 0 0 2px currentColor; }
+
+    #employeeStatusBackdrop {
+      display: none;
+      padding: 0;
+      background: transparent;
+      pointer-events: none;
+    }
+
+    #employeeStatusBackdrop.open { display: block; }
+
+    #employeeStatusBackdrop .employee-bank-dialog {
+      position: fixed;
+      width: 190px;
+      border-radius: 5px;
+      pointer-events: auto;
+      box-shadow: 0 9px 24px rgba(15, 23, 42, .24);
+    }
+
+    #employeeStatusBackdrop .employee-bank-dialog header { padding: 7px 8px; }
+    #employeeStatusBackdrop .employee-bank-dialog h2 { font-size: 12px; }
+    #employeeStatusBackdrop .employee-bank-dialog header button { width: 22px; height: 22px; }
+    #employeeStatusBackdrop .employee-status-name { padding: 8px 9px 5px; font-size: 11px; }
+
+    #employeeStatusBackdrop .employee-status-actions {
+      grid-template-columns: 1fr;
+      gap: 0;
+      padding: 0 5px 5px;
+    }
+
+    #employeeStatusBackdrop .employee-status-action {
+      min-height: 29px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 4px 8px;
+      border-radius: 0;
+      text-align: left;
+    }
+
+    #employeeStatusBackdrop .employee-status-action + .employee-status-action { border-top: 0; }
+    #employeeStatusBackdrop .employee-status-action span { display: inline; margin: 0; font-size: 9px; }
+    #employeeStatusBackdrop .employee-bank-status { min-height: 0; padding: 2px 8px 7px; font-size: 9px; }
+
+    .staff-empty {
+      color: #a0a8b5;
+      font-size: 11px;
+      font-style: italic;
+    }
+
+    .staff-support {
+      display: grid;
+      gap: 1px;
+      padding: 2px;
+      border-top: 1px solid #e5e7eb;
+      background: #fafbfc;
+    }
+
+    .staff-support-group .staff-pill-list {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .staff-day-total {
+      min-height: 18px;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      align-items: center;
+      padding: 0;
+      border-top: 1px solid #d8dee8;
+      background: #f1f5f9;
+      color: #0f172a;
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .staff-day-total b {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      min-height: 18px;
+      padding-left: 2px;
+    }
+
+    .staff-day-total b:first-child { border-right: 1px solid #d8dee8; }
+
+    .staff-day-total b { color: #0f7a46; }
+    .staff-day-total .has-away { color: #b42338; }
+
+    /* The two-week board is intentionally denser than the monthly staff list. */
+    .calendar-shell.two-week-list-mode {
+      width: calc(100% - 14px);
+      max-width: none;
+      margin: 8px auto 16px;
+      padding: 0 0 10px;
+      border-radius: 0;
+      background: #f3f4f6;
+      box-shadow: none;
+    }
+
+    .two-week-list-mode .calendar-toolbar {
+      min-height: 60px;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 12px;
+      padding: 10px 14px;
+      border-bottom: 0;
+      background: #203144;
+    }
+
+    .two-week-list-mode .title-block {
+      flex-wrap: nowrap;
+      gap: 8px;
+    }
+
+    .two-week-list-mode h1 {
+      flex: 0 0 auto;
+      color: #fff;
+      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+      font-size: 28px;
+      font-weight: 900;
+    }
+
+    .two-week-list-mode .title-year { color: #fff; }
+
+    .two-week-list-mode .import-button,
+    .two-week-list-mode .view-toggle {
+      border-color: #607389;
+      border-radius: 0;
+      background: transparent;
+      color: #fff;
+    }
+
+    .two-week-list-mode .import-button {
+      min-height: 28px;
+      color: #fff;
+      font-size: 10px;
+    }
+
+    .two-week-list-mode .view-toggle button {
+      min-height: 28px;
+      border-color: #607389;
+      color: #dce5ef;
+      font-size: 10px;
+    }
+
+    .two-week-list-mode .view-toggle button.active {
+      background: #fff;
+      color: #203144;
+    }
+
+    .two-week-list-mode .status-key {
+      margin-left: auto;
+      color: #f8fafc;
+      font-size: 12px;
+    }
+
+    .two-week-list-mode .status-key i {
+      width: 6px;
+      height: 6px;
+      border-radius: 0;
+    }
+
+    .two-week-list-mode .month-controls { gap: 5px; }
+    .two-week-list-mode .icon-button,
+    .two-week-list-mode .secondary-button {
+      height: 28px;
+      border-color: #607389;
+      border-radius: 0;
+      background: transparent;
+      color: #fff;
+      font-size: 10px;
+    }
+    .two-week-list-mode .icon-button { width: 28px; }
+    .two-week-list-mode .secondary-button { padding: 0 10px; }
+
+    .staff-list-view.two-week-mode {
+      padding: 10px 8px 0;
+      overflow-x: auto;
+    }
+
+    .two-week-mode .staff-week {
+      min-width: 1050px;
+      margin-bottom: 16px;
+    }
+
+    .two-week-mode .staff-week:last-child { margin-bottom: 0; }
+
+    .two-week-mode .staff-week-grid {
+      grid-template-columns: repeat(7, minmax(150px, 1fr));
+      gap: 0;
+    }
+
+    .two-week-mode .staff-day,
+    .two-week-mode .staff-day:last-child {
+      min-height: 415px;
+      border: 2px solid #2f3742;
+      border-right: 0;
+      background: #f5f6f7;
+    }
+
+    .two-week-mode .staff-day:last-child { border-right: 2px solid #2f3742; }
+    .two-week-mode .staff-day.selected { border-color: #009b95; }
+
+    .two-week-mode .staff-day-button {
+      min-height: 38px;
+      padding: 5px 7px;
+      border-bottom: 2px solid #2f3742;
+      background: #f7f8fa;
+    }
+
+    .two-week-mode .staff-day-button:hover { background: #e9eef5; }
+    .two-week-mode .staff-day-button strong {
+      font-size: 12px;
+      letter-spacing: .02em;
+    }
+    .two-week-mode .staff-day-button b { font-size: 20px; }
+
+    .two-week-mode .staff-shift-grid {
+      min-height: 350px;
+      align-items: stretch;
+    }
+
+    .two-week-mode .staff-shift {
+      display: flex;
+      flex-direction: column;
+      padding: 0;
+      border-right-color: #8f9baa;
+      overflow: hidden;
+    }
+
+    .two-week-mode .staff-shift h3 {
+      min-height: 25px;
+      margin: 0;
+      padding: 4px 6px;
+      background: #203144;
+      font-size: 10px;
+      letter-spacing: .08em;
+    }
+
+    .two-week-mode .staff-pill-list {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      align-content: start;
+      gap: 0;
+      background: #f7f8fa;
+    }
+
+    .two-week-mode .staff-pill {
+      min-height: 26px;
+      padding: 3px 6px;
+      border-width: 0 0 1px;
+      border-color: #d8dee8;
+      border-radius: 0;
+      font-family: "Arial Narrow", "Helvetica Neue", Helvetica, Arial, sans-serif;
+      font-size: 15px;
+      font-weight: 750;
+      line-height: 1.2;
+    }
+
+    .two-week-mode .staff-pill.plain {
+      min-height: 26px;
+      padding: 3px 6px;
+      border-color: #d8dee8;
+      background: #fff;
+      color: #172536;
+    }
+
+    .two-week-mode .staff-pill small { font-size: 8px; }
+
+    .two-week-mode .staff-pill .status-flag,
+    .two-week-mode .staff-pill .crane-flag,
+    .two-week-mode .staff-pill .bn-flag {
+      font-size: 10px;
+    }
+
+    .two-week-mode .staff-pill.crane {
+      border-color: #d4e2f0;
+      background: #e8f3ff;
+      color: #264a6d;
+    }
+
+    .two-week-mode .staff-pill.vac,
+    .two-week-mode .staff-pill.sic,
+    .two-week-mode .staff-pill.flo,
+    .two-week-mode .staff-pill.hol,
+    .two-week-mode .staff-pill.other-away,
+    .two-week-mode .staff-pill.bnsf,
+    .two-week-mode .staff-pill.bn,
+    .two-week-mode .staff-pill.called-off,
+    .two-week-mode .staff-pill.out,
+    .two-week-mode .staff-pill.ncns,
+    .two-week-mode .staff-pill.unknown {
+      background-image: repeating-linear-gradient(
+        135deg,
+        rgba(120, 72, 24, .07) 0,
+        rgba(120, 72, 24, .07) 3px,
+        transparent 3px,
+        transparent 8px
+      );
+    }
+
+    .two-week-mode .staff-pill.out-status:first-child,
+    .two-week-mode .staff-pill:not(.out-status) + .staff-pill.out-status {
+      margin-top: auto;
+    }
+
+    .two-week-mode .staff-support {
+      padding: 0;
+      background: #f7f8fa;
+    }
+
+    .two-week-mode .staff-day-total {
+      min-height: 24px;
+      border-top: 1px solid #aeb9c7;
+      background: #f7f8fa;
+      font-size: 11px;
+    }
+
+    .two-week-mode .staff-day-total b {
+      min-height: 24px;
+      padding-left: 6px;
+    }
+
+    .two-week-mode .staff-day-total b.low-staff {
+      background: #fee2e2;
+      color: #b42338;
+    }
+
+    .two-week-mode .staff-day.past-day,
+    .two-week-mode .staff-day.past-day:last-child {
+      border-color: #b8c1cc;
+      background: #f2f4f6;
+    }
+
+    .two-week-mode .staff-day.past-day .staff-day-button {
+      border-bottom-color: #b8c1cc;
+      background: #edf0f4;
+      color: #9aa5b3;
+    }
+
+    .two-week-mode .staff-day.past-day .staff-shift {
+      border-right-color: #cbd2da;
+    }
+
+    .two-week-mode .staff-day.past-day .staff-shift h3 {
+      background: #aeb8c6;
+      color: #fff;
+    }
+
+    .two-week-mode .staff-day.past-day .staff-pill,
+    .two-week-mode .staff-day.past-day .staff-pill.plain,
+    .two-week-mode .staff-day.past-day .staff-pill.crane,
+    .two-week-mode .staff-day.past-day .staff-pill.vac,
+    .two-week-mode .staff-day.past-day .staff-pill.sic,
+    .two-week-mode .staff-day.past-day .staff-pill.flo,
+    .two-week-mode .staff-day.past-day .staff-pill.hol,
+    .two-week-mode .staff-day.past-day .staff-pill.other-away,
+    .two-week-mode .staff-day.past-day .staff-pill.unknown,
+    .two-week-mode .staff-day.past-day .staff-pill.bnsf,
+    .two-week-mode .staff-day.past-day .staff-pill.came-in,
+    .two-week-mode .staff-day.past-day .staff-pill.bn {
+      border-color: #d5dbe2;
+      background-color: #f1f3f5;
+      background-image: none;
+      color: #9aa5b3;
+    }
+
+    .two-week-mode .staff-day.past-day .staff-pill small,
+    .two-week-mode .staff-day.past-day .staff-pill .crane-flag,
+    .two-week-mode .staff-day.past-day .staff-pill .bn-flag,
+    .two-week-mode .staff-day.past-day .staff-pill .status-flag {
+      color: #9aa5b3;
+    }
+
+    .two-week-mode .staff-day.past-day .staff-day-total,
+    .two-week-mode .staff-day.past-day .staff-day-total b,
+    .two-week-mode .staff-day.past-day .staff-day-total b.low-staff {
+      border-color: #cbd2da;
+      background: #edf0f4;
+      color: #8d99a8;
+    }
+
+    @media (max-width: 1120px) {
+      .calendar-shell.list-mode { width: calc(100% - 10px); padding-inline: 10px; }
+      .staff-day-button { padding-inline: 4px; }
+      .staff-shift { padding-inline: 2px; }
+      .staff-pill { padding-inline: 3px; font-size: 8px; }
+      .staff-pill small { font-size: 6px; }
+    }
+
+    .day-editor-backdrop {
+      position: fixed; inset: 0; z-index: 50; display: none; align-items: flex-start; justify-content: center;
+      padding: 54px 12px 20px; background: rgba(15, 23, 42, .38);
+    }
+    .day-editor-backdrop.open { display: flex; }
+    .day-editor { width: min(820px, 100%); max-height: calc(100vh - 74px); overflow: auto; border: 1px solid #cbd5e1; border-radius: 8px; background: #fff; box-shadow: 0 18px 45px rgba(15, 23, 42, .28); }
+    .day-editor header { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; border-bottom: 1px solid var(--line); background: #f8fafc; }
+    .day-editor h2 { margin: 0; font-size: 16px; font-weight: 900; }
+    .day-editor-close { width: 30px; height: 30px; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff; color: var(--ink); font-weight: 900; cursor: pointer; }
+    .request-list { display: grid; gap: 6px; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+    .request-row { min-height: 34px; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 5px 6px; border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+    .request-row.editing { border-color: #2563eb; background: #eff6ff; box-shadow: inset 0 0 0 1px #2563eb; }
+    .request-row.confirming-delete { border-color: #dc2626; background: #fff1f2; box-shadow: inset 0 0 0 1px #dc2626; }
+    .request-row span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 800; }
+    .request-actions { display: inline-flex; align-items: center; gap: 5px; }
+    .edit-request,
+    .delete-request,
+    .confirm-delete-request,
+    .cancel-delete-request { height: 26px; padding: 0 9px; border-radius: 6px; font-size: 12px; font-weight: 900; cursor: pointer; }
+    .edit-request { border: 1px solid #bfdbfe; background: #dbeafe; color: #1d4ed8; }
+    .delete-request { border: 1px solid #fecaca; background: #fee2e2; color: #991b1b; }
+    .confirm-delete-request { border: 1px solid #dc2626; background: #dc2626; color: #fff; }
+    .cancel-delete-request { border: 1px solid #cbd5e1; background: #fff; color: #334155; }
+    .empty-requests { min-height: 34px; display: flex; align-items: center; color: var(--muted); font-weight: 800; }
+    .add-request-form { display: grid; grid-template-columns: minmax(0, 1fr) minmax(130px, .45fr) minmax(130px, .45fr) auto; gap: 8px; padding: 12px; }
+    .add-request-form label { display: grid; gap: 4px; color: var(--muted); font-size: 11px; font-weight: 900; text-transform: uppercase; }
+    .add-request-form input,
+    .add-request-form select { height: 32px; min-width: 0; width: 100%; padding: 0 8px; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff; color: var(--ink); font: inherit; font-weight: 800; }
+    .add-request-form select { color: #334155; font-size: 12px; cursor: pointer; }
+    .add-request-form button { align-self: end; height: 32px; padding: 0 12px; border: 1px solid #0f172a; border-radius: 6px; background: #0f172a; color: #fff; font: inherit; font-size: 12px; font-weight: 900; cursor: pointer; }
+    .editor-status { min-height: 18px; padding: 0 12px 12px; color: #991b1b; font-size: 12px; font-weight: 800; }
+    .daily-employee-manager { padding: 10px 12px; border-bottom: 1px solid var(--line); background: #f8fafc; }
+    .daily-employee-manager h3 { margin: 0 0 8px; font-size: 13px; font-weight: 900; text-transform: uppercase; }
+    .daily-employee-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .daily-shift-column { overflow: hidden; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff; }
+    .daily-shift-column h4 { margin: 0; padding: 5px 7px; background: #0f172a; color: #fff; font-size: 11px; text-transform: uppercase; }
+    .daily-employee-row { min-height: 30px; display: grid; grid-template-columns: minmax(0, 1fr) 112px auto; align-items: center; gap: 5px; padding: 3px 5px; border-top: 1px solid #e5e7eb; }
+    .daily-employee-row:first-of-type { border-top: 0; }
+    .daily-employee-row strong { min-width: 0; overflow: hidden; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+    .daily-employee-row select { width: 100%; height: 24px; border: 1px solid #cbd5e1; border-radius: 4px; background: #fff; font-size: 10px; font-weight: 800; }
+    .remove-day-employee { height: 24px; padding: 0 6px; border: 1px solid #fecaca; border-radius: 4px; background: #fee2e2; color: #991b1b; font-size: 9px; font-weight: 900; cursor: pointer; }
+    .daily-added-badge { color: #15803d; font-size: 8px; font-weight: 900; text-transform: uppercase; }
+    .add-day-employee-form { display: grid; grid-template-columns: minmax(0, 1fr) 130px auto; gap: 7px; margin-top: 9px; }
+    .add-day-employee-form input,
+    .add-day-employee-form select,
+    .add-day-employee-form button { height: 30px; border: 1px solid #cbd5e1; border-radius: 5px; background: #fff; font: inherit; }
+    .add-day-employee-form input,
+    .add-day-employee-form select { padding: 0 7px; font-weight: 800; }
+    .add-day-employee-form button { padding: 0 11px; border-color: #15803d; background: #15803d; color: #fff; font-weight: 900; cursor: pointer; }
+    @media (max-width: 760px) {
+      .add-request-form,
+      .employee-bank-form,
+      .daily-employee-grid,
+      .add-day-employee-form { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 760px) {
+      .page-switcher {
+        padding: 5px;
+      }
+
+      .page-switcher a {
+        min-width: 96px;
+        font-size: 12px;
+      }
+
+      .calendar-toolbar {
+        grid-template-columns: 1fr;
+      }
+
+      .month-controls {
+        justify-content: flex-start;
+      }
+
+      .calendar-shell {
+        width: calc(100% - 14px);
+        padding: 16px 10px;
+        border-radius: 12px;
+      }
+
+      .calendar-toolbar {
+        align-items: start;
+      }
+
+      .month-controls {
+        justify-content: flex-start;
+      }
+
+      .legend {
+        width: 100%;
+        margin-right: 0;
+      }
+
+      .calendar-weekdays,
+      .calendar-grid {
+        gap: 3px;
+      }
+
+      .calendar-grid {
+        grid-auto-rows: minmax(118px, auto);
+      }
+
+      .day-cell {
+        min-height: 118px;
+        padding: 8px 5px;
+      }
+
+      .timeoff-pill {
+        grid-template-columns: 1fr;
+        min-height: 24px;
+        padding: 4px 5px;
+        font-size: 12px;
+      }
+
+      .timeoff-code {
+        justify-self: start;
+        font-size: 10px;
+      }
+
+      .staff-week-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .staff-day,
+      .staff-day:last-child {
+        border: 2px solid #334e7d;
+      }
+
+      .staff-day:last-child { border-bottom: 2px solid #334e7d; }
+
+      .staff-pill {
+        font-size: 10px;
+      }
+    }
+
+
+    .calendar-shell.three-day-list-mode {
+      width: min(1060px, calc(100% - 8px));
+      padding-inline: 8px;
+    }
+
+    .staff-list-view.three-day-mode {
+      padding: 0;
+      overflow-x: hidden;
+    }
+
+    .three-day-mode .staff-week {
+      min-width: 0;
+      margin-bottom: 0;
+    }
+
+    .staff-list-view.three-day-mode .staff-week-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+      column-gap: 6px;
+      row-gap: 0;
+    }
+
+    .three-day-mode .staff-day,
+    .three-day-mode .staff-day:last-child {
+      min-height: 0;
+      border: 2px solid #2f3742;
+      background: #f5f6f7;
+    }
+
+    .three-day-mode .staff-day.selected { border-color: #009b95; }
+
+    .three-day-mode .staff-day-button {
+      min-height: 34px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      position: relative;
+      padding: 5px 6px;
+      border-bottom: 2px solid #2f3742;
+      background: #f7f8fa;
+    }
+
+    .three-day-mode .staff-day-button .relative-day-label {
+      order: 2;
+      position: absolute;
+      left: 50%;
+      margin: 0;
+      color: #475569;
+      transform: translateX(-50%);
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    .three-day-mode .staff-day-button strong {
+      order: 1;
+      font-size: 12px;
+      letter-spacing: .02em;
+    }
+
+    .three-day-mode .staff-day-button b {
+      order: 3;
+      margin-left: auto;
+      font-size: 22px;
+    }
+
+    .three-day-mode .staff-shift-grid {
+      min-height: 350px;
+      align-items: stretch;
+    }
+
+    .three-day-mode .staff-shift {
+      display: flex;
+      flex-direction: column;
+      padding: 0;
+      border-right-color: #8f9baa;
+      overflow: hidden;
+    }
+
+    .three-day-mode .staff-shift h3 {
+      min-height: 25px;
+      margin: 0;
+      padding: 4px 6px;
+      background: #203144;
+      color: #fff;
+      font-size: 10px;
+      letter-spacing: .08em;
+    }
+
+    .three-day-mode .staff-pill-list {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      gap: 0;
+      background: #f7f8fa;
+    }
+
+    .three-day-mode .staff-pill {
+      min-height: 26px;
+      padding: 3px 6px;
+      border-width: 0 0 1px;
+      border-color: #d8dee8;
+      border-radius: 0;
+      font-family: "Arial Narrow", "Helvetica Neue", Helvetica, Arial, sans-serif;
+      font-size: 14px;
+      font-weight: 750;
+      line-height: 1.2;
+    }
+
+    .three-day-mode .staff-pill > span {
+      overflow: hidden;
+      overflow-wrap: normal;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .three-day-mode .staff-pill.plain {
+      min-height: 26px;
+      padding: 3px 6px;
+      border-color: #d8dee8;
+      background: #fff;
+      color: #172536;
+    }
+
+    .three-day-mode .staff-pill.bottom-hug {
+      margin-top: auto;
+    }
+
+    .three-day-mode .staff-pill small { font-size: 8px; }
+
+    .three-day-mode .staff-day-total {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      margin-top: auto;
+      border-top: 1px solid #2f3742;
+    }
+
+    .three-day-mode .staff-day-total b {
+      min-height: 22px;
+      padding: 3px 6px;
+      background: #dcfce7;
+      color: #00745f;
+      font-size: 13px;
+      font-weight: 900;
+      text-align: left;
+    }
+
+    .three-day-mode .staff-day-total b.low-staff {
+      background: #ffe4e6;
+      color: #be123c;
+    }
+  </style>
+</head>
+<body>
+  <main class="calendar-shell">
+    <header class="calendar-toolbar">
+      <div class="title-block">
+        <h1>Time Off</h1>
+        <label class="import-button">
+          Import Time Off
+          <input type="file" id="timeOffImport" accept=".xlsx,.xls" />
+        </label>
+        <button class="import-button" id="employeeBankButton" type="button">Employee Bank</button>
+        <span class="import-status" id="importStatus">No import loaded</span>
+      </div>
+      <div class="month-controls">
+        <div class="view-toggle" role="group" aria-label="Time off view">
+          <button class="active" id="calendarViewToggle" type="button" aria-pressed="true">Calendar</button>
+          <button id="listViewToggle" type="button" aria-pressed="false">Monthly</button>
+          <button id="twoWeekViewToggle" type="button" aria-pressed="false">Weekly</button>
+          <button id="threeDayViewToggle" type="button" aria-pressed="false">3 Day</button>
+        </div>
+        <button class="icon-button" id="prevMonth" type="button" aria-label="Previous month">&lt;</button>
+        <div class="month-title" id="monthTitle"></div>
+        <button class="secondary-button" id="todayButton" type="button">Today</button>
+        <button class="icon-button" id="nextMonth" type="button" aria-label="Next month">&gt;</button>
+      </div>
+        <div class="status-key" aria-label="Employee status flag key">
+          <span><b class="crane-key">(C)</b> Crane</span>
+          <span><b class="bn-key">(BN)</b> BN</span>
+          <span><b class="sick-key">(S)</b> Sick</span>
+          <span><b class="vacation-key">(V)</b> Vacation</span>
+          <span><b class="unknown-key">(??)</b> Unknown</span>
+          <span><b class="out-key">(O)</b> Out</span>
+          <span><b class="ncns-key">(NC)</b> NCNS</span>
+          <span><b class="here-key">(&#10003;)</b> Here</span>
+          <span><b class="flip-line-key">(FL)</b> Flip Line</span>
+          <span><b class="came-in-key">(+)</b> Came In</span>
+        </div>
+    </header>
+
+    <div class="view-pane" id="calendarView">
+      <section class="calendar-weekdays" aria-hidden="true">
+        <div class="weekday">Sun</div>
+        <div class="weekday">Mon</div>
+        <div class="weekday">Tue</div>
+        <div class="weekday">Wed</div>
+        <div class="weekday">Thu</div>
+        <div class="weekday">Fri</div>
+        <div class="weekday">Sat</div>
+      </section>
+      <section class="calendar-grid" id="calendarGrid" aria-label="Time off calendar"></section>
+    </div>
+    <section class="view-pane staff-list-view" id="listView" aria-label="Staffing list" hidden></section>
+  </main>
+
+  <section class="day-editor-backdrop" id="dayEditorBackdrop" aria-hidden="true">
+    <div class="day-editor" role="dialog" aria-modal="true" aria-labelledby="dayEditorTitle">
+      <header><h2 id="dayEditorTitle">Time Off</h2><button class="day-editor-close" id="closeDayEditor" type="button" aria-label="Close time off editor">X</button></header>
+      <section class="daily-employee-manager" aria-label="Daily employee manager">
+        <h3>Daily Employees</h3>
+        <div class="daily-employee-grid" id="dailyEmployeeList"></div>
+        <form class="add-day-employee-form" id="addDayEmployeeForm">
+          <input id="addDayEmployeeName" list="employeeOptions" autocomplete="off" placeholder="Add employee name" aria-label="Employee name" />
+          <select id="addDayEmployeeShift" aria-label="Employee shift"><option value="first">Day</option><option value="second">Night</option></select>
+          <button type="submit">Add Employee</button>
+        </form>
+      </section>
+      <section class="request-list" id="requestList" aria-label="Time off requests for selected day"></section>
+      <form class="add-request-form" id="addRequestForm">
+        <label>Employee<input id="employeeInput" list="employeeOptions" autocomplete="off" placeholder="Type employee name" /><select id="employeeSelect" aria-label="Select employee"><option value="">Select employee...</option></select></label>
+        <label>Away Reason<input id="reasonInput" list="reasonOptions" autocomplete="off" placeholder="Type reason" /><select id="reasonSelect" aria-label="Select away reason"><option value="">Select reason...</option></select></label>
+        <label>Location<input id="locationInput" list="locationOptions" autocomplete="off" placeholder="Type location" /><select id="locationSelect" aria-label="Select location"><option value="">Select location...</option></select></label>
+        <button id="addRequestButton" type="submit">Add</button>
+      </form>
+      <div class="editor-status" id="editorStatus" aria-live="polite"></div>
+    </div>
+  </section>
+  <section class="employee-bank-backdrop" id="employeeBankBackdrop" aria-hidden="true">
+    <div class="employee-bank-dialog" role="dialog" aria-modal="true" aria-labelledby="employeeBankTitle">
+      <header><h2 id="employeeBankTitle">Employee Bank</h2><button id="closeEmployeeBank" type="button" aria-label="Close employee bank">X</button></header>
+      <form class="employee-bank-form" id="employeeBankForm">
+        <label>Employee<select id="employeeBankEmployee"></select></label>
+        <label>Pill<select id="employeeBankTag"><option value="">Roster Default</option><option value="crane">Crane</option><option value="unknown">Unknown</option></select></label>
+        <button type="submit">Save</button>
+      </form>
+      <div class="employee-bank-status" id="employeeBankStatus" aria-live="polite"></div>
+    </div>
+  </section>
+  <section class="employee-bank-backdrop" id="employeeStatusBackdrop" aria-hidden="true">
+    <div class="employee-bank-dialog" role="dialog" aria-modal="false" aria-labelledby="employeeStatusTitle">
+      <header><h2 id="employeeStatusTitle">Quick Actions</h2><button id="closeEmployeeStatus" type="button" aria-label="Close status editor">X</button></header>
+      <div class="employee-status-name" id="employeeStatusName"></div>
+      <div class="employee-status-actions" id="employeeStatusActions">
+        <button class="employee-status-action here" type="button" data-quick-status="here">Here<span>(&#10003;)</span></button>
+        <button class="employee-status-action flipline" type="button" data-quick-status="flipline">Flip Line<span>(FL)</span></button>
+        <button class="employee-status-action sic" type="button" data-quick-status="sic">Sick<span>(S)</span></button>
+        <button class="employee-status-action vac" type="button" data-quick-status="vac">Vacation<span>(V)</span></button>
+        <button class="employee-status-action calledoff" type="button" data-quick-status="calledoff">Called Off<span>(CO)</span></button>
+        <button class="employee-status-action out" type="button" data-quick-status="out">Out<span>(O)</span></button>
+        <button class="employee-status-action ncns" type="button" data-quick-status="ncns">NCNS<span>(NC)</span></button>
+        <button class="employee-status-action bnsf" type="button" data-quick-status="bnsf">BNSF<span>(BN)</span></button>
+        <button class="employee-status-action unknown" type="button" data-quick-status="unknown">Unknown<span>(??)</span></button>
+        <button class="employee-status-action clear" type="button" data-quick-status="clear">Clear Selection<span>(&mdash;)</span></button>
+      </div>
+      <div class="employee-bank-status" id="employeeStatusMessage" aria-live="polite"></div>
+    </div>
+  </section>
+  <section class="employee-bank-backdrop" id="offScheduleBackdrop" aria-hidden="true">
+    <div class="employee-bank-dialog off-schedule-dialog" role="dialog" aria-modal="true" aria-labelledby="offScheduleTitle">
+      <header><h2 id="offScheduleTitle">Not Scheduled</h2><button id="closeOffSchedule" type="button" aria-label="Close not scheduled list">X</button></header>
+      <div class="off-schedule-summary" id="offScheduleSummary"></div>
+      <div class="off-schedule-list" id="offScheduleList"></div>
+    </div>
+  </section>
+  <datalist id="employeeOptions"></datalist>
+  <datalist id="reasonOptions"></datalist>
+  <datalist id="locationOptions"></datalist>
+
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script>
+    const today = new Date();
+    let viewDate = new Date(today.getFullYear(), today.getMonth(), 1);
+    let selectedDateKey = "";
+    let editingRequestIndex = null;
+    let pendingDeleteIndex = null;
+    const timeOffStorageKey = "conglobal-time-off-calendar-v1";
+    const timeOffViewStorageKey = "conglobal-time-off-view-v1";
+    const timeOffListRangeStorageKey = "conglobal-time-off-list-range-v1";
+    const employeeBankStorageKey = "conglobal-time-off-employee-bank-v1";
+    const employeeDayStatusStorageKey = "conglobal-time-off-day-status-v1";
+    const employeeDayAdditionsStorageKey = "conglobal-time-off-day-additions-v1";
+    let selectedStatusDate = "";
+    let selectedStatusName = "";
+    const rosterStorageKey = "conglobal-roster-state-v1";
+    const rosterAdditionsKey = "conglobal-roster-additions-v1";
+    const embeddedInTimesheet = window.frameElement && window.frameElement.id === "inlineToolFrame";
+    let viewMode = embeddedInTimesheet ? "list" : (localStorage.getItem(timeOffViewStorageKey) === "list" ? "list" : "calendar");
+    const savedListRange = embeddedInTimesheet ? "three-day" : localStorage.getItem(timeOffListRangeStorageKey);
+    let listRange = ["two-week", "three-day"].includes(savedListRange) ? savedListRange : "month";
+    const rosterShiftKeys = ["first", "second", "gate", "mechanics", "managers"];
+    const shiftLabels = {
+      first: "1st Shift",
+      second: "2nd Shift",
+      gate: "Gate",
+      mechanics: "Mechanics",
+      managers: "Managers"
+    };
+    const absenceReasons = {
+      SIC: "Sick",
+      VAC: "Vacation",
+      FLO: "Floating Holiday",
+      HOL: "Holiday"
+    };
+    const displayPriority = {
+      VAC: 0,
+      FLO: 1,
+      SIC: 2,
+      HOL: 3
+    };
+    const commonLocations = ["Ramp", "Gate", "MGR", "1st Shift", "2nd Shift"];
+    const defaultEmployees = [
+      "Branford Alton", "Castruita Armando", "Frazer Dacoyea", "Citizen Dante", "Towler Demetrius",
+      "Stewart Dexter", "Gardner Dorrean", "Thomas Henry", "Brown James", "Herrera Jose",
+      "Player Keyston", "Hickman Makia", "Dever Mikey", "Wanza Myles", "Romero Nelson",
+      "McDaniel Charles", "Nava Ramon", "Tran Tyler", "Benavides Robert", "Bookman Derrell",
+      "Brown Brandy", "Contreras Marco", "Delgado Jose", "Echendu Chimeniem", "Gilder Rufus II",
+      "Johnson Messiah", "Mejia Aaron", "Tingle Jason", "Urtado Ernest", "Caceres Virula Victor",
+      "Carruthers Timothy", "Hosey Kevin", "Keme Aweri Jr.", "Candace Warren", "Connie Johnson",
+      "Jarade Douglas", "Gregory Watson II", "Bryce Alexander", "Naomisha Hunt", "Ramacacondra Pratt",
+      "Kane Cabral", "Tavares Gariet"
+    ];
+    const defaultShiftEmployees = {
+      first: [
+        "Branford Alton", "Castruita Armando", "Frazer Dacoyea", "Citizen Dante", "Towler Demetrius",
+        "Stewart Dexter", "Gardner Dorrean", "Thomas Henry", "Brown James", "Herrera Jose",
+        "Player Keyston", "Hickman Makia", "Dever Mikey", "Wanza Myles", "Romero Nelson",
+        "McDaniel Charles", "Nava Ramon", "Tran Tyler"
+      ],
+      second: [
+        "Carruthers Timothy", "Caceres Virula Victor", "Keme Aweri Jr.", "Hosey Kevin", "Brown Brandy",
+        "Mejia Aaron", "Bookman Derrell", "Hopkins Alexander", "Tingle Jason", "Contreras Marco",
+        "Benavides Robert", "Urtado Ernest", "Johnson Messiah", "Gilder Rufus II", "Echendu Chimenierm",
+        "Delgado Jose"
+      ],
+      gate: [
+        "Candace Warren", "Connie Johnson", "Jarade Douglas", "Gregory Watson II", "Bryce Alexander",
+        "Naomisha Hunt", "Ramacacondra Pratt", "Kane Cabral", "Tavares Gariet"
+      ],
+      mechanics: [],
+      managers: []
+    };
+    const defaultRosterSchedule = {
+      first: [
+        ["Branford Alton", "", "OOWWWWW"],
+        ["Castruita Armando", "", "WWOOWWW"],
+        ["Frazer Dacoyea", "", "OOWWWWW"],
+        ["Citizen Dante", "", "WWWOOWW"],
+        ["Towler Demetrius", "", "WWWOOWW"],
+        ["Stewart Dexter", "everything", "WWWWWOO"],
+        ["Gardner Dorrean", "", "WOOWWWW"],
+        ["Thomas Henry", "crane", "WWWWWOO"],
+        ["Brown James", "crane", "WWWOOWW"],
+        ["Herrera Jose", "side", "WWWWWOO"],
+        ["Player Keyston", "everything", "OWWWWWO"],
+        ["Hickman Makia", "everything", "OWWWWWO"],
+        ["Dever Mikey", "", "WOOWWWW"],
+        ["Wanza Myles", "", "OOWWWWW"],
+        ["Romero Nelson", "", "WOOWWWW"],
+        ["McDaniel Charles", "", "WWWWOOW"],
+        ["Nava Ramon", "", "WWWWWOO"],
+        ["Tran Tyler", "", "WWWOOWW"]
+      ],
+      second: [
+        ["Carruthers Timothy", "side", "OWWWWWO"],
+        ["Caceres Virula Victor", "", "OOWWWWW"],
+        ["Keme Aweri Jr.", "", "OOWWWWW"],
+        ["Hosey Kevin", "crane", "OOWWWWW"],
+        ["Brown Brandy", "", "WWOOWWW"],
+        ["Mejia Aaron", "", "WWWOOWW"],
+        ["Bookman Derrell", "", "WWWOOWW"],
+        ["Hopkins Alexander", "", "OWWWWWO"],
+        ["Tingle Jason", "everything", "WWWWWOO"],
+        ["Contreras Marco", "", "WWWWWOO"],
+        ["Benavides Robert", "crane", "WWOWWWO"],
+        ["Urtado Ernest", "", "WOOWWWW"],
+        ["Johnson Messiah", "", "WOWOWWW"],
+        ["Gilder Rufus II", "", "WOOWWWW"],
+        ["Echendu Chimenierm", "", "WWOOWWW"],
+        ["Delgado Jose", "everything", "WWWWOOW"]
+      ],
+      gate: [
+        ["Candace Warren", "", "WWWWWOO"],
+        ["Connie Johnson", "lead", "WWWWWOO"],
+        ["Jarade Douglas", "", "WWWWWOO"],
+        ["Gregory Watson II", "", "WWWWWOO"],
+        ["Bryce Alexander", "", "WWWOOWW"],
+        ["Naomisha Hunt", "", "WWWOOOW"],
+        ["Ramacacondra Pratt", "", "WWWOOWW"],
+        ["Kane Cabral", "", "OOWWWWW"],
+        ["Tavares Gariet", "", "OOWWWWW"]
+      ],
+      mechanics: [
+        ["Jesus Macias", "", "WWWWWOO"],
+        ["Jakabris Williams", "", "WWWWWOO"]
+      ],
+      managers: []
+    };
+    const monthNames = {
+      january: 0,
+      february: 1,
+      march: 2,
+      april: 3,
+      may: 4,
+      june: 5,
+      july: 6,
+      august: 7,
+      september: 8,
+      october: 9,
+      november: 10,
+      december: 11
+    };
+
+    function isoDate(date) {
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+    }
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, (char) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+      }[char]));
+    }
+
+    function dateFromKey(key) {
+      const [year, month, day] = String(key || "").split("-").map(Number);
+      return new Date(year || today.getFullYear(), (month || 1) - 1, day || 1);
+    }
+
+    function friendlyDate(key) {
+      return dateFromKey(key).toLocaleDateString(undefined, {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+        year: "numeric"
+      });
+    }
+
+    function readTimeOff() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(timeOffStorageKey) || "{}");
+        return saved && typeof saved === "object" && !Array.isArray(saved) ? saved : {};
+      } catch (error) {
+        localStorage.removeItem(timeOffStorageKey);
+        return {};
+      }
+    }
+
+    function writeTimeOff(calendar) {
+      localStorage.setItem(timeOffStorageKey, JSON.stringify(calendar));
+    }
+
+    function readEmployeeBank() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(employeeBankStorageKey) || "{}");
+        return saved && typeof saved === "object" && !Array.isArray(saved) ? saved : {};
+      } catch (error) {
+        localStorage.removeItem(employeeBankStorageKey);
+        return {};
+      }
+    }
+
+    function writeEmployeeBank(bank) {
+      localStorage.setItem(employeeBankStorageKey, JSON.stringify(bank));
+    }
+
+    function readEmployeeDayStatuses() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(employeeDayStatusStorageKey) || "{}");
+        return saved && typeof saved === "object" && !Array.isArray(saved) ? saved : {};
+      } catch (error) {
+        localStorage.removeItem(employeeDayStatusStorageKey);
+        return {};
+      }
+    }
+
+    function writeEmployeeDayStatuses(statuses) {
+      localStorage.setItem(employeeDayStatusStorageKey, JSON.stringify(statuses));
+    }
+
+    function readEmployeeDayAdditions() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(employeeDayAdditionsStorageKey) || "{}");
+        return saved && typeof saved === "object" && !Array.isArray(saved) ? saved : {};
+      } catch (error) {
+        localStorage.removeItem(employeeDayAdditionsStorageKey);
+        return {};
+      }
+    }
+
+    function writeEmployeeDayAdditions(additions) {
+      localStorage.setItem(employeeDayAdditionsStorageKey, JSON.stringify(additions));
+    }
+
+    function reasonCodeFromInput(value) {
+      const text = String(value || "").trim();
+      if (!text) return "";
+      const upper = text.toUpperCase();
+      if (absenceReasons[upper]) return upper;
+      return Object.keys(absenceReasons).find((code) => absenceReasons[code].toLowerCase() === text.toLowerCase()) || upper.slice(0, 12);
+    }
+
+    function reasonLabel(code) { return absenceReasons[code] || code; }
+
+    function cleanLocation(value) {
+      const text = String(value || "").replace(/\s+/g, " ").trim();
+      if (!text || /^(location|loc|all)$/i.test(text)) return "";
+      return text.replace(/^location\s*:?\s*/i, "").trim();
+    }
+
+    function locationFromSheetName(sheetName) {
+      const text = cleanLocation(sheetName);
+      return /^(sheet\d*|time away|calendar|summary|data)$/i.test(text) ? "" : text;
+    }
+
+    function entryLocation(entry) {
+      return cleanLocation(entry.location) || locationFromSheetName(entry.sheet);
+    }
+
+    function displayEntryLocation(entry, lookup = rosterShiftLookup()) {
+      const location = entryLocation(entry);
+      const shift = shiftForEmployee(entry.name, lookup);
+      return location && shift && normalizeName(location) === normalizeName(shift) ? "" : location;
+    }
+
+    function locationLineHtml(entry, lookup) {
+      const location = displayEntryLocation(entry, lookup);
+      return location ? '<span class="timeoff-location">' + escapeHtml(location) + '</span>' : "";
+    }
+
+    function nameTokenKey(name) {
+      const suffixes = new Set(["jr", "sr", "ii", "iii", "iv"]);
+      return normalizeName(name)
+        .split(" ")
+        .filter((part) => part && !suffixes.has(part))
+        .sort()
+        .join(" ");
+    }
+
+    function addShiftLookupName(lookup, name, shift) {
+      const directKey = normalizeName(name);
+      const tokenKey = nameTokenKey(name);
+      if (directKey) lookup.set(directKey, shift);
+      if (tokenKey) lookup.set(tokenKey, shift);
+    }
+
+    function rosterStateHasSavedRows(state) {
+      return rosterShiftKeys.some((key) => Array.isArray(state?.[key]) && state[key].length);
+    }
+
+    function readRosterAdditions() {
+      try {
+        const additions = JSON.parse(localStorage.getItem(rosterAdditionsKey) || "[]");
+        return Array.isArray(additions) ? additions : [];
+      } catch (error) {
+        localStorage.removeItem(rosterAdditionsKey);
+        return [];
+      }
+    }
+
+    function normalizeRosterDays(days) {
+      const source = Array.isArray(days) ? days : String(days || "").split("");
+      return Array.from({ length: 7 }, (_, index) => String(source[index] || "W").toUpperCase() === "O" ? "O" : "W");
+    }
+
+    function fallbackRosterEmployees() {
+      const employees = [];
+      Object.entries(defaultRosterSchedule).forEach(([shift, rows]) => {
+        rows.forEach(([name, role, days]) => {
+          employees.push({ name, shift, role: role || "", days: normalizeRosterDays(days) });
+        });
+      });
+      return employees;
+    }
+
+    function rosterEmployeeKey(employee) {
+      return nameTokenKey(employee?.name) || normalizeName(employee?.name);
+    }
+
+    function currentRosterEmployees() {
+      const fallback = fallbackRosterEmployees();
+      const fallbackByName = new Map(fallback.map((employee) => [rosterEmployeeKey(employee), employee]));
+      let employees = fallback;
+
+      try {
+        const saved = JSON.parse(localStorage.getItem(rosterStorageKey) || "null");
+        if (saved && typeof saved === "object" && rosterStateHasSavedRows(saved)) {
+          employees = [];
+          rosterShiftKeys.forEach((shift) => {
+            if (!Array.isArray(saved[shift])) return;
+            saved[shift].forEach((employee) => {
+              if (!employee?.name) return;
+              const fallbackEmployee = fallbackByName.get(rosterEmployeeKey(employee));
+              employees.push({
+                name: employee.name,
+                shift,
+                role: employee.role || fallbackEmployee?.role || "",
+                days: normalizeRosterDays(Array.isArray(employee.days) ? employee.days : fallbackEmployee?.days)
+              });
+            });
+          });
+        }
+      } catch (error) {
+        localStorage.removeItem(rosterStorageKey);
+      }
+
+      readRosterAdditions().forEach((employee) => {
+        if (!employee?.name) return;
+        const key = rosterEmployeeKey(employee);
+        const existingIndex = employees.findIndex((candidate) => rosterEmployeeKey(candidate) === key);
+        const existing = existingIndex >= 0 ? employees[existingIndex] : null;
+        const nextEmployee = {
+          name: employee.name,
+          shift: employee.shift || existing?.shift || "first",
+          role: employee.role || existing?.role || "",
+          days: normalizeRosterDays(Array.isArray(employee.days) ? employee.days : existing?.days)
+        };
+        if (existingIndex >= 0) employees[existingIndex] = nextEmployee;
+        else employees.push(nextEmployee);
+      });
+
+      const seen = new Set();
+      return employees.filter((employee) => {
+        const key = rosterEmployeeKey(employee);
+        if (!key || seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+    }
+
+    function rosterShiftLookup(employees = currentRosterEmployees()) {
+      const lookup = new Map();
+      employees.forEach((employee) => addShiftLookupName(lookup, employee.name, employee.shift));
+      return lookup;
+    }
+
+    function shiftForEmployee(name, lookup = rosterShiftLookup()) {
+      const shift = lookup.get(normalizeName(name)) || lookup.get(nameTokenKey(name));
+      return shiftLabels[shift] || "";
+    }
+
+    function shiftLineHtml(entry, lookup) {
+      const shift = shiftForEmployee(entry.name, lookup);
+      return shift ? '<span class="timeoff-shift">' + escapeHtml(shift) + '</span>' : "";
+    }
+
+    function compareTimeOffRequests(a, b) {
+      const priorityA = displayPriority[a.code] ?? 99;
+      const priorityB = displayPriority[b.code] ?? 99;
+      return priorityA - priorityB || a.name.localeCompare(b.name) || String(a.code || "").localeCompare(String(b.code || ""));
+    }
+
+    function uniqueEmployeeNames(calendar = readTimeOff()) {
+      const names = new Set(defaultEmployees);
+      currentRosterEmployees().forEach((employee) => names.add(employee.name));
+      Object.values(calendar).forEach((entries) => {
+        entries.forEach((entry) => { if (entry.name) names.add(entry.name); });
+      });
+      return Array.from(names).sort((a, b) => a.localeCompare(b));
+    }
+
+    function uniqueLocations(calendar = readTimeOff()) {
+      const locations = new Set();
+      Object.values(calendar).forEach((entries) => {
+        entries.forEach((entry) => {
+          const location = entryLocation(entry);
+          if (location) locations.add(location);
+        });
+      });
+      return Array.from(locations).sort((a, b) => a.localeCompare(b));
+    }
+
+    function selectOptions(values, placeholder) {
+      return '<option value="">' + escapeHtml(placeholder) + '</option>' + values.map((value) => '<option value="' + escapeHtml(value) + '">' + escapeHtml(value) + '</option>').join("");
+    }
+
+    function populateEditorOptions() {
+      const employeeNames = uniqueEmployeeNames();
+      const reasonPairs = Object.entries(absenceReasons);
+      const reasonValues = reasonPairs.map(([code, label]) => `${code} - ${label}`);
+      const locations = Array.from(new Set([...commonLocations, ...uniqueLocations()]));
+      document.getElementById("employeeOptions").innerHTML = employeeNames.map((name) => '<option value="' + escapeHtml(name) + '"></option>').join("");
+      document.getElementById("employeeSelect").innerHTML = selectOptions(employeeNames, "Select employee...");
+      document.getElementById("reasonOptions").innerHTML = reasonPairs.map(([code, label]) => '<option value="' + escapeHtml(code) + '">' + escapeHtml(label) + '</option><option value="' + escapeHtml(label) + '">' + escapeHtml(code) + '</option>').join("");
+      document.getElementById("reasonSelect").innerHTML = selectOptions(reasonValues, "Select reason...");
+      document.getElementById("locationOptions").innerHTML = locations.map((location) => '<option value="' + escapeHtml(location) + '"></option>').join("");
+      document.getElementById("locationSelect").innerHTML = selectOptions(locations, "Select location...");
+    }
+
+    function saveCalendarAndRender(calendar) {
+      writeTimeOff(calendar);
+      renderCalendar();
+      populateEditorOptions();
+      renderDayEditor();
+    }
+
+    function dailyStatusOptions(selected) {
+      const options = [
+        ["working", "Working"], ["here", "Here"], ["flipline", "Flip Line"], ["crane", "Crane"], ["bn", "BN"], ["vac", "Vacation"], ["sic", "Sick"],
+        ["calledoff", "Called Off"], ["out", "Out"], ["ncns", "NCNS"], ["bnsf", "BNSF"],
+        ["camein", "Came In"], ["unknown", "Unknown"]
+      ];
+      return options.map(([value, label]) => `<option value="${value}" ${value === selected ? "selected" : ""}>${label}</option>`).join("");
+    }
+
+    function renderDailyEmployeeManager() {
+      const date = dateFromKey(selectedDateKey);
+      const additions = readEmployeeDayAdditions();
+      const staffing = staffingForDate(
+        date,
+        readTimeOff(),
+        currentRosterEmployees(),
+        readEmployeeBank(),
+        readEmployeeDayStatuses(),
+        additions
+      );
+      const addedKeys = new Set((additions[selectedDateKey] || []).map((employee) => normalizeName(employee.name)));
+      const shiftSection = (label, employees) => `
+        <section class="daily-shift-column">
+          <h4>${label} - ${employees.length}</h4>
+          ${employees.length ? employees.map((employee) => {
+            const added = addedKeys.has(normalizeName(employee.name));
+            const status = employeeStatusForDate(employee.name, selectedDateKey);
+            return `<div class="daily-employee-row">
+              <strong title="${escapeHtml(employee.name)}">${escapeHtml(employee.name)}${added ? ' <span class="daily-added-badge">Added</span>' : ""}</strong>
+              <select data-daily-status-name="${escapeHtml(employee.name)}" aria-label="Status for ${escapeHtml(employee.name)}">${dailyStatusOptions(status)}</select>
+              ${added ? `<button class="remove-day-employee" type="button" data-remove-day-name="${escapeHtml(employee.name)}">Remove</button>` : ""}
+            </div>`;
+          }).join("") : '<div class="empty-requests" style="padding:6px">No employees</div>'}
+        </section>`;
+      document.getElementById("dailyEmployeeList").innerHTML = [
+        shiftSection("Day", staffing.shifts.first || []),
+        shiftSection("Night", staffing.shifts.second || [])
+      ].join("");
+    }
+
+    function renderDayEditor() {
+      const calendar = readTimeOff();
+      const entries = (calendar[selectedDateKey] || [])
+        .map((entry, originalIndex) => ({ ...entry, originalIndex }))
+        .sort(compareTimeOffRequests);
+      const list = document.getElementById("requestList");
+      document.getElementById("dayEditorTitle").textContent = friendlyDate(selectedDateKey);
+      renderDailyEmployeeManager();
+      if (!entries.length) {
+        list.innerHTML = '<div class="empty-requests">No time off requests for this day.</div>';
+        return;
+      }
+      list.innerHTML = entries.map((entry, index) => {
+        const location = displayEntryLocation(entry);
+        const shift = shiftForEmployee(entry.name);
+        const isEditing = editingRequestIndex === entry.originalIndex;
+        const isConfirmingDelete = pendingDeleteIndex === entry.originalIndex;
+        const actions = isConfirmingDelete
+          ? '<button class="confirm-delete-request" type="button" data-index="' + entry.originalIndex + '">Confirm</button><button class="cancel-delete-request" type="button" data-index="' + entry.originalIndex + '">Cancel</button>'
+          : '<button class="edit-request" type="button" data-index="' + entry.originalIndex + '">Edit</button><button class="delete-request" type="button" data-index="' + entry.originalIndex + '">Delete</button>';
+        return '<div class="request-row' + (isEditing ? ' editing' : '') + (isConfirmingDelete ? ' confirming-delete' : '') + '"><span>' + escapeHtml(entry.name) + (shift ? ' - ' + escapeHtml(shift) : '') + ' - ' + escapeHtml(entry.code) + ' ' + escapeHtml(reasonLabel(entry.code)) + (location ? ' - ' + escapeHtml(location) : '') + '</span><div class="request-actions">' + actions + '</div></div>';
+      }).join("");
+    }
+
+    function clearRequestForm() {
+      editingRequestIndex = null;
+      pendingDeleteIndex = null;
+      document.getElementById("employeeInput").value = "";
+      document.getElementById("reasonInput").value = "";
+      document.getElementById("locationInput").value = "";
+      document.getElementById("employeeSelect").value = "";
+      document.getElementById("reasonSelect").value = "";
+      document.getElementById("locationSelect").value = "";
+      document.getElementById("addRequestButton").textContent = "Add";
+      document.getElementById("editorStatus").textContent = "";
+    }
+
+    function editRequest(index) {
+      const requestIndex = Number(index);
+      const calendar = readTimeOff();
+      const entry = (calendar[selectedDateKey] || [])[requestIndex];
+      if (!Number.isInteger(requestIndex) || !entry) {
+        document.getElementById("editorStatus").textContent = "Could not find that request to edit.";
+        return;
+      }
+      editingRequestIndex = requestIndex;
+      pendingDeleteIndex = null;
+      document.getElementById("employeeInput").value = entry.name || "";
+      document.getElementById("reasonInput").value = entry.code || "";
+      document.getElementById("locationInput").value = entryLocation(entry);
+      document.getElementById("employeeSelect").value = "";
+      document.getElementById("reasonSelect").value = "";
+      document.getElementById("locationSelect").value = "";
+      document.getElementById("addRequestButton").textContent = "Save";
+      renderDayEditor();
+      document.getElementById("editorStatus").textContent = "Editing request - update the fields, then click Save";
+      document.getElementById("addRequestForm").scrollIntoView({ block: "nearest" });
+      document.getElementById("employeeInput").focus();
+    }
+
+    function openDayEditor(dateKey) {
+      selectedDateKey = dateKey;
+      const selected = dateFromKey(selectedDateKey);
+      viewDate = new Date(selected.getFullYear(), selected.getMonth(), 1);
+      renderCalendar();
+      populateEditorOptions();
+      renderDayEditor();
+      clearRequestForm();
+      const backdrop = document.getElementById("dayEditorBackdrop");
+      backdrop.classList.add("open");
+      backdrop.setAttribute("aria-hidden", "false");
+      setTimeout(() => document.getElementById("employeeInput").focus(), 0);
+    }
+
+    function closeDayEditor() {
+      const backdrop = document.getElementById("dayEditorBackdrop");
+      backdrop.classList.remove("open");
+      backdrop.setAttribute("aria-hidden", "true");
+    }
+
+    function populateEmployeeBank() {
+      const select = document.getElementById("employeeBankEmployee");
+      const employees = currentRosterEmployees()
+        .map((employee) => employee.name)
+        .sort((left, right) => left.localeCompare(right, undefined, { sensitivity: "base" }));
+      select.innerHTML = employees.map((name) => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join("");
+      syncEmployeeBankTag();
+    }
+
+    function syncEmployeeBankTag() {
+      const name = document.getElementById("employeeBankEmployee").value;
+      const bank = readEmployeeBank();
+      document.getElementById("employeeBankTag").value = bank[normalizeName(name)] || "";
+    }
+
+    function openEmployeeBank() {
+      populateEmployeeBank();
+      document.getElementById("employeeBankStatus").textContent = "Choose a permanent pill for this employee.";
+      const backdrop = document.getElementById("employeeBankBackdrop");
+      backdrop.classList.add("open");
+      backdrop.setAttribute("aria-hidden", "false");
+      setTimeout(() => document.getElementById("employeeBankEmployee").focus(), 0);
+    }
+
+    function closeEmployeeBank() {
+      const backdrop = document.getElementById("employeeBankBackdrop");
+      backdrop.classList.remove("open");
+      backdrop.setAttribute("aria-hidden", "true");
+    }
+
+    function employeeStatusForDate(name, dateKey) {
+      const employee = currentRosterEmployees().find((candidate) => normalizeName(candidate.name) === normalizeName(name)) || { name };
+      const absence = timeOffEntryForEmployee(readTimeOff()[dateKey] || [], employee);
+      if (String(absence?.code || "").toUpperCase() === "SIC") return "sic";
+      if (absence) return "vac";
+      const dayStatus = readEmployeeDayStatuses()[dateKey]?.[normalizeName(name)];
+      if (dayStatus) return dayStatus;
+      const bankTag = readEmployeeBank()[normalizeName(name)];
+      if (bankTag) return bankTag;
+      return isCraneOperator(employee) ? "crane" : "working";
+    }
+
+    function employeeRoleFlagsForDate(name, dateKey) {
+      const employee = currentRosterEmployees().find((candidate) => normalizeName(candidate.name) === normalizeName(name)) || { name };
+      const key = normalizeName(name);
+      const dayStatus = readEmployeeDayStatuses()[dateKey]?.[key] || "";
+      const bankTag = readEmployeeBank()[key] || "";
+      const flags = [];
+      if (bankTag === "crane" || isCraneOperator(employee)) flags.push("C");
+      if (dayStatus === "flipline") flags.push("FL");
+      return flags;
+    }
+
+    function employeeCalendarName(name, dateKey) {
+      const flags = employeeRoleFlagsForDate(name, dateKey);
+      return flags.length ? `${name} ${flags.map((flag) => `(${flag})`).join(" ")}` : name;
+    }
+
+    function positionEmployeeStatus(anchor) {
+      const dialog = document.querySelector("#employeeStatusBackdrop .employee-bank-dialog");
+      if (!dialog || !anchor) return;
+      const rect = anchor.getBoundingClientRect();
+      const gap = 5;
+      const width = dialog.offsetWidth || 190;
+      const height = dialog.offsetHeight || 310;
+      let left = rect.right + gap;
+      if (left + width > window.innerWidth - 6) left = rect.left - width - gap;
+      left = Math.max(6, Math.min(left, window.innerWidth - width - 6));
+      const top = Math.max(6, Math.min(rect.top, window.innerHeight - height - 6));
+      dialog.style.left = `${Math.round(left)}px`;
+      dialog.style.top = `${Math.round(top)}px`;
+    }
+
+    function openEmployeeStatus(name, dateKey, anchor) {
+      selectedStatusName = String(name || "").trim();
+      selectedStatusDate = String(dateKey || "");
+      if (!selectedStatusName || !selectedStatusDate) return;
+      document.getElementById("employeeStatusName").textContent = `${selectedStatusName} - ${friendlyDate(selectedStatusDate)}`;
+      const currentStatus = employeeStatusForDate(selectedStatusName, selectedStatusDate);
+      document.querySelectorAll("[data-quick-status]").forEach((button) => {
+        const active = button.dataset.quickStatus === currentStatus;
+        button.classList.toggle("active", active);
+        button.setAttribute("aria-pressed", String(active));
+      });
+      document.getElementById("employeeStatusMessage").textContent = "Choose a status for this date.";
+      const backdrop = document.getElementById("employeeStatusBackdrop");
+      backdrop.classList.add("open");
+      backdrop.setAttribute("aria-hidden", "false");
+      positionEmployeeStatus(anchor);
+      setTimeout(() => document.querySelector("[data-quick-status]")?.focus(), 0);
+    }
+
+    function closeEmployeeStatus() {
+      const backdrop = document.getElementById("employeeStatusBackdrop");
+      backdrop.classList.remove("open");
+      backdrop.setAttribute("aria-hidden", "true");
+    }
+
+    function offScheduleEmployees(dateKey, shift) {
+      const date = dateFromKey(dateKey);
+      return currentRosterEmployees()
+        .filter((employee) => employee.shift === shift && !isEmployeeScheduled(employee, date))
+        .sort((left, right) => String(left.name || "").localeCompare(String(right.name || ""), undefined, { sensitivity: "base" }));
+    }
+
+    function openOffSchedule(dateKey, shift) {
+      if (!dateKey || !["first", "second"].includes(shift)) return;
+      const label = shift === "first" ? "Day" : "Night";
+      const employees = offScheduleEmployees(dateKey, shift);
+      document.getElementById("offScheduleTitle").textContent = `${label} - Not Scheduled`;
+      document.getElementById("offScheduleSummary").textContent = `${friendlyDate(dateKey)} - ${employees.length} employee${employees.length === 1 ? "" : "s"}`;
+      document.getElementById("offScheduleList").innerHTML = employees.length
+        ? employees.map((employee) => `<div class="off-schedule-name" title="${escapeHtml(employee.name)}">${escapeHtml(employee.name)}</div>`).join("")
+        : '<div class="off-schedule-empty">Everyone on this shift is scheduled.</div>';
+      const backdrop = document.getElementById("offScheduleBackdrop");
+      backdrop.classList.add("open");
+      backdrop.setAttribute("aria-hidden", "false");
+      setTimeout(() => document.getElementById("closeOffSchedule").focus(), 0);
+    }
+
+    function closeOffSchedule() {
+      const backdrop = document.getElementById("offScheduleBackdrop");
+      backdrop.classList.remove("open");
+      backdrop.setAttribute("aria-hidden", "true");
+    }
+
+    function saveEmployeeStatus(name, dateKey, status) {
+      const nameKey = normalizeName(name);
+      const tokenKey = nameTokenKey(name);
+      const calendar = readTimeOff();
+      const currentEntries = calendar[dateKey] || [];
+      calendar[dateKey] = currentEntries.filter((entry) => {
+        const directMatch = normalizeName(entry.name) === nameKey;
+        const tokenMatch = tokenKey && nameTokenKey(entry.name) === tokenKey;
+        return !directMatch && !tokenMatch;
+      });
+      if (status === "vac" || status === "sic") {
+        const code = status.toUpperCase();
+        calendar[dateKey].push({ date: dateKey, name, code, reason: reasonLabel(code), location: "", sheet: "List Status" });
+        calendar[dateKey].sort(compareTimeOffRequests);
+      }
+      if (!calendar[dateKey].length) delete calendar[dateKey];
+      writeTimeOff(calendar);
+
+      const statuses = readEmployeeDayStatuses();
+      if (!statuses[dateKey]) statuses[dateKey] = {};
+      if (status === "vac" || status === "sic" || !status) delete statuses[dateKey][nameKey];
+      else statuses[dateKey][nameKey] = status;
+      if (!Object.keys(statuses[dateKey]).length) delete statuses[dateKey];
+      writeEmployeeDayStatuses(statuses);
+    }
+
+    function normalizeName(name) {
+      return String(name || "")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, " ")
+        .replace(/\bbranford atton\b/g, "branford alton")
+        .trim();
+    }
+
+    function isOrangePerson(name) {
+      return /\b(jarvis|dave|mike|neal)\b/.test(normalizeName(name));
+    }
+
+    function codeFromCell(value) {
+      const text = String(value || "").trim().toUpperCase();
+      return Object.keys(absenceReasons).find((code) => new RegExp(`\\b${code}\\b`).test(text)) || "";
+    }
+
+    function parseDayNumber(value) {
+      const text = String(value || "").trim();
+      if (!/^\d{1,2}$/.test(text)) return null;
+      const day = Number(text);
+      return day >= 1 && day <= 31 ? day : null;
+    }
+
+    function employeeNameFromCell(value) {
+      let text = String(value || "").replace(/\s+/g, " ").trim();
+      if (!text || !/[a-z]/i.test(text)) return "";
+      if (/^(emp\s*name|employee|shifts?|time away|date range|location|reasons?|statuses?|pay groups?)/i.test(text)) return "";
+      if (/\b(SIC|VAC|FLO|HOL)\s*-/i.test(text)) return "";
+      text = text.replace(/\s+\d{3,}\b.*$/, "").trim();
+      const comma = text.match(/^([^,]+),\s*(.+)$/);
+      if (comma) return `${comma[1].trim()} ${comma[2].trim()}`.replace(/\s+/g, " ");
+      return text;
+    }
+
+    function monthYearFromRows(rows) {
+      const current = { month: today.getMonth(), year: today.getFullYear() };
+      for (const row of rows) {
+        for (const value of row) {
+          const match = String(value || "").match(/\b(january|february|march|april|may|june|july|august|september|october|november|december)\s+(\d{4})\b/i);
+          if (match) return { month: monthNames[match[1].toLowerCase()], year: Number(match[2]) };
+        }
+      }
+      for (const row of rows) {
+        for (const value of row) {
+          const text = String(value || "");
+          const dateMatch = text.match(/\b(\d{1,2})\/(\d{1,2})\/(\d{4})\b/);
+          if (dateMatch && /date range/i.test(text)) {
+            return { month: Number(dateMatch[1]) - 1, year: Number(dateMatch[3]) };
+          }
+        }
+      }
+      return current;
+    }
+
+    function findEmployeeHeader(rows) {
+      for (let rowIndex = 0; rowIndex < rows.length; rowIndex += 1) {
+        for (let colIndex = 0; colIndex < rows[rowIndex].length; colIndex += 1) {
+          if (/\bemp(?:loyee)?\s*name\b/i.test(String(rows[rowIndex][colIndex] || ""))) {
+            return { rowIndex, colIndex };
+          }
+        }
+      }
+      return null;
+    }
+
+    function findColumnNearHeader(rows, header, pattern) {
+      for (let rowIndex = Math.max(0, header.rowIndex - 3); rowIndex <= Math.min(rows.length - 1, header.rowIndex + 3); rowIndex += 1) {
+        for (let colIndex = 0; colIndex < rows[rowIndex].length; colIndex += 1) {
+          if (pattern.test(String(rows[rowIndex][colIndex] || ""))) return colIndex;
+        }
+      }
+      return -1;
+    }
+
+    function findDayColumns(rows, header) {
+      const candidates = [];
+      for (let rowIndex = Math.max(0, header.rowIndex - 3); rowIndex <= Math.min(rows.length - 1, header.rowIndex + 3); rowIndex += 1) {
+        const days = [];
+        for (let colIndex = header.colIndex + 1; colIndex < rows[rowIndex].length; colIndex += 1) {
+          const day = parseDayNumber(rows[rowIndex][colIndex]);
+          if (day !== null) days.push({ colIndex, day });
+        }
+        candidates.push({ rowIndex, days });
+      }
+      candidates.sort((a, b) => b.days.length - a.days.length);
+      return candidates[0]?.days || [];
+    }
+
+    function datedColumns(dayColumns, base) {
+      let month = base.month;
+      let year = base.year;
+      let previousDay = 0;
+      return dayColumns.map(({ colIndex, day }) => {
+        if (previousDay && day < previousDay - 7) {
+          month += 1;
+          if (month > 11) {
+            month = 0;
+            year += 1;
+          }
+        }
+        previousDay = day;
+        return { colIndex, dateKey: isoDate(new Date(year, month, day)) };
+      });
+    }
+
+    function parseTimeOffRows(rows, sheetName) {
+      const header = findEmployeeHeader(rows);
+      if (!header) return [];
+      const dayColumns = datedColumns(findDayColumns(rows, header), monthYearFromRows(rows));
+      if (!dayColumns.length) return [];
+      const locationColumn = findColumnNearHeader(rows, header, /^loc(?:ation)?$/i);
+      const sheetLocation = locationFromSheetName(sheetName);
+      const records = [];
+
+      for (let rowIndex = header.rowIndex + 1; rowIndex < rows.length; rowIndex += 1) {
+        const row = rows[rowIndex] || [];
+        const name = employeeNameFromCell(row[header.colIndex]);
+        if (!name) continue;
+        for (const column of dayColumns) {
+          const code = codeFromCell(row[column.colIndex]);
+          if (!code) continue;
+          records.push({
+            date: column.dateKey,
+            name,
+            code,
+            reason: absenceReasons[code],
+            location: locationColumn >= 0 ? cleanLocation(row[locationColumn]) || sheetLocation : sheetLocation,
+            sheet: sheetName
+          });
+        }
+      }
+
+      return records;
+    }
+
+    function recordsToCalendar(records) {
+      const seen = new Set();
+      const calendar = {};
+      records.forEach((record) => {
+        const key = `${record.date}|${normalizeName(record.name)}|${record.code}|${normalizeName(entryLocation(record))}`;
+        if (seen.has(key)) return;
+        seen.add(key);
+        if (!calendar[record.date]) calendar[record.date] = [];
+        calendar[record.date].push(record);
+      });
+      Object.values(calendar).forEach((entries) => {
+        entries.sort(compareTimeOffRequests);
+      });
+      return calendar;
+    }
+
+    function sheetRows(workbook, sheetName) {
+      const sheet = workbook.Sheets[sheetName];
+      return XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false, defval: "" })
+        .map((row) => row.map((cell) => String(cell || "").trim()));
+    }
+
+    function parseTimeOffWorkbook(workbook) {
+      const records = [];
+      workbook.SheetNames.forEach((sheetName) => {
+        records.push(...parseTimeOffRows(sheetRows(workbook, sheetName), sheetName));
+      });
+      return records;
+    }
+
+    function rosterDayIndex(date) {
+      return (date.getDay() + 6) % 7;
+    }
+
+    function isEmployeeScheduled(employee, date) {
+      return normalizeRosterDays(employee.days)[rosterDayIndex(date)] !== "O";
+    }
+
+    function isCraneOperator(employee) {
+      const role = normalizeName(employee?.role).replace(/\s+/g, "");
+      return role === "crane" || role === "everything";
+    }
+
+    function isManagerEmployee(employee) {
+      return employee?.shift === "managers" || isOrangePerson(employee?.name);
+    }
+
+    function timeOffEntryForEmployee(entries, employee) {
+      const directKey = normalizeName(employee.name);
+      const tokenKey = nameTokenKey(employee.name);
+      return entries
+        .filter((entry) => normalizeName(entry.name) === directKey || (tokenKey && nameTokenKey(entry.name) === tokenKey))
+        .sort(compareTimeOffRequests)[0] || null;
+    }
+
+    function staffListSortPriority(employee) {
+      const absenceCode = String(employee?.absence?.code || "").toUpperCase();
+      if (absenceCode === "SIC") return 3;
+      if (employee?.absence) return 2;
+      if (employee?.statusOverride === "bn") return 2;
+      if (["bnsf", "calledoff", "out", "ncns", "unknown"].includes(employee?.statusOverride)) return 4;
+      if (["working", "here", "flipline", "camein"].includes(employee?.statusOverride)) return 1;
+      if (employee?.bankTag === "unknown") return 4;
+      if (employee?.bankTag === "crane" || isCraneOperator(employee)) return 0;
+      return 1;
+    }
+
+    function isCountedStaffEmployee(employee) {
+      return Boolean(employee?.working) && employee?.bankTag !== "unknown" && employee?.statusOverride !== "bnsf";
+    }
+
+    function orderedStaffForDisplay(employees) {
+      const ordered = [...employees].sort((left, right) => {
+        const countDifference = (isCountedStaffEmployee(left) ? 0 : 1) - (isCountedStaffEmployee(right) ? 0 : 1);
+        const priorityDifference = staffListSortPriority(left) - staffListSortPriority(right);
+        return countDifference || priorityDifference || String(left.name || "").localeCompare(String(right.name || ""), undefined, { sensitivity: "base" });
+      });
+      const firstNotCounted = ordered.findIndex((employee) => !isCountedStaffEmployee(employee));
+      return ordered.map((employee, index) => ({ employee, bottomHug: firstNotCounted > 0 && index === firstNotCounted }));
+    }
+
+    function staffingForDate(date, timeOff, roster, employeeBank, employeeDayStatuses, employeeDayAdditions) {
+      const dateKey = isoDate(date);
+      const entries = timeOff[dateKey] || [];
+      const dateStatuses = employeeDayStatuses[dateKey] || {};
+      const additions = Array.isArray(employeeDayAdditions[dateKey]) ? employeeDayAdditions[dateKey] : [];
+      const additionsByName = new Map(additions.map((employee) => [normalizeName(employee.name), employee]));
+      const dailyRoster = roster.map((employee) => {
+        const addition = additionsByName.get(normalizeName(employee.name));
+        if (!addition) return employee;
+        additionsByName.delete(normalizeName(employee.name));
+        return { ...employee, shift: addition.shift || employee.shift, dayAdded: true };
+      });
+      additionsByName.forEach((employee) => dailyRoster.push({
+        name: employee.name,
+        shift: employee.shift === "second" ? "second" : "first",
+        role: "",
+        days: ["W", "W", "W", "W", "W", "W", "W"],
+        dayAdded: true
+      }));
+      const shifts = Object.fromEntries(rosterShiftKeys.map((shift) => [shift, []]));
+      let scheduled = 0;
+      let working = 0;
+
+      dailyRoster.forEach((employee) => {
+        if (employee.shift === "gate" || employee.shift === "mechanics") return;
+        if (!employee.dayAdded && !isEmployeeScheduled(employee, date)) return;
+        const nameKey = normalizeName(employee.name);
+        const statusOverride = dateStatuses[nameKey] || "";
+        const activeOverride = ["working", "here", "flipline", "crane", "unknown", "bnsf", "camein", "bn", "calledoff", "out", "ncns"].includes(statusOverride);
+        const absence = activeOverride ? null : timeOffEntryForEmployee(entries, employee);
+        const bankTag = statusOverride === "crane" || statusOverride === "unknown"
+          ? statusOverride
+          : activeOverride ? "" : employeeBank[nameKey] || "";
+        const overrideOut = ["bn", "bnsf", "unknown", "calledoff", "out", "ncns"].includes(statusOverride);
+        const bankOut = ["bn", "unknown"].includes(bankTag);
+        const row = { ...employee, absence, working: !absence && !overrideOut && !bankOut, bankTag, statusOverride };
+        if (!shifts[row.shift]) shifts[row.shift] = [];
+        shifts[row.shift].push(row);
+        scheduled += 1;
+        if (row.working) working += 1;
+      });
+
+      Object.values(shifts).forEach((employees) => {
+        employees.sort((left, right) => {
+          const priorityDifference = staffListSortPriority(left) - staffListSortPriority(right);
+          return priorityDifference || String(left.name || "").localeCompare(String(right.name || ""), undefined, { sensitivity: "base" });
+        });
+      });
+
+      return {
+        date,
+        shifts,
+        scheduled,
+        working,
+        away: scheduled - working
+      };
+    }
+
+    function staffPillHtml(employee, dateKey, extraClass = "") {
+      const absence = employee.absence;
+      const classes = ["staff-pill"];
+      if (extraClass) classes.push(extraClass);
+      let title = `${employee.name} - working`;
+      let flag = "";
+
+      if (absence) {
+        const code = String(absence.code || "").toLowerCase();
+        classes.push(["vac", "sic", "flo", "hol"].includes(code) ? code : "other-away", "out-status");
+        title = `${employee.name} - ${reasonLabel(absence.code)}`;
+        if (code === "vac") flag = '<small class="status-flag" aria-label="Vacation">(V)</small>';
+        if (code === "sic") flag = '<small class="status-flag" aria-label="Sick">(S)</small>';
+      } else if (employee.statusOverride === "bnsf") {
+        classes.push("bnsf", "out-status");
+        title = `${employee.name} - BNSF`;
+        flag = '<small class="status-flag" aria-label="BNSF">(BN)</small>';
+      } else if (employee.statusOverride === "calledoff") {
+        classes.push("called-off", "out-status");
+        title = `${employee.name} - called off`;
+        flag = '<small class="status-flag" aria-label="Called off">(CO)</small>';
+      } else if (employee.statusOverride === "out") {
+        classes.push("out", "out-status");
+        title = `${employee.name} - out`;
+        flag = '<small class="status-flag" aria-label="Out">(O)</small>';
+      } else if (employee.statusOverride === "ncns") {
+        classes.push("ncns", "out-status");
+        title = `${employee.name} - no call no show`;
+        flag = '<small class="status-flag" aria-label="No call no show">(NC)</small>';
+      } else if (employee.statusOverride === "camein") {
+        classes.push("came-in");
+        title = `${employee.name} - came in`;
+        flag = '<small class="status-flag" aria-label="Came in">(+)</small>';
+      } else if (employee.statusOverride === "here") {
+        classes.push("came-in");
+        title = `${employee.name} - here`;
+        flag = '<small class="status-flag" aria-label="Here">(&#10003;)</small>';
+      } else if (employee.statusOverride === "flipline") {
+        classes.push("flip-line");
+        title = `${employee.name} - flip line`;
+        flag = '<small class="status-flag" aria-label="Flip Line">(FL)</small>';
+      } else if (employee.statusOverride === "bn") {
+        classes.push("bn", "out-status");
+        title = `${employee.name} - BN`;
+        flag = '<small class="bn-flag" aria-label="BN">(BN)</small>';
+      } else if (employee.statusOverride === "working") {
+        classes.push("plain");
+      } else if (employee.bankTag === "unknown") {
+        classes.push("unknown", "out-status");
+        title = `${employee.name} - unknown status`;
+        flag = '<small class="status-flag" aria-label="Unknown status">(??)</small>';
+      } else if (employee.bankTag === "crane" || isCraneOperator(employee)) {
+        classes.push("crane");
+        title = `${employee.name} - working - crane operator`;
+        flag = '<small class="crane-flag" aria-label="Crane operator">(C)</small>';
+      } else {
+        classes.push("plain");
+      }
+
+      return `<button class="${classes.join(" ")}" type="button" data-status-name="${escapeHtml(employee.name)}" data-status-date="${escapeHtml(dateKey)}" title="${escapeHtml(title)}"><span>${escapeHtml(employee.name)}</span>${flag}</button>`;
+    }
+
+    function shiftStaffHtml(label, employees, dateKey, shiftKey, extraClass = "") {
+      const displayEmployees = orderedStaffForDisplay(employees);
+      return `
+        <section class="staff-shift${extraClass ? ` ${extraClass}` : ""}">
+          <h3 role="button" tabindex="0" data-off-schedule-date="${escapeHtml(dateKey)}" data-off-schedule-shift="${escapeHtml(shiftKey)}" title="Show employees not scheduled for ${escapeHtml(label)} shift"><span>${escapeHtml(label)}</span></h3>
+          <div class="staff-pill-list">
+            ${displayEmployees.length ? displayEmployees.map(({ employee, bottomHug }) => staffPillHtml(employee, dateKey, bottomHug ? "bottom-hug" : "")).join("") : '<span class="staff-empty">No one scheduled</span>'}
+          </div>
+        </section>
+      `;
+    }
+
+    function supportStaffHtml(staffing, dateKey) {
+      return "";
+    }
+
+    function staffDayHtml(staffing, monthIndex) {
+      const date = staffing.date;
+      const key = isoDate(date);
+      const outsideMonth = monthIndex !== null && date.getMonth() !== monthIndex;
+      const isToday = key === isoDate(today);
+      const isPast = key < isoDate(today);
+      const isSelected = key === selectedDateKey;
+      const classes = [
+        "staff-day",
+        outsideMonth ? "outside-month" : "",
+        isPast ? "past-day" : "",
+        isToday ? "today" : "",
+        isSelected ? "selected" : ""
+      ].filter(Boolean).join(" ");
+      const dayName = date.toLocaleDateString(undefined, { weekday: "short" });
+      const dateLabel = date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+      const relativeDayLabel = listRange === "three-day"
+        ? (key === isoDate(today) ? "Today" : (key < isoDate(today) ? "Yesterday" : "Tomorrow"))
+        : "";
+      const relativeDayHtml = relativeDayLabel ? '<span class="relative-day-label">' + escapeHtml(relativeDayLabel) + '</span>' : "";
+      const countableWorker = (employee) => employee.working && employee.bankTag !== "unknown" && employee.statusOverride !== "bnsf";
+      const shiftCount = (employees) => {
+        const countable = employees.filter(countableWorker);
+        const flipLine = countable.filter((employee) => employee.statusOverride === "flipline").length;
+        const regular = countable.length - flipLine;
+        return { total: countable.length, label: flipLine ? `${regular}+${flipLine}` : String(regular) };
+      };
+      const firstShiftWorking = shiftCount(staffing.shifts.first || []);
+      const secondShiftWorking = shiftCount(staffing.shifts.second || []);
+
+      if (outsideMonth) {
+        return `
+          <article class="${classes}">
+            <button class="staff-day-button" type="button" data-list-date="${escapeHtml(key)}">
+              <strong>${escapeHtml(dayName)}</strong><b>${date.getDate()}</b><span>${escapeHtml(dateLabel)}</span>${relativeDayHtml}
+            </button>
+            <span class="staff-empty" style="padding:10px 7px">Outside this month</span>
+          </article>
+        `;
+      }
+
+      return `
+        <article class="${classes}">
+          <button class="staff-day-button" type="button" data-list-date="${escapeHtml(key)}">
+            <strong>${escapeHtml(dayName)}</strong><b>${date.getDate()}</b>${relativeDayHtml}
+          </button>
+          <div class="staff-shift-grid">
+            ${shiftStaffHtml("Day", staffing.shifts.first || [], key, "first")}
+            ${shiftStaffHtml("Night", staffing.shifts.second || [], key, "second")}
+          </div>
+          ${supportStaffHtml(staffing, key)}
+          <div class="staff-day-total">
+            <b class="${firstShiftWorking.total < 10 ? "low-staff" : ""}" title="1st Shift working">${firstShiftWorking.label}</b>
+            <b class="${secondShiftWorking.total < 10 ? "low-staff" : ""}" title="2nd Shift working">${secondShiftWorking.label}</b>
+          </div>
+        </article>
+      `;
+    }
+
+    function renderStaffList(timeOff, monthFirst, roster) {
+      const list = document.getElementById("listView");
+      const employeeBank = readEmployeeBank();
+      const employeeDayStatuses = readEmployeeDayStatuses();
+      const employeeDayAdditions = readEmployeeDayAdditions();
+      const twoWeekView = listRange === "two-week";
+      const threeDayView = listRange === "three-day";
+      list.classList.toggle("two-week-mode", twoWeekView);
+      list.classList.toggle("three-day-mode", threeDayView);
+      const start = threeDayView ? new Date(today) : (twoWeekView ? new Date(today) : new Date(monthFirst));
+      start.setHours(0, 0, 0, 0);
+      if (threeDayView) start.setDate(start.getDate() - 1);
+      else start.setDate(start.getDate() - rosterDayIndex(start));
+      const last = new Date(monthFirst.getFullYear(), monthFirst.getMonth() + 1, 0);
+      const daysBeforeMonth = rosterDayIndex(monthFirst);
+      const visibleDays = threeDayView ? 3 : (twoWeekView ? 14 : Math.ceil((daysBeforeMonth + last.getDate()) / 7) * 7);
+      const displayMonthIndex = (twoWeekView || threeDayView) ? null : monthFirst.getMonth();
+      const staffDays = [];
+
+      for (let index = 0; index < visibleDays; index += 1) {
+        const date = new Date(start);
+        date.setDate(start.getDate() + index);
+        staffDays.push(staffingForDate(date, timeOff, roster, employeeBank, employeeDayStatuses, employeeDayAdditions));
+      }
+
+      const weeks = [];
+      for (let index = 0; index < staffDays.length; index += 7) {
+        const week = staffDays.slice(index, index + 7);
+        weeks.push(`
+          <section class="staff-week">
+            <div class="staff-week-grid">${week.map((staffing) => staffDayHtml(staffing, displayMonthIndex)).join("")}</div>
+          </section>
+        `);
+      }
+
+      list.innerHTML = weeks.join("");
+    }
+
+    function syncViewMode() {
+      const calendarActive = viewMode === "calendar";
+      const monthActive = !calendarActive && listRange === "month";
+      const twoWeekActive = !calendarActive && listRange === "two-week";
+      const threeDayActive = !calendarActive && listRange === "three-day";
+      document.getElementById("calendarView").hidden = !calendarActive;
+      document.getElementById("listView").hidden = calendarActive;
+      const shell = document.querySelector(".calendar-shell");
+      shell.classList.toggle("list-mode", !calendarActive);
+      shell.classList.toggle("two-week-list-mode", twoWeekActive);
+      shell.classList.toggle("three-day-list-mode", threeDayActive);
+      document.getElementById("calendarViewToggle").classList.toggle("active", calendarActive);
+      document.getElementById("listViewToggle").classList.toggle("active", monthActive);
+      document.getElementById("twoWeekViewToggle").classList.toggle("active", twoWeekActive);
+      document.getElementById("threeDayViewToggle").classList.toggle("active", threeDayActive);
+      document.getElementById("calendarViewToggle").setAttribute("aria-pressed", String(calendarActive));
+      document.getElementById("listViewToggle").setAttribute("aria-pressed", String(monthActive));
+      document.getElementById("twoWeekViewToggle").setAttribute("aria-pressed", String(twoWeekActive));
+      document.getElementById("threeDayViewToggle").setAttribute("aria-pressed", String(threeDayActive));
+    }
+
+    function setViewMode(nextMode, nextRange = listRange) {
+      viewMode = nextMode === "list" ? "list" : "calendar";
+      listRange = ["two-week", "three-day"].includes(nextRange) ? nextRange : "month";
+      localStorage.setItem(timeOffViewStorageKey, viewMode);
+      localStorage.setItem(timeOffListRangeStorageKey, listRange);
+      renderCalendar();
+    }
+
+    function renderCalendar() {
+      const timeOff = readTimeOff();
+      const monthTitle = document.getElementById("monthTitle");
+      const grid = document.getElementById("calendarGrid");
+      const first = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1);
+      const start = new Date(first);
+      start.setDate(first.getDate() - first.getDay());
+      const last = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 0);
+      const visibleDays = Math.ceil((first.getDay() + last.getDate()) / 7) * 7;
+      const todayStart = new Date(today);
+      todayStart.setHours(0, 0, 0, 0);
+      const currentWeekStart = new Date(todayStart);
+      currentWeekStart.setDate(todayStart.getDate() - todayStart.getDay());
+      const currentWeekEnd = new Date(currentWeekStart);
+      currentWeekEnd.setDate(currentWeekStart.getDate() + 6);
+      const monthName = first.toLocaleDateString(undefined, { month: "long" });
+      monthTitle.textContent = `${monthName} ${first.getFullYear()}`;
+      document.querySelector("h1").innerHTML = `${escapeHtml(monthName)} <span class="title-year">${first.getFullYear()}</span>`;
+
+      const roster = currentRosterEmployees();
+      const shiftLookup = rosterShiftLookup(roster);
+      const cells = [];
+      for (let index = 0; index < visibleDays; index += 1) {
+        const date = new Date(start);
+        date.setDate(start.getDate() + index);
+        const key = isoDate(date);
+        const cellDate = new Date(date);
+        cellDate.setHours(0, 0, 0, 0);
+        const entries = [...(timeOff[key] || [])].sort(compareTimeOffRequests);
+        const visibleEntries = entries;
+        const classes = [
+          "day-cell",
+          date.getMonth() !== viewDate.getMonth() ? "muted" : "",
+          (date.getDay() === 0 || date.getDay() === 6) ? "weekend" : "",
+          cellDate < todayStart ? "past-day" : "",
+          cellDate >= currentWeekStart && cellDate <= currentWeekEnd ? "current-week" : "",
+          key === selectedDateKey ? "selected" : ""
+        ].filter(Boolean).join(" ");
+        cells.push(`
+          <button class="${classes}" type="button" data-date="${escapeHtml(key)}">
+            <span class="day-number">${date.getDate()}</span>
+            ${visibleEntries.map((entry) => `
+              <span class="timeoff-pill ${escapeHtml(entry.code.toLowerCase())}${isOrangePerson(entry.name) ? " orange-person" : ""}" title="${escapeHtml(`${entry.name} - ${shiftForEmployee(entry.name, shiftLookup) || "No shift found"} - ${entry.reason}`)}">
+                <span class="timeoff-name">${escapeHtml(employeeCalendarName(entry.name, key))}</span><span class="timeoff-code">${escapeHtml(entry.code)}</span>
+                ${shiftLineHtml(entry, shiftLookup)}
+                ${locationLineHtml(entry, shiftLookup)}
+              </span>
+            `).join("")}
+
+          </button>
+        `);
+      }
+      grid.innerHTML = cells.join("");
+      renderStaffList(timeOff, first, roster);
+      syncViewMode();
+    }
+
+    document.getElementById("calendarViewToggle").addEventListener("click", () => setViewMode("calendar"));
+    document.getElementById("listViewToggle").addEventListener("click", () => setViewMode("list", "month"));
+    document.getElementById("twoWeekViewToggle").addEventListener("click", () => {
+      viewDate = new Date(today.getFullYear(), today.getMonth(), 1);
+      setViewMode("list", "two-week");
+    });
+
+    document.getElementById("threeDayViewToggle").addEventListener("click", () => {
+      viewDate = new Date(today.getFullYear(), today.getMonth(), 1);
+      setViewMode("list", "three-day");
+    });
+
+    document.getElementById("prevMonth").addEventListener("click", () => {
+      viewDate = new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1);
+      renderCalendar();
+    });
+
+    document.getElementById("nextMonth").addEventListener("click", () => {
+      viewDate = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 1);
+      renderCalendar();
+    });
+
+    document.getElementById("todayButton").addEventListener("click", () => {
+      selectedDateKey = isoDate(today);
+      viewDate = new Date(today.getFullYear(), today.getMonth(), 1);
+      renderCalendar();
+    });
+
+    document.getElementById("timeOffImport").addEventListener("change", async (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+      const status = document.getElementById("importStatus");
+
+      if (!window.XLSX) {
+        status.textContent = "XLSX parser unavailable";
+        event.target.value = "";
+        return;
+      }
+
+      try {
+        const workbook = XLSX.read(await file.arrayBuffer(), { type: "array" });
+        const records = parseTimeOffWorkbook(workbook);
+        if (!records.length) {
+          status.textContent = "No time away codes found";
+          return;
+        }
+
+        writeTimeOff(recordsToCalendar(records));
+        selectedDateKey = records[0].date;
+        const selected = dateFromKey(selectedDateKey);
+        viewDate = new Date(selected.getFullYear(), selected.getMonth(), 1);
+        status.textContent = `${records.length} time away records imported`;
+        renderCalendar();
+      } catch (error) {
+        status.textContent = "Import failed";
+      } finally {
+        event.target.value = "";
+      }
+    });
+
+    document.getElementById("calendarGrid").addEventListener("click", (event) => {
+      const cell = event.target.closest("[data-date]");
+      if (!cell) return;
+      openDayEditor(cell.dataset.date);
+    });
+
+    document.getElementById("listView").addEventListener("click", (event) => {
+      const offScheduleHeader = event.target.closest("[data-off-schedule-shift]");
+      if (offScheduleHeader) {
+        openOffSchedule(offScheduleHeader.dataset.offScheduleDate, offScheduleHeader.dataset.offScheduleShift);
+        return;
+      }
+      const employeeButton = event.target.closest("[data-status-name]");
+      if (employeeButton) {
+        openEmployeeStatus(employeeButton.dataset.statusName, employeeButton.dataset.statusDate, employeeButton);
+        return;
+      }
+      const cell = event.target.closest("[data-list-date]");
+      if (!cell) return;
+      openDayEditor(cell.dataset.listDate);
+    });
+
+    document.getElementById("listView").addEventListener("keydown", (event) => {
+      if (!['Enter', ' '].includes(event.key)) return;
+      const offScheduleHeader = event.target.closest("[data-off-schedule-shift]");
+      if (!offScheduleHeader) return;
+      event.preventDefault();
+      openOffSchedule(offScheduleHeader.dataset.offScheduleDate, offScheduleHeader.dataset.offScheduleShift);
+    });
+
+    function clickStartedInsideCalendarTools(event) {
+      const path = typeof event.composedPath === "function" ? event.composedPath() : [];
+      const toolSelector = ".calendar-grid, .staff-list-view, .view-toggle, .month-controls, .day-editor, .employee-bank-dialog";
+      return path.some((node) => node && node.nodeType === 1 && node.matches && node.matches(toolSelector))
+        || (event.target.closest && event.target.closest(toolSelector));
+    }
+
+    document.addEventListener("click", (event) => {
+      if (!selectedDateKey) return;
+      if (clickStartedInsideCalendarTools(event)) return;
+      selectedDateKey = "";
+      renderCalendar();
+    });
+
+    function wirePicker(selectId, inputId, transform = (value) => value) {
+      document.getElementById(selectId).addEventListener("change", (event) => {
+        const value = event.target.value;
+        if (!value) return;
+        document.getElementById(inputId).value = transform(value);
+      });
+    }
+
+    wirePicker("employeeSelect", "employeeInput");
+    wirePicker("reasonSelect", "reasonInput", (value) => value.split(" - ")[0]);
+    wirePicker("locationSelect", "locationInput");
+
+    document.getElementById("closeDayEditor").addEventListener("click", closeDayEditor);
+    document.getElementById("dayEditorBackdrop").addEventListener("click", (event) => { if (event.target.id === "dayEditorBackdrop") closeDayEditor(); });
+    document.getElementById("employeeBankButton").addEventListener("click", openEmployeeBank);
+    document.getElementById("closeEmployeeBank").addEventListener("click", closeEmployeeBank);
+    document.getElementById("employeeBankBackdrop").addEventListener("click", (event) => { if (event.target.id === "employeeBankBackdrop") closeEmployeeBank(); });
+    document.getElementById("employeeBankEmployee").addEventListener("change", syncEmployeeBankTag);
+    document.getElementById("employeeBankForm").addEventListener("submit", (event) => {
+      event.preventDefault();
+      const name = document.getElementById("employeeBankEmployee").value;
+      const tag = document.getElementById("employeeBankTag").value;
+      if (!name) return;
+      const bank = readEmployeeBank();
+      const key = normalizeName(name);
+      if (tag) bank[key] = tag;
+      else delete bank[key];
+      writeEmployeeBank(bank);
+      document.getElementById("employeeBankStatus").textContent = tag ? `${name} saved as ${tag === "crane" ? "Crane" : "Unknown"}.` : `${name} returned to roster default.`;
+      renderCalendar();
+    });
+    document.getElementById("closeEmployeeStatus").addEventListener("click", closeEmployeeStatus);
+    document.getElementById("employeeStatusBackdrop").addEventListener("click", (event) => { if (event.target.id === "employeeStatusBackdrop") closeEmployeeStatus(); });
+    document.addEventListener("click", (event) => {
+      const backdrop = document.getElementById("employeeStatusBackdrop");
+      if (!backdrop.classList.contains("open")) return;
+      if (event.target.closest("#employeeStatusBackdrop .employee-bank-dialog, [data-status-name]")) return;
+      closeEmployeeStatus();
+    });
+    document.getElementById("closeOffSchedule").addEventListener("click", closeOffSchedule);
+    document.getElementById("offScheduleBackdrop").addEventListener("click", (event) => { if (event.target.id === "offScheduleBackdrop") closeOffSchedule(); });
+    document.getElementById("employeeStatusActions").addEventListener("click", (event) => {
+      const action = event.target.closest("[data-quick-status]");
+      if (!action) return;
+      const status = action.dataset.quickStatus;
+      if (!selectedStatusName || !selectedStatusDate || !status) return;
+      const unselect = status === "clear" || action.classList.contains("active");
+      const nextStatus = unselect ? "" : status;
+      saveEmployeeStatus(selectedStatusName, selectedStatusDate, nextStatus);
+      const statusLabel = unselect ? "Unselected" : ({ here: "Here", flipline: "Flip Line", vac: "Vacation", sic: "Sick", calledoff: "Called Off", out: "Out", ncns: "NCNS", bnsf: "BNSF", unknown: "Unknown" }[status] || status);
+      document.getElementById("employeeStatusMessage").textContent = `${selectedStatusName} updated to ${statusLabel}.`;
+      renderCalendar();
+      closeEmployeeStatus();
+    });
+    document.getElementById("dailyEmployeeList").addEventListener("change", (event) => {
+      const select = event.target.closest("[data-daily-status-name]");
+      if (!select || !selectedDateKey) return;
+      saveEmployeeStatus(select.dataset.dailyStatusName, selectedDateKey, select.value);
+      renderCalendar();
+      renderDayEditor();
+    });
+    document.getElementById("dailyEmployeeList").addEventListener("click", (event) => {
+      const button = event.target.closest("[data-remove-day-name]");
+      if (!button || !selectedDateKey) return;
+      const name = button.dataset.removeDayName;
+      const additions = readEmployeeDayAdditions();
+      additions[selectedDateKey] = (additions[selectedDateKey] || []).filter((employee) => normalizeName(employee.name) !== normalizeName(name));
+      if (!additions[selectedDateKey].length) delete additions[selectedDateKey];
+      writeEmployeeDayAdditions(additions);
+      const statuses = readEmployeeDayStatuses();
+      if (statuses[selectedDateKey]) {
+        delete statuses[selectedDateKey][normalizeName(name)];
+        if (!Object.keys(statuses[selectedDateKey]).length) delete statuses[selectedDateKey];
+        writeEmployeeDayStatuses(statuses);
+      }
+      renderCalendar();
+      renderDayEditor();
+    });
+    document.getElementById("addDayEmployeeForm").addEventListener("submit", (event) => {
+      event.preventDefault();
+      const input = document.getElementById("addDayEmployeeName");
+      const name = input.value.trim();
+      const shift = document.getElementById("addDayEmployeeShift").value === "second" ? "second" : "first";
+      if (!name || !selectedDateKey) return;
+      const additions = readEmployeeDayAdditions();
+      const rows = Array.isArray(additions[selectedDateKey]) ? additions[selectedDateKey] : [];
+      const existingIndex = rows.findIndex((employee) => normalizeName(employee.name) === normalizeName(name));
+      const addition = { name, shift };
+      if (existingIndex >= 0) rows[existingIndex] = addition;
+      else rows.push(addition);
+      additions[selectedDateKey] = rows;
+      writeEmployeeDayAdditions(additions);
+      saveEmployeeStatus(name, selectedDateKey, "camein");
+      input.value = "";
+      renderCalendar();
+      renderDayEditor();
+    });
+    document.addEventListener("keydown", (event) => {
+      if (event.key !== "Escape") return;
+      closeDayEditor();
+      closeEmployeeBank();
+      closeEmployeeStatus();
+      closeOffSchedule();
+    });
+
+    document.getElementById("requestList").addEventListener("click", (event) => {
+      const editButton = event.target.closest(".edit-request");
+      if (editButton) {
+        editRequest(Number(editButton.dataset.index));
+        return;
+      }
+
+      const deleteButton = event.target.closest(".delete-request");
+      if (deleteButton) {
+        pendingDeleteIndex = Number(deleteButton.dataset.index);
+        if (editingRequestIndex === pendingDeleteIndex) {
+          editingRequestIndex = null;
+          document.getElementById("employeeInput").value = "";
+          document.getElementById("reasonInput").value = "";
+          document.getElementById("locationInput").value = "";
+          document.getElementById("employeeSelect").value = "";
+          document.getElementById("reasonSelect").value = "";
+          document.getElementById("locationSelect").value = "";
+          document.getElementById("addRequestButton").textContent = "Add";
+        }
+        renderDayEditor();
+        document.getElementById("editorStatus").textContent = "Click Confirm to delete this one request.";
+        return;
+      }
+
+      const cancelButton = event.target.closest(".cancel-delete-request");
+      if (cancelButton) {
+        pendingDeleteIndex = null;
+        renderDayEditor();
+        document.getElementById("editorStatus").textContent = "Delete canceled.";
+        return;
+      }
+
+      const confirmButton = event.target.closest(".confirm-delete-request");
+      if (!confirmButton) return;
+      const deleteIndex = Number(confirmButton.dataset.index);
+      const calendar = readTimeOff();
+      const entries = calendar[selectedDateKey] || [];
+      if (!Number.isInteger(deleteIndex) || deleteIndex < 0 || deleteIndex >= entries.length) {
+        pendingDeleteIndex = null;
+        renderDayEditor();
+        document.getElementById("editorStatus").textContent = "Could not find that request to delete.";
+        return;
+      }
+      entries.splice(deleteIndex, 1);
+      if (editingRequestIndex === deleteIndex) editingRequestIndex = null;
+      else if (editingRequestIndex !== null && editingRequestIndex > deleteIndex) editingRequestIndex -= 1;
+      pendingDeleteIndex = null;
+      if (entries.length) calendar[selectedDateKey] = entries;
+      else delete calendar[selectedDateKey];
+      writeTimeOff(calendar);
+      renderCalendar();
+      populateEditorOptions();
+      renderDayEditor();
+      clearRequestForm();
+      document.getElementById("editorStatus").textContent = "Request deleted.";
+    });
+
+    document.getElementById("addRequestForm").addEventListener("submit", (event) => {
+      event.preventDefault();
+      const employeeInput = document.getElementById("employeeInput");
+      const reasonInput = document.getElementById("reasonInput");
+      const locationInput = document.getElementById("locationInput");
+      const name = employeeInput.value.trim();
+      const code = reasonCodeFromInput(reasonInput.value);
+      const location = cleanLocation(locationInput.value);
+      const status = document.getElementById("editorStatus");
+      if (!name || !code) { status.textContent = "Employee and away reason are required."; return; }
+      const calendar = readTimeOff();
+      if (!calendar[selectedDateKey]) calendar[selectedDateKey] = [];
+      const nextEntry = { date: selectedDateKey, name, code, reason: reasonLabel(code), location, sheet: "Manual" };
+      if (editingRequestIndex !== null && calendar[selectedDateKey][editingRequestIndex]) {
+        calendar[selectedDateKey][editingRequestIndex] = { ...calendar[selectedDateKey][editingRequestIndex], ...nextEntry };
+      } else {
+        calendar[selectedDateKey].push(nextEntry);
+      }
+      calendar[selectedDateKey].sort(compareTimeOffRequests);
+      writeTimeOff(calendar);
+      renderCalendar();
+      populateEditorOptions();
+      renderDayEditor();
+      clearRequestForm();
+      document.getElementById("editorStatus").textContent = editingRequestIndex === null ? "Request saved." : "Request saved.";
+      employeeInput.focus();
+    });
+
+    window.addEventListener("storage", (event) => {
+      if ([timeOffStorageKey, rosterStorageKey, rosterAdditionsKey, employeeBankStorageKey, employeeDayStatusStorageKey, employeeDayAdditionsStorageKey].includes(event.key)) {
+        populateEditorOptions();
+        renderCalendar();
+      }
+    });
+
+    window.addEventListener("focus", () => {
+      populateEditorOptions();
+      renderCalendar();
+    });
+
+    populateEditorOptions();
+    renderCalendar();
+  </script>
+</body>
+</html>

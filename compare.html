@@ -1,0 +1,1365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Timesheet Compare</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      overflow-x: hidden;
+      background: #eef2f6;
+      color: #0f1b2a;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .page-switcher {
+      width: 100%;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      align-items: center;
+      padding: 6px 8px;
+      background: #111;
+      border-bottom: 2px solid #000;
+    }
+    .page-switcher a {
+      min-width: 118px;
+      height: 28px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid #777;
+      background: #e7e6e6;
+      color: #000;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 800;
+    }
+    .page-switcher a.active {
+      background: #ffff00;
+      border-color: #ffff00;
+    }
+    .page {
+      width: min(1180px, calc(100% - 16px));
+      margin: 8px auto 22px;
+    }
+    .toolbar {
+      display: grid;
+      grid-template-columns: minmax(280px, 1fr) auto auto;
+      gap: 8px;
+      align-items: center;
+      padding: 10px;
+      background: #fff;
+      border: 1px solid #c4d4e4;
+      border-radius: 8px 8px 0 0;
+      font-weight: 900;
+    }
+    input[type="file"] {
+      width: 100%;
+      max-width: 460px;
+      min-height: 30px;
+      padding: 3px;
+      border: 1px solid #cbd5df;
+      border-radius: 6px;
+      background: #f8fafc;
+      font-weight: 700;
+    }
+    button, select {
+      font: inherit;
+    }
+    button {
+      min-height: 30px;
+      border: 1px solid #273140;
+      border-radius: 6px;
+      background: #273140;
+      color: #fff;
+      font-weight: 900;
+      cursor: pointer;
+    }
+    button.secondary {
+      background: #f4f6f8;
+      color: #273140;
+      border-color: #cbd5df;
+    }
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 1px;
+      background: #28313c;
+      border: 1px solid #c4d4e4;
+      border-top: 0;
+    }
+    .summary div {
+      min-height: 42px;
+      display: grid;
+      place-items: center;
+      background: #d9e8f7;
+      color: #071527;
+      font-size: 15px;
+      font-weight: 900;
+      text-align: center;
+    }
+    .panel {
+      margin-top: 10px;
+      border: 1px solid #c4d4e4;
+      border-radius: 8px;
+      background: #fff;
+      overflow: hidden;
+    }
+    .panel-title {
+      min-height: 38px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 0 12px;
+      background: #d9e8f7;
+      border-bottom: 1px solid #c4d4e4;
+      color: #071527;
+      font-size: 15px;
+      font-weight: 900;
+    }
+    .panel-count {
+      color: #526174;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+    .preview-table col.employee { width: 21%; }
+    .preview-table col.match { width: 18%; }
+    .preview-table col.small { width: 8%; }
+    .preview-table col.actual { width: 8%; }
+    .preview-table col.actions { width: 29%; }
+    .compare-table col.employee { width: 18%; }
+    .compare-table col.small { width: 8%; }
+    .compare-table col.status { width: 10%; }
+    th, td {
+      min-height: 25px;
+      height: 25px;
+      padding: 0 5px;
+      border-bottom: 1px solid #d9e0e8;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      text-align: center;
+    }
+    th {
+      height: 31px;
+      background: #28313c;
+      color: #eef4fb;
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: .03em;
+      text-transform: uppercase;
+    }
+    .group {
+      background: #111827;
+      color: #fff;
+    }
+    .shift-section td {
+      height: 29px;
+      padding: 0 9px;
+      border-top: 2px solid #000;
+      border-bottom: 2px solid #000;
+      background: #d9e8f7;
+      color: #071527;
+      font-size: 13px;
+      font-weight: 900;
+      text-align: left;
+      text-transform: uppercase;
+    }
+    .shift-section span {
+      margin-left: 8px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: #fff;
+      color: #526174;
+      font-size: 11px;
+      text-transform: none;
+    }
+    .employee-cell {
+      text-align: left;
+      background: #e2f0d9;
+      color: #071527;
+      font-weight: 900;
+    }
+    .name-match-button {
+      width: 100%;
+      min-height: 22px;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      color: inherit;
+      text-align: left;
+      font-weight: 900;
+    }
+    .name-match-select {
+      display: none;
+      width: 100%;
+      height: 23px;
+      border: 1px solid #7c3aed;
+      border-radius: 4px;
+      background: #fff;
+      color: #071527;
+      font-size: 11px;
+      font-weight: 800;
+    }
+    tr.selecting-name .name-match-button {
+      display: none;
+    }
+    tr.selecting-name .name-match-select {
+      display: block;
+    }
+    .match { background: #d9ead3; color: #0f6b2d; font-weight: 900; }
+    .diff { background: #f4cccc; color: #7f1d1d; font-weight: 900; }
+    .missing { background: #fff2cc; color: #7c5700; font-weight: 900; }
+    .unrecognized td,
+    .unrecognized .employee-cell {
+      background: #e7c7e8;
+      color: #4f1b58;
+      font-weight: 900;
+    }
+    .ignored td,
+    .ignored .employee-cell {
+      background: #f3f4f6;
+      color: #6b7280;
+    }
+    .actions {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      min-width: 0;
+      overflow: visible;
+    }
+    .actions button,
+    .actions select {
+      min-height: 22px;
+      height: 22px;
+      padding: 0 7px;
+      border-radius: 4px;
+      font-size: 11px;
+    }
+    .actions select {
+      min-width: 82px;
+      border: 1px solid #cbd5df;
+      background: #fff;
+      color: #071527;
+      font-weight: 800;
+    }
+    .actions .suggest {
+      background: #111827;
+      color: #fff;
+    }
+    .actions .add {
+      background: #0f6b2d;
+      border-color: #0f6b2d;
+    }
+    .actions .ignore {
+      background: #f4f6f8;
+      color: #7f1d1d;
+      border-color: #f1a8a8;
+    }
+    .empty {
+      padding: 16px 12px;
+      color: #526174;
+      font-weight: 800;
+    }
+    @media (max-width: 860px) {
+      body { font-size: 11px; }
+      .page { width: calc(100% - 8px); }
+      .toolbar { grid-template-columns: 1fr; }
+      .summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .preview-table,
+      .compare-table { table-layout: auto; }
+      th, td { min-width: 70px; padding: 0 3px; }
+      .employee-cell { min-width: 150px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="toolbar">
+      <label>IMPORT TIMESHEET TO COMPARE: <input type="file" id="fileInput" accept=".xlsx,.xls,.csv,.txt" /></label>
+      <button type="button" id="refreshButton">Refresh Current</button>
+      <button type="button" class="secondary" id="clearButton">Clear Compare</button>
+    </section>
+
+    <section class="summary" aria-label="Compare summary">
+      <div id="currentCount">Current MD: 0</div>
+      <div id="importCount">Imported: 0</div>
+      <div id="matchCount">Matches: 0</div>
+      <div id="issueCount">Issues: 0</div>
+    </section>
+
+    <section class="panel" id="previewPanel">
+      <div class="panel-title">
+        <span>Imported Timesheet Preview</span>
+        <span class="panel-count" id="previewCount">No import loaded</span>
+      </div>
+      <div id="previewEmpty" class="empty">Import an XLSX, CSV, or TXT timesheet to preview parsed rows before comparing.</div>
+      <table class="preview-table" id="previewTable" aria-label="Imported timesheet preview" hidden>
+        <colgroup>
+          <col class="employee" />
+          <col class="match" />
+          <col class="small" />
+          <col class="small" />
+          <col class="small" />
+          <col class="actual" />
+          <col class="actions" />
+        </colgroup>
+        <thead>
+          <tr>
+            <th>Imported Name</th>
+            <th>Schedule Match</th>
+            <th>Start</th>
+            <th>Lunch</th>
+            <th>End</th>
+            <th>Actual</th>
+            <th>Unrecognized Action</th>
+          </tr>
+        </thead>
+        <tbody id="previewBody"></tbody>
+      </table>
+    </section>
+
+    <section class="panel">
+      <div class="panel-title">
+        <span>Current Timesheet vs Imported Timesheet</span>
+        <span class="panel-count">Compared by employee name, start, lunch, end, and actual hours</span>
+      </div>
+      <table class="compare-table" aria-label="Timesheet comparison">
+        <colgroup>
+          <col class="employee" />
+          <col class="small" /><col class="small" /><col class="small" /><col class="small" />
+          <col class="small" /><col class="small" /><col class="small" /><col class="small" />
+          <col class="status" />
+        </colgroup>
+        <thead>
+          <tr>
+            <th rowspan="2">Employee</th>
+            <th class="group" colspan="4">Current Timesheet</th>
+            <th class="group" colspan="4">Imported Timesheet</th>
+            <th rowspan="2">Status</th>
+          </tr>
+          <tr>
+            <th>Start</th><th>Lunch</th><th>End</th><th>Actual</th>
+            <th>Start</th><th>Lunch</th><th>End</th><th>Actual</th>
+          </tr>
+        </thead>
+        <tbody id="compareBody"></tbody>
+      </table>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script>
+    const dayAliases = {
+      sun: "sun", sunday: "sun",
+      mon: "mon", monday: "mon",
+      tue: "tue", tues: "tue", tuesday: "tue",
+      wed: "wed", weds: "wed", wednesday: "wed",
+      thu: "thu", thur: "thu", thurs: "thu", thursday: "thu",
+      fri: "fri", friday: "fri",
+      sat: "sat", saturday: "sat"
+    };
+    const todayKey = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"][new Date().getDay()];
+    const rosterStorageKey = "conglobal-roster-state-v1";
+    const rosterAdditionsKey = "conglobal-roster-additions-v1";
+    const dayforceStorageKey = "conglobal-dayforce-punches-v1";
+    const compareStorageKey = "conglobal-compare-timesheet-v2";
+    const compareAliasesKey = "conglobal-compare-name-aliases-v1";
+    const compareIgnoredKey = "conglobal-compare-ignored-names-v1";
+    const rosterDayLabels = ["Mon", "Tues", "Wed", "Thurs", "Fri", "Sat", "Sun"];
+    const shiftLabels = {
+      first: "1st Shift",
+      second: "2ND SHIFT",
+      gate: "Gate",
+      mechanics: "Mechanics",
+      managers: "Managers"
+    };
+    const shiftOrder = ["first", "second", "gate", "mechanics", "managers", "unknown"];
+    const body = document.getElementById("compareBody");
+    const previewBody = document.getElementById("previewBody");
+
+    const defaultRoster = {
+      first: [
+        ["Branford Alton", "Mon, Tues"],
+        ["Castruita Armando", "Wed, Thurs"],
+        ["Frazer Dacoyea", "Mon, Tues"],
+        ["Citizen Dante", "Thurs, Fri"],
+        ["Towler Demetrius", "Thurs, Fri"],
+        ["Stewart Dexter", "Sat, Sun"],
+        ["Gardner Dorrean", "Tues, Wed"],
+        ["Thomas Henry", "Sat, Sun"],
+        ["Brown James", "Thurs, Fri"],
+        ["Herrera Jose", "Sat, Sun"],
+        ["Player Keyston", "Mon, Sun"],
+        ["Hickman Makia", "Mon, Sun"],
+        ["Dever Mikey", "Tues, Wed"],
+        ["Wanza Myles", "Mon, Tues"],
+        ["Romero Nelson", "Tues, Wed"],
+        ["McDaniel Charles", "Fri, Sat"],
+        ["Nava Ramon", "Sat, Sun"],
+        ["Tran Tyler", "Thurs, Fri"]
+      ],
+      second: [
+        ["Carruthers Timothy", "Mon, Sun"],
+        ["Caceres Virula Victor", "Mon, Tues"],
+        ["Keme Aweri Jr.", "Mon, Tues"],
+        ["Hosey Kevin", "Mon, Tues"],
+        ["Brown Brandy", "Wed, Thurs"],
+        ["Mejia Aaron", "Thurs, Fri"],
+        ["Bookman Derrell", "Thurs, Fri"],
+        ["Hopkins Alexander", "Mon, Sun"],
+        ["Tingle Jason", "Sat, Sun"],
+        ["Contreras Marco", "Sat, Sun"],
+        ["Benavides Robert", "Wed, Sun"],
+        ["Urtado Ernest", "Tues, Wed"],
+        ["Johnson Messiah", "Tues, Thurs"],
+        ["Gilder Rufus II", "Tues, Wed"],
+        ["Echendu Chimenierm", "Wed, Thurs"],
+        ["Delgado Jose", "Fri, Sat"]
+      ],
+      gate: [
+        ["Candace Warren", "Sat, Sun"],
+        ["Connie Johnson", "Sat, Sun"],
+        ["Jarade Douglas", "Sat, Sun"],
+        ["Gregory Watson II", "Sat, Sun"],
+        ["Bryce Alexander", "Thurs, Fri"],
+        ["Naomisha Hunt", "Thurs, Fri, Sat"],
+        ["Ramacacondra Pratt", "Thurs, Fri"],
+        ["Kane Cabral", "Mon, Tues"],
+        ["Tavares Gariet", "Mon, Tues"]
+      ],
+      mechanics: [],
+      managers: []
+    };
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, (char) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+      }[char]));
+    }
+
+    function normalizeName(name) {
+      const suffixes = new Set(["jr", "sr", "ii", "iii", "iv"]);
+      return String(name || "")
+        .trim()
+        .toLowerCase()
+        .replace(/[,.]/g, " ")
+        .replace(/\bcontrerras\b/g, "contreras")
+        .replace(/\bdemeatrius\b/g, "demetrius")
+        .replace(/\s+/g, " ")
+        .split(" ")
+        .filter((part) => part && !suffixes.has(part))
+        .sort()
+        .join(" ");
+    }
+
+    function editDistance(a, b) {
+      const matrix = Array.from({ length: a.length + 1 }, (_, i) => [i]);
+      for (let j = 1; j <= b.length; j += 1) matrix[0][j] = j;
+      for (let i = 1; i <= a.length; i += 1) {
+        for (let j = 1; j <= b.length; j += 1) {
+          matrix[i][j] = a[i - 1] === b[j - 1]
+            ? matrix[i - 1][j - 1]
+            : Math.min(matrix[i - 1][j - 1] + 1, matrix[i][j - 1] + 1, matrix[i - 1][j] + 1);
+        }
+      }
+      return matrix[a.length][b.length];
+    }
+
+    function parseOffDays(text) {
+      return new Set(String(text || "")
+        .split(",")
+        .map((item) => item.trim().toLowerCase())
+        .map((item) => dayAliases[item] || dayAliases[item.slice(0, 3)])
+        .filter(Boolean));
+    }
+
+    function rosterOffDaysLabel(days) {
+      return days
+        .map((day, index) => day === "O" ? rosterDayLabels[index] : "")
+        .filter(Boolean)
+        .join(", ");
+    }
+
+    function readJson(key, fallback) {
+      try {
+        const value = JSON.parse(localStorage.getItem(key) || "null");
+        return value === null ? fallback : value;
+      } catch (error) {
+        localStorage.removeItem(key);
+        return fallback;
+      }
+    }
+
+    function writeJson(key, value) {
+      localStorage.setItem(key, JSON.stringify(value));
+    }
+
+    function migrateMcDanielToDays(state) {
+      if (!state || !Array.isArray(state.second)) return state;
+      if (!Array.isArray(state.first)) state.first = [];
+      const alreadyOnDays = state.first.some((employee) => normalizeName(employee.name || "") === "charles mcdaniel");
+      const secondIndex = state.second.findIndex((employee) => normalizeName(employee.name || "") === "charles mcdaniel");
+      if (secondIndex === -1) return state;
+      const [employee] = state.second.splice(secondIndex, 1);
+      if (!alreadyOnDays) state.first.push(employee);
+      localStorage.setItem(rosterStorageKey, JSON.stringify(state));
+      return state;
+    }
+
+    function readRosterAdditions() {
+      const additions = readJson(rosterAdditionsKey, []);
+      return Array.isArray(additions) ? additions : [];
+    }
+
+    function buildRoster() {
+      const roster = Object.fromEntries(Object.entries(defaultRoster).map(([key, rows]) => [
+        key,
+        rows.map(([name, offDays]) => ({ name, offDays }))
+      ]));
+
+      try {
+        const saved = localStorage.getItem(rosterStorageKey);
+        if (saved) {
+          const state = migrateMcDanielToDays(JSON.parse(saved));
+          Object.keys(shiftLabels).forEach((key) => {
+            if (!Array.isArray(state[key])) return;
+            roster[key] = state[key]
+              .filter((employee) => employee && employee.name)
+              .map((employee) => ({
+                name: employee.name,
+                offDays: Array.isArray(employee.days) ? rosterOffDaysLabel(employee.days) : ""
+              }));
+          });
+        }
+      } catch (error) {
+        localStorage.removeItem(rosterStorageKey);
+      }
+
+      const seen = new Set(Object.values(roster).flat().map((employee) => normalizeName(employee.name)));
+      readRosterAdditions().forEach((addition) => {
+        if (!addition || !addition.name) return;
+        const key = shiftLabels[addition.shift] ? addition.shift : "first";
+        const nameKey = normalizeName(addition.name);
+        if (!nameKey || seen.has(nameKey)) return;
+        if (!Array.isArray(roster[key])) roster[key] = [];
+        roster[key].push({
+          name: addition.name,
+          offDays: Array.isArray(addition.days) ? rosterOffDaysLabel(addition.days) : ""
+        });
+        seen.add(nameKey);
+      });
+
+      return roster;
+    }
+
+    function rosterNameList() {
+      return Object.values(buildRoster()).flat().map((employee) => employee.name);
+    }
+
+    function rosterShiftForName(name) {
+      const key = normalizeName(name);
+      if (!key) return "unknown";
+      const roster = buildRoster();
+      for (const [shiftKey, employees] of Object.entries(roster)) {
+        if (employees.some((employee) => normalizeName(employee.name) === key)) return shiftKey;
+      }
+      return "unknown";
+    }
+
+    function shiftLabel(shiftKey) {
+      return shiftLabels[shiftKey] || "Unassigned";
+    }
+
+    function rowShiftKey(row) {
+      if (row && shiftLabels[row.shiftKey]) return row.shiftKey;
+      if (row && row.match && row.match.found) return rosterShiftForName(row.match.name);
+      if (row && row.canonicalName) return rosterShiftForName(row.canonicalName);
+      if (row && row.name) return rosterShiftForName(row.name);
+      return "unknown";
+    }
+
+    function groupRowsByShift(rows, getShift = rowShiftKey) {
+      const groups = new Map();
+      rows.forEach((row) => {
+        const rawShift = getShift(row);
+        const shiftKey = shiftLabels[rawShift] ? rawShift : "unknown";
+        if (!groups.has(shiftKey)) groups.set(shiftKey, []);
+        groups.get(shiftKey).push(row);
+      });
+      return shiftOrder
+        .filter((shiftKey) => groups.has(shiftKey))
+        .map((shiftKey) => [shiftKey, groups.get(shiftKey)]);
+    }
+
+    function shiftSectionRow(shiftKey, count, colspan) {
+      return `<tr class="shift-section"><td colspan="${colspan}">${escapeHtml(shiftLabel(shiftKey))}<span>${count} records</span></td></tr>`;
+    }
+
+    function toMilitaryTime(value) {
+      const text = String(value || "").trim();
+      if (!text) return "";
+      if (/^\d{3,4}$/.test(text)) return text.padStart(4, "0");
+      const match = text.match(/^(\d{1,2}):(\d{2})(?::\d{2})?\s*([ap])m?$/i);
+      if (!match) return text;
+      let hour = Number(match[1]);
+      const minute = match[2];
+      const period = match[3].toLowerCase();
+      if (period === "p" && hour !== 12) hour += 12;
+      if (period === "a" && hour === 12) hour = 0;
+      return `${String(hour).padStart(2, "0")}${minute}`;
+    }
+
+    function minutesFromMilitary(value) {
+      const text = String(value || "").trim();
+      const match = text.match(/^(\d{1,2})(\d{2})$/);
+      if (!match) return null;
+      const hours = Number(match[1]);
+      const minutes = Number(match[2]);
+      if (hours > 24 || minutes > 59 || (hours === 24 && minutes !== 0)) return null;
+      return (hours * 60) + minutes;
+    }
+
+    function militaryFromMinutes(value) {
+      const minutes = ((Math.round(value) % 1440) + 1440) % 1440;
+      const hours = Math.floor(minutes / 60);
+      const mins = minutes % 60;
+      return `${String(hours).padStart(2, "0")}${String(mins).padStart(2, "0")}`;
+    }
+
+    function currentMinutes() {
+      const now = new Date();
+      return (now.getHours() * 60) + now.getMinutes();
+    }
+
+    function currentMilitaryTime() {
+      return militaryFromMinutes(currentMinutes());
+    }
+
+    function dayKeyFromDateValue(value) {
+      const text = String(value || "").trim();
+      if (!text) return "";
+      const dayNameMatch = text.match(/^([a-z]{3,9})\b/i);
+      const explicitDay = dayNameMatch ? dayAliases[dayNameMatch[1].toLowerCase()] : "";
+      if (explicitDay) return explicitDay;
+      const match = text.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+      const date = match
+        ? new Date(Number(match[3].length === 2 ? `20${match[3]}` : match[3]), Number(match[1]) - 1, Number(match[2]))
+        : new Date(text);
+      if (Number.isNaN(date.getTime())) return "";
+      return ["sun", "mon", "tue", "wed", "thu", "fri", "sat"][date.getDay()];
+    }
+
+    function readPunches() {
+      const punches = readJson(dayforceStorageKey, []);
+      return Array.isArray(punches) ? punches : [];
+    }
+
+    function shouldCheckMissingStart(shiftKey) {
+      if (shiftKey === "gate") return false;
+      if (shiftKey === "second") return currentMinutes() >= minutesFromMilitary("1500");
+      return true;
+    }
+
+    function actualHoursNumber(startValue, lunch, endValue) {
+      const start = minutesFromMilitary(startValue);
+      const end = minutesFromMilitary(endValue);
+      if (start === null || end === null) return 0;
+      let minutes = end - start;
+      if (minutes < 0) minutes += 1440;
+      if (String(lunch).toUpperCase() === "YES") minutes -= 30;
+      return minutes > 0 ? minutes / 60 : 0;
+    }
+
+    function actualHours(startValue, lunch, endValue) {
+      const hours = actualHoursNumber(startValue, lunch, endValue);
+      return hours ? hours.toFixed(1) : "";
+    }
+
+    function paidNoteHoursForText(value) {
+      return /\bfloating holidays?\b|\bvacations?\b/i.test(String(value || "")) ? 8 : 0;
+    }
+
+    function normalizeLunch(value) {
+      const text = String(value || "").trim().toUpperCase();
+      if (!text) return "";
+      if (text === "NO" || text === "N") return "NO";
+      if (text === "??") return "??";
+      if (text === "YES" || text === "Y") return "YES";
+      if (text.includes("-") || /\d/.test(text)) return "YES";
+      return text;
+    }
+
+    function rowRank(row) {
+      if (row.scheduled && row.hasClockIn && !row.purpleAbsence) return 0;
+      if (!row.scheduled && row.hasClockIn) return 1;
+      if (row.purpleAbsence) return 2;
+      if (row.scheduled && !row.hasClockIn) return 3;
+      return 4;
+    }
+
+    function makeRows() {
+      const roster = buildRoster();
+      const punches = new Map(readPunches().map((punch) => [normalizeName(punch.name || ""), punch]));
+
+      return Object.fromEntries(Object.entries(roster).map(([shiftKey, employees]) => {
+        const rows = employees.map((employee) => {
+          const punch = punches.get(normalizeName(employee.name)) || null;
+          const workdayKey = punch ? dayKeyFromDateValue(punch.date) || todayKey : todayKey;
+          const scheduled = !parseOffDays(employee.offDays).has(workdayKey);
+          const note = String((punch && (punch.note || punch.reason)) || "").trim();
+          const rawLunch = String((punch && punch.lunch) || "").trim();
+          const noLunch = rawLunch.toUpperCase() === "NO";
+          const start = toMilitaryTime(punch ? punch.start : "");
+          const end = toMilitaryTime(punch ? punch.end : "");
+          const hasClockIn = minutesFromMilitary(start) !== null;
+          const hasClockOut = minutesFromMilitary(end) !== null;
+          const tempEnd = hasClockIn && !hasClockOut ? currentMilitaryTime() : "";
+          const lunch = noLunch ? "NO" : (rawLunch ? normalizeLunch(rawLunch) || "YES" : (start || end ? "??" : ""));
+          const actual = actualHoursNumber(start, lunch, hasClockOut ? end : tempEnd) + paidNoteHoursForText(note);
+          const hasClockTime = Boolean(start || end);
+          const cameInOffDay = !scheduled && hasClockTime;
+          const unpaidAbsence = Boolean(punch && punch.absenceUnpaid);
+          const paidAbsence = Boolean(punch && punch.absencePaid);
+          const purpleAbsence = paidAbsence || unpaidAbsence || /\bfloating holidays?\b|\bvacations?\b|\bsick\b|\bunpaid\b/i.test(note);
+          const invalid = Boolean((start && minutesFromMilitary(start) === null) || (end && minutesFromMilitary(end) === null));
+          const missing = shouldCheckMissingStart(shiftKey) && scheduled && !note && !hasClockIn;
+          let status = "OPEN";
+          if (invalid) status = "INVALID";
+          else if (unpaidAbsence) status = "UNPAID";
+          else if (paidAbsence) status = "PAID";
+          else if (missing) status = "NO SHOW";
+          else if (hasClockIn && !hasClockOut) status = "IN";
+          else if (hasClockIn && hasClockOut) status = "OUT";
+          else if (!scheduled) status = "OFF";
+
+          return {
+            ...employee,
+            shiftKey,
+            scheduled,
+            note,
+            start,
+            lunch,
+            end: hasClockOut ? end : tempEnd,
+            importedEnd: end,
+            actual,
+            hasClockIn,
+            hasClockOut,
+            cameInOffDay,
+            purpleAbsence,
+            unpaidAbsence,
+            paidAbsence,
+            invalid,
+            missing,
+            status
+          };
+        });
+
+        rows.sort((a, b) => rowRank(a) - rowRank(b) || a.name.localeCompare(b.name));
+        return [shiftKey, rows];
+      }));
+    }
+
+    function visibleCurrentRows() {
+      return Object.values(makeRows()).flat()
+        .filter((row) => row.status !== "OFF" || row.note)
+        .map((row) => normalizeCompareRow(row));
+    }
+
+    function cleanDayforceEmployeeName(value) {
+      return String(value).replace(/\s+\d{4,}\s*$/, "").trim();
+    }
+
+    function displayNameFromDayforce(value) {
+      const cleaned = cleanDayforceEmployeeName(value);
+      if (!cleaned.includes(",")) return cleaned;
+      const [last, first] = cleaned.split(",").map((part) => part.trim());
+      return `${first} ${last}`.replace(/\s+/g, " ").trim();
+    }
+
+    function rowHasDayforceHeader(row) {
+      const joined = row.map((cell) => String(cell).toLowerCase()).join("|");
+      return joined.includes("start shift") && joined.includes("end shift");
+    }
+
+    function headerIndex(row, label) {
+      return row.findIndex((cell) => String(cell || "").trim().toLowerCase() === label);
+    }
+
+    function firstFilledBefore(row, endIndex) {
+      for (let index = 0; index < endIndex; index += 1) {
+        const value = String(row[index] || "").trim();
+        if (value) return value;
+      }
+      return "";
+    }
+
+    function firstFilled(row) {
+      const value = row.find((cell) => String(cell || "").trim());
+      return String(value || "").trim();
+    }
+
+    function manualShiftKey(value) {
+      const text = normalizedHeader(value);
+      if (/^(1st|first) shift$/.test(text)) return "first";
+      if (/^(2nd|second) shift$/.test(text)) return "second";
+      if (text === "gate") return "gate";
+      if (text === "mechanics") return "mechanics";
+      if (text === "managers" || text === "manager") return "managers";
+      return "";
+    }
+
+    function isManualTimesheetHeader(row) {
+      const joined = row.map(normalizedHeader).join("|");
+      return joined.includes("off days") && joined.includes("start") && joined.includes("lunch") && joined.includes("end");
+    }
+
+    function excelDateSerialToText(value) {
+      const raw = String(value || "").trim();
+      const serial = Number(raw);
+      if (!Number.isFinite(serial) || serial < 20000 || serial > 80000) return raw;
+      const utcDate = new Date(Math.round((serial - 25569) * 86400000));
+      const date = new Date(utcDate.getUTCFullYear(), utcDate.getUTCMonth(), utcDate.getUTCDate());
+      if (Number.isNaN(date.getTime())) return raw;
+      return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    }
+
+    function manualSheetDate(rows) {
+      for (const rawRow of rows) {
+        const row = rawRow.map((cell) => String(cell || "").trim());
+        const dateIndex = row.findIndex((cell) => /^date:?$/i.test(cell));
+        if (dateIndex === -1) continue;
+        for (let index = dateIndex + 1; index < row.length; index += 1) {
+          if (row[index]) return excelDateSerialToText(row[index]);
+        }
+      }
+      return "";
+    }
+
+    function manualTimeValue(value) {
+      const text = String(value || "").trim();
+      if (/^(c\/?o|off|out|x|-+)$/i.test(text)) return "";
+      return toMilitaryTime(text);
+    }
+
+    function manualNameFromRow(row, stopIndex) {
+      const blocked = /^(date:?|day:?|day manager:?|night manager:?|off days?|start|lunch|end|crane operators?|terminal operators?|headcount|ramp|training|mechanics|gate)$/i;
+      const cells = row
+        .slice(0, Math.max(stopIndex, 0))
+        .map((cell) => String(cell || "").trim())
+        .filter((cell) => cell && !blocked.test(cell) && !manualShiftKey(cell) && !/^\d+(\.\d+)?$/.test(cell));
+      return cells.join(" ").replace(/\s+/g, " ").trim();
+    }
+
+    function parseManualTimesheet(rows) {
+      const records = [];
+      const sheetDate = manualSheetDate(rows);
+      let currentShift = "";
+      let offIndex = -1;
+      let startIndex = -1;
+      let lunchIndex = -1;
+      let endIndex = -1;
+
+      rows.forEach((rawRow) => {
+        const row = rawRow.map((cell) => String(cell || "").trim());
+        const foundShift = row.map(manualShiftKey).find(Boolean);
+        const hasHeader = isManualTimesheetHeader(row);
+        if (foundShift) currentShift = foundShift;
+        if (hasHeader) {
+          offIndex = findHeaderIndex(row, [/^off days?$/]);
+          startIndex = findHeaderIndex(row, [/^start$/]);
+          lunchIndex = findHeaderIndex(row, [/^lunch$/]);
+          endIndex = findHeaderIndex(row, [/^end$/]);
+          return;
+        }
+        if (!currentShift || startIndex === -1 || endIndex === -1) return;
+
+        const nameStop = offIndex >= 0 ? offIndex : startIndex;
+        const name = manualNameFromRow(row, nameStop);
+        if (!name || name.length < 3) return;
+
+        const startRaw = row[startIndex] || "";
+        const lunchRaw = row[lunchIndex] || "";
+        const endRaw = row[endIndex] || "";
+        const start = manualTimeValue(startRaw);
+        const end = manualTimeValue(endRaw);
+        const lunch = normalizeLunch(lunchRaw);
+        const status = /c\/?o/i.test(startRaw) ? "C/O" : (/off/i.test(startRaw) ? "OFF" : "");
+
+        records.push({
+          name,
+          date: sheetDate,
+          start,
+          lunch,
+          end,
+          actual: actualHours(start, lunch, end),
+          status,
+          shiftKey: currentShift
+        });
+      });
+
+      return records;
+    }
+
+    function parseDayforceMatrix(rows) {
+      const punches = [];
+      for (let index = 0; index < rows.length - 1; index += 1) {
+        const row = rows[index].map((cell) => String(cell || "").trim());
+        if (!rowHasDayforceHeader(row)) continue;
+        const next = rows[index + 1].map((cell) => String(cell || "").trim());
+        const startIndex = headerIndex(row, "start shift");
+        const startMealIndex = headerIndex(row, "start meal");
+        const endMealIndex = headerIndex(row, "end meal");
+        const endIndex = headerIndex(row, "end shift");
+        const employee = displayNameFromDayforce(firstFilledBefore(row, startIndex));
+        if (!employee) continue;
+        const lunch = [startMealIndex >= 0 ? next[startMealIndex] : "", endMealIndex >= 0 ? next[endMealIndex] : ""].filter(Boolean).join(" - ");
+        punches.push({
+          name: employee,
+          date: firstFilled(next),
+          start: toMilitaryTime(startIndex >= 0 ? next[startIndex] || "" : ""),
+          lunch: normalizeLunch(lunch),
+          end: toMilitaryTime(endIndex >= 0 ? next[endIndex] || "" : "")
+        });
+      }
+      return punches;
+    }
+
+    function normalizedHeader(value) {
+      return String(value || "").trim().toLowerCase().replace(/[^a-z0-9]+/g, " ");
+    }
+
+    function findHeaderIndex(row, patterns) {
+      return row.findIndex((cell) => patterns.some((pattern) => pattern.test(normalizedHeader(cell))));
+    }
+
+    function parseHeaderTable(rows) {
+      const records = [];
+      rows.forEach((rawRow, rowIndex) => {
+        const row = rawRow.map((cell) => String(cell || "").trim());
+        const nameIndex = findHeaderIndex(row, [/^employee$/, /^employee name$/, /^name$/]);
+        const startIndex = findHeaderIndex(row, [/^start$/, /^start time$/, /^clock in$/]);
+        const lunchIndex = findHeaderIndex(row, [/^lunch$/, /^meal$/]);
+        const endIndex = findHeaderIndex(row, [/^end$/, /^end time$/, /^clock out$/]);
+        if (nameIndex === -1 || startIndex === -1 || endIndex === -1) return;
+
+        for (let nextIndex = rowIndex + 1; nextIndex < rows.length; nextIndex += 1) {
+          const next = rows[nextIndex].map((cell) => String(cell || "").trim());
+          const lowered = next.map(normalizedHeader).join("|");
+          if (lowered.includes("employee") && lowered.includes("start") && lowered.includes("end")) break;
+          const name = next[nameIndex];
+          if (!name || /^total$/i.test(name)) continue;
+          if (/^(first|1st|second|2nd|gate|mechanics|managers)\b/i.test(name)) continue;
+          records.push({
+            name,
+            date: "",
+            start: toMilitaryTime(next[startIndex]),
+            lunch: normalizeLunch(lunchIndex >= 0 ? next[lunchIndex] : ""),
+            end: toMilitaryTime(next[endIndex]),
+            actual: next[findHeaderIndex(row, [/^actual$/, /^hours?$/, /^hrs?$/])] || ""
+          });
+        }
+      });
+      return records;
+    }
+
+    function parseSimpleRows(rows) {
+      return rows
+        .filter((row) => row.some((cell) => String(cell || "").trim()))
+        .map((row) => ({
+          name: String(row[0] || "").trim(),
+          date: String(row[1] || "").trim(),
+          start: toMilitaryTime(row[2]),
+          lunch: normalizeLunch(row[3]),
+          end: toMilitaryTime(row[4]),
+          actual: String(row[5] || "").trim()
+        }))
+        .filter((row) => row.name && !/^(employee|name|total)$/i.test(row.name));
+    }
+
+    function dedupeRows(rows) {
+      const seen = new Set();
+      const result = [];
+      rows.forEach((row) => {
+        const key = [normalizeName(row.name), row.date, row.start, row.lunch, row.end, row.actual].join("|");
+        if (!normalizeName(row.name) || seen.has(key)) return;
+        seen.add(key);
+        result.push(row);
+      });
+      return result;
+    }
+
+    function parseWorkbookRows(rows) {
+      const manualTimesheet = parseManualTimesheet(rows);
+      const dayforce = parseDayforceMatrix(rows);
+      const headerRows = parseHeaderTable(rows);
+      const parsed = manualTimesheet.length ? manualTimesheet : (dayforce.length ? dayforce : (headerRows.length ? headerRows : parseSimpleRows(rows)));
+      return dedupeRows(parsed).map(normalizeCompareRow);
+    }
+
+    function parseWorkbookSheet(rows) {
+      const manualTimesheet = parseManualTimesheet(rows);
+      if (manualTimesheet.length) return { type: "timesheet", rows: manualTimesheet };
+      const dayforce = parseDayforceMatrix(rows);
+      if (dayforce.length) return { type: "dayforce", rows: dayforce };
+      const headerRows = parseHeaderTable(rows);
+      if (headerRows.length) return { type: "header", rows: headerRows };
+      return { type: "simple", rows: parseSimpleRows(rows) };
+    }
+
+    function parseWorkbookSheets(sheetRows) {
+      const parsedSheets = sheetRows.map((sheet) => ({
+        name: sheet.name,
+        ...parseWorkbookSheet(sheet.rows)
+      })).filter((sheet) => sheet.rows.length);
+      const preferred = parsedSheets.filter((sheet) => sheet.type !== "simple");
+      const selected = preferred.length ? preferred : parsedSheets;
+      return dedupeRows(selected.flatMap((sheet) => sheet.rows)).map(normalizeCompareRow);
+    }
+
+    function normalizeCompareRow(row) {
+      const start = toMilitaryTime(row.start);
+      const lunch = normalizeLunch(row.lunch);
+      const end = toMilitaryTime(row.end);
+      const actual = row.actual !== undefined && row.actual !== "" ? String(row.actual).trim() : actualHours(start, lunch, end);
+      return {
+        name: String(row.name || "").trim(),
+        date: String(row.date || "").trim(),
+        start,
+        lunch,
+        end,
+        actual: actual ? Number(actual).toFixed ? (Number.isNaN(Number(actual)) ? actual : Number(actual).toFixed(1)) : actual : "",
+        status: row.status || "",
+        shiftKey: shiftLabels[row.shiftKey] ? row.shiftKey : ""
+      };
+    }
+
+    function readImportedRows() {
+      const rows = readJson(compareStorageKey, []);
+      return Array.isArray(rows) ? rows : [];
+    }
+
+    function readAliases() {
+      const aliases = readJson(compareAliasesKey, {});
+      return aliases && typeof aliases === "object" && !Array.isArray(aliases) ? aliases : {};
+    }
+
+    function readIgnored() {
+      const ignored = readJson(compareIgnoredKey, []);
+      return new Set(Array.isArray(ignored) ? ignored : []);
+    }
+
+    function rosterMatch(name) {
+      const aliases = readAliases();
+      const normalized = normalizeName(name);
+      const names = rosterNameList();
+      if (aliases[normalized]) {
+        return { found: true, name: aliases[normalized], aliased: true, suggestion: aliases[normalized], hasSuggestion: false };
+      }
+      const exact = names.find((candidate) => normalizeName(candidate) === normalized);
+      if (exact) return { found: true, name: exact, suggestion: exact, hasSuggestion: false };
+      const ranked = names
+        .map((candidate) => ({ candidate, score: editDistance(normalized, normalizeName(candidate)) }))
+        .sort((a, b) => a.score - b.score);
+      const best = ranked[0];
+      const threshold = Math.max(3, Math.ceil(normalized.length * 0.25));
+      return {
+        found: false,
+        name: "",
+        suggestion: best && best.score <= threshold ? best.candidate : "",
+        hasSuggestion: Boolean(best && best.score <= threshold),
+        score: best ? best.score : 999
+      };
+    }
+
+    function canonicalImportedRow(row) {
+      const match = rosterMatch(row.name);
+      return {
+        ...row,
+        canonicalName: match.found ? match.name : row.name,
+        match
+      };
+    }
+
+    function importedRosterKeys(rows, ignored, exceptName = "") {
+      const exceptKey = normalizeName(exceptName);
+      const used = new Set();
+      rows.map(canonicalImportedRow).forEach((row) => {
+        const rowKey = normalizeName(row.name);
+        if (!rowKey || rowKey === exceptKey || ignored.has(rowKey) || !row.match.found) return;
+        used.add(normalizeName(row.match.name));
+      });
+      return used;
+    }
+
+    function scheduleEmployeeOptions(rows, ignored, currentName) {
+      const used = importedRosterKeys(rows, ignored, currentName);
+      return rosterNameList()
+        .filter((name) => !used.has(normalizeName(name)))
+        .sort((a, b) => a.localeCompare(b));
+    }
+
+    function previewNameCell(row, rows, ignored) {
+      if (row.match.found || ignored.has(normalizeName(row.name))) return escapeHtml(row.name);
+      const options = scheduleEmployeeOptions(rows, ignored, row.name);
+      const optionHtml = options.length
+        ? options.map((name) => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join("")
+        : `<option value="" disabled>No open schedule names</option>`;
+      return `
+        <button type="button" class="name-match-button" data-open-name-select="${escapeHtml(row.name)}">${escapeHtml(row.name)}</button>
+        <select class="name-match-select" data-name-select="${escapeHtml(row.name)}" aria-label="Match ${escapeHtml(row.name)} to schedule employee">
+          <option value="">Select schedule employee</option>
+          ${optionHtml}
+        </select>
+      `;
+    }
+
+    function mapByName(rows) {
+      const map = new Map();
+      rows.forEach((row) => {
+        const key = normalizeName(row.canonicalName || row.name);
+        if (!key) return;
+        map.set(key, row);
+      });
+      return map;
+    }
+
+    function compareStatus(current, imported) {
+      if (!current && !imported) return ["missing", "NO DATA"];
+      if (!current) return ["missing", "MISSING CURRENT"];
+      if (!imported) return ["missing", "MISSING IMPORT"];
+      const fields = ["start", "lunch", "end", "actual"];
+      return fields.every((field) => String(current[field] || "") === String(imported[field] || "")) ? ["match", "MATCH"] : ["diff", "DIFF"];
+    }
+
+    function renderPreview(importedRows = readImportedRows()) {
+      const ignored = readIgnored();
+      const rows = importedRows.map(canonicalImportedRow);
+      const unresolved = rows.filter((row) => !row.match.found && !ignored.has(normalizeName(row.name))).length;
+      document.getElementById("previewCount").textContent = rows.length
+        ? `${rows.length} parsed / ${unresolved} unrecognized`
+        : "No import loaded";
+      document.getElementById("previewEmpty").style.display = rows.length ? "none" : "block";
+      document.getElementById("previewTable").hidden = rows.length === 0;
+      previewBody.innerHTML = groupRowsByShift(rows).map(([shiftKey, shiftRows]) => (
+        shiftSectionRow(shiftKey, shiftRows.length, 7) + shiftRows.map((row) => {
+          const key = normalizeName(row.name);
+          const isIgnored = ignored.has(key);
+          const className = isIgnored ? "ignored" : (row.match.found ? "" : "unrecognized");
+          const matchText = isIgnored ? "Ignored" : (row.match.found ? row.match.name : (row.match.hasSuggestion ? `Try: ${row.match.suggestion}` : "No match"));
+          const actions = row.match.found || isIgnored
+            ? (isIgnored ? `<button type="button" class="secondary" data-unignore="${escapeHtml(key)}">Unignore</button>` : "Matched")
+            : `
+              ${row.match.hasSuggestion ? `<button type="button" class="suggest" data-use-suggestion="${escapeHtml(row.name)}" data-suggestion="${escapeHtml(row.match.suggestion)}">Use Suggestion</button>` : ""}
+              <select data-shift-for="${escapeHtml(row.name)}">
+                ${Object.entries(shiftLabels).map(([value, label]) => `<option value="${escapeHtml(value)}">${escapeHtml(label)}</option>`).join("")}
+              </select>
+              <button type="button" class="add" data-add-name="${escapeHtml(row.name)}">Add</button>
+              <button type="button" class="ignore" data-ignore-name="${escapeHtml(row.name)}">Ignore</button>
+            `;
+          return `
+            <tr class="${className}">
+              <td class="employee-cell">${previewNameCell(row, importedRows, ignored)}</td>
+              <td>${escapeHtml(matchText)}</td>
+              <td>${escapeHtml(row.start)}</td>
+              <td>${escapeHtml(row.lunch)}</td>
+              <td>${escapeHtml(row.end)}</td>
+              <td>${escapeHtml(row.actual)}</td>
+              <td><div class="actions">${actions}</div></td>
+            </tr>
+          `;
+        }).join("")
+      )).join("");
+    }
+
+    function renderCompare() {
+      const ignored = readIgnored();
+      const currentRows = visibleCurrentRows().map((row) => ({ ...row, canonicalName: row.name }));
+      const savedImportedRows = readImportedRows();
+      if (!savedImportedRows.length) {
+        body.innerHTML = '<tr><td colspan="10" class="empty">No imported timesheet loaded.</td></tr>';
+        document.getElementById("currentCount").textContent = `Current MD: ${currentRows.length}`;
+        document.getElementById("importCount").textContent = "Imported: 0";
+        document.getElementById("matchCount").textContent = "Matches: 0";
+        document.getElementById("issueCount").textContent = "Issues: 0";
+        renderPreview([]);
+        return;
+      }
+      const importedRows = savedImportedRows
+        .filter((row) => !ignored.has(normalizeName(row.name)))
+        .map(canonicalImportedRow)
+        .filter((row) => row.match.found);
+
+      const currentMap = mapByName(currentRows);
+      const importMap = mapByName(importedRows);
+      const employeeNames = new Map();
+      currentRows.forEach((row) => employeeNames.set(normalizeName(row.name), row.name));
+      importedRows.forEach((row) => employeeNames.set(normalizeName(row.canonicalName), row.canonicalName));
+
+      let matches = 0;
+      let issues = 0;
+
+      const compareRows = Array.from(employeeNames.entries()).map(([key, name]) => {
+        const current = currentMap.get(key);
+        const imported = importMap.get(key);
+        const [className, label] = compareStatus(current, imported);
+        if (className === "match") matches += 1;
+        else issues += 1;
+
+        return {
+          name,
+          current,
+          imported,
+          className,
+          label,
+          shiftKey: rowShiftKey(current || imported || { name })
+        };
+      });
+
+      body.innerHTML = groupRowsByShift(compareRows, (row) => row.shiftKey).map(([shiftKey, shiftRows]) => (
+        shiftSectionRow(shiftKey, shiftRows.length, 10) + shiftRows
+          .sort((a, b) => a.name.localeCompare(b.name))
+          .map(({ name, current, imported, className, label }) => `
+            <tr>
+              <td class="employee-cell">${escapeHtml(name)}</td>
+              <td>${escapeHtml(current?.start || "")}</td>
+              <td>${escapeHtml(current?.lunch || "")}</td>
+              <td>${escapeHtml(current?.end || "")}</td>
+              <td>${escapeHtml(current?.actual || "")}</td>
+              <td>${escapeHtml(imported?.start || "")}</td>
+              <td>${escapeHtml(imported?.lunch || "")}</td>
+              <td>${escapeHtml(imported?.end || "")}</td>
+              <td>${escapeHtml(imported?.actual || "")}</td>
+              <td class="${className}">${label}</td>
+            </tr>
+          `).join("")
+      )).join("");
+
+      const unresolved = readImportedRows().map(canonicalImportedRow).filter((row) => !row.match.found && !ignored.has(normalizeName(row.name))).length;
+      document.getElementById("currentCount").textContent = `Current MD: ${currentRows.length}`;
+      document.getElementById("importCount").textContent = `Imported: ${importedRows.length}`;
+      document.getElementById("matchCount").textContent = `Matches: ${matches}`;
+      document.getElementById("issueCount").textContent = `Issues: ${issues}${unresolved ? ` / ${unresolved} names` : ""}`;
+      renderPreview();
+    }
+
+    function addNameToRoster(name, shift) {
+      const cleanName = String(name || "").trim();
+      const targetShift = shiftLabels[shift] ? shift : "first";
+      if (!cleanName) return false;
+      const normalized = normalizeName(cleanName);
+      if (rosterNameList().some((candidate) => normalizeName(candidate) === normalized)) return true;
+      const additions = readRosterAdditions();
+      additions.push({
+        name: cleanName,
+        role: "",
+        days: ["W", "W", "W", "W", "W", "W", "W"],
+        shift: targetShift
+      });
+      writeJson(rosterAdditionsKey, additions);
+      return true;
+    }
+
+    async function importFile(file) {
+      let imported = [];
+      if (file.name.toLowerCase().endsWith(".csv") || file.name.toLowerCase().endsWith(".txt")) {
+        const text = await file.text();
+        imported = parseWorkbookRows(text.split(/\r?\n/).filter(Boolean).map((line) => line.includes("\t") ? line.split("\t") : line.split(",")));
+      } else {
+        if (!window.XLSX) return [];
+        const workbook = XLSX.read(await file.arrayBuffer(), { type: "array" });
+        imported = parseWorkbookSheets(workbook.SheetNames.map((sheetName) => ({
+          name: sheetName,
+          rows: XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1, raw: false, defval: "" })
+        })));
+      }
+      return dedupeRows(imported).map(normalizeCompareRow);
+    }
+
+    document.getElementById("fileInput").addEventListener("change", async (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+      const imported = await importFile(file);
+      writeJson(compareStorageKey, imported);
+      localStorage.removeItem(compareAliasesKey);
+      localStorage.removeItem(compareIgnoredKey);
+      event.target.value = "";
+      renderCompare();
+    });
+
+    previewBody.addEventListener("click", (event) => {
+      const openNameButton = event.target.closest("[data-open-name-select]");
+      const suggestionButton = event.target.closest("[data-use-suggestion]");
+      const addButton = event.target.closest("[data-add-name]");
+      const ignoreButton = event.target.closest("[data-ignore-name]");
+      const unignoreButton = event.target.closest("[data-unignore]");
+
+      if (openNameButton) {
+        const row = openNameButton.closest("tr");
+        const select = row ? row.querySelector("[data-name-select]") : null;
+        if (row && select) {
+          row.classList.add("selecting-name");
+          select.focus();
+        }
+        return;
+      } else if (suggestionButton) {
+        const aliases = readAliases();
+        aliases[normalizeName(suggestionButton.dataset.useSuggestion)] = suggestionButton.dataset.suggestion;
+        writeJson(compareAliasesKey, aliases);
+      } else if (addButton) {
+        const name = addButton.dataset.addName;
+        const select = Array.from(previewBody.querySelectorAll("[data-shift-for]"))
+          .find((item) => item.dataset.shiftFor === name);
+        addNameToRoster(name, select ? select.value : "first");
+      } else if (ignoreButton) {
+        const ignored = readIgnored();
+        ignored.add(normalizeName(ignoreButton.dataset.ignoreName));
+        writeJson(compareIgnoredKey, Array.from(ignored));
+      } else if (unignoreButton) {
+        const ignored = readIgnored();
+        ignored.delete(unignoreButton.dataset.unignore);
+        writeJson(compareIgnoredKey, Array.from(ignored));
+      } else {
+        return;
+      }
+
+      renderCompare();
+    });
+
+    previewBody.addEventListener("change", (event) => {
+      const select = event.target.closest("[data-name-select]");
+      if (!select || !select.value) return;
+      const aliases = readAliases();
+      aliases[normalizeName(select.dataset.nameSelect)] = select.value;
+      writeJson(compareAliasesKey, aliases);
+      renderCompare();
+    });
+
+    document.getElementById("refreshButton").addEventListener("click", renderCompare);
+    document.getElementById("clearButton").addEventListener("click", () => {
+      localStorage.removeItem(compareStorageKey);
+      localStorage.removeItem(compareAliasesKey);
+      localStorage.removeItem(compareIgnoredKey);
+      document.getElementById("fileInput").value = "";
+      renderCompare();
+    });
+
+    renderCompare();
+  </script>
+</body>
+</html>

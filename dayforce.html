@@ -1,0 +1,2527 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dayforce Import</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      overflow-x: hidden;
+      background: #fff;
+      color: #000;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 14px;
+    }
+
+    .page-switcher {
+      width: 100%;
+      display: flex;
+      gap: 4px;
+      align-items: center;
+      padding: 6px 8px;
+      background: #111;
+      border-bottom: 2px solid #000;
+    }
+
+    .page-switcher a {
+      min-width: 118px;
+      height: 28px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid #777;
+      background: #e7e6e6;
+      color: #000;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .page-switcher a.active {
+      background: #ffff00;
+      border-color: #ffff00;
+    }
+
+    .sheet {
+      width: 100%;
+      max-width: 1180px;
+      padding-bottom: 32px;
+    }
+
+    .masthead {
+      height: 58px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      padding: 0 6px;
+      background: #d9e8f7;
+      border-bottom: 2px solid #000;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 24px;
+      line-height: 1;
+    }
+
+    .status {
+      font-weight: 900;
+      color: #004a64;
+    }
+
+    .import-panel {
+      display: grid;
+      grid-template-columns: minmax(260px, 1fr) 220px;
+      gap: 10px;
+      padding: 10px 6px;
+      border-bottom: 2px solid #000;
+      background: #f3f6fb;
+    }
+
+    .push-notice {
+      margin: 0;
+      padding: 9px 12px;
+      border-bottom: 2px solid #000;
+      background: #c00000;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 900;
+      letter-spacing: .01em;
+      text-align: center;
+    }
+
+    .push-notice[hidden] {
+      display: none;
+    }
+
+    .file-stack {
+      display: grid;
+      align-content: start;
+      gap: 8px;
+    }
+
+    .file-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 900;
+    }
+
+    .file-row input {
+      max-width: 100%;
+      font-weight: 700;
+    }
+
+    .buttons {
+      display: grid;
+      align-content: start;
+      gap: 8px;
+    }
+
+    button {
+      height: 32px;
+      border: 1px solid #000;
+      background: #000;
+      color: #fff;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    button.secondary {
+      background: #e7e6e6;
+      color: #000;
+      border-color: #777;
+    }
+
+    .missing-roster-panel {
+      padding: 8px 6px;
+      border-top: 2px solid #000;
+      border-bottom: 2px solid #000;
+      background: #fff2cc;
+    }
+
+    .missing-roster-panel[hidden] {
+      display: none;
+    }
+
+    .missing-roster-title {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 6px;
+      font-weight: 900;
+    }
+
+    .missing-roster-body {
+      display: grid;
+      gap: 4px;
+    }
+
+    .missing-roster-row {
+      display: grid;
+      grid-template-columns: minmax(160px, 1fr) minmax(160px, 1fr) 120px 86px;
+      gap: 4px;
+      align-items: center;
+      min-height: 32px;
+      padding: 3px;
+      background: #fff;
+      border: 1px solid #bf8f00;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .missing-roster-row select,
+    .missing-roster-row button {
+      height: 25px;
+      font: inherit;
+      font-size: 12px;
+    }
+
+    .missing-roster-row button {
+      padding: 0 6px;
+    }
+
+    .missing-roster-row .convert-name {
+      background: #e7e6e6;
+      color: #000;
+      border-color: #777;
+    }
+
+    .dayforce-table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      font-size: 14px;
+    }
+
+    .dayforce-table col.name { width: 19%; }
+    .dayforce-table col.date { width: 16%; }
+    .dayforce-table col.start { width: 9%; }
+    .dayforce-table col.lunch { width: 17%; }
+    .dayforce-table col.end { width: 9%; }
+    .dayforce-table col.time { width: 12%; }
+    .dayforce-table col.note { width: 30%; }
+
+    th,
+    td {
+      height: 25px;
+      padding: 0 4px;
+      border-bottom: 1px solid #000;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+
+    th {
+      background: #000;
+      color: #fff;
+      text-align: center;
+      font-weight: 900;
+    }
+
+    td.name-cell {
+      background: #e2f0d9;
+      font-weight: 700;
+    }
+
+    .note-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      max-width: 100%;
+      min-height: 19px;
+      padding: 1px 7px;
+      border-radius: 999px;
+      background: #e7c7e8;
+      color: #4f1b58;
+      font-size: 11px;
+      font-weight: 900;
+      line-height: 1.15;
+      white-space: normal;
+    }
+
+    .note-pill.unpaid {
+      background: #f4cccc;
+      color: #7f1d1d;
+    }
+
+    tr.unmatched td,
+    tr.unmatched .name-cell {
+      background: #f4b6b6;
+      font-weight: 900;
+    }
+
+    .suggestion {
+      display: grid;
+      justify-items: center;
+      gap: 3px;
+      color: #5f1a67;
+      height: auto;
+      min-height: 25px;
+      line-height: 1.15;
+      padding-top: 2px;
+      text-align: center;
+      white-space: normal;
+      overflow: visible;
+      text-overflow: clip;
+      font-size: 12px;
+    }
+
+    .suggestion-actions {
+      display: flex;
+      justify-content: center;
+      gap: 4px;
+      width: 100%;
+    }
+
+    .suggestion-actions button {
+      width: 36px;
+      height: 20px;
+      padding: 0;
+      font-size: 11px;
+      line-height: 18px;
+      border: 1px solid #000;
+    }
+
+    .suggestion-actions .suggestion-yes {
+      background: #000;
+      color: #fff;
+    }
+
+    .suggestion-actions .suggestion-no {
+      background: #e7e6e6;
+      color: #000;
+      border-color: #777;
+    }
+
+    td input {
+      width: 100%;
+      height: 24px;
+      border: 0;
+      outline: 0;
+      background: transparent;
+      font: inherit;
+      text-align: center;
+    }
+
+    td input:focus {
+      background: #fff2cc;
+      box-shadow: inset 0 0 0 2px #ffc000;
+    }
+
+    .empty {
+      padding: 14px 6px;
+      font-weight: 800;
+      color: #555;
+    }
+
+    .excel-preview {
+      padding: 8px 6px 10px;
+      border-top: 2px solid #000;
+      border-bottom: 2px solid #000;
+      background: #f3f6fb;
+    }
+
+    .preview-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 6px;
+      font-weight: 900;
+    }
+
+    .preview-pill {
+      min-height: 28px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 14px;
+      border: 1px solid #b7c8d9;
+      border-radius: 999px;
+      background: #fff;
+      color: #071527;
+      font: inherit;
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: .01em;
+      white-space: nowrap;
+      box-shadow: 0 1px 2px rgba(15, 27, 42, .08);
+    }
+
+    .preview-pill:hover,
+    .preview-pill:focus {
+      background: #d9e8f7;
+      outline: 2px solid #ffc000;
+      outline-offset: 1px;
+    }
+
+    .preview-count {
+      color: #006100;
+      font-size: 12px;
+    }
+
+    .excel-preview-wrap {
+      width: 100%;
+      max-height: 420px;
+      overflow: auto;
+      border: 2px solid #000;
+      background: #fff;
+    }
+
+    .excel-preview.collapsed .excel-preview-wrap {
+      display: none;
+    }
+
+    .excel-preview-table {
+      width: max-content;
+      min-width: 100%;
+      border-collapse: collapse;
+      table-layout: auto;
+      font-size: 12px;
+    }
+
+    .excel-preview-table th,
+    .excel-preview-table td {
+      height: 22px;
+      min-width: 76px;
+      max-width: 240px;
+      padding: 0 5px;
+      border-right: 1px solid #c9c9c9;
+      border-bottom: 1px solid #c9c9c9;
+      line-height: 21px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      text-align: left;
+    }
+
+    .excel-preview-table th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      background: #000;
+      color: #fff;
+      text-align: center;
+    }
+
+    .excel-preview-table .row-number {
+      position: sticky;
+      left: 0;
+      z-index: 1;
+      min-width: 42px;
+      background: #e7e6e6;
+      color: #000;
+      text-align: center;
+      font-weight: 900;
+    }
+
+    .excel-preview-table th.row-number {
+      z-index: 2;
+      background: #000;
+      color: #fff;
+    }
+
+    .excel-preview-table .extracted-name {
+      background: #c6efce;
+      color: #006100;
+      font-weight: 900;
+      box-shadow: inset 0 0 0 2px #00b050;
+    }
+
+    .excel-preview-table .punch-header {
+      background: #ddebf7;
+      font-weight: 900;
+    }
+
+    body {
+      background: #eef2f6;
+      color: #0f1b2a;
+      font-weight: 600;
+    }
+
+    .sheet {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 8px 8px 34px;
+    }
+
+    .masthead {
+      height: 54px;
+      padding: 0 12px;
+      background: #d9e8f7;
+      border: 1px solid #c4d4e4;
+      border-bottom: 0;
+      border-radius: 8px 8px 0 0;
+    }
+
+    h1 {
+      color: #071527;
+      font-size: 22px;
+      letter-spacing: .01em;
+    }
+
+    .status {
+      min-width: 112px;
+      height: 26px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 10px;
+      border: 1px solid #b7c8d9;
+      border-radius: 999px;
+      background: #fff;
+      color: #004a64;
+      font-size: 13px;
+    }
+
+    .import-panel {
+      grid-template-columns: minmax(360px, 1fr) 220px;
+      gap: 14px;
+      padding: 12px;
+      background: #fff;
+      border: 1px solid #c4d4e4;
+      border-top: 0;
+      border-bottom: 0;
+    }
+
+    .file-stack {
+      gap: 10px;
+    }
+
+    .file-row {
+      display: grid;
+      grid-template-columns: 142px minmax(0, 1fr);
+      gap: 10px;
+      min-height: 34px;
+      align-items: center;
+      color: #111827;
+      font-size: 13px;
+    }
+
+    .file-row span {
+      text-align: right;
+      letter-spacing: .02em;
+    }
+
+    .file-row input {
+      width: 100%;
+      min-height: 30px;
+      padding: 3px;
+      border: 1px solid #cbd5df;
+      border-radius: 6px;
+      background: #f8fafc;
+    }
+
+    .file-control {
+      display: grid;
+      grid-template-columns: minmax(180px, 1fr) auto;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .previous-timesheet-status {
+      min-width: 112px;
+      height: 24px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 8px;
+      border: 1px solid #c4d4e4;
+      border-radius: 999px;
+      background: #fff8df;
+      color: #273140;
+      font-size: 12px;
+      font-weight: 900;
+      text-align: center;
+      letter-spacing: 0;
+      white-space: nowrap;
+    }
+
+    .previous-timesheet-preview {
+      margin-top: 12px;
+      padding: 8px 6px 10px;
+      border-top: 2px solid #7c3aed;
+      border-bottom: 2px solid #7c3aed;
+      background: #f5efff;
+    }
+
+    .previous-timesheet-preview[hidden] {
+      display: none;
+    }
+
+    .previous-timesheet-preview .preview-title {
+      min-height: 34px;
+      margin: 0;
+      padding: 0 10px;
+      background: #eadcf8;
+      border: 1px solid #d8b4fe;
+      border-bottom: 0;
+    }
+
+    .previous-timesheet-table {
+      border: 1px solid #d8b4fe;
+      border-radius: 0;
+      table-layout: fixed;
+    }
+
+    .previous-timesheet-table col.name { width: 21%; }
+    .previous-timesheet-table col.date { width: 20%; }
+    .previous-timesheet-table col.time { width: 14%; }
+    .previous-timesheet-table col.actual { width: 17%; }
+
+    .previous-timesheet-table td {
+      background: #fff;
+      border-bottom-color: #e9d5ff;
+      text-align: center;
+    }
+
+    .previous-timesheet-table tbody tr:nth-child(even) td {
+      background: #fff;
+    }
+
+    .previous-timesheet-table th {
+      background: #5b21b6;
+      color: #fff;
+    }
+
+    .previous-timesheet-table td.name-cell {
+      background: #e2f0d9;
+      color: #111827;
+      font-weight: 900;
+    }
+
+    .previous-timesheet-table tbody tr:nth-child(even) td.name-cell {
+      background: #e2f0d9;
+    }
+
+    .previous-timesheet-table td.name-cell,
+    .previous-timesheet-table tr.previous-shift-group-row td {
+      text-align: left;
+    }
+
+    .previous-timesheet-table tr.previous-shift-group-row td {
+      background: #e1d2f5;
+      color: #111827;
+      border-bottom-color: #d8b4fe;
+      font-weight: 900;
+    }
+
+    .buttons {
+      gap: 9px;
+    }
+
+    #saveButton {
+      border: 1px solid #273140;
+      box-shadow: none;
+    }
+
+    #saveButton.pending-push {
+      background: #000;
+      color: #fff;
+      border: 2px solid #ffd966;
+      box-shadow:
+        0 0 0 1px #000,
+        0 0 0 3px #ffc000,
+        0 0 12px rgba(255, 192, 0, .85),
+        inset 0 1px 0 rgba(255, 255, 255, .6);
+    }
+
+    .clear-split {
+      position: relative;
+      display: grid;
+      grid-template-columns: 1fr 34px;
+    }
+
+    .clear-split > button {
+      border-radius: 6px 0 0 6px;
+    }
+
+    .clear-split-toggle {
+      border-left: 0;
+      border-radius: 0 6px 6px 0;
+      padding: 0;
+      font-size: 13px;
+    }
+
+    .clear-split-toggle::before {
+      content: "";
+      display: inline-block;
+      width: 0;
+      height: 0;
+      border-left: 4px solid transparent;
+      border-right: 4px solid transparent;
+      border-top: 5px solid currentColor;
+      vertical-align: middle;
+    }
+
+    .clear-menu {
+      position: absolute;
+      top: calc(100% + 4px);
+      right: 0;
+      z-index: 5;
+      width: 100%;
+      min-width: 180px;
+      display: none;
+      padding: 4px;
+      border: 1px solid #cbd5df;
+      border-radius: 6px;
+      background: #fff;
+      box-shadow: 0 8px 20px rgba(15, 27, 42, .14);
+    }
+
+    .clear-split.open .clear-menu {
+      display: grid;
+      gap: 4px;
+    }
+
+    .clear-menu button {
+      height: 28px;
+      border-radius: 4px;
+      background: #f4f6f8;
+      color: #273140;
+      border-color: #d7e0ea;
+      text-align: left;
+      padding: 0 10px;
+    }
+
+    .clear-menu button:hover,
+    .clear-menu button:focus {
+      background: #e8edf2;
+    }
+
+    button {
+      height: 32px;
+      border: 1px solid #273140;
+      border-radius: 6px;
+      background: #273140;
+      color: #fff;
+      font-size: 13px;
+      letter-spacing: .01em;
+    }
+
+    button:hover,
+    button:focus {
+      background: #111827;
+      outline: 2px solid #ffc000;
+      outline-offset: 1px;
+    }
+
+    button.secondary {
+      background: #f4f6f8;
+      color: #273140;
+      border-color: #cbd5df;
+    }
+
+    button.secondary:hover,
+    button.secondary:focus {
+      background: #e8edf2;
+    }
+
+    .dayforce-table {
+      overflow: hidden;
+      border-collapse: separate;
+      border-spacing: 0;
+      background: #fff;
+      border: 1px solid #c4d4e4;
+      border-radius: 0 0 8px 8px;
+      font-size: 13px;
+    }
+
+    .dayforce-table th,
+    .dayforce-table td {
+      height: 27px;
+      padding: 0 8px;
+      border-bottom: 1px solid #d9e0e8;
+    }
+
+    .dayforce-table th {
+      height: 32px;
+      background: #28313c;
+      color: #eef4fb;
+      border-bottom: 0;
+      font-size: 12px;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+
+    .dayforce-table tbody tr:hover {
+      background: #f6f9fc;
+    }
+
+    .dayforce-table tr.shift-group-row td {
+      height: 30px;
+      padding: 0 10px;
+      background: #d9e8f7;
+      color: #071527;
+      border-top: 2px solid #28313c;
+      border-bottom: 1px solid #b6c7d8;
+      font-size: 13px;
+      font-weight: 900;
+      letter-spacing: .02em;
+      text-transform: uppercase;
+    }
+
+    .dayforce-table tr.shift-group-row:first-child td {
+      border-top: 0;
+    }
+
+    .shift-group-count {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 58px;
+      height: 19px;
+      margin-left: 8px;
+      padding: 0 8px;
+      border: 1px solid #c4d4e4;
+      border-radius: 999px;
+      background: #fff;
+      color: #526174;
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 0;
+      text-transform: none;
+    }
+
+    .dayforce-table tr.import-message-row td {
+      height: 34px;
+      background: #fff2cc;
+      color: #7c5700;
+      font-size: 14px;
+      font-weight: 900;
+      text-align: center;
+    }
+
+    td.name-cell {
+      background: #e2f0d9;
+      color: #071527;
+      font-weight: 800;
+    }
+
+    td input {
+      height: 26px;
+      color: #071527;
+      font-weight: 600;
+    }
+
+    td.name-cell input,
+    .dayforce-table td:nth-child(2) input,
+    .dayforce-table td:nth-child(3) input,
+    .dayforce-table td:nth-child(4) input,
+    .dayforce-table td:nth-child(5) input {
+      font-weight: 900;
+    }
+
+    .dayforce-table td:nth-child(2),
+    .dayforce-table td:nth-child(3),
+    .dayforce-table td:nth-child(4),
+    .dayforce-table td:nth-child(5) {
+      padding: 0 5px;
+    }
+
+    .dayforce-table td:nth-child(2) input,
+    .dayforce-table td:nth-child(3) input,
+    .dayforce-table td:nth-child(4) input,
+    .dayforce-table td:nth-child(5) input {
+      font-size: 12px;
+      letter-spacing: 0;
+    }
+
+    .dayforce-table th:nth-child(2),
+    .dayforce-table td:nth-child(2) {
+      min-width: 104px;
+    }
+
+    .dayforce-table td:nth-child(2),
+    .dayforce-table td:nth-child(2) input,
+    .previous-timesheet-table td:nth-child(2) {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: -.01em;
+      text-align: center;
+    }
+
+    .dayforce-table td:nth-child(2) input {
+      padding: 0 1px;
+    }
+
+    .empty {
+      margin: 0;
+      padding: 18px 12px;
+      border: 1px solid #c4d4e4;
+      border-top: 0;
+      border-radius: 0 0 8px 8px;
+      background: #fff;
+      color: #526174;
+    }
+
+    .missing-roster-panel,
+    .excel-preview {
+      border: 1px solid #c4d4e4;
+      border-top: 0;
+      background: #fff8df;
+    }
+
+    .excel-preview {
+      background: #fff;
+    }
+
+    @media (max-width: 760px) {
+      body {
+        font-size: 12px;
+      }
+
+      .page-switcher {
+        padding: 5px;
+      }
+
+      .page-switcher a {
+        min-width: 96px;
+        font-size: 12px;
+      }
+
+      .import-panel {
+        grid-template-columns: 1fr;
+      }
+
+      .file-control {
+        grid-template-columns: 1fr;
+      }
+
+      .clear-menu {
+        position: static;
+        margin-top: 4px;
+        grid-column: 1 / -1;
+      }
+
+      h1 {
+        font-size: 19px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <nav class="page-switcher" aria-label="Workbook pages">
+    <a href="roster.html">Roster</a>
+    <a href="time-input.html">Time Input</a>
+    <a class="active" href="dayforce.html">Dayforce</a>
+    <a href="compare.html">Compare</a>
+  </nav>
+
+  <main class="sheet">
+    <header class="masthead">
+      <h1>DAYFORCE PUNCH IMPORT</h1>
+      <div class="status" id="status">Ready</div>
+    </header>
+
+    <div class="push-notice" id="pushNotice" hidden>
+      Imported data has not been pushed to the Timesheet page yet. Click Send To Time Input.
+    </div>
+
+    <section class="import-panel">
+      <div class="file-stack">
+        <div class="file-row">
+          <span>PUNCH XLSX:</span>
+          <input type="file" id="fileInput" accept=".xlsx,.xls" />
+        </div>
+        <div class="file-row">
+          <span>NOTE SCAN XLSX:</span>
+          <input type="file" id="noteFileInput" accept=".xlsx,.xls" />
+        </div>
+        <div class="file-row">
+          <span>PREV TIMESHEET:</span>
+          <div class="file-control">
+            <input type="file" id="previousTimesheetInput" accept=".xlsx,.xls" />
+            <span class="previous-timesheet-status" id="previousTimesheetStatus">0.0 HRS</span>
+          </div>
+        </div>
+      </div>
+      <div class="buttons">
+        <button type="button" id="saveButton">Send To Time Input</button>
+        <div class="clear-split" id="clearSplit">
+          <button type="button" class="secondary" id="clearDefaultButton">Clear</button>
+          <button type="button" class="secondary clear-split-toggle" id="clearMenuButton" aria-label="Clear options" aria-expanded="false"></button>
+          <div class="clear-menu" id="clearMenu">
+            <button type="button" data-clear-action="punch">Clear Punches</button>
+            <button type="button" data-clear-action="note">Clear Note Scan</button>
+            <button type="button" data-clear-action="previous">Clear Prev Time</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="missing-roster-panel" id="missingRosterPanel" hidden>
+      <div class="missing-roster-title">
+        <span>Extracted Names Not On Roster</span>
+        <span id="missingRosterCount">0 names</span>
+      </div>
+      <div class="missing-roster-body" id="missingRosterBody"></div>
+    </section>
+
+    <section class="excel-preview" id="excelPreviewSection" hidden>
+      <div class="preview-title">
+        <button type="button" class="preview-pill" id="excelPreviewToggle" aria-expanded="false">
+          Time Entry Import Preview Click to Review
+        </button>
+        <span class="preview-count" id="excelPreviewCount">0 out of 0 matched to schedule</span>
+      </div>
+      <div class="excel-preview-wrap" id="excelPreviewWrap">
+        <table class="excel-preview-table" aria-label="Raw Excel preview">
+          <thead id="excelPreviewHead"></thead>
+          <tbody id="excelPreviewBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <table class="dayforce-table" aria-label="Dayforce punch preview">
+      <colgroup>
+        <col class="name" />
+        <col class="date" />
+        <col class="start" />
+        <col class="lunch" />
+        <col class="end" />
+        <col class="note" />
+      </colgroup>
+      <thead>
+        <tr>
+          <th>Employee</th>
+          <th>Date</th>
+          <th>Start</th>
+          <th>Lunch</th>
+          <th>End</th>
+          <th>Note</th>
+        </tr>
+      </thead>
+      <tbody id="previewBody"></tbody>
+    </table>
+    <div class="empty" id="emptyState">No imported records yet.</div>
+
+    <section class="previous-timesheet-preview" id="previousTimesheetPreview" hidden>
+      <div class="preview-title">
+        <span>Previous Timesheet Preview</span>
+        <span class="preview-count" id="previousTimesheetPreviewCount">0 rows</span>
+      </div>
+      <table class="dayforce-table previous-timesheet-table" aria-label="Previous second shift timesheet preview">
+        <colgroup>
+          <col class="name" />
+          <col class="date" />
+          <col class="time" />
+          <col class="time" />
+          <col class="time" />
+          <col class="actual" />
+        </colgroup>
+        <thead>
+          <tr>
+            <th>Employee</th>
+            <th>Date</th>
+            <th>Start</th>
+            <th>Lunch</th>
+            <th>End</th>
+            <th>0000-0300</th>
+          </tr>
+        </thead>
+        <tbody id="previousTimesheetPreviewBody"></tbody>
+      </table>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script>
+    const storageKey = "conglobal-dayforce-punches-v1";
+    const unmatchedStorageKey = "conglobal-dayforce-unmatched-v1";
+    const rosterStorageKey = "conglobal-roster-state-v1";
+    const rosterAdditionsKey = "conglobal-roster-additions-v1";
+    const previousTimesheetStorageKey = "conglobal-previous-timesheet-hours-v1";
+    const pendingPushKey = "conglobal-dayforce-pending-push-v1";
+    const previewBody = document.getElementById("previewBody");
+    const emptyState = document.getElementById("emptyState");
+    const status = document.getElementById("status");
+    const pushNotice = document.getElementById("pushNotice");
+    const saveButton = document.getElementById("saveButton");
+    const missingRosterPanel = document.getElementById("missingRosterPanel");
+    const missingRosterCount = document.getElementById("missingRosterCount");
+    const missingRosterBody = document.getElementById("missingRosterBody");
+    const excelPreviewSection = document.getElementById("excelPreviewSection");
+    const excelPreviewToggle = document.getElementById("excelPreviewToggle");
+    const excelPreviewCount = document.getElementById("excelPreviewCount");
+    const excelPreviewHead = document.getElementById("excelPreviewHead");
+    const excelPreviewBody = document.getElementById("excelPreviewBody");
+    const previousTimesheetStatus = document.getElementById("previousTimesheetStatus");
+    const previousTimesheetPreview = document.getElementById("previousTimesheetPreview");
+    const previousTimesheetPreviewCount = document.getElementById("previousTimesheetPreviewCount");
+    const previousTimesheetPreviewBody = document.getElementById("previousTimesheetPreviewBody");
+    const clearSplit = document.getElementById("clearSplit");
+    const clearDefaultButton = document.getElementById("clearDefaultButton");
+    const clearMenuButton = document.getElementById("clearMenuButton");
+    const clearMenu = document.getElementById("clearMenu");
+    const shiftLabels = {
+      first: "1st Shift",
+      second: "2ND SHIFT",
+      gate: "Gate",
+      mechanics: "Mechanics",
+      managers: "Managers",
+      unmatched: "Not On Roster"
+    };
+    const rosterShiftKeys = ["first", "second", "gate", "mechanics", "managers"];
+    const defaultRoster = {
+      first: [
+        ["Branford Alton", "Mon, Tues"],
+        ["Castruita Armando", "Wed, Thurs"],
+        ["Frazer Dacoyea", "Mon, Tues"],
+        ["Citizen Dante", "Thurs, Fri"],
+        ["Towler Demetrius", "Thurs, Fri"],
+        ["Stewart Dexter", "Sat, Sun"],
+        ["Gardner Dorrean", "Tues, Wed"],
+        ["Thomas Henry", "Sat, Sun"],
+        ["Brown James", "Thurs, Fri"],
+        ["Herrera Jose", "Sat, Sun"],
+        ["Player Keyston", "Mon, Sun"],
+        ["Hickman Makia", "Mon, Sun"],
+        ["Dever Mikey", "Tues, Wed"],
+        ["Wanza Myles", "Mon, Tues"],
+        ["Romero Nelson", "Tues, Wed"],
+        ["McDaniel Charles", "Fri, Sat"],
+        ["Nava Ramon", "Sat, Sun"],
+        ["Tran Tyler", "Thurs, Fri"]
+      ],
+      second: [
+        ["Carruthers Timothy", "Mon, Sun"],
+        ["Caceres Virula Victor", "Mon, Tues"],
+        ["Keme Aweri Jr.", "Mon, Tues"],
+        ["Hosey Kevin", "Mon, Tues"],
+        ["Brown Brandy", "Wed, Thurs"],
+        ["Mejia Aaron", "Thurs, Fri"],
+        ["Bookman Derrell", "Thurs, Fri"],
+        ["Hopkins Alexander", "Mon, Sun"],
+        ["Tingle Jason", "Sat, Sun"],
+        ["Contreras Marco", "Sat, Sun"],
+        ["Benavides Robert", "Wed, Sun"],
+        ["Urtado Ernest", "Tues, Wed"],
+        ["Johnson Messiah", "Tues, Thurs"],
+        ["Gilder Rufus II", "Tues, Wed"],
+        ["Echendu Chimenierm", "Wed, Thurs"],
+        ["Delgado Jose", "Fri, Sat"]
+      ],
+      gate: [
+        ["Candace Warren", "Sat, Sun"],
+        ["Connie Johnson", "Sat, Sun"],
+        ["Jarade Douglas", "Sat, Sun"],
+        ["Gregory Watson II", "Sat, Sun"],
+        ["Bryce Alexander", "Thurs, Fri"],
+        ["Naomisha Hunt", "Thurs, Fri, Sat"],
+        ["Ramacacondra Pratt", "Thurs, Fri"],
+        ["Kane Cabral", "Mon, Tues"],
+        ["Tavares Gariet", "Mon, Tues"]
+      ],
+      mechanics: [],
+      managers: []
+    };
+
+    function hasPreviewRecords() {
+      return Boolean(previewBody.querySelector("tr.record-row"));
+    }
+
+    function updatePushNotice() {
+      const show = localStorage.getItem(pendingPushKey) === "1" && hasPreviewRecords();
+      pushNotice.hidden = !show;
+      saveButton.classList.toggle("pending-push", show);
+    }
+
+    function setPendingPush(value) {
+      if (value && hasPreviewRecords()) {
+        localStorage.setItem(pendingPushKey, "1");
+      } else {
+        localStorage.removeItem(pendingPushKey);
+      }
+      updatePushNotice();
+    }
+
+    function normalizeName(name) {
+      const suffixes = new Set(["jr", "sr", "ii", "iii", "iv"]);
+      return String(name || "")
+        .trim()
+        .toLowerCase()
+        .replace(/[,.]/g, " ")
+        .replace(/\bcontrerras\b/g, "contreras")
+        .replace(/\bdemeatrius\b/g, "demetrius")
+        .replace(/\btowner\b/g, "towler")
+        .replace(/\s+/g, " ")
+        .split(" ")
+        .filter((part) => part && !suffixes.has(part))
+        .sort()
+        .join(" ");
+    }
+
+    function defaultRosterRows() {
+      return Object.entries(defaultRoster).flatMap(([shift, rows]) => (
+        rows.map(([name]) => ({ name, shift }))
+      ));
+    }
+
+    function savedRosterRows(roster) {
+      return rosterShiftKeys.flatMap((shift) => (
+        Array.isArray(roster[shift])
+          ? roster[shift].filter((employee) => employee && employee.name).map((employee) => ({ name: employee.name, shift }))
+          : []
+      ));
+    }
+
+    function hasSavedRosterRows(roster) {
+      return rosterShiftKeys.some((shift) => Array.isArray(roster[shift]) && roster[shift].length);
+    }
+
+    function buildRosterRows() {
+      const rows = [];
+      const seen = new Set();
+      const addRows = (items) => {
+        items.forEach((employee) => {
+          const key = normalizeName(employee.name);
+          if (!key || seen.has(key)) return;
+          seen.add(key);
+          rows.push(employee);
+        });
+      };
+
+      try {
+        const roster = JSON.parse(localStorage.getItem(rosterStorageKey) || "{}");
+        addRows(hasSavedRosterRows(roster) ? savedRosterRows(roster) : defaultRosterRows());
+        const additions = JSON.parse(localStorage.getItem(rosterAdditionsKey) || "[]");
+        if (Array.isArray(additions)) {
+          addRows(additions.filter((employee) => employee && employee.name).map((employee) => ({
+            name: employee.name,
+            shift: employee.shift || "first"
+          })));
+        }
+      } catch (error) {
+        addRows(defaultRosterRows());
+      }
+
+      if (!rows.length) addRows(defaultRosterRows());
+      return rows;
+    }
+
+    function rosterNames() {
+      return buildRosterRows().map((employee) => employee.name);
+    }
+
+    function rosterLookup() {
+      const lookup = new Map();
+      buildRosterRows().forEach((employee) => {
+        lookup.set(normalizeName(employee.name), { name: employee.name, shift: employee.shift || "first" });
+      });
+      return lookup;
+    }
+
+    function payrollDateFromRows(rows) {
+      for (const row of rows.slice(0, 12)) {
+        for (const cell of row) {
+          const text = String(cell || "").trim();
+          const match = text.match(/\bdate\s*:\s*([0-9]{1,2}\/[0-9]{1,2}\/[0-9]{2,4})/i);
+          if (match) return match[1];
+        }
+      }
+      return new Date().toLocaleDateString();
+    }
+
+    function cleanPayrollEmployeeName(value) {
+      return cleanDayforceEmployeeName(value)
+        .replace(/\s+\d{4,}\s*$/, "")
+        .trim();
+    }
+
+    function payrollDisplayName(value) {
+      return displayNameFromDayforce(cleanPayrollEmployeeName(value));
+    }
+
+    function payrollHours(value) {
+      const text = String(value || "").trim();
+      if (!text) return 0;
+      if (/^(x|yes|y|true)$/i.test(text)) return 8;
+
+      const timeMatch = text.match(/^(\d{1,2}):(\d{2})$/);
+      if (timeMatch) return Number(timeMatch[1]) + (Number(timeMatch[2]) / 60);
+
+      const numberMatch = text.match(/-?\d+(\.\d+)?/);
+      if (!numberMatch) return 0;
+      return Math.max(0, Number(numberMatch[0]) || 0);
+    }
+
+    function titleCaseReason(value) {
+      return String(value || "")
+        .toLowerCase()
+        .replace(/\b\w/g, (char) => char.toUpperCase())
+        .replace(/\bPto\b/g, "PTO");
+    }
+
+    function absenceReasonFromHeader(header) {
+      const text = String(header || "").replace(/\s+/g, " ").trim();
+      const normalized = text.toLowerCase();
+      if (!normalized || /^total\b/.test(normalized) || normalized.includes("total overtime")) return "";
+      if (normalized.includes("business day off") && normalized.includes("unpaid")) return "Business Day Off - Unpaid";
+      if (normalized.includes("floating holiday") || /\bfloat\b/.test(normalized)) return "Floating Holiday";
+      if (normalized.includes("vacation")) return "Vacation";
+      if (normalized.includes("sick")) return "Sick";
+      if (normalized.includes("holiday")) return "Holiday";
+      if (normalized.includes("pto")) return "PTO";
+      if (normalized.includes("personal")) return "Personal Day";
+      if (normalized.includes("bereavement")) return "Bereavement";
+      if (normalized.includes("jury")) return "Jury Duty";
+      if (normalized.includes("leave")) return "Leave";
+      if (normalized.includes("day off") || normalized.includes("off day")) return titleCaseReason(text);
+      if (normalized.includes("unpaid") || normalized.includes("without pay")) return titleCaseReason(text);
+      return "";
+    }
+
+    function isUnpaidReason(reason) {
+      return /\bunpaid\b|without pay/i.test(reason);
+    }
+
+    function minutesFromMilitary(value) {
+      const match = String(value || "").match(/^(\d{1,2})(\d{2})$/);
+      if (!match) return 0;
+      return (Number(match[1]) * 60) + Number(match[2]);
+    }
+
+    function militaryFromMinutes(value) {
+      const minutes = ((Math.round(value) % 1440) + 1440) % 1440;
+      const hours = Math.floor(minutes / 60);
+      const mins = minutes % 60;
+      return `${String(hours).padStart(2, "0")}${String(mins).padStart(2, "0")}`;
+    }
+
+    function shiftStartForEmployee(name) {
+      const names = rosterNames();
+      const match = matchRosterName(name, names);
+      const lookup = rosterLookup();
+      const canonical = match.suggestion || name;
+      const shift = lookup.get(normalizeName(canonical))?.shift || "";
+      if (shift === "second") return "1500";
+      if (shift === "gate" || shift === "mechanics") return "0600";
+      return "0300";
+    }
+
+    function endFromStartAndHours(start, hours) {
+      return militaryFromMinutes(minutesFromMilitary(start) + (Number(hours || 0) * 60));
+    }
+
+    function editDistance(a, b) {
+      const dp = Array.from({ length: a.length + 1 }, () => Array(b.length + 1).fill(0));
+      for (let i = 0; i <= a.length; i += 1) dp[i][0] = i;
+      for (let j = 0; j <= b.length; j += 1) dp[0][j] = j;
+      for (let i = 1; i <= a.length; i += 1) {
+        for (let j = 1; j <= b.length; j += 1) {
+          const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+          dp[i][j] = Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1, dp[i - 1][j - 1] + cost);
+        }
+      }
+      return dp[a.length][b.length];
+    }
+
+    function matchRosterName(name, names) {
+      const normalized = normalizeName(name);
+      const exact = names.find((candidate) => normalizeName(candidate) === normalized);
+      if (exact) return { found: true, suggestion: exact, hasSuggestion: true, score: 0 };
+
+      const scored = names
+        .map((candidate) => ({ candidate, score: editDistance(normalized, normalizeName(candidate)) }))
+        .sort((a, b) => a.score - b.score);
+      const best = scored[0] || null;
+      const suggestionLimit = Math.max(2, Math.ceil(normalized.length * 0.35));
+      return {
+        found: false,
+        suggestion: best ? best.candidate : "",
+        hasSuggestion: Boolean(best && best.score <= suggestionLimit),
+        score: best ? best.score : Infinity
+      };
+    }
+
+    function cleanDayforceEmployeeName(value) {
+      return String(value)
+        .replace(/^employee\s*:?\s*/i, "")
+        .replace(/\s+\d{4,}\s*$/, "")
+        .trim();
+    }
+
+    function displayNameFromDayforce(value) {
+      const cleaned = cleanDayforceEmployeeName(value);
+      if (!cleaned.includes(",")) return cleaned;
+
+      const [last, first] = cleaned.split(",").map((part) => part.trim());
+      return `${first} ${last}`.replace(/\s+/g, " ").trim();
+    }
+
+    function normalizePreviousTimesheetName(name) {
+      return normalizeName(String(name || "").replace(/\s+\d{4,}\s*$/, ""));
+    }
+
+    function previousTimesheetImport() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(previousTimesheetStorageKey) || "null");
+        return saved && typeof saved.hours === "number" ? saved : null;
+      } catch (error) {
+        localStorage.removeItem(previousTimesheetStorageKey);
+        return null;
+      }
+    }
+
+    function updatePreviousTimesheetStatus() {
+      const imported = previousTimesheetImport();
+      if (!previousTimesheetStatus) return;
+      if (!imported) {
+        previousTimesheetStatus.textContent = "0.0 HRS";
+        previousTimesheetStatus.title = "";
+        renderPreviousTimesheetPreview([]);
+        return;
+      }
+
+      const rowsText = imported.rows ? ` / ${imported.rows} ROWS` : "";
+      previousTimesheetStatus.textContent = `${Number(imported.hours || 0).toFixed(1)} HRS${rowsText}`;
+      previousTimesheetStatus.title = imported.fileName ? `Imported from ${imported.fileName}` : "";
+      renderPreviousTimesheetPreview(Array.isArray(imported.records) ? imported.records : []);
+    }
+
+    function renderPreviousTimesheetPreview(records) {
+      if (!previousTimesheetPreview || !previousTimesheetPreviewBody) return;
+      previousTimesheetPreview.hidden = !records.length;
+      previousTimesheetPreviewCount.textContent = `${records.length} ${records.length === 1 ? "row" : "rows"}`;
+      previousTimesheetPreviewBody.innerHTML = records.length ? [
+        `<tr class="shift-group-row previous-shift-group-row"><td colspan="6">PREV 2ND SHIFT<span class="shift-group-count">${records.length} ${records.length === 1 ? "record" : "records"}</span></td></tr>`,
+        ...records.map((record) => `
+          <tr>
+            <td class="name-cell">${escapeHtml(record.name || "")}</td>
+            <td>${escapeHtml(record.date || "")}</td>
+            <td>${escapeHtml(record.start || "")}</td>
+            <td>${escapeHtml(record.lunch || "")}</td>
+            <td>${escapeHtml(record.end || "")}</td>
+            <td><strong>${Number(record.hours || 0).toFixed(1)}</strong></td>
+          </tr>
+        `)
+      ].join("") : "";
+    }
+
+    function previousTimesheetEligibleNames() {
+      const lookup = rosterLookup();
+      const names = new Set();
+      lookup.forEach((entry, key) => {
+        if (entry.shift !== "second") return;
+        names.add(key);
+      });
+      return names;
+    }
+
+    function previousTimeMinutesFromValue(value) {
+      const text = String(value || "").trim();
+      if (!text) return null;
+
+      const meridianMatch = text.match(/^(\d{1,2}):(\d{2})\s*([ap])m$/i);
+      if (meridianMatch) {
+        let hours = Number(meridianMatch[1]);
+        const minutes = Number(meridianMatch[2]);
+        const period = meridianMatch[3].toLowerCase();
+        if (period === "p" && hours !== 12) hours += 12;
+        if (period === "a" && hours === 12) hours = 0;
+        return (hours * 60) + minutes;
+      }
+
+      const colonMatch = text.match(/^(\d{1,2}):(\d{2})$/);
+      if (colonMatch) {
+        const hours = Number(colonMatch[1]);
+        const minutes = Number(colonMatch[2]);
+        if (hours > 24 || minutes > 59 || (hours === 24 && minutes !== 0)) return null;
+        return (hours * 60) + minutes;
+      }
+
+      const militaryMatch = text.match(/^(\d{1,2})(\d{2})$/);
+      if (!militaryMatch) return null;
+      const hours = Number(militaryMatch[1]);
+      const minutes = Number(militaryMatch[2]);
+      if (hours > 24 || minutes > 59 || (hours === 24 && minutes !== 0)) return null;
+      return (hours * 60) + minutes;
+    }
+
+    function normalizePreviousHeader(value) {
+      return String(value || "").trim().toLowerCase().replace(/\s+/g, " ");
+    }
+
+    function previousColumnIndexFor(row, matchers) {
+      return row.findIndex((cell) => {
+        const text = normalizePreviousHeader(cell);
+        return matchers.some((matcher) => matcher.test(text));
+      });
+    }
+
+    function rowLooksLikePreviousTimeHeader(row) {
+      const normalized = row.map(normalizePreviousHeader);
+      return normalized.some((cell) => /\b(employee|name)\b/.test(cell))
+        && normalized.some((cell) => /\bstart\b/.test(cell))
+        && normalized.some((cell) => /\bend\b/.test(cell));
+    }
+
+    function firstPreviousNameLikeCell(row, excludedIndexes = new Set()) {
+      for (let index = 0; index < row.length; index += 1) {
+        if (excludedIndexes.has(index)) continue;
+        const text = String(row[index] || "").trim();
+        if (!text || /^\d+(\.\d+)?$/.test(text)) continue;
+        if (previousTimeMinutesFromValue(text) !== null) continue;
+        if (/^(yes|no|\?\?|start|end|lunch|actual|note|off days?)$/i.test(text)) continue;
+        if (/\b(mon|tue|wed|thu|fri|sat|sun|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\b/i.test(text) && /\d/.test(text)) continue;
+        return text;
+      }
+      return "";
+    }
+
+    function previousLunchIntervals(value) {
+      const text = String(value || "").trim();
+      if (!text || /^(yes|no|\?\?)$/i.test(text)) return [];
+
+      const parts = text.split(/\s*-\s*/).map((part) => previousTimeMinutesFromValue(part)).filter((part) => part !== null);
+      if (parts.length < 2) return [];
+
+      let [start, end] = parts;
+      if (end <= start) end += 1440;
+      return [[start, end]];
+    }
+
+    function previousOverlapMinutes(start, end, windowStart, windowEnd) {
+      return Math.max(0, Math.min(end, windowEnd) - Math.max(start, windowStart));
+    }
+
+    function previousWindowMinutesForTimes(startValue, endValue, lunchValue) {
+      let start = previousTimeMinutesFromValue(startValue);
+      let end = previousTimeMinutesFromValue(endValue);
+      if (start === null || end === null) return 0;
+      if (end <= start) end += 1440;
+
+      const windows = [[0, 180], [1440, 1620]];
+      const worked = Math.max(...windows.map(([windowStart, windowEnd]) => previousOverlapMinutes(start, end, windowStart, windowEnd)));
+      if (!worked) return 0;
+
+      const lunch = previousLunchIntervals(lunchValue).reduce((sum, [lunchStart, lunchEnd]) => {
+        const shifted = lunchEnd <= 180 && start >= 720 ? [lunchStart + 1440, lunchEnd + 1440] : [lunchStart, lunchEnd];
+        const lunchOverlap = Math.max(...windows.map(([windowStart, windowEnd]) => previousOverlapMinutes(shifted[0], shifted[1], windowStart, windowEnd)));
+        return sum + lunchOverlap;
+      }, 0);
+
+      return Math.max(0, worked - lunch);
+    }
+
+    function firstPreviousDateLikeCell(row) {
+      const value = row.find((cell) => {
+        const text = String(cell || "").trim();
+        return /^(\d{1,2}\/\d{1,2}\/\d{2,4})/.test(text)
+          || /^(sun|mon|tue|tues|wed|thu|thur|thurs|fri|sat)[a-z]*\b/i.test(text);
+      });
+      return String(value || "").trim();
+    }
+
+    function previousRecordFromRow(row, indexes, eligibleNames) {
+      const name = indexes.name >= 0 ? String(row[indexes.name] || "").trim() : firstPreviousNameLikeCell(row, new Set([indexes.start, indexes.lunch, indexes.end]));
+      if (!name || (eligibleNames.size && !eligibleNames.has(normalizePreviousTimesheetName(name)))) return null;
+
+      const start = indexes.start >= 0 ? String(row[indexes.start] || "").trim() : "";
+      const lunch = indexes.lunch >= 0 ? String(row[indexes.lunch] || "").trim() : "";
+      const end = indexes.end >= 0 ? String(row[indexes.end] || "").trim() : "";
+      const hours = previousWindowMinutesForTimes(start, end, lunch) / 60;
+      if (hours <= 0) return null;
+
+      return {
+        name: displayNameFromDayforce(name),
+        date: indexes.date >= 0 ? String(row[indexes.date] || "").trim() : firstPreviousDateLikeCell(row),
+        start,
+        lunch,
+        end,
+        hours
+      };
+    }
+
+    function fallbackPreviousRecordFromRow(row, eligibleNames) {
+      const timeIndexes = [];
+      row.forEach((cell, index) => {
+        if (previousTimeMinutesFromValue(cell) !== null) timeIndexes.push(index);
+      });
+      if (timeIndexes.length < 2) return null;
+
+      const excluded = new Set(timeIndexes);
+      const name = firstPreviousNameLikeCell(row, excluded);
+      if (!name || (eligibleNames.size && !eligibleNames.has(normalizePreviousTimesheetName(name)))) return null;
+
+      const startIndex = timeIndexes[0];
+      const endIndex = timeIndexes[timeIndexes.length - 1];
+      const lunchIndex = timeIndexes.length > 2 ? timeIndexes[1] : -1;
+      const start = String(row[startIndex] || "").trim();
+      const lunch = lunchIndex >= 0 ? String(row[lunchIndex] || "").trim() : "";
+      const end = String(row[endIndex] || "").trim();
+      const hours = previousWindowMinutesForTimes(start, end, lunch) / 60;
+      if (hours <= 0) return null;
+
+      return {
+        name: displayNameFromDayforce(name),
+        date: firstPreviousDateLikeCell(row),
+        start,
+        lunch,
+        end,
+        hours
+      };
+    }
+
+    function previousRecordFromDayforceHeader(rows, rowIndex, eligibleNames) {
+      const row = rows[rowIndex].map((cell) => String(cell || "").trim());
+      if (!rowHasDayforceHeader(row)) return null;
+
+      const next = (rows[rowIndex + 1] || []).map((cell) => String(cell || "").trim());
+      const startIndex = headerIndex(row, "start shift");
+      const startMealIndex = headerIndex(row, "start meal");
+      const endMealIndex = headerIndex(row, "end meal");
+      const endIndex = headerIndex(row, "end shift");
+      const employeeCell = findEmployeeNameCell(rows, rowIndex, startIndex);
+      const employee = displayNameFromDayforce(employeeCell ? employeeCell.value : firstFilledBefore(row, startIndex));
+      if (!employee || (eligibleNames.size && !eligibleNames.has(normalizePreviousTimesheetName(employee)))) return null;
+
+      const lunch = [startMealIndex >= 0 ? next[startMealIndex] : "", endMealIndex >= 0 ? next[endMealIndex] : ""].filter(Boolean).join(" - ");
+      const start = startIndex >= 0 ? next[startIndex] : "";
+      const end = endIndex >= 0 ? next[endIndex] : "";
+      const hours = previousWindowMinutesForTimes(start, end, lunch) / 60;
+      if (hours <= 0) return null;
+
+      return {
+        name: employee,
+        date: firstFilled(next),
+        start,
+        lunch,
+        end,
+        hours
+      };
+    }
+
+    function parsePreviousTimesheetHours(workbook) {
+      const eligibleNames = previousTimesheetEligibleNames();
+      let hours = 0;
+      let matchedRows = 0;
+      const records = [];
+
+      workbook.SheetNames.forEach((sheetName) => {
+        const rows = sheetRows(workbook, sheetName).map((row) => row.map((cell) => String(cell || "").trim()));
+        let indexes = null;
+
+        rows.forEach((row, rowIndex) => {
+          if (!row.some(Boolean)) return;
+
+          const dayforceRecord = previousRecordFromDayforceHeader(rows, rowIndex, eligibleNames);
+          if (dayforceRecord) {
+            hours += dayforceRecord.hours;
+            matchedRows += 1;
+            records.push(dayforceRecord);
+            return;
+          }
+
+          if (rowLooksLikePreviousTimeHeader(row)) {
+            indexes = {
+              name: previousColumnIndexFor(row, [/\bemployee\b/, /\bname\b/]),
+              date: previousColumnIndexFor(row, [/\bdate\b/]),
+              start: previousColumnIndexFor(row, [/\bstart\b/]),
+              lunch: previousColumnIndexFor(row, [/\blunch\b/, /\bmeal\b/]),
+              end: previousColumnIndexFor(row, [/\bend\b/])
+            };
+            return;
+          }
+
+          const record = indexes && indexes.start >= 0 && indexes.end >= 0
+            ? previousRecordFromRow(row, indexes, eligibleNames)
+            : fallbackPreviousRecordFromRow(row, eligibleNames);
+
+          if (record) {
+            hours += record.hours;
+            matchedRows += 1;
+            records.push(record);
+          }
+        });
+      });
+
+      return { hours, rows: matchedRows, records };
+    }
+
+    function rowHasDayforceHeader(row) {
+      const joined = row.map((cell) => String(cell).toLowerCase()).join("|");
+      return joined.includes("start shift") && joined.includes("end shift");
+    }
+
+    function headerIndex(row, label) {
+      return row.findIndex((cell) => String(cell || "").trim().toLowerCase() === label);
+    }
+
+    function firstFilledBefore(row, endIndex) {
+      for (let index = 0; index < endIndex; index += 1) {
+        const value = String(row[index] || "").trim();
+        if (value) return value;
+      }
+      return "";
+    }
+
+    function isNameCandidate(value) {
+      const text = cleanDayforceEmployeeName(value);
+      if (!text || text.length < 3) return false;
+      if (/^\d+(\.\d+)?$/.test(text)) return false;
+      if (/^\d{1,2}[/:]\d{1,2}/.test(text)) return false;
+      if (/\b(start|end|meal|shift|paid|hours|exception|business|date|department|location|total|time|regular|overtime|report)\b/i.test(text)) return false;
+      if (!/[a-z]/i.test(text)) return false;
+
+      const words = text.replace(/[,.-]/g, " ").trim().split(/\s+/).filter(Boolean);
+      return text.includes(",") || words.length >= 2;
+    }
+
+    function nameCandidateScore(value, rowDistance, sameHeaderRow) {
+      const text = cleanDayforceEmployeeName(value);
+      let score = sameHeaderRow ? 100 : 75;
+      score -= rowDistance * 12;
+      if (text.includes(",")) score += 18;
+      if (/\b[A-Z][a-z]+[\s,]+[A-Z][a-z]+\b/.test(text)) score += 8;
+      if (/\d{4,}/.test(String(value))) score += 4;
+      return score;
+    }
+
+    function findEmployeeNameCell(rows, headerRowIndex, startIndex) {
+      const candidates = [];
+      const headerRow = rows[headerRowIndex] || [];
+      const sameRowLimit = startIndex >= 0 ? startIndex : headerRow.length;
+
+      for (let colIndex = 0; colIndex < sameRowLimit; colIndex += 1) {
+        const value = String(headerRow[colIndex] || "").trim();
+        if (!isNameCandidate(value)) continue;
+        candidates.push({
+          rowIndex: headerRowIndex,
+          colIndex,
+          value,
+          score: nameCandidateScore(value, 0, true)
+        });
+      }
+
+      for (let rowIndex = headerRowIndex - 1; rowIndex >= Math.max(0, headerRowIndex - 4); rowIndex -= 1) {
+        const row = rows[rowIndex] || [];
+        const limit = Math.max(startIndex + 1, row.length);
+        for (let colIndex = 0; colIndex < limit; colIndex += 1) {
+          const value = String(row[colIndex] || "").trim();
+          if (!isNameCandidate(value)) continue;
+          candidates.push({
+            rowIndex,
+            colIndex,
+            value,
+            score: nameCandidateScore(value, headerRowIndex - rowIndex, false)
+          });
+        }
+      }
+
+      candidates.sort((a, b) => b.score - a.score);
+      return candidates[0] || null;
+    }
+
+    function firstFilled(row) {
+      const value = row.find((cell) => String(cell || "").trim());
+      return String(value || "").trim();
+    }
+
+    function parseDayforceMatrix(rows, extractedNameCells = new Set(), headerCells = new Set()) {
+      const punches = [];
+      for (let index = 0; index < rows.length - 1; index += 1) {
+        const row = rows[index].map((cell) => String(cell || "").trim());
+        if (!rowHasDayforceHeader(row)) continue;
+
+        const next = rows[index + 1].map((cell) => String(cell || "").trim());
+        const startIndex = headerIndex(row, "start shift");
+        const startMealIndex = headerIndex(row, "start meal");
+        const endMealIndex = headerIndex(row, "end meal");
+        const endIndex = headerIndex(row, "end shift");
+        const paidIndex = headerIndex(row, "paid hours");
+        const exceptionIndex = headerIndex(row, "exceptions");
+        [startIndex, startMealIndex, endMealIndex, endIndex, paidIndex, exceptionIndex].forEach((colIndex) => {
+          if (colIndex >= 0) headerCells.add(`${index}:${colIndex}`);
+        });
+        const employeeCell = findEmployeeNameCell(rows, index, startIndex);
+        const fallbackEmployee = firstFilledBefore(row, startIndex);
+        const employeeSource = employeeCell ? employeeCell.value : fallbackEmployee;
+        const employee = displayNameFromDayforce(employeeSource);
+        if (!employee) continue;
+        if (employeeCell) {
+          extractedNameCells.add(`${employeeCell.rowIndex}:${employeeCell.colIndex}`);
+        } else if (fallbackEmployee) {
+          const fallbackIndex = row.findIndex((cell) => String(cell || "").trim() === fallbackEmployee);
+          if (fallbackIndex >= 0) extractedNameCells.add(`${index}:${fallbackIndex}`);
+        }
+
+        punches.push({
+          source: "punch",
+          name: employee,
+          date: firstFilled(next),
+          start: startIndex >= 0 ? next[startIndex] || "" : "",
+          lunch: [startMealIndex >= 0 ? next[startMealIndex] : "", endMealIndex >= 0 ? next[endMealIndex] : ""].filter(Boolean).join(" - "),
+          end: endIndex >= 0 ? next[endIndex] || "" : "",
+          paid: paidIndex >= 0 ? next[paidIndex] || "" : "",
+          exceptions: exceptionIndex >= 0 ? next[exceptionIndex] || "" : ""
+        });
+      }
+      return punches;
+    }
+
+    function combinedHeader(rows, headerRowIndex, colIndex) {
+      return rows
+        .slice(headerRowIndex, Math.min(rows.length, headerRowIndex + 5))
+        .map((row) => String(row[colIndex] || "").trim())
+        .filter(Boolean)
+        .join(" ");
+    }
+
+    function findPayrollHeader(rows) {
+      for (let rowIndex = 0; rowIndex < Math.min(rows.length, 35); rowIndex += 1) {
+        const row = rows[rowIndex] || [];
+        const employeeIndex = row.findIndex((cell) => String(cell || "").trim().toLowerCase() === "employee");
+        if (employeeIndex === -1) continue;
+
+        const maxColumns = Math.max(...rows.slice(rowIndex, rowIndex + 5).map((item) => item.length), row.length);
+        const reasonColumns = [];
+        for (let colIndex = 0; colIndex < maxColumns; colIndex += 1) {
+          if (colIndex === employeeIndex) continue;
+          const header = combinedHeader(rows, rowIndex, colIndex);
+          const reason = absenceReasonFromHeader(header);
+          if (!reason) continue;
+          reasonColumns.push({ colIndex, reason, header });
+        }
+
+        if (reasonColumns.length) {
+          return { rowIndex, employeeIndex, reasonColumns };
+        }
+      }
+
+      return null;
+    }
+
+    function parsePayrollAbsenceRows(rows, extractedNameCells = new Set(), headerCells = new Set()) {
+      const header = findPayrollHeader(rows);
+      if (!header) return [];
+
+      headerCells.add(`${header.rowIndex}:${header.employeeIndex}`);
+      header.reasonColumns.forEach(({ colIndex }) => {
+        for (let rowIndex = header.rowIndex; rowIndex < Math.min(rows.length, header.rowIndex + 5); rowIndex += 1) {
+          if (String(rows[rowIndex]?.[colIndex] || "").trim()) headerCells.add(`${rowIndex}:${colIndex}`);
+        }
+      });
+
+      const reportDate = payrollDateFromRows(rows);
+      const punches = [];
+      for (let rowIndex = header.rowIndex + 1; rowIndex < rows.length; rowIndex += 1) {
+        const row = rows[rowIndex] || [];
+        const rawName = String(row[header.employeeIndex] || "").trim();
+        if (!rawName || /total|percentage|employee/i.test(rawName)) continue;
+
+        const employee = payrollDisplayName(rawName);
+        if (!employee) continue;
+        extractedNameCells.add(`${rowIndex}:${header.employeeIndex}`);
+
+        const reasons = [];
+        let paidHours = 0;
+        let unpaid = false;
+        header.reasonColumns.forEach(({ colIndex, reason }) => {
+          const hours = payrollHours(row[colIndex]);
+          if (hours <= 0) return;
+          reasons.push(reason);
+          if (isUnpaidReason(reason)) {
+            unpaid = true;
+            return;
+          }
+          paidHours += hours;
+        });
+
+        if (!reasons.length) continue;
+
+        const uniqueReasons = Array.from(new Set(reasons));
+        const note = uniqueReasons.join(", ");
+        const start = paidHours > 0 ? shiftStartForEmployee(employee) : "";
+        const end = paidHours > 0 ? endFromStartAndHours(start, paidHours) : "";
+        punches.push({
+          source: "note",
+          name: employee,
+          date: reportDate,
+          start,
+          lunch: paidHours > 0 ? "NO" : "",
+          end,
+          note,
+          absencePaid: paidHours > 0,
+          absenceUnpaid: unpaid && paidHours === 0,
+          absenceHours: paidHours ? String(paidHours) : ""
+        });
+      }
+
+      return punches;
+    }
+
+    function parsePunchWorkbookRows(rows, extractedNameCells = new Set(), headerCells = new Set()) {
+      const dayforcePunches = parseDayforceMatrix(rows, extractedNameCells, headerCells);
+      if (dayforcePunches.length) return dayforcePunches;
+
+      return rows
+        .map((row, rowIndex) => ({ row, rowIndex }))
+        .filter(({ row }) => row.some((cell) => String(cell || "").trim()))
+        .map(({ row, rowIndex }) => {
+          if (String(row[0] || "").trim() && String(row[0] || "").trim().toLowerCase() !== "employee") {
+            extractedNameCells.add(`${rowIndex}:0`);
+          }
+          return {
+            source: "punch",
+            name: String(row[0] || "").trim(),
+            date: String(row[1] || "").trim(),
+            start: String(row[2] || "").trim(),
+            lunch: String(row[3] || "").trim(),
+            end: String(row[4] || "").trim()
+          };
+        })
+        .filter((row) => row.name && row.name.toLowerCase() !== "employee");
+    }
+
+    function columnLabel(index) {
+      let label = "";
+      let value = index + 1;
+      while (value > 0) {
+        const remainder = (value - 1) % 26;
+        label = String.fromCharCode(65 + remainder) + label;
+        value = Math.floor((value - 1) / 26);
+      }
+      return label;
+    }
+
+    function previewNameCandidates(value) {
+      const raw = String(value || "").trim();
+      return Array.from(new Set([
+        raw,
+        displayNameFromDayforce(raw),
+        payrollDisplayName(raw)
+      ].map((name) => name.trim()).filter(Boolean)));
+    }
+
+    function previewMatchSummary(rows, extractedNameCells) {
+      const names = rosterNames();
+      const seen = new Set();
+      let total = 0;
+      let matched = 0;
+
+      extractedNameCells.forEach((key) => {
+        const [rowIndexText, colIndexText] = key.split(":");
+        const value = String(rows[Number(rowIndexText)]?.[Number(colIndexText)] || "").trim();
+        if (!value) return;
+
+        const candidates = previewNameCandidates(value);
+        const normalizedKey = normalizeName(candidates[1] || candidates[0]);
+        if (!normalizedKey || seen.has(normalizedKey)) return;
+        seen.add(normalizedKey);
+        total += 1;
+
+        if (candidates.some((candidate) => matchRosterName(candidate, names).found)) {
+          matched += 1;
+        }
+      });
+
+      return { matched, total };
+    }
+
+    function renderExcelPreview(rows, extractedNameCells, headerCells, sheetName) {
+      const nonEmptyRows = rows.filter((row) => row.some((cell) => String(cell || "").trim()));
+      if (!nonEmptyRows.length) {
+        excelPreviewSection.hidden = true;
+        excelPreviewHead.innerHTML = "";
+        excelPreviewBody.innerHTML = "";
+        return;
+      }
+
+      const maxColumns = Math.max(...rows.map((row) => row.length), 1);
+      const summary = previewMatchSummary(rows, extractedNameCells);
+      excelPreviewToggle.title = `${sheetName} Preview`;
+      excelPreviewToggle.setAttribute("aria-label", `${sheetName} preview. Click to review raw time entry import.`);
+      excelPreviewToggle.setAttribute("aria-expanded", "false");
+      excelPreviewCount.textContent = `${summary.matched} out of ${summary.total} matched to schedule`;
+      excelPreviewHead.innerHTML = `
+        <tr>
+          <th class="row-number">#</th>
+          ${Array.from({ length: maxColumns }, (_, index) => `<th>${columnLabel(index)}</th>`).join("")}
+        </tr>
+      `;
+      excelPreviewBody.innerHTML = rows.map((row, rowIndex) => `
+        <tr>
+          <td class="row-number">${rowIndex + 1}</td>
+          ${Array.from({ length: maxColumns }, (_, colIndex) => {
+            const key = `${rowIndex}:${colIndex}`;
+            const value = String(row[colIndex] || "");
+            const classes = [
+              extractedNameCells.has(key) ? "extracted-name" : "",
+              headerCells.has(key) ? "punch-header" : ""
+            ].filter(Boolean).join(" ");
+            return `<td class="${classes}" title="${escapeHtml(value)}">${escapeHtml(value)}</td>`;
+          }).join("")}
+        </tr>
+      `).join("");
+      excelPreviewSection.classList.add("collapsed");
+      excelPreviewSection.hidden = false;
+    }
+
+    function recordSource(record) {
+      const source = String(record.source || "").trim().toLowerCase();
+      if (source === "punch" || source === "note") return source;
+      return record.absencePaid || record.absenceUnpaid || record.absenceHours || String(record.note || "").trim() ? "note" : "punch";
+    }
+
+    function previewShiftForRecord(punch, names, lookup) {
+      const match = matchRosterName(punch.name, names);
+      const canonical = match.suggestion || punch.name;
+      return lookup.get(normalizeName(canonical))?.shift || "unmatched";
+    }
+
+    function shiftGroupOrder(shift) {
+      const order = ["first", "second", "gate", "mechanics", "managers", "unmatched"];
+      const index = order.indexOf(shift);
+      return index === -1 ? order.length : index;
+    }
+
+    function createShiftGroupRow(shift, count) {
+      const row = document.createElement("tr");
+      row.className = "shift-group-row";
+      row.innerHTML = `<td colspan="6">${escapeHtml(shiftLabels[shift] || shift)}<span class="shift-group-count">${count} ${count === 1 ? "record" : "records"}</span></td>`;
+      return row;
+    }
+
+    function appendImportMessage(message) {
+      const row = document.createElement("tr");
+      row.className = "import-message-row";
+      row.innerHTML = `<td colspan="6">${escapeHtml(message)}</td>`;
+      previewBody.appendChild(row);
+      emptyState.style.display = "none";
+    }
+
+    function createPunchRow(punch, names) {
+      const match = matchRosterName(punch.name, names);
+      const row = document.createElement("tr");
+      row.className = "record-row";
+      row.dataset.source = recordSource(punch);
+      row.dataset.absencePaid = punch.absencePaid ? "1" : "";
+      row.dataset.absenceUnpaid = punch.absenceUnpaid ? "1" : "";
+      row.dataset.absenceHours = punch.absenceHours || "";
+      row.classList.toggle("unmatched", !match.found);
+      if (!match.found && match.hasSuggestion) row.dataset.suggestion = match.suggestion;
+      const suggestion = match.hasSuggestion ? match.suggestion : "No close roster match";
+      const suggestionActions = match.hasSuggestion ? `
+        <span class="suggestion-actions">
+          <button type="button" class="suggestion-yes">YES</button>
+          <button type="button" class="suggestion-no">NO</button>
+        </span>
+      ` : "";
+      row.innerHTML = `
+        <td class="name-cell"><input value="${escapeHtml(punch.name)}" aria-label="Employee name" />${match.found ? "" : `<span class="suggestion"><span>Try: ${escapeHtml(suggestion)}</span>${suggestionActions}</span>`}</td>
+        <td><input value="${escapeHtml(punch.date)}" aria-label="Punch date" /></td>
+        <td><input value="${escapeHtml(punch.start)}" aria-label="Start punch" /></td>
+        <td><input value="${escapeHtml(punch.lunch)}" aria-label="Lunch punch" /></td>
+        <td><input value="${escapeHtml(punch.end)}" aria-label="End punch" /></td>
+        <td><input value="${escapeHtml(punch.note || "")}" aria-label="Note" /></td>
+      `;
+      return { row, matched: match.found };
+    }
+
+    function renderPunches(punches) {
+      previewBody.innerHTML = "";
+      const names = rosterNames();
+      const lookup = rosterLookup();
+      let unmatched = 0;
+
+      const groups = new Map();
+      punches.forEach((punch) => {
+        const shift = previewShiftForRecord(punch, names, lookup);
+        if (!groups.has(shift)) groups.set(shift, []);
+        groups.get(shift).push(punch);
+      });
+
+      Array.from(groups.entries())
+        .sort(([a], [b]) => shiftGroupOrder(a) - shiftGroupOrder(b))
+        .forEach(([shift, records]) => {
+          previewBody.appendChild(createShiftGroupRow(shift, records.length));
+          records.forEach((punch) => {
+            const { row, matched } = createPunchRow(punch, names);
+            if (!matched) unmatched += 1;
+            previewBody.appendChild(row);
+          });
+      });
+      emptyState.style.display = punches.length ? "none" : "block";
+      status.textContent = unmatched ? `${punches.length} records / ${unmatched} unmatched` : `${punches.length} records`;
+      saveUnmatchedImportsFromPreview();
+      renderMissingRosterActions();
+      updatePushNotice();
+    }
+
+    function previewRecordKey(record) {
+      return [
+        normalizeName(record.name),
+        String(record.date || "").trim(),
+        String(record.start || "").trim(),
+        String(record.lunch || "").trim(),
+        String(record.end || "").trim(),
+        String(record.note || "").trim().toLowerCase()
+      ].join("|");
+    }
+
+    function appendPreviewRecords(records) {
+      const merged = readPreview();
+      const seen = new Set(merged.map(previewRecordKey));
+      records.forEach((record) => {
+        const key = previewRecordKey(record);
+        if (seen.has(key)) return;
+        seen.add(key);
+        merged.push(record);
+      });
+      return merged;
+    }
+
+    function refreshStatusFromPreview() {
+      const rows = previewBody.querySelectorAll("tr.record-row");
+      const unmatched = previewBody.querySelectorAll("tr.record-row.unmatched").length;
+      status.textContent = unmatched ? `${rows.length} records / ${unmatched} unmatched` : `${rows.length} records`;
+      renderMissingRosterActions();
+    }
+
+    function saveUnmatchedImportsFromPreview() {
+      const names = Array.from(previewBody.querySelectorAll("tr.unmatched .name-cell input"))
+        .map((input) => input.value.trim())
+        .filter(Boolean);
+      localStorage.setItem(unmatchedStorageKey, JSON.stringify(Array.from(new Set(names))));
+    }
+
+    function uniquePreviewMisses() {
+      const names = rosterNames();
+      const seen = new Set();
+      return readPreview().map((punch) => {
+        const match = matchRosterName(punch.name, names);
+        return { punch, match };
+      }).filter(({ punch, match }) => {
+        const key = normalizeName(punch.name);
+        if (match.found || !key || seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+    }
+
+    function renderMissingRosterActions() {
+      const missing = uniquePreviewMisses();
+      missingRosterPanel.hidden = missing.length === 0;
+      missingRosterCount.textContent = `${missing.length} ${missing.length === 1 ? "name" : "names"}`;
+      missingRosterBody.innerHTML = missing.map(({ punch, match }) => {
+        const suggestion = match.hasSuggestion ? match.suggestion : "";
+        return `
+          <div class="missing-roster-row" data-name="${escapeHtml(punch.name)}">
+            <div>${escapeHtml(punch.name)}</div>
+            <div>${suggestion ? `Suggestion: ${escapeHtml(suggestion)} <button type="button" class="convert-name" data-suggestion="${escapeHtml(suggestion)}">Use</button>` : "No close suggestion"}</div>
+            <select class="target-shift" aria-label="Target shift for ${escapeHtml(punch.name)}">
+              <option value="first">1st Shift</option>
+              <option value="second">Second Shift</option>
+              <option value="gate">Gate</option>
+              <option value="mechanics">Mechanics</option>
+              <option value="managers">Managers</option>
+            </select>
+            <button type="button" class="add-roster-name">Add</button>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function rosterStateHasSavedRows(state) {
+      return ["first", "second", "gate", "mechanics", "managers"].some((key) => Array.isArray(state[key]) && state[key].length);
+    }
+
+    function readRosterAdditions() {
+      try {
+        const additions = JSON.parse(localStorage.getItem(rosterAdditionsKey) || "[]");
+        return Array.isArray(additions) ? additions : [];
+      } catch (error) {
+        localStorage.removeItem(rosterAdditionsKey);
+        return [];
+      }
+    }
+
+    function rosterAlreadyHasName(name) {
+      const normalized = normalizeName(name);
+      return rosterNames().some((candidate) => normalizeName(candidate) === normalized);
+    }
+
+    function addNameToRoster(name, shift) {
+      const cleanName = String(name || "").trim();
+      const targetShift = shiftLabels[shift] ? shift : "first";
+      if (!cleanName) return false;
+      if (rosterAlreadyHasName(cleanName)) return true;
+
+      const employee = {
+        name: cleanName,
+        role: "",
+        days: ["W", "W", "W", "W", "W", "W", "W"],
+        shift: targetShift
+      };
+
+      try {
+        const state = JSON.parse(localStorage.getItem(rosterStorageKey) || "{}");
+        if (rosterStateHasSavedRows(state)) {
+          if (!Array.isArray(state[targetShift])) state[targetShift] = [];
+          state[targetShift].push({ name: employee.name, role: employee.role, days: employee.days });
+          localStorage.setItem(rosterStorageKey, JSON.stringify(state));
+          return true;
+        }
+      } catch (error) {
+        localStorage.removeItem(rosterStorageKey);
+      }
+
+      const additions = readRosterAdditions();
+      additions.push(employee);
+      localStorage.setItem(rosterAdditionsKey, JSON.stringify(additions));
+      return true;
+    }
+
+    function renamePreviewEmployee(oldName, newName) {
+      const oldKey = normalizeName(oldName);
+      previewBody.querySelectorAll("tr").forEach((row) => {
+        const nameInput = row.querySelector(".name-cell input");
+        if (nameInput && normalizeName(nameInput.value) === oldKey) {
+          nameInput.value = newName;
+        }
+      });
+      renderPunches(readPreview());
+    }
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, (char) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+      }[char]));
+    }
+
+    function readPreview() {
+      return Array.from(previewBody.querySelectorAll("tr.record-row")).map((row) => {
+        const inputs = row.querySelectorAll("input");
+        return {
+          source: row.dataset.source || "",
+          name: inputs[0].value.trim(),
+          date: inputs[1].value.trim(),
+          start: inputs[2].value.trim(),
+          lunch: inputs[3].value.trim(),
+          end: inputs[4].value.trim(),
+          note: inputs[5] ? inputs[5].value.trim() : "",
+          absencePaid: row.dataset.absencePaid === "1",
+          absenceUnpaid: row.dataset.absenceUnpaid === "1",
+          absenceHours: row.dataset.absenceHours || ""
+        };
+      }).filter((row) => row.name);
+    }
+
+    function rosterValidatedPunches(records = readPreview()) {
+      const names = rosterNames();
+      const skipped = [];
+      const accepted = records.map((punch) => {
+        const match = matchRosterName(punch.name, names);
+        if (!match.found) {
+          skipped.push(punch.name);
+          return null;
+        }
+
+        const acceptedPunch = {
+          ...punch,
+          name: match.suggestion || punch.name
+        };
+
+        if (acceptedPunch.note && acceptedPunch.absencePaid && acceptedPunch.absenceHours) {
+          acceptedPunch.start = shiftStartForEmployee(acceptedPunch.name);
+          acceptedPunch.lunch = "NO";
+          acceptedPunch.end = endFromStartAndHours(acceptedPunch.start, Number(acceptedPunch.absenceHours));
+        }
+
+        return acceptedPunch;
+      }).filter(Boolean);
+
+      return { accepted, skipped };
+    }
+
+
+    previewBody.addEventListener("click", (event) => {
+      const yesButton = event.target.closest(".suggestion-yes");
+      const noButton = event.target.closest(".suggestion-no");
+      if (!yesButton && !noButton) return;
+
+      const row = event.target.closest("tr");
+      if (!row) return;
+
+      if (yesButton) {
+        const suggestedName = row.dataset.suggestion || "";
+        const nameInput = row.querySelector(".name-cell input");
+        if (suggestedName && nameInput) {
+          nameInput.value = suggestedName;
+          row.classList.remove("unmatched");
+          row.removeAttribute("data-suggestion");
+        }
+      }
+
+      row.querySelector(".suggestion")?.remove();
+      refreshStatusFromPreview();
+      saveUnmatchedImportsFromPreview();
+      setPendingPush(true);
+    });
+
+    previewBody.addEventListener("input", (event) => {
+      if (!event.target.matches("input")) return;
+      refreshStatusFromPreview();
+      saveUnmatchedImportsFromPreview();
+      setPendingPush(true);
+    });
+
+    missingRosterBody.addEventListener("click", (event) => {
+      const convertButton = event.target.closest(".convert-name");
+      const addButton = event.target.closest(".add-roster-name");
+      if (!convertButton && !addButton) return;
+
+      const row = event.target.closest(".missing-roster-row");
+      if (!row) return;
+
+      const importedName = row.dataset.name || "";
+      if (convertButton) {
+        const suggestion = convertButton.dataset.suggestion || "";
+        if (suggestion) {
+          renamePreviewEmployee(importedName, suggestion);
+          status.textContent = `Converted ${importedName} to ${suggestion}`;
+          setPendingPush(true);
+        }
+        return;
+      }
+
+      if (addButton) {
+        const shift = row.querySelector(".target-shift")?.value || "first";
+        if (addNameToRoster(importedName, shift)) {
+          renderPunches(readPreview());
+          status.textContent = `Added ${importedName} to ${shiftLabels[shift]}`;
+          setPendingPush(true);
+        }
+      }
+    });
+
+    excelPreviewToggle.addEventListener("click", () => {
+      const isCollapsed = excelPreviewSection.classList.toggle("collapsed");
+      excelPreviewToggle.setAttribute("aria-expanded", String(!isCollapsed));
+    });
+
+    function sheetRows(workbook, sheetName) {
+      const sheet = workbook.Sheets[sheetName];
+      return XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false, defval: "" });
+    }
+
+    function preferredPunchSheetNames(workbook) {
+      const sheet2 = workbook.SheetNames.filter((sheetName) => sheetName.trim().toLowerCase() === "sheet2");
+      return sheet2.length ? sheet2 : workbook.SheetNames;
+    }
+
+    function fileNameStartsWith(file, prefix) {
+      return String(file?.name || "").trim().toLowerCase().startsWith(prefix);
+    }
+
+    function rejectImportFile(input, message) {
+      input.value = "";
+      status.textContent = message;
+    }
+
+    document.getElementById("previousTimesheetInput").addEventListener("change", async (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      if (!window.XLSX) {
+        previousTimesheetStatus.textContent = "XLSX ERROR";
+        status.textContent = "XLSX parser unavailable";
+        return;
+      }
+
+      try {
+        const workbook = XLSX.read(await file.arrayBuffer(), { type: "array" });
+        const result = parsePreviousTimesheetHours(workbook);
+        localStorage.setItem(previousTimesheetStorageKey, JSON.stringify({
+          hours: result.hours,
+          rows: result.rows,
+          records: result.records,
+          fileName: file.name,
+          importedAt: new Date().toISOString()
+        }));
+        updatePreviousTimesheetStatus();
+        status.textContent = `Previous timesheet imported: ${result.hours.toFixed(1)} hrs`;
+      } catch (error) {
+        previousTimesheetStatus.textContent = "IMPORT ERROR";
+        status.textContent = "Previous timesheet import failed";
+      } finally {
+        event.target.value = "";
+      }
+    });
+
+    document.getElementById("fileInput").addEventListener("change", async (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      if (!fileNameStartsWith(file, "report")) {
+        rejectImportFile(event.target, "Punch import must start with Report");
+        return;
+      }
+
+      if (!window.XLSX) {
+        status.textContent = "XLSX parser unavailable";
+        return;
+      }
+
+      const buffer = await file.arrayBuffer();
+      const workbook = XLSX.read(buffer, { type: "array" });
+      const targetSheets = preferredPunchSheetNames(workbook);
+      const punches = [];
+      let previewRendered = false;
+
+      targetSheets.forEach((sheetName) => {
+        const rows = sheetRows(workbook, sheetName);
+        const extractedNameCells = new Set();
+        const headerCells = new Set();
+        punches.push(...parsePunchWorkbookRows(rows, extractedNameCells, headerCells));
+
+        if (!previewRendered) {
+          renderExcelPreview(rows, extractedNameCells, headerCells, sheetName);
+          previewRendered = true;
+        }
+      });
+      renderPunches(punches);
+      setPendingPush(punches.length > 0);
+    });
+
+    document.getElementById("noteFileInput").addEventListener("change", async (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      if (!fileNameStartsWith(file, "payroll")) {
+        rejectImportFile(event.target, "Note scan import must start with Payroll");
+        return;
+      }
+
+      if (!window.XLSX) {
+        status.textContent = "XLSX parser unavailable";
+        return;
+      }
+
+      const buffer = await file.arrayBuffer();
+      const workbook = XLSX.read(buffer, { type: "array" });
+      const records = [];
+      let fallbackPreview = null;
+      let previewRendered = false;
+
+      workbook.SheetNames.forEach((sheetName) => {
+        const rows = sheetRows(workbook, sheetName);
+        const extractedNameCells = new Set();
+        const headerCells = new Set();
+        const parsed = parsePayrollAbsenceRows(rows, extractedNameCells, headerCells);
+        records.push(...parsed);
+
+        if (!fallbackPreview) {
+          fallbackPreview = { rows, extractedNameCells, headerCells, sheetName };
+        }
+
+        if (!previewRendered && (parsed.length || extractedNameCells.size || headerCells.size)) {
+          renderExcelPreview(rows, extractedNameCells, headerCells, sheetName);
+          previewRendered = true;
+        }
+      });
+
+      if (!previewRendered && fallbackPreview) {
+        renderExcelPreview(fallbackPreview.rows, fallbackPreview.extractedNameCells, fallbackPreview.headerCells, fallbackPreview.sheetName);
+      }
+
+      const merged = appendPreviewRecords(records);
+      renderPunches(merged);
+      setPendingPush(records.length > 0);
+      if (!records.length) {
+        appendImportMessage("No records found from import scan");
+        status.textContent = merged.length ? `${merged.length} records / no records found from import scan` : "No records found from import scan";
+      }
+    });
+
+    document.getElementById("saveButton").addEventListener("click", () => {
+      const previewPunches = readPreview();
+      const { accepted, skipped } = rosterValidatedPunches();
+      localStorage.setItem(storageKey, JSON.stringify(accepted));
+      localStorage.setItem(unmatchedStorageKey, JSON.stringify(Array.from(new Set(skipped))));
+      renderPunches(previewPunches);
+      setPendingPush(false);
+      status.textContent = skipped.length ? `Saved ${accepted.length} / skipped ${skipped.length} not on roster` : `Saved ${accepted.length}`;
+    });
+
+    function clearRecordsBySource(source, label) {
+      const remaining = readPreview().filter((record) => recordSource(record) !== source);
+      const { accepted, skipped } = rosterValidatedPunches(remaining);
+      localStorage.setItem(storageKey, JSON.stringify(accepted));
+      localStorage.setItem(unmatchedStorageKey, JSON.stringify(Array.from(new Set(skipped))));
+      renderPunches(remaining);
+      setPendingPush(false);
+      if (!remaining.length) {
+        excelPreviewSection.hidden = true;
+        excelPreviewHead.innerHTML = "";
+        excelPreviewBody.innerHTML = "";
+      }
+      status.textContent = skipped.length
+        ? `${label} cleared / ${remaining.length} records remain / ${skipped.length} unmatched`
+        : `${label} cleared / ${remaining.length} records remain`;
+    }
+
+    function setClearMenuOpen(open) {
+      clearSplit.classList.toggle("open", open);
+      clearMenuButton.setAttribute("aria-expanded", String(open));
+    }
+
+    function clearPreviousTimesheet() {
+      localStorage.removeItem(previousTimesheetStorageKey);
+      updatePreviousTimesheetStatus();
+      status.textContent = "Previous time cleared";
+    }
+
+    function runClearAction(action) {
+      if (action === "punch") {
+        clearRecordsBySource("punch", "Punches");
+      } else if (action === "note") {
+        clearRecordsBySource("note", "Note scan");
+      } else if (action === "previous") {
+        clearPreviousTimesheet();
+      }
+    }
+
+    [clearDefaultButton, clearMenuButton].forEach((button) => {
+      button.addEventListener("click", (event) => {
+        event.stopPropagation();
+        setClearMenuOpen(!clearSplit.classList.contains("open"));
+      });
+    });
+
+    clearMenu.addEventListener("click", (event) => {
+      const actionButton = event.target.closest("[data-clear-action]");
+      if (!actionButton) return;
+      setClearMenuOpen(false);
+      runClearAction(actionButton.dataset.clearAction);
+    });
+
+    document.addEventListener("click", (event) => {
+      if (!clearSplit.contains(event.target)) setClearMenuOpen(false);
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") setClearMenuOpen(false);
+    });
+
+    try {
+      const saved = JSON.parse(localStorage.getItem(storageKey) || "[]");
+      renderPunches(Array.isArray(saved) ? saved : []);
+    } catch (error) {
+      localStorage.removeItem(storageKey);
+    }
+    updatePreviousTimesheetStatus();
+  </script>
+</body>
+</html>
+

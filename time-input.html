@@ -1,0 +1,1910 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Conglobal Time Input</title>
+  <style>
+    :root {
+      --black: #000;
+      --gray: #d9d9d9;
+      --green: #e2f0d9;
+      --yellow: #ffff00;
+      --pink: #ffc7ce;
+      --blue: #9dc3e6;
+      --logo: #004a64;
+      --muted: #9b9b9b;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: #fff;
+      color: #000;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 16px;
+      overflow-x: hidden;
+    }
+
+    .page-switcher {
+      width: 100%;
+      display: flex;
+      gap: 4px;
+      align-items: center;
+      padding: 6px 8px;
+      background: #111;
+      border-bottom: 2px solid #000;
+    }
+
+    .page-switcher a {
+      min-width: 118px;
+      height: 28px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid #777;
+      background: #e7e6e6;
+      color: #000;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .page-switcher a.active {
+      background: #ffff00;
+      border-color: #ffff00;
+    }
+
+    .sheet {
+      width: 100%;
+      max-width: 1180px;
+      margin: 0 auto;
+      overflow-x: hidden;
+      padding-bottom: 0;
+    }
+
+    .metrics {
+      width: 100%;
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      margin-bottom: 12px;
+      font-size: clamp(13px, 1.9vw, 19px);
+      font-weight: 900;
+      text-align: center;
+    }
+
+    .metric {
+      min-height: 60px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1px;
+      padding: 7px 2px 6px;
+      border-right: 2px solid #fff;
+      line-height: 1.12;
+    }
+
+    .metric > span {
+      width: 100%;
+      min-height: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .metric.yellow {
+      background: var(--yellow);
+    }
+
+    .metric.pink {
+      background: var(--pink);
+    }
+
+    .metric.blue {
+      background: var(--blue);
+    }
+
+    .metric input,
+    .metric select {
+      width: 100%;
+      min-height: 25px;
+      height: 25px;
+      padding: 0;
+      border: 0;
+      outline: 0;
+      background: transparent;
+      font: inherit;
+      font-weight: 900;
+      line-height: normal;
+      text-align: center;
+    }
+
+    .metric input:focus,
+    .metric select:focus {
+      background: #fff2cc;
+      box-shadow: inset 0 0 0 2px #ffc000;
+    }
+
+    .metric .custom-shift-end {
+      display: none;
+      border-top: 1px solid rgba(0, 0, 0, .25);
+    }
+
+    .metric .custom-shift-end.open {
+      display: block;
+    }
+
+    .metric.clickable {
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .metric.clickable:hover,
+    .metric.clickable:focus {
+      outline: 2px solid #ffc000;
+      outline-offset: -2px;
+    }
+
+    .time-table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      font-size: clamp(11px, 1.45vw, 14px);
+    }
+
+    .time-table col.employee { width: 18%; }
+    .time-table col.off { width: 12%; }
+    .time-table col.note { width: 14%; }
+    .time-table col.time { width: 15.33%; }
+    .time-table col.actual { width: 10%; }
+
+    .time-table th,
+    .time-table td {
+      height: 22px;
+      padding: 0 3px;
+      border-bottom: 1px solid #000;
+      line-height: 21px;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+
+    .time-table th {
+      background: var(--gray);
+      border-top: 2px solid #000;
+      border-bottom: 2px solid #000;
+      font-weight: 900;
+      text-align: center;
+    }
+
+    .time-table th.section-name {
+      text-align: left;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .time-table th:last-child {
+      padding: 0 1px;
+      font-size: clamp(10px, 1.25vw, 13px);
+    }
+
+    .time-table th:nth-child(4) {
+      padding: 0 1px;
+      font-size: clamp(9px, 1.08vw, 12px);
+    }
+
+    .name {
+      background: #fff;
+    }
+
+    .time-table td.name,
+    .time-table td:nth-child(2) {
+      font-weight: 600;
+    }
+
+    .name.scheduled {
+      background: var(--green);
+    }
+
+    .name.off-day-clock {
+      background: var(--green);
+      color: #000;
+    }
+
+    tr.off-employee-row td,
+    tr.off-employee-row input {
+      color: rgba(119, 119, 119, .3);
+    }
+
+    .name.missing-worker {
+      background: #fff2cc;
+      color: #7a4b00;
+      opacity: 1;
+    }
+
+    tr.unpaid-absence-row .name {
+      background: #fce4e4;
+      color: #8a1f1f;
+      opacity: 1;
+    }
+
+    .center {
+      text-align: center;
+    }
+
+    .note-flag {
+      background: #e7c7e8;
+      color: #4f1b58;
+      text-align: center;
+      font-size: clamp(10px, 1.15vw, 12px);
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+
+    .note-pill-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      min-height: 21px;
+      white-space: normal;
+    }
+
+    .note-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      max-width: 100%;
+      min-height: 17px;
+      padding: 1px 7px;
+      border-radius: 999px;
+      background: #e7c7e8;
+      color: #4f1b58;
+      font-size: clamp(11px, 1vw, 13px);
+      font-weight: 900;
+      line-height: 1.1;
+      white-space: normal;
+    }
+
+    .note-pill.unpaid {
+      background: #e7c7e8;
+      color: #4f1b58;
+    }
+
+    .note-pill.invalid {
+      background: #f4cccc;
+      color: #7f1d1d;
+    }
+
+    .note-cell-editable {
+      padding: 0;
+    }
+
+    .note-input {
+      width: 100%;
+      min-height: 21px;
+      padding: 0 5px;
+      border: 0;
+      outline: 0;
+      background: transparent;
+      color: #111827;
+      font: inherit;
+      font-weight: 800;
+      line-height: 20px;
+      text-align: center;
+    }
+
+    .note-input.auto,
+    .note-input.paid,
+    .note-input.unpaid {
+      border-radius: 999px;
+      background: #e7c7e8;
+      color: #4f1b58;
+    }
+
+    .note-input.invalid {
+      border-radius: 999px;
+      background: #f4cccc;
+      color: #7f1d1d;
+    }
+
+    .note-input.has-note {
+      background: #fff2cc;
+      color: #7a4b00;
+      box-shadow: none;
+    }
+
+    .note-input:focus {
+      background: #fff2cc;
+      box-shadow: none;
+    }
+
+    .time-cell {
+      background: #fff;
+    }
+
+    .time-cell input {
+      width: 100%;
+      height: 21px;
+      padding: 0 4px;
+      border: 0;
+      outline: 0;
+      background: transparent;
+      font: inherit;
+      text-align: center;
+    }
+
+    .time-table td:nth-child(4) input,
+    .time-table td:nth-child(5) input,
+    .time-table td:nth-child(6) input {
+      font-weight: 900;
+    }
+
+    .time-cell input:focus {
+      background: #fff2cc;
+      box-shadow: inset 0 0 0 2px #ffc000;
+    }
+
+    .time-cell input.temp-clock-out::placeholder {
+      color: rgba(0, 0, 0, .15);
+      opacity: 1;
+    }
+
+    .time-cell input.imported {
+      background: transparent;
+      color: #006100;
+      box-shadow: none;
+    }
+
+    .time-cell input.imported:focus {
+      background: #fff2cc;
+      box-shadow: inset 0 0 0 2px #ffc000;
+    }
+
+    .time-cell input.missing-lunch {
+      background: #fff2cc;
+      box-shadow: none;
+      font-weight: 900;
+    }
+
+    .time-cell input.missing-start {
+      background: #fff2cc;
+      box-shadow: inset 0 0 0 1px #f6c85f;
+      color: #7a4b00;
+      font-weight: 900;
+    }
+
+    .time-cell input.missing-start::placeholder {
+      color: #7a4b00;
+      opacity: 1;
+    }
+
+    .time-cell input.invalid-time {
+      background: #fce4e4;
+      color: #8a1f1f;
+      box-shadow: inset 0 0 0 1px #f4a6a6;
+      font-weight: 900;
+    }
+
+    .time-cell.start-status.scheduled input {
+      background: transparent;
+      color: #006100;
+      box-shadow: none;
+    }
+
+    .time-cell.start-status.off-day-clock input {
+      background: transparent;
+      color: #006100;
+      box-shadow: none;
+    }
+
+    .time-cell.start-status.missing-worker input {
+      background: #fff2cc;
+      color: #7a4b00;
+      box-shadow: none;
+    }
+
+    .time-cell.start-status.missing-worker input::placeholder {
+      color: #7a4b00;
+      opacity: 1;
+    }
+
+    tr.off-employee-row .time-cell.start-status input {
+      background: transparent;
+      box-shadow: none;
+    }
+
+    tr.unpaid-absence-row .time-cell input,
+    tr.unpaid-absence-row .time-cell.start-status.scheduled input,
+    tr.unpaid-absence-row .time-cell.start-status.off-day-clock input,
+    tr.unpaid-absence-row .time-cell.start-status.missing-worker input {
+      background: #fff;
+      color: #000;
+      box-shadow: none;
+    }
+
+    .time-cell.start-status.scheduled input.invalid-time,
+    .time-cell.start-status.off-day-clock input.invalid-time,
+    tr.off-employee-row .time-cell.start-status input.invalid-time {
+      background: #fce4e4;
+      color: #8a1f1f;
+      box-shadow: inset 0 0 0 1px #f4a6a6;
+      font-weight: 900;
+    }
+
+    tr.purple-absence-row td,
+    tr.purple-absence-row .name,
+    tr.purple-absence-row .note-input,
+    tr.purple-absence-row .note-input.has-note,
+    tr.purple-absence-row .note-input:focus,
+    tr.purple-absence-row .time-cell input,
+    tr.purple-absence-row .time-cell.start-status.scheduled input,
+    tr.purple-absence-row .time-cell.start-status.off-day-clock input,
+    tr.purple-absence-row .time-cell.start-status.missing-worker input,
+    tr.purple-absence-row.off-employee-row .time-cell input {
+      background: #e7c7e8;
+      color: #000;
+      box-shadow: none;
+      opacity: 1;
+    }
+
+    tr.purple-absence-row .time-cell input.invalid-time {
+      background: #fce4e4;
+      color: #8a1f1f;
+      box-shadow: inset 0 0 0 1px #f4a6a6;
+      font-weight: 900;
+    }
+
+    .actual-cell {
+      text-align: center;
+      font-weight: 900;
+    }
+
+    .off-days-button {
+      width: 100%;
+      height: 100%;
+      border: 0;
+      background: transparent;
+      color: inherit;
+      font: inherit;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .off-days-button:hover,
+    .off-days-button:focus {
+      background: #fff2cc;
+      color: #000;
+      outline: 2px solid #ffc000;
+      outline-offset: -2px;
+    }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 30;
+      display: none;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 54px 14px 20px;
+      background: rgba(0, 0, 0, .35);
+    }
+
+    .modal-backdrop.open {
+      display: flex;
+    }
+
+    .off-modal {
+      width: min(720px, 100%);
+      max-height: calc(100vh - 80px);
+      overflow: auto;
+      background: #fff;
+      border: 3px solid #000;
+      box-shadow: 0 12px 34px rgba(0, 0, 0, .25);
+    }
+
+    .off-modal header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 8px 10px;
+      background: #000;
+      color: #fff;
+      font-weight: 900;
+    }
+
+    .off-modal header button {
+      min-width: 30px;
+      height: 26px;
+      border: 1px solid #fff;
+      background: #e7e6e6;
+      color: #000;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .off-modal-content {
+      display: grid;
+      gap: 8px;
+      padding: 8px;
+      background: #000;
+    }
+
+    .lpmh-modal {
+      width: min(520px, 100%);
+      max-height: calc(100vh - 80px);
+      overflow: auto;
+      background: #fff;
+      border: 3px solid #000;
+      box-shadow: 0 12px 34px rgba(0, 0, 0, .25);
+    }
+
+    .lpmh-modal header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 8px 10px;
+      background: #000;
+      color: #fff;
+      font-weight: 900;
+    }
+
+    .lpmh-modal header button {
+      min-width: 30px;
+      height: 26px;
+      border: 1px solid #fff;
+      background: #e7e6e6;
+      color: #000;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .lpmh-details {
+      display: grid;
+      gap: 1px;
+      padding: 8px;
+      background: #000;
+    }
+
+    .lpmh-row {
+      min-height: 32px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(120px, auto);
+      align-items: center;
+      gap: 10px;
+      padding: 0 10px;
+      background: #fff;
+      font-weight: 900;
+    }
+
+    .lpmh-row span:last-child {
+      text-align: right;
+    }
+
+    .lpmh-formula {
+      min-height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px 10px;
+      background: #ffc7ce;
+      color: #000;
+      font-size: 17px;
+      font-weight: 900;
+      text-align: center;
+    }
+
+    .off-day-panel {
+      background: #000;
+      border: 1px solid #000;
+    }
+
+    .off-day-panel h2 {
+      margin: 0;
+      padding: 6px 8px;
+      background: #000;
+      color: #fff;
+      font-size: 16px;
+    }
+
+    .off-day-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1px;
+      background: #000;
+    }
+
+    .off-shift-list {
+      min-height: 120px;
+      background: #fff;
+    }
+
+    .off-shift-list h3 {
+      margin: 0;
+      padding: 6px 8px;
+      background: #d9e8f7;
+      border-bottom: 1px solid #000;
+      font-size: 14px;
+    }
+
+    .off-shift-list ul {
+      margin: 0;
+      padding: 6px 8px 8px 22px;
+      font-weight: 700;
+    }
+
+    .off-shift-list li {
+      margin: 2px 0;
+    }
+
+    @media (max-width: 760px) {
+      .off-modal-content {
+        grid-template-columns: 1fr;
+      }
+
+      .off-day-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .spacer-row td {
+      height: 22px;
+      border-bottom: 2px solid #000;
+    }
+
+    .section-divider td {
+      height: 22px;
+      border-bottom: 0;
+    }
+
+    @media (max-width: 760px) {
+      .page-switcher {
+        padding: 5px;
+      }
+
+      .page-switcher a {
+        min-width: 96px;
+        font-size: 12px;
+      }
+
+      .metrics {
+        font-size: 11px;
+      }
+
+      .time-table th,
+      .time-table td {
+        padding: 0 2px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="sheet">
+    <datalist id="timesheetNoteOptions">
+      <option value="-"></option>
+      <option value="C/O"></option>
+      <option value="SICK"></option>
+      <option value="NO CALL NO SHOW"></option>
+      <option value="VACATION"></option>
+      <option value="LATE"></option>
+      <option value="SENT HOME"></option>
+      <option value="CAME IN OFF DAY"></option>
+      <option value="OPS COVERING"></option>
+      <option value="FLOATING HOLIDAY"></option>
+      <option value="LEFT EARLY APPROVED"></option>
+      <option value="LEFT EARLY?"></option>
+      <option value="OTHER"></option>
+      <option value="UNKNOWN??"></option>
+    </datalist>
+    <section class="metrics" aria-label="Daily performance goals">
+      <div class="metric yellow"><span>LIFTS</span><input id="updateLifts" type="number" min="0" value="339" aria-label="Update lifts count" /></div>
+      <div class="metric yellow"><span>FLIPS</span><input id="updateFlips" type="number" min="0" value="5" aria-label="Update flips count" /></div>
+      <div class="metric yellow">
+        <span>SHIFT END</span>
+        <select id="shiftEndSelect" aria-label="Shift end preset">
+          <option value="1500">1500</option>
+          <option value="2400">2400</option>
+          <option value="other">Other</option>
+        </select>
+        <input class="custom-shift-end" id="shiftEndOther" inputmode="numeric" maxlength="4" placeholder="0000-2400" aria-label="Custom shift end time" />
+      </div>
+      <div class="metric pink clickable" id="currentLpmhToggle" role="button" tabindex="0" aria-haspopup="dialog" aria-controls="lpmhModal"><span>CURRENT LPMH</span><span id="currentLpmh">0.0</span></div>
+      <div class="metric blue"><span>LPH NEEDED</span><span id="lphNeeded">0.0</span></div>
+      <div class="metric blue"><span>LIFTS NEEDED</span><span id="liftsNeeded">0</span></div>
+      <div class="metric blue"><span>LIFTS REMAIN</span><span id="liftsRemain">0</span></div>
+    </section>
+
+    <table class="time-table" aria-label="Manual or imported time input">
+      <colgroup>
+        <col class="employee" />
+        <col class="off" />
+        <col class="note" />
+        <col class="time" />
+        <col class="time" />
+        <col class="time" />
+        <col class="actual" />
+      </colgroup>
+      <tbody>
+        <tr>
+          <th class="section-name">1st SHIFT</th>
+          <th><button type="button" class="off-days-button">Off Days</button></th>
+          <th>NOTE</th>
+          <th>START</th>
+          <th>Lunch</th>
+          <th>End</th>
+          <th>Actual 0.0</th>
+        </tr>
+        <tr><td class="name">Branford Alton</td><td class="center">Mon, Tues</td><td class="center">-</td><td class="time-cell"><input aria-label="Branford Alton start" /></td><td class="time-cell"><input aria-label="Branford Alton lunch" /></td><td class="time-cell"><input aria-label="Branford Alton end" /></td><td></td></tr>
+        <tr><td class="name">Castruita Armando</td><td class="center">Wed, Thurs</td><td class="center">-</td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">Frazer Dacoyea</td><td class="center">Mon, Tues</td><td class="center">-</td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">Citizen Dante</td><td class="center">Thurs, Fri</td><td class="center">-</td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">Towler Demetrius</td><td class="center">Thurs, Fri</td><td class="center">-</td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">Stewart Dexter</td><td class="center">Sat, Sun</td><td class="center">-</td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">Gardner Dorrean</td><td class="center">Tues, Wed</td><td class="center">-</td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">Thomas Henry</td><td class="center">Sat, Sun</td><td class="center">-</td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">Brown James</td><td class="center">Thurs, Fri</td><td class="center">-</td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">Herrera Jose</td><td class="center">Sat, Sun</td><td class="center">-</td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">Player Keyston</td><td class="center">Mon, Sun</td><td class="center">-</td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">Hickman Makia</td><td class="center">Mon, Sun</td><td class="center">-</td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">Dever Mikey</td><td class="center">Tues, Wed</td><td class="center">-</td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">Wanza Myles</td><td class="center">Mon, Tues</td><td class="center">-</td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">Romero Nelson</td><td class="center">Tues, Wed</td><td class="center">-</td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">McDaniel Charles</td><td class="center">Fri, Sat</td><td class="center">-</td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">Nava Ramon</td><td class="center">Sat, Sun</td><td class="center">-</td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">Tran Tyler</td><td class="center">Thurs, Fri</td><td class="center">-</td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr class="spacer-row"><td></td><td></td><td class="center">-</td><td></td><td></td><td></td><td></td></tr>
+
+        <tr>
+          <th class="section-name">2ND SHIFT</th>
+          <th><button type="button" class="off-days-button">Off Days</button></th>
+          <th>NOTE</th>
+          <th>START</th>
+          <th>Lunch</th>
+          <th>End</th>
+          <th>Actual 0.0</th>
+        </tr>
+        <tr><td class="name">Carruthers Timothy</td><td class="center">Mon, Sun</td><td class="center">-</td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">Caceres Virula Victor</td><td class="center">Mon, Tues</td><td class="center">-</td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">Keme Aweri Jr.</td><td class="center">Mon, Tues</td><td class="center">-</td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">Hosey Kevin</td><td class="center">Mon, Tues</td><td class="center">-</td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">Brown Brandy</td><td class="center">Wed, Thurs</td><td class="center">-</td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">Mejia Aaron</td><td class="center">Thurs, Fri</td><td class="center">-</td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">Bookman Derrell</td><td class="center">Thurs, Fri</td><td class="center">-</td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">Hopkins Alexander</td><td class="center">Mon, Sun</td><td class="center">-</td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">Tingle Jason</td><td class="center">Sat, Sun</td><td class="center">-</td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">Contreras Marco</td><td class="center">Sat, Sun</td><td class="center">-</td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">Benavides Robert</td><td class="center">Wed, Sun</td><td class="center">-</td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">Urtado Ernest</td><td class="center">Tues, Wed</td><td class="center">-</td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">Johnson Messiah</td><td class="center">Tues, Thurs</td><td class="center">-</td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">Gilder Rufus II</td><td class="center">Tues, Wed</td><td class="center">-</td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">Echendu Chimenierm</td><td class="center">Wed, Thurs</td><td class="center">-</td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">Delgado Jose</td><td class="center">Fri, Sat</td><td class="center">-</td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr class="spacer-row"><td></td><td></td><td class="center">-</td><td></td><td></td><td></td><td></td></tr>
+
+        <tr>
+          <th class="section-name">GATE</th>
+          <th><button type="button" class="off-days-button">Off Days</button></th>
+          <th>OUT</th>
+          <th>START</th>
+          <th>Lunch</th>
+          <th>End</th>
+          <th>Actual 0.0</th>
+        </tr>
+        <tr><td class="name">Candace Warren</td><td class="center">Sat, Sun</td><td></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">Connie Johnson</td><td class="center">Sat, Sun</td><td></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">Jarade Douglas</td><td class="center">Sat, Sun</td><td></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">Gregory Watson II</td><td class="center">Sat, Sun</td><td></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">Bryce Alexander</td><td class="center">Thurs, Fri</td><td></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">Naomisha Hunt</td><td class="center">Thurs, Fri, Sat</td><td></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">Ramacacondra Pratt</td><td class="center">Thurs, Fri</td><td></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">Kane Cabral</td><td class="center">Mon, Tues</td><td></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+        <tr><td class="name">Tavares Gariet</td><td class="center">Mon, Tues</td><td></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td></tr>
+      </tbody>
+    </table>
+  </main>
+  <div class="modal-backdrop" id="tomorrowOffModal" aria-hidden="true">
+    <section class="off-modal" role="dialog" aria-modal="true" aria-labelledby="tomorrowOffTitle">
+      <header>
+        <div id="tomorrowOffTitle">Off Tomorrow</div>
+        <button type="button" id="closeTomorrowOff">X</button>
+      </header>
+      <div class="off-modal-content" id="tomorrowOffContent"></div>
+    </section>
+  </div>
+  <div class="modal-backdrop" id="lpmhModal" aria-hidden="true">
+    <section class="lpmh-modal" role="dialog" aria-modal="true" aria-labelledby="lpmhModalTitle">
+      <header>
+        <div id="lpmhModalTitle">CURRENT LPMH</div>
+        <button type="button" id="closeLpmhModal">X</button>
+      </header>
+      <div class="lpmh-details" id="lpmhDetails"></div>
+    </section>
+  </div>
+  <script>
+    const dayAliases = {
+      sun: "sun",
+      sunday: "sun",
+      mon: "mon",
+      monday: "mon",
+      tue: "tue",
+      tues: "tue",
+      tuesday: "tue",
+      wed: "wed",
+      weds: "wed",
+      wednesday: "wed",
+      thu: "thu",
+      thur: "thu",
+      thurs: "thu",
+      thursday: "thu",
+      fri: "fri",
+      friday: "fri",
+      sat: "sat",
+      saturday: "sat"
+    };
+
+    const todayKey = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"][new Date().getDay()];
+    const rosterStorageKey = "conglobal-roster-state-v1";
+    const rosterAdditionsKey = "conglobal-roster-additions-v1";
+    const dayforceStorageKey = "conglobal-dayforce-punches-v1";
+    const previousTimesheetStorageKey = "conglobal-previous-timesheet-hours-v1";
+    const timesheetSettingsKey = "conglobal-timesheet-settings-v1";
+    const timesheetNotesKey = "conglobal-timesheet-notes-v1";
+    const rosterDayLabels = ["Mon", "Tues", "Wed", "Thurs", "Fri", "Sat", "Sun"];
+    const lpmhGoal = 2.0;
+    const modal = document.getElementById("tomorrowOffModal");
+    const modalContent = document.getElementById("tomorrowOffContent");
+    const lpmhModal = document.getElementById("lpmhModal");
+    const lpmhDetails = document.getElementById("lpmhDetails");
+
+    function readTimesheetSettings() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(timesheetSettingsKey) || "null");
+        return saved && typeof saved === "object" ? saved : {};
+      } catch (error) {
+        localStorage.removeItem(timesheetSettingsKey);
+        return {};
+      }
+    }
+
+    function writeTimesheetSettings() {
+      localStorage.setItem(timesheetSettingsKey, JSON.stringify({
+        lifts: Number(document.getElementById("updateLifts").value) || 0,
+        flips: Number(document.getElementById("updateFlips").value) || 0,
+        shiftEndMode: document.getElementById("shiftEndSelect").value,
+        shiftEndCustom: document.getElementById("shiftEndOther").value.trim()
+      }));
+    }
+
+    function applyTimesheetSettings() {
+      const settings = readTimesheetSettings();
+      if (settings.lifts !== undefined) document.getElementById("updateLifts").value = settings.lifts;
+      if (settings.flips !== undefined) document.getElementById("updateFlips").value = settings.flips;
+      if (settings.shiftEndMode) document.getElementById("shiftEndSelect").value = settings.shiftEndMode;
+      if (settings.shiftEndCustom !== undefined) document.getElementById("shiftEndOther").value = settings.shiftEndCustom;
+    }
+
+    function parseOffDays(text) {
+      return new Set(text
+        .split(",")
+        .map((item) => item.trim().toLowerCase())
+        .map((item) => dayAliases[item] || dayAliases[item.slice(0, 3)])
+        .filter(Boolean));
+    }
+
+    function dayKeyFromOffset(offset) {
+      const date = new Date();
+      date.setDate(date.getDate() + offset);
+      return ["sun", "mon", "tue", "wed", "thu", "fri", "sat"][date.getDay()];
+    }
+
+    function dayKeyFromDateValue(value) {
+      const text = String(value || "").trim();
+      if (!text) return "";
+
+      const dayNameMatch = text.match(/^([a-z]{3,9})\b/i);
+      const explicitDay = dayNameMatch ? dayAliases[dayNameMatch[1].toLowerCase()] : "";
+      if (explicitDay) return explicitDay;
+
+      const match = text.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+      const date = match
+        ? new Date(Number(match[3].length === 2 ? `20${match[3]}` : match[3]), Number(match[1]) - 1, Number(match[2]))
+        : new Date(text);
+      if (Number.isNaN(date.getTime())) return "";
+      return ["sun", "mon", "tue", "wed", "thu", "fri", "sat"][date.getDay()];
+    }
+
+    function dayKeyForRow(row) {
+      return row.dataset.workdayKey || todayKey;
+    }
+
+    function rowOffDays(row) {
+      return parseOffDays(row.children[1] ? row.children[1].textContent : "");
+    }
+
+    function rowIsScheduledToWork(row) {
+      return !rowOffDays(row).has(dayKeyForRow(row));
+    }
+
+    function isClockValue(value) {
+      const text = String(value || "").trim();
+      return Boolean(text && text.toLowerCase() !== "missing?");
+    }
+
+    function isInvalidTimeValue(value) {
+      const text = String(value || "").trim();
+      return Boolean(text && text.toLowerCase() !== "missing?" && minutesFromMilitary(text) === null);
+    }
+
+    function updateInvalidTimeStateForRow(row) {
+      const inputs = row.querySelectorAll(".time-cell input");
+      if (inputs.length < 3) return false;
+      const invalidStart = isInvalidTimeValue(inputs[0].value);
+      const invalidEnd = isInvalidTimeValue(inputs[2].value);
+      inputs[0].classList.toggle("invalid-time", invalidStart);
+      inputs[2].classList.toggle("invalid-time", invalidEnd);
+      return invalidStart || invalidEnd;
+    }
+
+    function rowHasInvalidTime(row) {
+      const inputs = row.querySelectorAll(".time-cell input");
+      if (inputs.length < 3) return false;
+      return isInvalidTimeValue(inputs[0].value) || isInvalidTimeValue(inputs[2].value);
+    }
+
+    function rowHasClockTime(row) {
+      const inputs = row.querySelectorAll(".time-cell input");
+      return Boolean((inputs[0] && isClockValue(inputs[0].value)) || (inputs[2] && isClockValue(inputs[2].value)));
+    }
+
+    function rowIsCurrentlyHere(row) {
+      const inputs = row.querySelectorAll(".time-cell input");
+      if (inputs.length < 3) return false;
+      return minutesFromMilitary(inputs[0].value) !== null && minutesFromMilitary(inputs[2].value) === null;
+    }
+
+    function rowHasValidClockIn(row) {
+      const inputs = row.querySelectorAll(".time-cell input");
+      if (!inputs.length) return false;
+      return minutesFromMilitary(inputs[0].value) !== null;
+    }
+
+    function updateScheduleStyleForRow(row) {
+      const nameCell = row.querySelector("td.name");
+      if (!nameCell) return;
+
+      const startCell = row.querySelector(".time-cell");
+      const scheduled = rowIsScheduledToWork(row);
+      const hasClockTime = rowHasClockTime(row);
+      const offIdle = !scheduled && !hasClockTime;
+      const offDayClock = !scheduled && hasClockTime;
+      const purpleAbsence = rowHasPurpleAbsence(row);
+      const unpaidAbsence = row.dataset.absenceUnpaid === "1";
+      nameCell.classList.toggle("scheduled", scheduled);
+      nameCell.classList.toggle("off-day-clock", offDayClock);
+      row.classList.toggle("off-employee-row", offIdle);
+      row.classList.toggle("purple-absence-row", purpleAbsence);
+      row.classList.toggle("unpaid-absence-row", unpaidAbsence);
+      if (startCell) {
+        startCell.classList.add("start-status");
+        startCell.classList.toggle("scheduled", scheduled);
+        startCell.classList.toggle("off-day-clock", offDayClock);
+      }
+    }
+
+    function employeeNameForSort(row) {
+      return (row.querySelector("td.name")?.textContent || "").trim();
+    }
+
+    function statusSortRank(row) {
+      const scheduled = rowIsScheduledToWork(row);
+      const clockedIn = rowHasValidClockIn(row);
+      const purpleAbsence = rowHasPurpleAbsence(row);
+
+      if (scheduled && clockedIn && !purpleAbsence) return 0;
+      if (!scheduled && clockedIn) return 1;
+      if (purpleAbsence) return 2;
+      if (scheduled && !clockedIn) return 3;
+      if (!scheduled && !clockedIn) return 4;
+      return 4;
+    }
+
+    function sectionEmployeeRows(headerRow) {
+      const rows = [];
+      let anchor = headerRow.nextElementSibling;
+
+      while (anchor && !anchor.querySelector("th.section-name")) {
+        if (!anchor.querySelector("td.name")) break;
+        rows.push(anchor);
+        anchor = anchor.nextElementSibling;
+      }
+
+      return { rows, anchor };
+    }
+
+    function sortShiftRows(headerCell, forcedMode = "") {
+      const headerRow = headerCell.closest("tr");
+      if (!headerRow) return;
+
+      const mode = forcedMode || (headerCell.dataset.sortMode === "status" ? "alpha" : "status");
+      const { rows, anchor } = sectionEmployeeRows(headerRow);
+      const sorted = rows.slice().sort((a, b) => {
+        if (mode === "status") {
+          const rankDiff = statusSortRank(a) - statusSortRank(b);
+          if (rankDiff) return rankDiff;
+        }
+        return employeeNameForSort(a).localeCompare(employeeNameForSort(b));
+      });
+
+      sorted.forEach((row) => {
+        headerRow.parentNode.insertBefore(row, anchor);
+      });
+      headerCell.dataset.sortMode = mode;
+    }
+
+    function sortAllShiftsByStatus() {
+      document.querySelectorAll(".time-table th.section-name").forEach((header) => {
+        sortShiftRows(header, "status");
+      });
+    }
+
+    function sectionKeyForRow(row) {
+      let cursor = row;
+      while (cursor) {
+        const header = cursor.querySelector("th.section-name");
+        if (header) return getSectionKey(header.textContent);
+        cursor = cursor.previousElementSibling;
+      }
+      return "";
+    }
+
+    function currentMinutes() {
+      const now = new Date();
+      return (now.getHours() * 60) + now.getMinutes();
+    }
+
+    function currentMilitaryTime() {
+      return militaryFromMinutes(currentMinutes());
+    }
+
+    function shouldCheckMissingStart(row) {
+      const sectionKey = sectionKeyForRow(row);
+      if (sectionKey === "gate") return false;
+      if (sectionKey === "second") return currentMinutes() >= minutesFromMilitary("1500");
+      return true;
+    }
+
+    function rowHasAbsence(row) {
+      return Boolean((row.dataset.absenceNote || "").trim());
+    }
+
+    function rowHasManualNote(row) {
+      const noteInput = row.querySelector(".note-input");
+      if (noteInput && isRealNoteValue(noteInput.value)) return true;
+      const name = row.querySelector("td.name")?.textContent.trim() || "";
+      return Boolean(getManualNote(name));
+    }
+
+    function paidNoteHoursForText(value) {
+      return /\bfloating holidays?\b|\bvacations?\b/i.test(String(value || "")) ? 8 : 0;
+    }
+
+    function rowNoteText(row) {
+      const noteInput = row.querySelector(".note-input");
+      if (noteInput) return noteInput.value;
+      const name = row.querySelector("td.name")?.textContent.trim() || "";
+      return getManualNote(name);
+    }
+
+    function paidNoteHoursForRow(row) {
+      return paidNoteHoursForText([row.dataset.absenceNote || "", rowNoteText(row)].join(" "));
+    }
+
+    function rowHasPurpleAbsence(row) {
+      const note = String([row.dataset.absenceNote || "", rowNoteText(row)].join(" ")).toLowerCase();
+      return row.dataset.absencePaid === "1" ||
+        row.dataset.absenceUnpaid === "1" ||
+        /\bfloating holidays?\b/.test(note) ||
+        /\bvacations?\b/.test(note) ||
+        /\bsick\b/.test(note) ||
+        /\bunpaid\b/.test(note);
+    }
+
+    function notePill(label, className = "") {
+      return `<span class="note-pill ${className}">${escapeHtml(label)}</span>`;
+    }
+
+    function dayLabelFromOffset(offset) {
+      const date = new Date();
+      date.setDate(date.getDate() + offset);
+      return date.toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" });
+    }
+
+    function updateScheduledHighlights() {
+      document.querySelectorAll(".time-table tr").forEach((row) => {
+        updateScheduleStyleForRow(row);
+      });
+    }
+
+    function updateMissingStartForRow(row) {
+      const nameCell = row.querySelector("td.name");
+      const startInput = row.querySelector(".time-cell input");
+      if (!nameCell || !startInput) return;
+
+      updateScheduleStyleForRow(row);
+      const missingStart = shouldCheckMissingStart(row) && rowIsScheduledToWork(row) && !rowHasAbsence(row) && !rowHasManualNote(row) && !isClockValue(startInput.value);
+      startInput.classList.toggle("missing-start", missingStart);
+      startInput.placeholder = missingStart ? "Missing?" : "";
+      nameCell.classList.toggle("missing-worker", missingStart);
+      startInput.closest(".time-cell")?.classList.toggle("missing-worker", missingStart);
+    }
+
+    function updateMissingStarts() {
+      document.querySelectorAll(".time-table tbody tr").forEach(updateMissingStartForRow);
+    }
+
+    function updateOffDayNoteForRow(row) {
+      const nameCell = row.querySelector("td.name");
+      const noteCell = row.children[2];
+      const inputs = row.querySelectorAll(".time-cell input");
+      if (!nameCell || !noteCell || inputs.length < 3) return;
+
+      if (!noteCell.hasAttribute("data-default-note")) {
+        const existingInput = noteCell.querySelector(".note-input");
+        const initialNote = (existingInput ? existingInput.value : noteCell.textContent).trim();
+        noteCell.dataset.defaultNote = initialNote === "-" ? "" : initialNote;
+      }
+
+      const hasClockTime = isClockValue(inputs[0].value) || isClockValue(inputs[2].value);
+      const cameInOffDay = !rowIsScheduledToWork(row) && hasClockTime;
+      const absenceNote = (row.dataset.absenceNote || "").trim();
+      const noteLabels = [];
+      let noteClass = "";
+      if (absenceNote) {
+        noteClass = row.dataset.absenceUnpaid === "1" ? "unpaid" : "paid";
+        absenceNote.split(",").map((item) => item.trim()).filter(Boolean).forEach((item) => {
+          noteLabels.push(item);
+        });
+      }
+      if (rowHasInvalidTime(row)) {
+        noteLabels.push("Invalid");
+        noteClass = "invalid";
+      }
+      if (cameInOffDay) {
+        noteLabels.push("Came In Off Day");
+        if (!noteClass) noteClass = "auto";
+      }
+
+      const name = nameCell.textContent.trim();
+      const manualNote = getManualNote(name);
+      const defaultNote = (noteCell.dataset.defaultNote || "").trim();
+      const displayValue = manualNote || noteLabels.join(", ") || defaultNote;
+      noteCell.classList.add("note-cell-editable");
+      noteCell.classList.toggle("note-flag", noteLabels.length > 0);
+      noteCell.innerHTML = noteInputHtml(name, displayValue, noteLabels.length ? noteClass : "");
+    }
+
+    function updateOffDayNotes() {
+      document.querySelectorAll(".time-table tbody tr").forEach(updateOffDayNoteForRow);
+    }
+
+    function getSectionKey(text) {
+      const normalized = text.toLowerCase();
+      if (normalized.includes("1st")) return "first";
+      if (normalized.includes("second") || normalized.includes("2nd")) return "second";
+      if (normalized.includes("gate")) return "gate";
+      return "";
+    }
+
+    function getSectionLabel(key) {
+      return {
+        first: "1st Shift",
+        second: "2ND SHIFT",
+        gate: "Gate"
+      }[key] || key;
+    }
+
+    function offByShiftForOffset(offset) {
+      const targetDay = dayKeyFromOffset(offset);
+      const groups = { first: [], second: [], gate: [] };
+      let sectionKey = "";
+
+      document.querySelectorAll(".time-table tbody tr").forEach((row) => {
+        const header = row.querySelector("th.section-name");
+        if (header) {
+          sectionKey = getSectionKey(header.textContent);
+          return;
+        }
+
+        if (!groups[sectionKey]) return;
+        const nameCell = row.querySelector("td.name");
+        if (!nameCell) return;
+
+        const offDays = parseOffDays(row.children[1] ? row.children[1].textContent : "");
+        if (offDays.has(targetDay)) groups[sectionKey].push(nameCell.textContent.trim());
+      });
+
+      return groups;
+    }
+
+    function renderOffDayPanel(offset, title) {
+      const groups = offByShiftForOffset(offset);
+      const grid = ["first", "second", "gate"].map((key) => {
+        const names = groups[key];
+        const list = names.length ? names.map((name) => `<li>${escapeHtml(name)}</li>`).join("") : "<li>None</li>";
+        return `<section class="off-shift-list"><h3>${getSectionLabel(key)} [${names.length}]</h3><ul>${list}</ul></section>`;
+      }).join("");
+      return `<section class="off-day-panel"><h2>${title} - ${dayLabelFromOffset(offset)}</h2><div class="off-day-grid">${grid}</div></section>`;
+    }
+
+    function showTomorrowOffModal() {
+      document.getElementById("tomorrowOffTitle").textContent = "Off Days Preview";
+      modalContent.innerHTML = [
+        renderOffDayPanel(1, "Off Tomorrow"),
+        renderOffDayPanel(2, "Off Day After Tomorrow")
+      ].join("");
+      modal.classList.add("open");
+      modal.setAttribute("aria-hidden", "false");
+    }
+
+    function closeTomorrowOffModal() {
+      modal.classList.remove("open");
+      modal.setAttribute("aria-hidden", "true");
+    }
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, (char) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+      }[char]));
+    }
+
+    function rosterOffDaysLabel(days) {
+      return days
+        .map((day, index) => day === "O" ? rosterDayLabels[index] : "")
+        .filter(Boolean)
+        .join(", ");
+    }
+
+    function readRosterAdditions() {
+      try {
+        const additions = JSON.parse(localStorage.getItem(rosterAdditionsKey) || "[]");
+        return Array.isArray(additions) ? additions : [];
+      } catch (error) {
+        localStorage.removeItem(rosterAdditionsKey);
+        return [];
+      }
+    }
+
+    function addPendingRosterRows(roster) {
+      const additions = readRosterAdditions();
+      if (!additions.length) return roster;
+
+      const seen = new Set(Object.values(roster)
+        .flatMap((rows) => Array.isArray(rows) ? rows : [])
+        .map((employee) => normalizeName(employee.name || "")));
+      additions.forEach((addition) => {
+        if (!addition || !addition.name) return;
+        const key = normalizeName(addition.name);
+        const shift = addition.shift || "first";
+        if (!key || seen.has(key)) return;
+        if (!Array.isArray(roster[shift])) roster[shift] = [];
+        roster[shift].push({
+          name: addition.name,
+          role: addition.role || "",
+          days: Array.isArray(addition.days) ? addition.days : ["W", "W", "W", "W", "W", "W", "W"]
+        });
+        seen.add(key);
+      });
+      return roster;
+    }
+
+    function sectionRows() {
+      const sections = {};
+      let sectionKey = "";
+      document.querySelectorAll(".time-table tbody tr").forEach((row) => {
+        const header = row.querySelector("th.section-name");
+        if (header) {
+          sectionKey = getSectionKey(header.textContent);
+          if (!sections[sectionKey]) sections[sectionKey] = [];
+          return;
+        }
+
+        if (!sectionKey || !row.querySelector("td.name")) return;
+        sections[sectionKey].push(row);
+      });
+      return sections;
+    }
+
+    function daysArrayFromOffDaysLabel(label) {
+      const offDays = parseOffDays(label || "");
+      return ["mon", "tue", "wed", "thu", "fri", "sat", "sun"].map((day) => offDays.has(day) ? "O" : "W");
+    }
+
+    function currentTableRoster() {
+      const sections = sectionRows();
+      return Object.fromEntries(Object.entries(sections).map(([sectionKey, rows]) => [
+        sectionKey,
+        rows
+          .map((row) => ({
+            name: row.querySelector("td.name")?.textContent.trim() || "",
+            days: daysArrayFromOffDaysLabel(row.children[1]?.textContent || "")
+          }))
+          .filter((employee) => employee.name)
+      ]));
+    }
+
+    function dedupeRoster(roster) {
+      const seen = new Set();
+      ["first", "second", "gate", "mechanics", "managers"].forEach((sectionKey) => {
+        if (!Array.isArray(roster[sectionKey])) return;
+        roster[sectionKey] = roster[sectionKey].filter((employee) => {
+          const key = normalizeName(employee?.name || "");
+          if (!key || seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+      });
+      return roster;
+    }
+
+    function createTimeRow() {
+      const row = document.createElement("tr");
+      row.innerHTML = `<td class="name"></td><td class="center"></td><td class="center">-</td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td class="time-cell"><input /></td><td></td>`;
+      return row;
+    }
+
+    function insertTimeRow(sectionKey, row, existingRows) {
+      const body = document.querySelector(".time-table tbody");
+      const lastRow = existingRows[existingRows.length - 1];
+      if (lastRow) {
+        lastRow.insertAdjacentElement("afterend", row);
+        return;
+      }
+
+      const headerRow = Array.from(body.querySelectorAll("tr")).find((candidate) => {
+        const header = candidate.querySelector("th.section-name");
+        return header && getSectionKey(header.textContent) === sectionKey;
+      });
+      if (headerRow) headerRow.insertAdjacentElement("afterend", row);
+    }
+
+    function updateOffDaysFromRoster() {
+      const saved = localStorage.getItem(rosterStorageKey);
+      const additions = readRosterAdditions();
+      if (!saved && !additions.length) return;
+
+      try {
+        const baseRoster = saved ? migrateMcDanielToDays(JSON.parse(saved)) : currentTableRoster();
+        const roster = dedupeRoster(addPendingRosterRows(baseRoster));
+        const sections = sectionRows();
+
+        ["first", "second", "gate"].forEach((sectionKey) => {
+          if (!Array.isArray(roster[sectionKey])) return;
+          const rosterRows = roster[sectionKey];
+          const rows = sections[sectionKey] || [];
+          rosterRows.forEach((rosterRow, index) => {
+            if (!rosterRow || !rosterRow.name || !Array.isArray(rosterRow.days)) return;
+            let row = rows[index];
+            if (!row) {
+              row = createTimeRow();
+              insertTimeRow(sectionKey, row, rows);
+              rows.push(row);
+            }
+
+            const nameCell = row.querySelector("td.name");
+            if (!nameCell) return;
+            nameCell.textContent = rosterRow.name;
+            row.children[1].textContent = rosterOffDaysLabel(rosterRow.days);
+          });
+
+          if (saved) {
+            rows.slice(rosterRows.length).forEach((row) => row.remove());
+          }
+        });
+      } catch (error) {
+        localStorage.removeItem(rosterStorageKey);
+      }
+    }
+
+    function normalizeName(name) {
+      const suffixes = new Set(["jr", "sr", "ii", "iii", "iv"]);
+      return name
+        .trim()
+        .toLowerCase()
+        .replace(/[,.]/g, " ")
+        .replace(/\bcontrerras\b/g, "contreras")
+        .replace(/\s+/g, " ")
+        .split(" ")
+        .filter((part) => part && !suffixes.has(part))
+        .sort()
+        .join(" ");
+    }
+
+    function readManualNotes() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(timesheetNotesKey) || "{}");
+        return saved && typeof saved === "object" && !Array.isArray(saved) ? saved : {};
+      } catch (error) {
+        localStorage.removeItem(timesheetNotesKey);
+        return {};
+      }
+    }
+
+    function getManualNote(name) {
+      const key = normalizeName(name);
+      if (!key) return "";
+      return String(readManualNotes()[key] || "").trim();
+    }
+
+    function isRealNoteValue(value) {
+      const text = String(value || "").trim();
+      return Boolean(text && text !== "-");
+    }
+
+    function saveManualNote(name, value) {
+      const key = normalizeName(name);
+      if (!key) return;
+      const notes = readManualNotes();
+      const text = String(value || "").trim();
+      if (isRealNoteValue(text)) notes[key] = text;
+      else delete notes[key];
+      localStorage.setItem(timesheetNotesKey, JSON.stringify(notes));
+    }
+
+    function noteInputHtml(name, value, className = "") {
+      const classes = ["note-input", className, isRealNoteValue(value) ? "has-note" : ""].filter(Boolean).join(" ");
+      return `<input type="text" class="${classes}" list="timesheetNoteOptions" autocomplete="off" data-note-name="${escapeHtml(name)}" value="${escapeHtml(value)}" placeholder="" aria-label="${escapeHtml(name)} note" title="Select a note or type custom text" />`;
+    }
+
+    function migrateMcDanielToDays(state) {
+      if (!state || !Array.isArray(state.second)) return state;
+      if (!Array.isArray(state.first)) state.first = [];
+
+      const alreadyOnDays = state.first.some((employee) => normalizeName(employee.name || "") === "charles mcdaniel");
+      const secondIndex = state.second.findIndex((employee) => normalizeName(employee.name || "") === "charles mcdaniel");
+      if (secondIndex === -1) return state;
+
+      const [employee] = state.second.splice(secondIndex, 1);
+      if (!alreadyOnDays) state.first.push(employee);
+      localStorage.setItem(rosterStorageKey, JSON.stringify(state));
+      return state;
+    }
+
+    function toMilitaryTime(value) {
+      const text = String(value || "").trim();
+      if (!text) return "";
+
+      const match = text.match(/^(\d{1,2}):(\d{2})\s*([ap])m$/i);
+      if (!match) return text;
+
+      let hour = Number(match[1]);
+      const minute = match[2];
+      const period = match[3].toLowerCase();
+
+      if (period === "p" && hour !== 12) hour += 12;
+      if (period === "a" && hour === 12) hour = 0;
+
+      return `${String(hour).padStart(2, "0")}${minute}`;
+    }
+
+    function toMilitaryRange(value) {
+      return String(value || "")
+        .split("-")
+        .map((part) => toMilitaryTime(part.trim()))
+        .filter(Boolean)
+        .join(" - ");
+    }
+
+    function minutesFromMilitary(value) {
+      const text = String(value || "").trim();
+      const match = text.match(/^(\d{1,2})(\d{2})$/);
+      if (!match) return null;
+
+      const hours = Number(match[1]);
+      const minutes = Number(match[2]);
+      if (hours > 24 || minutes > 59 || (hours === 24 && minutes !== 0)) return null;
+      return (hours * 60) + minutes;
+    }
+
+    function militaryFromMinutes(value) {
+      const minutes = ((Math.round(value) % 1440) + 1440) % 1440;
+      const hours = Math.floor(minutes / 60);
+      const mins = minutes % 60;
+      return `${String(hours).padStart(2, "0")}${String(mins).padStart(2, "0")}`;
+    }
+
+    function shiftEndValue() {
+      const preset = document.getElementById("shiftEndSelect").value;
+      if (preset !== "other") return preset;
+      return document.getElementById("shiftEndOther").value.trim().padStart(4, "0");
+    }
+
+    function updateShiftEndMode(shouldRecalculate = true) {
+      const isOther = document.getElementById("shiftEndSelect").value === "other";
+      const custom = document.getElementById("shiftEndOther");
+      custom.classList.toggle("open", isOther);
+      if (isOther) custom.focus();
+      if (shouldRecalculate) updateCurrentLpmh();
+    }
+
+    function hoursUntilShiftEnd(value) {
+      const endMinutes = minutesFromMilitary(value);
+      if (endMinutes === null) return 0;
+
+      const now = new Date();
+      const nowMinutes = (now.getHours() * 60) + now.getMinutes();
+      let remaining = endMinutes - nowMinutes;
+      if (remaining <= 0) remaining += 24 * 60;
+      return remaining / 60;
+    }
+
+    function calculateActualForRow(row, options = {}) {
+      const inputs = row.querySelectorAll(".time-cell input");
+      if (inputs.length < 3) return;
+      const refreshNote = options.refreshNote !== false;
+
+      const start = minutesFromMilitary(inputs[0].value);
+      const hasTemporaryEnd = start !== null && !isClockValue(inputs[2].value);
+      const temporaryEnd = hasTemporaryEnd ? currentMilitaryTime() : "";
+      inputs[2].classList.toggle("temp-clock-out", hasTemporaryEnd);
+      inputs[2].placeholder = hasTemporaryEnd ? temporaryEnd : "";
+
+      const end = minutesFromMilitary(hasTemporaryEnd ? temporaryEnd : inputs[2].value);
+      const actualCell = row.children[6];
+      if (!actualCell) return;
+      updateInvalidTimeStateForRow(row);
+      updateMissingStartForRow(row);
+      if (refreshNote) updateOffDayNoteForRow(row);
+      const paidNoteHours = paidNoteHoursForRow(row);
+      actualCell.classList.add("actual-cell");
+      if (start === null || end === null) {
+        actualCell.textContent = paidNoteHours ? paidNoteHours.toFixed(1) : "";
+        return;
+      }
+
+      let minutes = end - start;
+      if (minutes < 0) minutes += 24 * 60;
+      if (inputs[1].value.trim().toUpperCase() === "YES") minutes -= 30;
+
+      const clockedHours = minutes > 0 ? minutes / 60 : 0;
+      const totalHours = clockedHours + paidNoteHours;
+      actualCell.textContent = totalHours > 0 ? totalHours.toFixed(1) : "";
+    }
+
+    function calculateActualHours() {
+      document.querySelectorAll(".time-table tbody tr").forEach(calculateActualForRow);
+      updateMissingStarts();
+      updateOffDayNotes();
+      updateScheduledCounts();
+      updateStartCounts();
+      updateActualHeaders();
+      updateCurrentLpmh();
+    }
+
+    function updateStartCounts() {
+      let headerRow = null;
+      let hereCount = 0;
+      let outCount = 0;
+
+      function commitCount() {
+        if (!headerRow) return;
+        const startHeader = headerRow.children[3];
+        if (startHeader) {
+          const total = hereCount + outCount;
+          startHeader.textContent = total > 0 ? `${hereCount} HERE, ${outCount} OUT` : "START";
+        }
+      }
+
+      document.querySelectorAll(".time-table tbody tr").forEach((row) => {
+        const sectionHeader = row.querySelector("th.section-name");
+        if (sectionHeader) {
+          commitCount();
+          headerRow = row;
+          hereCount = 0;
+          outCount = 0;
+          return;
+        }
+
+        if (!headerRow) return;
+        const inputs = row.querySelectorAll(".time-cell input");
+        if (inputs.length < 3) return;
+        const hasStart = minutesFromMilitary(inputs[0].value) !== null;
+        const hasEnd = minutesFromMilitary(inputs[2].value) !== null;
+        const currentlyHere = hasStart && !hasEnd;
+        if (currentlyHere) {
+          hereCount += 1;
+          return;
+        }
+        if (rowIsScheduledToWork(row) && !rowHasAbsence(row)) outCount += 1;
+      });
+
+      commitCount();
+    }
+
+    function sectionHeaderBaseText(header) {
+      if (!header.dataset.baseLabel) {
+        header.dataset.baseLabel = header.textContent.replace(/\s*\[\d+\s*sch\]\s*$/i, "").trim();
+      }
+      return header.dataset.baseLabel;
+    }
+
+    function updateScheduledCounts() {
+      let headerCell = null;
+      let scheduledCount = 0;
+
+      function commitCount() {
+        if (!headerCell) return;
+        headerCell.textContent = `${sectionHeaderBaseText(headerCell)} [${scheduledCount} sch]`;
+      }
+
+      document.querySelectorAll(".time-table tbody tr").forEach((row) => {
+        const sectionHeader = row.querySelector("th.section-name");
+        if (sectionHeader) {
+          commitCount();
+          headerCell = sectionHeader;
+          scheduledCount = 0;
+          return;
+        }
+
+        if (!headerCell || !row.querySelector("td.name")) return;
+        if (rowIsScheduledToWork(row)) scheduledCount += 1;
+      });
+
+      commitCount();
+    }
+
+    function actualHoursBySection() {
+      const totals = {};
+      let sectionKey = "";
+
+      document.querySelectorAll(".time-table tbody tr").forEach((row) => {
+        const header = row.querySelector("th.section-name");
+        if (header) {
+          sectionKey = getSectionKey(header.textContent);
+          if (sectionKey && totals[sectionKey] === undefined) totals[sectionKey] = 0;
+          return;
+        }
+
+        if (!sectionKey) return;
+        const actual = Number(row.children[6] ? row.children[6].textContent : "");
+        if (!Number.isNaN(actual)) totals[sectionKey] = (totals[sectionKey] || 0) + actual;
+      });
+
+      return totals;
+    }
+
+    function updateActualHeaders() {
+      const totals = actualHoursBySection();
+      let sectionKey = "";
+
+      document.querySelectorAll(".time-table tbody tr").forEach((row) => {
+        const sectionHeader = row.querySelector("th.section-name");
+        if (!sectionHeader) return;
+        sectionKey = getSectionKey(sectionHeader.textContent);
+        const actualHeader = row.children[6];
+        if (actualHeader) actualHeader.textContent = `Actual ${((totals[sectionKey] || 0)).toFixed(1)}`;
+      });
+    }
+
+    function shiftHoursFor(keys) {
+      const totals = actualHoursBySection();
+      return keys.reduce((sum, key) => sum + (totals[key] || 0), 0);
+    }
+
+    function previousTimesheetImport() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(previousTimesheetStorageKey) || "null");
+        return saved && typeof saved.hours === "number" ? saved : null;
+      } catch (error) {
+        localStorage.removeItem(previousTimesheetStorageKey);
+        return null;
+      }
+    }
+
+    function previousShiftHours() {
+      const imported = previousTimesheetImport();
+      return imported ? Math.max(Number(imported.hours) || 0, 0) : 0;
+    }
+
+    function currentLpmhBreakdown() {
+      const lifts = Number(document.getElementById("updateLifts").value) || 0;
+      const flips = Number(document.getElementById("updateFlips").value) || 0;
+      const rawShiftHours = shiftHoursFor(["first", "second"]);
+      const previousHours = previousShiftHours();
+      const shiftHours = rawShiftHours + previousHours;
+      const totalMoves = Math.max(lifts + flips, 0);
+      const currentRate = shiftHours > 0 ? totalMoves / shiftHours : 0;
+      const neededValue = Math.ceil(shiftHours * lpmhGoal);
+      const remainValue = neededValue - totalMoves;
+      const remainingHours = hoursUntilShiftEnd(shiftEndValue());
+      const goalMet = shiftHours > 0 && currentRate >= lpmhGoal;
+      const neededLph = goalMet ? "MET GOAL!" : (remainingHours > 0 ? (Math.max(remainValue, 0) / remainingHours).toFixed(1) : "0.0");
+      return { lifts, flips, rawShiftHours, previousHours, shiftHours, totalMoves, currentRate, neededValue, remainValue, remainingHours, goalMet, neededLph };
+    }
+
+    function updateCurrentLpmh() {
+      const details = currentLpmhBreakdown();
+      const current = document.getElementById("currentLpmh");
+      const neededRate = document.getElementById("lphNeeded");
+      const needed = document.getElementById("liftsNeeded");
+      const remain = document.getElementById("liftsRemain");
+      const rate = details.currentRate.toFixed(1);
+      current.textContent = rate;
+      needed.textContent = String(details.neededValue);
+      remain.textContent = details.goalMet ? "MET GOAL!" : String(Math.max(details.remainValue, 0));
+      neededRate.textContent = details.neededLph;
+      if (lpmhModal.classList.contains("open")) renderCurrentLpmhDetails();
+    }
+
+    function renderCurrentLpmhDetails() {
+      const details = currentLpmhBreakdown();
+      const rows = [
+        ["Lifts", details.lifts],
+        ["Flips", details.flips],
+        ["Total moves", `${details.lifts} + ${details.flips} = ${details.totalMoves}`],
+        ["Current 1st + 2nd hrs", details.rawShiftHours.toFixed(1)],
+        ["0000-0300 hrs", details.previousHours.toFixed(1)],
+        ["Total hrs", `${details.rawShiftHours.toFixed(1)} + ${details.previousHours.toFixed(1)} = ${details.shiftHours.toFixed(1)}`]
+      ];
+      const formula = `${details.totalMoves} MOVES / ${details.shiftHours.toFixed(1)} HRS = ${details.currentRate.toFixed(1)}`;
+      lpmhDetails.innerHTML = [
+        ...rows.map(([label, value]) => `<div class="lpmh-row"><span>${escapeHtml(label)}</span><span>${escapeHtml(value)}</span></div>`),
+        `<div class="lpmh-formula">${escapeHtml(formula)}</div>`
+      ].join("");
+    }
+
+    function showCurrentLpmhModal() {
+      renderCurrentLpmhDetails();
+      lpmhModal.classList.add("open");
+      lpmhModal.setAttribute("aria-hidden", "false");
+    }
+
+    function closeCurrentLpmhModal() {
+      lpmhModal.classList.remove("open");
+      lpmhModal.setAttribute("aria-hidden", "true");
+    }
+
+    function applyDayforcePunches() {
+      const saved = localStorage.getItem(dayforceStorageKey);
+      if (!saved) return;
+
+      try {
+        const punches = JSON.parse(saved);
+        if (!Array.isArray(punches)) return;
+
+        const visibleNames = new Set(Array.from(document.querySelectorAll(".time-table tbody td.name"))
+          .map((cell) => normalizeName(cell.textContent)));
+        const rosterPunches = punches.filter((item) => visibleNames.has(normalizeName(item.name || "")));
+        if (rosterPunches.length !== punches.length) {
+          localStorage.setItem(dayforceStorageKey, JSON.stringify(rosterPunches));
+        }
+
+        const byName = new Map(rosterPunches.map((item) => [normalizeName(item.name || ""), item]));
+        document.querySelectorAll(".time-table tbody tr").forEach((row) => {
+          const nameCell = row.querySelector("td.name");
+          if (!nameCell) return;
+          delete row.dataset.absenceNote;
+          delete row.dataset.absenceUnpaid;
+          delete row.dataset.absencePaid;
+          delete row.dataset.absenceHours;
+          delete row.dataset.workdayKey;
+
+          const punch = byName.get(normalizeName(nameCell.textContent));
+          if (!punch) {
+            updateOffDayNoteForRow(row);
+            updateMissingStartForRow(row);
+            return;
+          }
+          const punchDayKey = dayKeyFromDateValue(punch.date);
+          if (punchDayKey) row.dataset.workdayKey = punchDayKey;
+          const note = String(punch.note || punch.reason || "").trim();
+          if (note) {
+            row.dataset.absenceNote = note;
+            row.dataset.absenceUnpaid = punch.absenceUnpaid ? "1" : "";
+            row.dataset.absencePaid = punch.absencePaid ? "1" : "";
+            row.dataset.absenceHours = punch.absenceHours || "";
+          }
+
+          const inputs = row.querySelectorAll(".time-cell input");
+          const rawLunch = String(punch.lunch || "").trim();
+          const noLunch = rawLunch.toUpperCase() === "NO";
+          const lunchValue = noLunch ? "" : toMilitaryRange(rawLunch);
+          const values = [toMilitaryTime(punch.start), noLunch ? "NO" : (lunchValue ? "YES" : ""), toMilitaryTime(punch.end)];
+          inputs.forEach((input, index) => {
+            const hasMissingLunch = index === 1 && !note && !values[index] && (values[0] || values[2]);
+            input.value = hasMissingLunch ? "??" : values[index] || "";
+            input.classList.toggle("imported", Boolean(values[index]) && !hasMissingLunch);
+            input.classList.toggle("missing-lunch", hasMissingLunch);
+          });
+          calculateActualForRow(row);
+        });
+        updateStartCounts();
+        updateActualHeaders();
+        updateCurrentLpmh();
+      } catch (error) {
+        localStorage.removeItem(dayforceStorageKey);
+      }
+    }
+
+    document.addEventListener("input", (event) => {
+      if (event.target.matches(".note-input")) {
+        saveManualNote(event.target.dataset.noteName || "", event.target.value);
+        event.target.classList.toggle("has-note", isRealNoteValue(event.target.value));
+        const row = event.target.closest("tr");
+        if (row) {
+          calculateActualForRow(row, { refreshNote: false });
+          updateStartCounts();
+          updateActualHeaders();
+          updateCurrentLpmh();
+        }
+        return;
+      }
+
+      if (event.target.matches(".time-cell input")) {
+        calculateActualForRow(event.target.closest("tr"));
+        updateStartCounts();
+        updateActualHeaders();
+        updateCurrentLpmh();
+        return;
+      }
+
+      if (event.target.matches("#updateLifts, #updateFlips, #shiftEndOther")) {
+        writeTimesheetSettings();
+        updateCurrentLpmh();
+      }
+    });
+
+    document.getElementById("currentLpmhToggle").addEventListener("click", showCurrentLpmhModal);
+    document.getElementById("currentLpmhToggle").addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        showCurrentLpmhModal();
+      }
+    });
+    document.getElementById("shiftEndSelect").addEventListener("change", () => {
+      writeTimesheetSettings();
+      updateShiftEndMode();
+    });
+    document.getElementById("shiftEndOther").addEventListener("input", (event) => {
+      event.target.value = event.target.value.replace(/\D/g, "").slice(0, 4);
+    });
+    document.querySelectorAll(".off-days-button").forEach((button) => {
+      button.addEventListener("click", showTomorrowOffModal);
+    });
+    document.querySelectorAll(".time-table th.section-name").forEach((header) => {
+      header.addEventListener("click", () => sortShiftRows(header, "status"));
+    });
+    document.getElementById("closeTomorrowOff").addEventListener("click", closeTomorrowOffModal);
+    document.getElementById("closeLpmhModal").addEventListener("click", closeCurrentLpmhModal);
+    modal.addEventListener("click", (event) => {
+      if (event.target === modal) closeTomorrowOffModal();
+    });
+    lpmhModal.addEventListener("click", (event) => {
+      if (event.target === lpmhModal) closeCurrentLpmhModal();
+    });
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        closeTomorrowOffModal();
+        closeCurrentLpmhModal();
+      }
+    });
+
+    applyTimesheetSettings();
+    updateShiftEndMode(false);
+    updateOffDaysFromRoster();
+    applyDayforcePunches();
+    updateScheduledHighlights();
+    calculateActualHours();
+    sortAllShiftsByStatus();
+    setInterval(calculateActualHours, 60000);
+  </script>
+</body>
+</html>

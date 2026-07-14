@@ -1,0 +1,4418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Performance Analytics</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+    :root {
+      --ink: #111827;
+      --muted: #667085;
+      --line: #d8dee9;
+      --bg: #eef0f3;
+      --purple: #7c3aed;
+      --purple-soft: #ede9fe;
+      --green: #047857;
+      --green-soft: #dff7ea;
+      --amber: #b45309;
+      --amber-soft: #fff2cc;
+      --blue-soft: #dbeafe;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Arial, Helvetica, sans-serif;
+      overflow-x: hidden;
+    }
+    button, input, textarea { font: inherit; }
+    .page {
+      width: min(1480px, 100%);
+      margin: 0 auto;
+      padding: 10px 12px 18px;
+    }
+    .hero {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 18px 22px;
+      background: #000;
+      color: #fff;
+      border-bottom: 5px solid var(--purple);
+      border-radius: 8px 8px 0 0;
+    }
+    .kicker {
+      color: #c7d2fe;
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    h1, h2 { margin: 0; }
+    h1 {
+      margin-top: 4px;
+      font-size: 28px;
+      line-height: 1;
+      letter-spacing: 0;
+    }
+    h2 {
+      font-size: 16px;
+      line-height: 1.15;
+    }
+    .hero-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .date-box {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: #c7d2fe;
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+    .date-box input,
+    .btn {
+      height: 34px;
+      border: 1px solid rgba(255,255,255,.55);
+      border-radius: 4px;
+      background: #fff;
+      color: #000;
+      font-weight: 900;
+    }
+    .date-box input {
+      min-width: 148px;
+      padding: 0 9px;
+      text-align: center;
+    }
+    .btn {
+      min-width: 92px;
+      padding: 0 14px;
+      cursor: pointer;
+    }
+    .btn.secondary {
+      border-color: #cbd5e1;
+      background: #f8fafc;
+    }
+    .btn.primary {
+      border-color: var(--purple);
+      background: var(--purple);
+      color: #fff;
+    }
+    .btn.danger {
+      border-color: #fecaca;
+      background: #fff1f2;
+      color: #991b1b;
+    }
+    .btn.danger.confirming {
+      border-color: #991b1b;
+      background: #991b1b;
+      color: #fff;
+    }
+    .import-status {
+      min-width: 120px;
+      color: #6e6654;
+      font-family: "IBM Plex Mono", Consolas, monospace;
+      font-size: 11px;
+      font-weight: 700;
+      text-align: right;
+    }
+    .metrics {
+      display: grid;
+      grid-template-columns: minmax(0, .66fr) minmax(0, .74fr) minmax(0, .54fr) minmax(0, .66fr) minmax(0, 1.36fr) minmax(0, 1.64fr);
+      gap: 5px;
+      padding: 6px 0;
+    }
+    .metric {
+      min-height: 96px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 3px;
+      padding: 7px 8px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      text-align: center;
+    }
+    .metric-label {
+      color: #98a2b3;
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .metric-value {
+      color: var(--ink);
+      font-size: 24px;
+      font-weight: 900;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+    }
+    .metric-sub {
+      min-height: 14px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .band, .panel {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      overflow: hidden;
+    }
+    .section-head {
+      min-height: 46px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 15px;
+      background: #fbfcfe;
+      border-bottom: 1px solid var(--line);
+    }
+    .section-meta {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      text-align: right;
+    }
+    .timeline-wrap { padding: 14px 14px 16px; }
+    .timeline {
+      display: grid;
+      grid-template-columns: 108px 1fr;
+      gap: 0 10px;
+      min-width: 0;
+    }
+    .axis-label {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+    .axis,
+    .bucket-row {
+      display: grid;
+      grid-template-columns: repeat(var(--timeline-hours, 24), minmax(0, 1fr));
+      gap: 2px;
+      min-width: 0;
+    }
+    .axis span {
+      min-width: 0;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 800;
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+    .row-label {
+      min-height: 54px;
+      display: flex;
+      align-items: center;
+      padding-right: 8px;
+      border-top: 1px solid #eef2f7;
+      color: var(--ink);
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+    .bucket-row {
+      min-height: 54px;
+      align-items: stretch;
+      padding: 5px 0;
+      border-top: 1px solid #eef2f7;
+    }
+    .bucket {
+      position: relative;
+      min-width: 0;
+      padding: 0;
+      border: 1px solid #e6ebf2;
+      border-radius: 4px;
+      background: #f9fafb;
+      color: var(--ink);
+      cursor: pointer;
+      overflow: hidden;
+    }
+    .bucket::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: calc(var(--pct, 0) * 1%);
+      background: var(--fill, #dbeafe);
+      opacity: .95;
+    }
+    .bucket span {
+      position: relative;
+      z-index: 1;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 2px;
+      color: var(--ink);
+      font-size: 11px;
+      font-weight: 900;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+    .bucket.target-good {
+      border-color: #86efac;
+      background: #f0fdf4;
+    }
+    .bucket.target-good::before { background: #bbf7d0; }
+    .bucket.target-good span { color: #14532d; }
+    .bucket.target-warn {
+      border-color: #facc15;
+      background: #fffbeb;
+    }
+    .bucket.target-warn::before { background: #fde68a; }
+    .bucket.target-warn span { color: #92400e; }
+    .bucket.target-bad {
+      border-color: #fca5a5;
+      background: #fef2f2;
+    }
+    .bucket.target-bad::before { background: #fecaca; }
+    .bucket.target-bad span { color: #991b1b; }
+    .bucket.empty span { color: #b5bdc9; }
+    .bucket.lunch-period {
+      border-color: #f59e0b;
+      background: #fff7ed;
+    }
+    .bucket.lunch-period::before {
+      display: none;
+    }
+    .bucket.lunch-period span {
+      color: #9a3412;
+      font-size: 9px;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+
+    .bucket-row.type-row {
+      min-height: 70px;
+      padding-top: 6px;
+      padding-bottom: 6px;
+      overflow: hidden;
+    }
+    .bucket.type-bucket {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2px;
+      overflow: hidden;
+      background: #fff;
+    }
+    .bucket.type-bucket::before {
+      display: none;
+    }
+    .type-pill-stack {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      min-width: 0;
+    }
+    .type-pill {
+      max-width: 100%;
+      min-height: 15px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 2px;
+      border-radius: 4px;
+      font-size: 8px;
+      font-weight: 900;
+      line-height: 1;
+      letter-spacing: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .type-pill.drop { background: #dbeafe; color: #1d4ed8; }
+    .type-pill.load { background: #dcfce7; color: #047857; }
+    .type-pill.ups { background: #fce7f3; color: #be185d; }
+    .type-pill.carry { background: #ffedd5; color: #c2410c; }
+    .type-pill.manual { background: #ede9fe; color: #6d28d9; }
+    .type-pill.other { background: #e2e8f0; color: #334155; }
+    .type-legend {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 7px 12px;
+      padding: 10px 0 0 118px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+    .type-legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      white-space: nowrap;
+    }
+    .timeline-type-key {
+      display: grid;
+      grid-template-columns: 108px minmax(0, 1fr);
+      gap: 0 10px;
+      align-items: center;
+      padding: 0 14px 14px;
+      color: var(--muted);
+    }
+    .timeline-key-label {
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+    .timeline-type-key .type-legend {
+      padding: 0;
+      gap: 8px 10px;
+      font-size: 10px;
+    }
+    .metric.shift-card {
+      grid-column: auto;
+      min-height: 96px;
+      align-items: stretch;
+      justify-content: center;
+      text-align: left;
+      padding: 7px 8px;
+    }
+    .shift-card .metric-label {
+      margin-bottom: 5px;
+    }
+    .metric.source-mix-card {
+      grid-column: auto;
+      min-height: 96px;
+      align-items: stretch;
+      justify-content: flex-start;
+      text-align: left;
+      padding: 7px 8px;
+    }
+    .source-mix-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 5px;
+    }
+    .source-mix-count {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+    .source-metric-list {
+      display: grid;
+      gap: 3px;
+    }
+    .source-metric-row {
+      min-height: 20px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 8px;
+      padding: 2px 6px;
+      border: 1px solid #e8edf5;
+      border-radius: 5px;
+      background: #fbfcfe;
+      color: var(--ink);
+      font-size: 11px;
+      font-weight: 900;
+    }
+    .source-metric-row span:first-child {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .source-metric-row span:last-child {
+      font-variant-numeric: tabular-nums;
+    }
+    .source-metric-empty {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      text-align: center;
+    }
+    .shift-summary {
+      display: grid;
+      grid-template-columns: 1.1fr repeat(4, minmax(0, 1fr));
+      gap: 0;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      overflow: hidden;
+      background: #fff;
+    }
+    .shift-summary-cell {
+      min-height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px 5px;
+      border-right: 1px solid #eef2f7;
+      border-bottom: 1px solid #eef2f7;
+      color: var(--ink);
+      font-size: 11px;
+      font-weight: 900;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+    .shift-summary-cell:nth-child(5n) { border-right: 0; }
+    .shift-summary-cell:nth-last-child(-n + 5) { border-bottom: 0; }
+    .shift-summary-head {
+      min-height: 28px;
+      background: #f8fafc;
+      color: #667085;
+      font-size: 11px;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+    }
+    .shift-summary-name {
+      justify-content: flex-start;
+      color: var(--ink);
+      font-weight: 900;
+    }
+    .shift-summary-lph {
+      color: #111827;
+    }
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .detail-body { padding: 12px 14px 14px; }
+    .employee-list {
+      display: grid;
+      gap: 6px;
+    }
+    .person-line,
+    .source-line {
+      display: grid;
+      grid-template-columns: minmax(150px, 1fr) 78px 78px 86px;
+      gap: 8px;
+      align-items: center;
+      padding: 8px 10px;
+      border: 1px solid #e8edf5;
+      border-radius: 5px;
+      background: #fbfcfe;
+      font-size: 13px;
+      font-weight: 800;
+    }
+    .source-line { grid-template-columns: minmax(120px, 1fr) 80px; }
+    .muted {
+      color: var(--muted);
+      font-weight: 700;
+    }
+    .pill {
+      min-height: 22px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3px 7px;
+      border-radius: 4px;
+      background: var(--blue-soft);
+      color: #1d4ed8;
+      font-size: 11px;
+      font-weight: 900;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .pill.first { background: var(--green-soft); color: var(--green); }
+    .pill.second { background: var(--purple-soft); color: var(--purple); }
+    .tables {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .wide { grid-column: 1 / -1; }
+    .table-wrap {
+      width: 100%;
+      overflow-x: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      font-size: 13px;
+    }
+    th, td {
+      padding: 9px 10px;
+      border-bottom: 1px solid #edf1f6;
+      text-align: left;
+      vertical-align: middle;
+    }
+    th {
+      background: #f8fafc;
+      color: #667085;
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+    td { font-weight: 800; }
+    .num {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+    .groups-editor {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+      padding: 12px 14px;
+      background: #fbfcfe;
+      border-bottom: 1px solid var(--line);
+    }
+    .groups-editor textarea {
+      width: 100%;
+      min-height: 72px;
+      resize: vertical;
+      border: 1px solid #cfd7e3;
+      border-radius: 5px;
+      padding: 8px 10px;
+      color: var(--ink);
+      font-size: 13px;
+      line-height: 1.35;
+      outline: none;
+    }
+    .groups-editor textarea:focus {
+      border-color: var(--purple);
+      box-shadow: 0 0 0 2px rgba(124, 58, 237, .14);
+    }
+    .status-note {
+      padding: 10px 14px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      background: #fbfcfe;
+      border-top: 1px solid #edf1f6;
+    }
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 90;
+      display: none;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 54px 16px 24px;
+      background: rgba(17, 24, 39, .54);
+    }
+    .modal-backdrop.open { display: flex; }
+    .import-modal {
+      width: min(780px, 100%);
+      max-height: calc(100vh - 90px);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border: 1px solid #1f2937;
+      border-radius: 8px;
+      background: #fff;
+      box-shadow: 0 24px 70px rgba(17, 24, 39, .32);
+    }
+    .import-modal-head,
+    .import-modal-foot {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 14px;
+      background: #111827;
+      color: #fff;
+    }
+    .import-modal-title {
+      font-size: 16px;
+      font-weight: 900;
+      letter-spacing: .02em;
+    }
+    .import-modal-body {
+      overflow: auto;
+      padding: 14px;
+      background: #f8fafc;
+    }
+    .import-drop {
+      display: grid;
+      gap: 8px;
+      padding: 14px;
+      border: 1px dashed #9ca3af;
+      border-radius: 7px;
+      background: #fff;
+      text-align: center;
+    }
+    .import-drop input { display: none; }
+    .import-help {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1.35;
+    }
+    .file-list {
+      display: grid;
+      gap: 6px;
+      margin-top: 12px;
+    }
+    .file-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--ink);
+      font-size: 12px;
+      font-weight: 800;
+    }
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 18px;
+      padding: 0 6px;
+      border-radius: 999px;
+      background: var(--purple-soft);
+      color: var(--purple);
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+    .import-summary {
+      display: none;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .import-summary div {
+      padding: 9px 10px;
+      border: 1px solid #d8dee9;
+      border-radius: 6px;
+      background: #fff;
+      font-weight: 900;
+      text-align: center;
+    }
+    .import-table-wrap {
+      max-height: 280px;
+      overflow: auto;
+      margin-top: 12px;
+      border: 1px solid #d8dee9;
+      border-radius: 6px;
+      background: #fff;
+    }
+    .import-table-wrap:empty {
+      display: none;
+    }
+    .import-table {
+      min-width: 600px;
+      table-layout: auto;
+      font-size: 12px;
+    }
+    .import-table th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      background: #111827;
+      color: #fff;
+    }
+    .import-table .unmatched td {
+      color: #991b1b;
+      background: #fff1f2;
+    }
+    .timeline-tooltip {
+      position: fixed;
+      z-index: 80;
+      display: none;
+      width: max-content;
+      max-width: min(320px, calc(100vw - 24px));
+      padding: 10px 12px;
+      border: 1px solid #111827;
+      border-radius: 7px;
+      background: #111827;
+      color: #fff;
+      box-shadow: 0 14px 34px rgba(15, 23, 42, .28);
+      pointer-events: none;
+      text-align: left;
+    }
+    .timeline-tooltip.open { display: block; }
+    .tip-title {
+      color: #c7d2fe;
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .tip-main {
+      font-size: 15px;
+      font-weight: 900;
+      margin-bottom: 7px;
+    }
+    .tip-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 14px;
+      align-items: baseline;
+      padding: 3px 0;
+      border-top: 1px solid rgba(255, 255, 255, .12);
+      color: #e5e7eb;
+      font-size: 12px;
+      font-weight: 800;
+    }
+    .tip-row span:first-child {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .tip-row span:last-child {
+      color: #fff;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+    .tip-note {
+      color: #cbd5e1;
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1.35;
+    }
+    @media (max-width: 1050px) {
+      .metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .split, .tables { grid-template-columns: 1fr; }
+      .wide { grid-column: auto; }
+    }
+    @media (max-width: 760px) {
+      .page { padding: 8px; }
+      .hero { align-items: flex-start; flex-direction: column; padding: 14px; }
+      .hero-actions { justify-content: flex-start; }
+      .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .metric.shift-card, .metric.source-mix-card { grid-column: 1 / -1; }
+      .metric-value { font-size: 24px; }
+      .timeline { grid-template-columns: 76px 1fr; gap: 0 6px; }
+      .axis span { font-size: 8px; }
+      .row-label { font-size: 10px; }
+      .bucket span { font-size: 9px; }
+      .timeline-type-key { grid-template-columns: 76px minmax(0, 1fr); gap: 0 6px; }
+      .person-line { grid-template-columns: minmax(110px, 1fr) 58px 58px 66px; font-size: 12px; }
+      .groups-editor { grid-template-columns: 1fr; }
+    }
+
+    body.performance-page {
+      background: #f5f2ec;
+      color: #1b1812;
+      font-family: "Space Grotesk", "Helvetica Neue", Arial, sans-serif;
+    }
+    .page.performance-magazine {
+      width: min(1880px, 100%);
+      padding: 48px 56px 40px;
+    }
+    .performance-magazine .hero {
+      align-items: center;
+      gap: 18px;
+      padding: 10px 0 12px;
+      background: transparent;
+      color: #1b1812;
+      border: 0;
+      border-bottom: 2px solid #1b1812;
+      border-radius: 0;
+    }
+    .performance-magazine .kicker,
+    .performance-label,
+    .timeline-axis-label,
+    .timeline-key-label {
+      font-family: "IBM Plex Mono", Consolas, monospace;
+      letter-spacing: .22em;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: #1f5f3f;
+    }
+    .performance-magazine .kicker {
+      font-size: 12px;
+      margin-bottom: 4px;
+    }
+    .performance-magazine h1 {
+      margin: 0;
+      font-family: "Instrument Serif", Georgia, serif;
+      font-weight: 400;
+      font-size: clamp(34px, 3.4vw, 48px);
+      line-height: .95;
+      letter-spacing: 0;
+    }
+    .performance-magazine h2 {
+      font-family: "Instrument Serif", Georgia, serif;
+      font-weight: 400;
+      font-size: 34px;
+      line-height: 1;
+    }
+    .performance-magazine .hero-actions {
+      display: flex;
+      align-items: center;
+      justify-content: end;
+      padding-bottom: 0;
+    }
+    .performance-magazine .date-box {
+      position: relative;
+      min-width: 0;
+      min-height: 74px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 14px;
+      padding: 0 2px 0 8px;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      color: #6e6654;
+      font-family: "IBM Plex Mono", Consolas, monospace;
+      font-size: 10px;
+      letter-spacing: .22em;
+      text-transform: uppercase;
+      font-weight: 700;
+      text-align: right;
+      transition: color .15s ease;
+    }
+    .performance-date-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      flex-wrap: nowrap;
+      gap: 5px;
+      width: auto;
+      letter-spacing: 0;
+      text-transform: none;
+    }
+    .date-display-button {
+      display: inline-grid;
+      justify-items: end;
+      gap: 2px;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      color: inherit;
+      font: inherit;
+      letter-spacing: inherit;
+      text-align: right;
+      text-transform: inherit;
+      cursor: pointer;
+    }
+    .date-display-button:hover,
+    .date-display-button:focus-visible,
+    .performance-magazine .date-box.open .date-display-button {
+      color: #1f6b49;
+      outline: 0;
+    }
+    .display-date {
+      color: #1b1812;
+      font-family: "Instrument Serif", Georgia, serif;
+      font-size: 52px;
+      font-style: italic;
+      font-weight: 400;
+      letter-spacing: 0;
+      line-height: .95;
+      text-transform: none;
+      white-space: nowrap;
+    }
+    .date-display-button:hover .display-date,
+    .date-display-button:focus-visible .display-date,
+    .performance-magazine .date-box.open .display-date {
+      color: #1f5f3f;
+    }
+    .performance-date-popover {
+      position: absolute;
+      z-index: 120;
+      top: calc(100% + 8px);
+      right: 0;
+      display: none;
+      min-width: 190px;
+      padding: 9px;
+      border: 1px solid rgba(27, 24, 18, .18);
+      border-radius: 8px;
+      background: #fff;
+      box-shadow: 0 10px 28px rgba(27, 24, 18, .14);
+    }
+    .performance-magazine .date-box.open .performance-date-popover {
+      display: block;
+    }
+    .performance-date-input {
+      position: relative;
+      width: 100%;
+      min-width: 0;
+      height: 34px;
+      padding: 0 8px;
+      border: 1px solid #cbd5e1;
+      border-radius: 5px;
+      background: #fff;
+      color: #111827;
+      opacity: 1;
+      cursor: pointer;
+      pointer-events: auto;
+      font-family: "Space Grotesk", "Helvetica Neue", Arial, sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0;
+      text-transform: none;
+    }
+    .performance-magazine .btn {
+      height: 22px;
+      min-width: 0;
+      padding: 0 8px;
+      border: 0;
+      border-radius: 999px;
+      background: #1b1812;
+      color: #f5f2ec;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .04em;
+    }
+    .performance-magazine .btn.danger {
+      background: #1f6b49;
+      color: #f5f2ec;
+    }
+    .performance-magazine .btn:hover,
+    .performance-magazine .btn:focus {
+      background: #1f5f3f;
+      outline: 0;
+    }
+    .performance-magazine .import-status {
+      min-width: 0;
+      max-width: 120px;
+      color: #6e6654;
+      font-family: "IBM Plex Mono", Consolas, monospace;
+      font-size: 9px;
+      font-weight: 700;
+      line-height: 1.2;
+      text-align: right;
+      text-transform: lowercase;
+    }
+    @media (max-width: 980px) {
+      .performance-magazine .hero {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+      .performance-magazine .hero-actions {
+        width: 100%;
+        grid-template-columns: minmax(220px, auto);
+        justify-content: end;
+      }
+    }
+    .performance-magazine .metrics {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 0;
+      padding: 0;
+      border-bottom: 1px solid #d8d2c4;
+    }
+    .performance-magazine .metric {
+      min-height: 0;
+      align-items: flex-start;
+      justify-content: flex-start;
+      gap: 6px;
+      padding: 34px 36px 30px 0;
+      margin-right: 36px;
+      border: 0;
+      border-right: 1px solid #d8d2c4;
+      border-radius: 0;
+      background: transparent;
+      text-align: left;
+    }
+    .performance-magazine .metric:last-child { border-right: 0; margin-right: 0; }
+    .performance-magazine .metric-label {
+      color: #6e6654;
+      font-family: "IBM Plex Mono", Consolas, monospace;
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: .28em;
+    }
+    .performance-magazine .metric-value {
+      color: #1b1812;
+      font-family: "Instrument Serif", Georgia, serif;
+      font-size: clamp(58px, 6vw, 96px);
+      font-weight: 400;
+      line-height: 1;
+    }
+    .performance-magazine .metric-sub {
+      min-height: 0;
+      color: #57503f;
+      font-size: 17px;
+      font-weight: 600;
+      white-space: normal;
+    }
+    .performance-middle {
+      display: grid;
+      grid-template-columns: 1.15fr 1fr;
+      gap: 56px;
+      padding: 36px 0 40px;
+      border-bottom: 1px solid #d8d2c4;
+    }
+    .source-section,
+    .shift-section {
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+    }
+    .performance-section-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 18px;
+    }
+    .performance-section-meta {
+      color: #6e6654;
+      font-family: "IBM Plex Mono", Consolas, monospace;
+      font-size: 14px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .source-bars {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .source-bar-row {
+      display: grid;
+      grid-template-columns: minmax(120px, 190px) minmax(0, 1fr) 64px;
+      align-items: center;
+      gap: 18px;
+    }
+    .source-bar-name {
+      font-size: 17px;
+      font-weight: 600;
+    }
+    .source-bar-track {
+      height: 26px;
+      overflow: hidden;
+      border-radius: 3px;
+      background: #eae5d9;
+    }
+    .source-bar-fill {
+      height: 100%;
+      border-radius: 3px;
+      background: #1f5f3f;
+    }
+    .source-bar-count {
+      font-family: "IBM Plex Mono", Consolas, monospace;
+      font-size: 18px;
+      font-weight: 700;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+    .shift-card-list {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .shift-performance-card {
+      display: grid;
+      grid-template-columns: 1.1fr repeat(4, 1fr);
+      align-items: center;
+      gap: 12px 16px;
+      padding: 20px 24px 14px;
+      border: 1px solid #e4dfd2;
+      border-radius: 10px;
+      background: #fff;
+    }
+    .shift-performance-name {
+      font-family: "Instrument Serif", Georgia, serif;
+      font-size: 30px;
+      line-height: 1;
+    }
+    .shift-stat {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      min-width: 0;
+      text-align: center;
+    }
+    .shift-stat-value {
+      font-family: "IBM Plex Mono", Consolas, monospace;
+      font-size: 26px;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+    .shift-lift-value {
+      display: flex;
+      align-items: baseline;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 5px 8px;
+      width: 100%;
+      line-height: 1;
+      text-align: center;
+    }
+    .shift-lift-value .lift-total {
+      font-size: 26px;
+    }
+    .shift-lift-value .flip-badge {
+      min-height: 20px;
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 8px;
+      border: 1px solid #d8d2c4;
+      border-radius: 999px;
+      background: #eae5d9;
+      color: #5a5344;
+      font-family: "Space Grotesk", "Helvetica Neue", Arial, sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1;
+      white-space: nowrap;
+    }
+    .shift-stat-label {
+      width: 100%;
+      color: #6e6654;
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+    .shift-workers {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 5px;
+      padding-top: 8px;
+      border-top: 1px solid #eae5d9;
+    }
+    .shift-worker-chip {
+      display: inline-flex;
+      align-items: center;
+      min-height: 20px;
+      padding: 3px 8px;
+      border-radius: 5px;
+      background: #f4f1e9;
+      color: #4d4638;
+      font-family: "Space Grotesk", "Helvetica Neue", Arial, sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1;
+      white-space: nowrap;
+    }
+    .shift-worker-chip.empty {
+      color: #8a8272;
+      font-style: italic;
+    }
+    .shift-worker-chip.crane-operator {
+      border: 1px solid #d69e2e;
+      background: #f7d774;
+      color: #4a3410;
+      box-shadow: inset 0 0 0 1px rgba(255, 247, 210, .72);
+    }
+    .shift-worker-chip.off-day-worker {
+      border: 1px solid #f59e0b;
+      background: #fed7aa;
+      color: #7c2d12;
+      box-shadow: inset 0 0 0 1px rgba(255, 237, 213, .78);
+    }
+    .shift-worker-chip.crane-operator.off-day-worker {
+      border-color: #d97706;
+      background: linear-gradient(90deg, #f7d774 0%, #f7d774 50%, #fed7aa 50%, #fed7aa 100%);
+      color: #4a3410;
+    }
+    .timeline-section {
+      padding: 38px 0 0;
+    }
+    .timeline-section .section-head {
+      min-height: 0;
+      padding: 0 0 26px;
+      border: 0;
+      background: transparent;
+    }
+    .timeline-title-row {
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+    }
+    .timeline-title-row h2 {
+      font-size: 30px;
+    }
+    .timeline-title-row span {
+      color: #6e6654;
+      font-family: "Instrument Serif", Georgia, serif;
+      font-size: 17px;
+      font-style: italic;
+      font-weight: 400;
+      white-space: nowrap;
+    }
+    .timeline-section .section-meta {
+      color: #6e6654;
+      font-family: "IBM Plex Mono", Consolas, monospace;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .timeline-legend {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 22px;
+      color: #3b3529;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .timeline-legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      white-space: nowrap;
+    }
+    .legend-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 3px;
+      background: var(--legend);
+    }
+    .legend-lunch,
+    .legend-shift-change {
+      width: 12px;
+      height: 12px;
+      border-radius: 2px;
+      border: 1px solid #ede9de;
+    }
+    .legend-lunch {
+      background: repeating-linear-gradient(-45deg, rgba(180, 83, 9, .42) 0 3px, rgba(255, 247, 237, .18) 3px 6px);
+    }
+    .legend-shift-change {
+      border-color: rgba(30, 64, 175, .35);
+      background: repeating-linear-gradient(-45deg, rgba(30, 64, 175, .25) 0 3px, rgba(219, 234, 254, .18) 3px 6px);
+    }
+    .timeline-wrap {
+      position: relative;
+      padding: 0 0 0 0;
+    }
+    .timeline-axis-label {
+      position: absolute;
+      left: -22px;
+      transform: translateY(-50%);
+      writing-mode: vertical-rl;
+      color: #7c7462;
+      font-family: "IBM Plex Mono", Consolas, monospace;
+      font-size: 12px;
+      letter-spacing: .24em;
+      font-weight: 600;
+    }
+    .timeline-axis-label.lph { top: 55px; }
+    .timeline-axis-label.lifts { top: 205px; }
+    .target-line {
+      position: absolute;
+      left: 30px;
+      right: 0;
+      height: 0;
+      border-top: 1px dashed #b0a68f;
+      pointer-events: none;
+    }
+    .target-line.lph { top: 79px; }
+    .target-line.lifts { top: 225px; }
+    .target-label {
+      position: absolute;
+      right: 2px;
+      color: #7c7462;
+      font-family: "IBM Plex Mono", Consolas, monospace;
+      font-size: 11px;
+      font-weight: 600;
+      pointer-events: none;
+    }
+    .target-label.lph { top: 62px; }
+    .target-label.lifts { top: 208px; }
+    .timeline {
+      position: relative;
+      display: block;
+      min-width: 0;
+      min-height: 365px;
+      padding-left: 4px;
+    }
+    .timeline-lines {
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 1;
+      width: 100%;
+      height: 252px;
+      overflow: visible;
+      pointer-events: none;
+    }
+    .chart-area {
+      stroke: none;
+      shape-rendering: geometricPrecision;
+    }
+    .chart-line {
+      fill: none;
+      stroke: #c8aa9a;
+      stroke-width: 2;
+      opacity: .82;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      vector-effect: non-scaling-stroke;
+    }
+    .chart-point {
+      position: absolute;
+      left: 50%;
+      top: var(--point-y);
+      z-index: 30;
+      width: 42px;
+      height: 10px;
+      pointer-events: none;
+      transform: translate(-50%, -50%);
+    }
+    .chart-point span {
+      position: absolute;
+      left: 50%;
+      bottom: 12px;
+      transform: translateX(-50%);
+      padding: 1px 3px;
+      border-radius: 3px;
+      background: rgba(245, 242, 236, .86);
+      color: var(--point-color);
+      font-family: "IBM Plex Mono", Consolas, monospace;
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+    .chart-point i {
+      position: absolute;
+      left: 50%;
+      bottom: 0;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--point-color);
+      transform: translateX(-50%);
+    }
+    .chart-point.lifts,
+    .chart-point.lifts * {
+      pointer-events: auto;
+      cursor: text;
+    }
+    .chart-point.lifts {
+      width: 54px;
+    }
+    .chart-point.lifts::after {
+      content: "+ note";
+      position: absolute;
+      left: 50%;
+      bottom: 29px;
+      z-index: 2;
+      display: none;
+      transform: translateX(-50%);
+      padding: 3px 7px;
+      border: 1px dashed rgba(31, 41, 55, .22);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .72);
+      color: #6b7280;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, .08);
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 10px;
+      font-weight: 800;
+      line-height: 1.1;
+      white-space: nowrap;
+    }
+    .chart-point.lifts:not(.has-note):hover::after,
+    .hour-column:focus-visible .chart-point.lifts:not(.has-note)::after {
+      display: inline-flex;
+    }
+    .lift-note-bubble {
+      position: absolute;
+      left: 50%;
+      bottom: 30px;
+      z-index: 3;
+      max-width: 122px;
+      transform: translateX(-50%);
+      padding: 4px 8px;
+      border: 1px solid rgba(31, 41, 55, .22);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .9);
+      color: #1f2937;
+      box-shadow: 0 4px 12px rgba(15, 23, 42, .12);
+      backdrop-filter: blur(3px);
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 10px;
+      font-style: normal;
+      font-weight: 800;
+      line-height: 1.1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .chart-guide {
+      stroke: #b0a68f;
+      stroke-width: 1.2;
+      stroke-dasharray: 5 5;
+      vector-effect: non-scaling-stroke;
+    }
+    .chart-guide.avg {
+      stroke: #a75c50;
+      stroke-dasharray: 3 4;
+    }
+    .guide-label {
+      position: absolute;
+      z-index: 4;
+      color: #7c7462;
+      font-family: "IBM Plex Mono", Consolas, monospace;
+      font-size: 11px;
+      font-weight: 700;
+      line-height: 1;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+    .guide-label.right { right: 7px; }
+    .guide-label.left { left: 7px; }
+    .guide-label.avg {
+      color: #a75c50;
+      background: #f5f2ec;
+      padding: 1px 3px;
+    }
+    .guide-label.target {
+      color: #6e6654;
+      background: rgba(245, 242, 236, .92);
+      border-radius: 3px;
+      padding: 2px 5px;
+      box-shadow: 0 0 0 1px rgba(245, 242, 236, .65);
+    }
+    .guide-label.below {
+      transform: translateY(0);
+    }
+    .timeline-grid {
+      position: relative;
+      z-index: 2;
+      display: grid;
+      grid-template-columns: repeat(var(--timeline-hours, 24), minmax(0, 1fr));
+      gap: 8px;
+      min-height: 365px;
+    }
+    .hour-column {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      min-width: 0;
+      min-height: 365px;
+      padding: 0;
+      border: 0;
+      border-radius: 8px;
+      background: transparent;
+      color: inherit;
+      cursor: pointer;
+      text-align: center;
+    }
+    .hour-column::before {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 35px;
+      height: 211px;
+      border-left: 1px solid rgba(31, 95, 63, .14);
+      transform: translateX(-50%);
+    }
+    .hour-column.selected {
+      box-shadow: none;
+    }
+    .hour-column.lunch-column {
+      background: repeating-linear-gradient(-45deg, rgba(180, 83, 9, .18) 0 4px, rgba(255, 247, 237, .12) 4px 8px);
+      box-shadow: inset 0 0 0 1px rgba(180, 83, 9, .45), inset 0 0 0 1px rgba(255, 247, 237, .4), 0 1px 6px rgba(120, 72, 20, .14);
+      cursor: grab;
+      touch-action: none;
+    }
+    .hour-column.lunch-column::after {
+      display: none;
+    }
+    .hour-column.previous-shift {
+      background: transparent;
+    }
+    .hour-column.previous-shift-start::after {
+      content: "";
+      position: absolute;
+      z-index: 4;
+      top: 18px;
+      left: -4px;
+      height: 258px;
+      width: calc(300% + 16px);
+      border: 1px solid rgba(124, 58, 237, .42);
+      border-radius: 14px;
+      background: rgba(124, 58, 237, .075);
+      box-shadow: none;
+      pointer-events: none;
+    }
+    .previous-shift-label {
+      position: absolute;
+      z-index: 36;
+      top: 4px;
+      left: -4px;
+      width: calc(300% + 16px);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2px 8px;
+      color: #5b21b6;
+      font-family: "IBM Plex Mono", Consolas, monospace;
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing: .16em;
+      line-height: 1;
+      text-transform: uppercase;
+      pointer-events: none;
+    }
+    body.lunch-dragging {
+      user-select: none;
+    }
+    body.lunch-dragging .hour-column,
+    body.lunch-dragging .timeline-gap-button {
+      cursor: grabbing;
+    }
+    .hour-column.lunch-drop-target,
+    .timeline-gap-button.lunch-drop-target {
+      box-shadow: inset 0 0 0 3px #8a8272;
+    }
+    .hour-column.shift-change-drop-target,
+    .timeline-gap-button.shift-change-drop-target {
+      box-shadow: inset 0 0 0 3px rgba(30, 64, 175, .62);
+    }
+    .hour-column.lunch-column {
+      background: repeating-linear-gradient(-45deg, rgba(180, 83, 9, .18) 0 4px, rgba(255, 247, 237, .12) 4px 8px);
+      box-shadow: inset 0 0 0 1px rgba(180, 83, 9, .45), inset 0 0 0 1px rgba(255, 247, 237, .4), 0 1px 6px rgba(120, 72, 20, .14);
+      cursor: grab;
+      touch-action: none;
+    }
+    .hour-column.shift-change-column {
+      background: rgba(219, 234, 254, .16);
+      box-shadow: inset 0 0 0 2px rgba(30, 64, 175, .34), inset 0 0 0 999px rgba(219, 234, 254, .05);
+      cursor: grab;
+      touch-action: none;
+    }
+    .hour-column.lunch-column::after,
+    .hour-column.shift-change-column::after {
+      display: none;
+    }
+    .timeline-gap-button {
+      position: absolute;
+      z-index: 48;
+      top: 0;
+      bottom: 0;
+      left: var(--marker-x);
+      width: 22px;
+      padding: 0;
+      border: 0;
+      border-radius: 9px;
+      background: transparent;
+      color: #92400e;
+      cursor: pointer;
+      transform: translateX(-50%);
+      touch-action: none;
+    }
+    .timeline-gap-button.lunch-between,
+    .timeline-gap-button.shift-change-between,
+    .timeline-gap-button.lunch-drop-target,
+    .timeline-gap-button.shift-change-drop-target {
+      width: calc(100% / var(--timeline-hours));
+    }
+    .timeline-gap-button::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: 9px;
+      background: transparent;
+      pointer-events: none;
+    }
+    .timeline-gap-button:hover::before,
+    .timeline-gap-button.lunch-between::before,
+    .timeline-gap-button.lunch-drop-target::before {
+      border: 1px solid rgba(180, 83, 9, .48);
+      background: repeating-linear-gradient(-45deg, rgba(180, 83, 9, .18) 0 4px, rgba(255, 247, 237, .12) 4px 8px);
+      box-shadow: inset 0 0 0 1px rgba(255, 247, 237, .4), 0 1px 6px rgba(120, 72, 20, .14);
+    }
+    .timeline-gap-button.shift-change-between::before,
+    .timeline-gap-button.shift-change-drop-target::before {
+      border-color: rgba(30, 64, 175, .42);
+      background: repeating-linear-gradient(-45deg, rgba(30, 64, 175, .16) 0 4px, rgba(219, 234, 254, .1) 4px 8px);
+      box-shadow: inset 0 0 0 1px rgba(239, 246, 255, .38), 0 1px 6px rgba(30, 64, 175, .12);
+    }
+    .timeline-gap-button.lunch-between.shift-change-between::before {
+      background:
+        repeating-linear-gradient(-45deg, rgba(180, 83, 9, .14) 0 4px, transparent 4px 8px),
+        repeating-linear-gradient(45deg, rgba(30, 64, 175, .13) 0 4px, transparent 4px 8px);
+    }
+    .timeline-gap-button span,
+    .marker-label span {
+      position: absolute;
+      left: 50%;
+      display: none;
+      min-height: 14px;
+      align-items: center;
+      justify-content: center;
+      padding: 1px 5px;
+      border-radius: 999px;
+      border: 1px solid rgba(180, 83, 9, .55);
+      background: rgba(255, 247, 237, .92);
+      color: #92400e;
+      box-shadow: 0 1px 4px rgba(120, 72, 20, .16);
+      font-family: "IBM Plex Mono", Consolas, monospace;
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: .12em;
+      line-height: 1;
+      text-transform: uppercase;
+      transform: translateX(-50%);
+      pointer-events: none;
+      white-space: nowrap;
+    }
+    .timeline-gap-button .lunch-marker,
+    .marker-label .lunch-marker {
+      top: 7px;
+    }
+    .timeline-gap-button .shift-change-marker,
+    .marker-label .shift-change-marker {
+      top: 25px;
+      border-color: rgba(30, 64, 175, .45);
+      background: rgba(239, 246, 255, .92);
+      color: #1e40af;
+      box-shadow: 0 1px 4px rgba(30, 64, 175, .14);
+    }
+    .timeline-gap-button:hover .lunch-marker,
+    .timeline-gap-button.lunch-between .lunch-marker,
+    .timeline-gap-button.lunch-drop-target .lunch-marker,
+    .timeline-gap-button:hover .shift-change-marker,
+    .timeline-gap-button.shift-change-between .shift-change-marker,
+    .timeline-gap-button.shift-change-drop-target .shift-change-marker,
+    .marker-label span {
+      display: inline-flex;
+    }
+    .marker-label {
+      position: absolute;
+      top: 0;
+      left: 5px;
+      right: 5px;
+      z-index: 40;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+    .marker-label span {
+      position: absolute;
+    }
+    .timeline-marker-controls {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px;
+      border: 1px solid #ddd3bf;
+      border-radius: 999px;
+      background: rgba(255,255,255,.52);
+    }
+    .marker-mode-button {
+      min-height: 22px;
+      border: 0;
+      border-radius: 999px;
+      padding: 3px 8px;
+      background: transparent;
+      color: #6e6654;
+      font: inherit;
+      font-size: 11px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    .marker-mode-button.active {
+      background: #1b1812;
+      color: #fff;
+    }
+    .timeline-marker-range {
+      position: absolute;
+      z-index: 46;
+      top: 18px;
+      height: 258px;
+      left: var(--range-left);
+      width: var(--range-width);
+      min-width: 10px;
+      border: 1px solid rgba(180, 83, 9, .52);
+      border-radius: 8px;
+      background: repeating-linear-gradient(-45deg, rgba(180, 83, 9, .18) 0 4px, rgba(255, 247, 237, .12) 4px 8px);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.28);
+      cursor: grab;
+      touch-action: none;
+    }
+    .timeline-marker-range.shift-change {
+      border-color: rgba(30, 64, 175, .48);
+      background: repeating-linear-gradient(-45deg, rgba(30, 64, 175, .16) 0 4px, rgba(219, 234, 254, .1) 4px 8px);
+    }
+    .timeline-marker-range.crane-repair {
+      border-color: rgba(185, 28, 28, .55);
+      background: repeating-linear-gradient(-45deg, rgba(220, 38, 38, .16) 0 4px, rgba(254, 226, 226, .1) 4px 8px);
+    }
+    .timeline-marker-range.shift-end {
+      border-color: rgba(109, 40, 217, .5);
+      background: repeating-linear-gradient(-45deg, rgba(109, 40, 217, .15) 0 4px, rgba(237, 233, 254, .1) 4px 8px);
+    }
+    .timeline-marker-range.dragging { cursor: grabbing; }
+    .timeline-marker-range > span {
+      position: absolute;
+      top: -17px;
+      left: 50%;
+      max-width: calc(100% + 64px);
+      overflow: hidden;
+      padding: 2px 6px;
+      border-radius: 999px;
+      background: #1b1812;
+      color: #fff;
+      font-family: "IBM Plex Mono", Consolas, monospace;
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      line-height: 1.2;
+      text-overflow: ellipsis;
+      text-transform: uppercase;
+      transform: translateX(-50%);
+      white-space: nowrap;
+      pointer-events: none;
+    }
+    .timeline-marker-range.crane-repair > span { background: #991b1b; }
+    .timeline-marker-range.shift-change > span { background: #1e3a8a; }
+    .timeline-marker-range.shift-end > span { background: #5b21b6; }
+    .timeline-marker-resize {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 10px;
+      border: 0;
+      background: transparent;
+      cursor: ew-resize;
+      touch-action: none;
+    }
+    .timeline-marker-resize.start { left: -5px; }
+    .timeline-marker-resize.end { right: -5px; }
+    .timeline-marker-resize::after {
+      content: "";
+      position: absolute;
+      top: 45%;
+      bottom: 45%;
+      width: 2px;
+      border-radius: 2px;
+      background: rgba(255,255,255,.8);
+    }
+    .timeline-marker-resize.start::after { left: 5px; }
+    .timeline-marker-resize.end::after { right: 5px; }
+    .hour-label {
+      position: absolute;
+      z-index: 22;
+      top: 244px;
+      left: 4px;
+      right: 4px;
+      margin: 0;
+      padding: 8px 0 6px;
+      border-top: 2px solid #1b1812;
+      color: #1b1812;
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .people-count {
+      position: absolute;
+      z-index: 22;
+      top: 281px;
+      left: 0;
+      right: 0;
+      padding: 0;
+      color: #57503f;
+      font-size: 15px;
+      font-weight: 600;
+    }
+    .people-count strong {
+      color: #1b1812;
+      font-weight: 700;
+    }
+    .chart-type-list {
+      position: absolute;
+      z-index: 22;
+      top: 312px;
+      left: 5px;
+      right: 5px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-height: 66px;
+      padding: 0;
+    }
+    .chart-type-list .type-pill {
+      width: 100%;
+      min-height: 23px;
+      border-radius: 4px;
+      font-size: 12px;
+      letter-spacing: .04em;
+      padding: 4px 2px;
+    }
+    .type-legend {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px 26px;
+      padding: 22px 0 0;
+      margin-top: 26px;
+      border-top: 1px solid #d8d2c4;
+      color: #3b3529;
+      font-size: 15px;
+      font-weight: 600;
+      text-transform: none;
+    }
+    .timeline-key-label {
+      color: #6e6654;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: .24em;
+      margin-right: 8px;
+    }
+    .type-legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      white-space: nowrap;
+    }
+    .type-pill {
+      min-height: 0;
+      border-radius: 4px;
+      font-family: "IBM Plex Mono", Consolas, monospace;
+      font-size: 10px;
+      font-weight: 700;
+      line-height: 1.1;
+    }
+    .type-pill.drop { background: oklch(0.93 0.03 250); color: oklch(0.42 0.10 250); }
+    .type-pill.load { background: oklch(0.93 0.04 152); color: oklch(0.40 0.10 152); }
+    .type-pill.ups { background: oklch(0.95 0.03 27); color: oklch(0.48 0.14 27); }
+    .type-pill.carry { background: oklch(0.96 0.05 85); color: oklch(0.52 0.12 75); }
+    .type-pill.manual { background: oklch(0.94 0.04 310); color: oklch(0.45 0.12 310); }
+    .type-pill.other,
+    .type-pill.flip { background: #eae5d9; color: #5a5344; }
+    .legacy-hidden {
+      display: none;
+    }
+
+    @media (max-width: 1200px) {
+      .page.performance-magazine { padding: 28px 24px 32px; }
+      .performance-middle { grid-template-columns: 1fr; gap: 34px; }
+      .timeline { gap: 4px; }
+      .chart-type-list .type-pill { font-size: 10px; }
+    }
+    @media (max-width: 840px) {
+      .performance-magazine .hero { align-items: flex-start; flex-direction: column; }
+      .performance-magazine .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .performance-magazine .metric:nth-child(2n) { border-right: 0; margin-right: 0; }
+      .timeline-wrap { overflow-x: auto; padding-bottom: 8px; }
+      .timeline { min-width: 1180px; }
+      .shift-performance-card { grid-template-columns: 1fr 1fr; }
+      .source-bar-row { grid-template-columns: 140px minmax(0, 1fr) 54px; }
+    }
+
+    /* viewport-fit performance dashboard */
+    body.performance-page {
+      min-height: 100vh;
+      overflow-x: hidden;
+      overflow-y: auto;
+    }
+    .page.performance-magazine {
+      width: 100%;
+      min-height: 100vh;
+      display: grid;
+      grid-template-rows: auto auto auto auto;
+      gap: 8px;
+      padding: 10px 14px;
+      overflow: visible;
+    }
+    .performance-magazine .hero {
+      min-height: 0;
+      padding: 4px 0 8px;
+    }
+    .performance-magazine .kicker {
+      font-size: 10px;
+      margin-bottom: 1px;
+    }
+    .performance-magazine h1 {
+      font-size: clamp(28px, 2.6vw, 38px);
+    }
+    .performance-magazine .date-box {
+      min-height: 46px;
+      gap: 10px;
+    }
+    .display-date {
+      font-size: clamp(32px, 3vw, 42px);
+    }
+    .performance-magazine .metrics {
+      min-height: 0;
+      border-bottom: 1px solid #d8d2c4;
+    }
+    .performance-magazine .metric {
+      gap: 2px;
+      padding: 8px 16px 8px 0;
+      margin-right: 16px;
+    }
+    .performance-magazine .metric-label {
+      font-size: 10px;
+      letter-spacing: .18em;
+    }
+    .performance-magazine .metric-value {
+      font-size: clamp(34px, 3.6vw, 52px);
+    }
+    .performance-magazine .metric-sub {
+      font-size: 12px;
+      line-height: 1.1;
+    }
+    .performance-middle {
+      min-height: 0;
+      gap: 18px;
+      padding: 4px 0 6px;
+      overflow: visible;
+    }
+    .source-section,
+    .shift-section {
+      min-height: 0;
+      gap: 8px;
+      overflow: visible;
+    }
+    .performance-section-head {
+      min-height: 0;
+      gap: 10px;
+    }
+    .performance-magazine h2,
+    .timeline-title-row h2 {
+      font-size: clamp(22px, 2vw, 28px);
+    }
+    .performance-section-meta,
+    .timeline-section .section-meta {
+      font-size: 11px;
+    }
+    .source-bars {
+      gap: 7px;
+      overflow: hidden;
+    }
+    .source-bar-row {
+      grid-template-columns: minmax(96px, 150px) minmax(0, 1fr) 48px;
+      gap: 10px;
+    }
+    .source-bar-name {
+      font-size: 13px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .source-bar-track {
+      height: 16px;
+    }
+    .source-bar-count {
+      font-size: 14px;
+    }
+    .shift-card-list {
+      gap: 7px;
+      overflow: visible;
+    }
+    .shift-performance-card {
+      gap: 6px 10px;
+      padding: 8px 12px 7px;
+      border-radius: 7px;
+    }
+    .shift-performance-name {
+      font-size: 24px;
+    }
+    .shift-stat-value,
+    .shift-lift-value .lift-total {
+      font-size: 20px;
+    }
+    .shift-stat-label {
+      font-size: 10px;
+    }
+    .shift-workers {
+      max-height: none;
+      gap: 4px;
+      padding-top: 5px;
+      overflow: visible;
+    }
+    .shift-worker-chip {
+      min-height: 16px;
+      padding: 2px 5px;
+      font-size: 10px;
+    }
+    .timeline-section {
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      padding: 2px 0 22px;
+      overflow: visible;
+    }
+    .timeline-section .section-head {
+      flex: 0 0 auto;
+      padding: 0 0 7px;
+    }
+    .timeline-title-row {
+      gap: 8px;
+    }
+    .timeline-title-row span {
+      font-size: 13px;
+    }
+    .timeline-legend {
+      gap: 10px;
+      font-size: 11px;
+    }
+    .timeline-wrap {
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow: visible;
+    }
+    .timeline {
+      min-height: 330px;
+      height: auto;
+      max-height: none;
+      padding-bottom: 30px;
+    }
+    .timeline-lines {
+      height: min(252px, calc(100% - 92px));
+    }
+    .hour-column {
+      height: 100%;
+    }
+    .chart-type-list {
+      max-height: 46px;
+      overflow: hidden;
+    }
+    .chart-type-list .type-pill {
+      font-size: 9px;
+      padding: 2px 5px;
+    }
+    .type-legend {
+      flex: 0 0 auto;
+      margin-top: 4px;
+      padding-top: 4px;
+      max-height: 34px;
+      overflow: hidden;
+    }
+    @media (max-width: 1200px) {
+      .page.performance-magazine {
+        padding: 8px 10px;
+        gap: 6px;
+      }
+      .performance-middle {
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+      }
+    }
+    @media (max-width: 840px) {
+      body.performance-page { overflow: auto; }
+      .page.performance-magazine {
+        height: auto;
+        min-height: 100vh;
+        max-height: none;
+        overflow: visible;
+      }
+      .timeline-wrap { overflow-x: hidden; }
+      .timeline { min-width: 0; }
+    }
+  
+    /* compact performance layout correction */
+    body.performance-page {
+      min-height: auto;
+      overflow-x: hidden;
+      overflow-y: auto;
+    }
+    .page.performance-magazine {
+      width: min(1560px, 100%);
+      min-height: auto;
+      display: block;
+      padding: 16px 14px 28px;
+      overflow: visible;
+    }
+    .performance-magazine .hero {
+      min-height: 0;
+      align-items: flex-end;
+      padding: 8px 0 12px;
+      gap: 14px;
+    }
+    .performance-magazine .hero > div:first-child,
+    .performance-magazine .hero-actions,
+    .performance-magazine .date-box {
+      min-height: 0;
+    }
+    .performance-magazine .date-box {
+      align-items: flex-end;
+      gap: 10px;
+    }
+    .performance-magazine .metrics {
+      min-height: 0;
+      display: grid;
+      align-items: stretch;
+      margin: 8px 0 12px;
+      padding: 0;
+    }
+    .performance-magazine .metric {
+      min-height: 92px;
+      justify-content: center;
+    }
+    .performance-middle {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 26px;
+      margin: 0 0 26px;
+      padding: 0;
+      min-height: 0;
+      overflow: visible;
+    }
+    .source-section,
+    .shift-section,
+    .timeline-section {
+      min-height: 0;
+      overflow: visible;
+    }
+    .timeline-section {
+      margin-top: 8px;
+      padding: 0 0 18px;
+    }
+    .timeline-wrap {
+      min-height: 0;
+      overflow: visible;
+    }
+    .timeline {
+      min-height: 280px;
+      height: auto;
+      max-height: none;
+      padding-bottom: 18px;
+    }
+    @media (max-width: 900px) {
+      .performance-middle { grid-template-columns: 1fr; }
+      .performance-magazine .hero { align-items: flex-start; }
+    }
+
+    /* Keep timeline labels and activity chips inside the visible section. */
+    .timeline-wrap {
+      padding-left: 30px;
+      padding-bottom: 12px;
+      overflow: visible;
+    }
+    .timeline-axis-label {
+      left: 4px;
+    }
+    .timeline,
+    .timeline-grid,
+    .hour-column {
+      min-height: 405px;
+    }
+    .chart-type-list {
+      max-height: none;
+      overflow: visible;
+    }
+    .type-legend {
+      max-height: none;
+      overflow: visible;
+    }
+</style>
+</head>
+<body class="performance-page">
+  <main class="page performance-magazine">
+    <header class="hero">
+      <div>
+        <div class="kicker">Performance Analytics</div>
+        <h1>Lift Performance</h1>
+      </div>
+      <div class="hero-actions">
+        <div class="date-box" id="performanceDateBox">
+          <div class="performance-date-actions">
+            <button class="btn primary" id="openLiftImport" type="button">Import Lifts</button>
+            <button class="btn danger" id="clearLiftImports" type="button">Clear Imports</button>
+            <span class="import-status" id="liftImportStatus"></span>
+          </div>
+          <button class="date-display-button" id="performanceDateButton" type="button" aria-label="Select performance date"><span>Date</span><span class="display-date" id="displayDate"></span></button>
+          <div class="performance-date-popover" id="performanceDatePopover">
+            <input class="performance-date-input" id="analysisDate" type="date" aria-label="Performance date" />
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <section class="metrics" id="metrics"></section>
+
+    <section class="performance-middle">
+      <section class="source-section">
+        <div class="performance-section-head">
+          <h2>Lift Source Mix</h2>
+          <div class="performance-section-meta" id="sourceMeta"></div>
+        </div>
+        <div class="source-bars" id="sourceMix"></div>
+      </section>
+
+      <section class="shift-section" id="shiftPerformance"></section>
+    </section>
+
+    <section class="timeline-section">
+      <div class="section-head">
+        <div class="timeline-title-row"><h2>Hourly Timeline</h2><span>tracking lifts per hour (LPH)</span></div>
+        <div class="timeline-legend" id="timelineMeta"></div>
+      </div>
+      <div class="timeline-wrap">
+        <div class="timeline-axis-label lph">LPH</div>
+        <div class="timeline-axis-label lifts">Lifts</div>
+        <div class="timeline" id="timeline"></div>
+      </div>
+      <div class="type-legend" id="typeLegend" aria-label="Lift Type Key"></div>
+    </section>
+
+    <section class="legacy-hidden" aria-hidden="true">
+      <section>
+        <div class="section-head">
+          <h2 id="hourTitle">Hour Detail</h2>
+          <div class="section-meta" id="hourMeta"></div>
+        </div>
+        <div class="detail-body" id="hourDetail"></div>
+      </section>
+      <section>
+        <div class="section-head"><h2>Custom Groups</h2><div class="section-meta">estimated allocation</div></div>
+        <div class="groups-editor">
+          <textarea id="groupInput" spellcheck="false" placeholder="High Side: Branford Alton, Brown James&#10;Ramp Team: Stewart Dexter, Tran Tyler"></textarea>
+          <button class="btn secondary" id="saveGroups" type="button">Save</button>
+        </div>
+        <div class="table-wrap" id="groupTable"></div>
+      </section>
+      <section>
+        <div id="shiftTable"></div>
+      </section>
+      <section>
+        <div class="section-head"><h2>Individual Allocation</h2><div class="section-meta">estimated from hourly staffing share</div></div>
+        <div class="table-wrap" id="individualTable"></div>
+        <div class="status-note">Individual lift totals are allocated estimates when imported lift data is hourly only.</div>
+      </section>
+    </section>
+  </main>
+  <div class="timeline-tooltip" id="timelineTooltip" role="tooltip"></div>
+  <div class="modal-backdrop" id="liftImportModal" role="dialog" aria-modal="true" aria-labelledby="liftImportTitle">
+    <div class="import-modal">
+      <div class="import-modal-head">
+        <div class="import-modal-title" id="liftImportTitle">Import Actual Lifts</div>
+        <button class="btn danger" id="closeLiftImportTop" type="button">Close</button>
+      </div>
+      <div class="import-modal-body">
+        <div class="import-drop">
+          <input type="file" id="liftImportFile" accept=".xlsx,.xls,.csv" multiple />
+          <button class="btn primary" id="chooseLiftImport" type="button">Choose Load / Ground / Flip Files</button>
+          <div class="import-help">Load and ground files use Completion Time and Train ID. Flip files use Date/Time rows and each flip counts as one lift.</div>
+        </div>
+        <div id="liftImportFileList" class="file-list"></div>
+        <div id="liftImportSummary" class="import-summary"></div>
+        <div id="liftImportTable" class="import-table-wrap"></div>
+      </div>
+      <div class="import-modal-foot">
+        <button class="btn danger" id="cancelLiftImport" type="button">Cancel</button>
+        <button class="btn primary" id="applyLiftImport" type="button" disabled>Apply Import</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const dayAliases = {
+      sun: "sun", sunday: "sun",
+      mon: "mon", monday: "mon",
+      tue: "tue", tues: "tue", tuesday: "tue",
+      wed: "wed", weds: "wed", wednesday: "wed",
+      thu: "thu", thur: "thu", thurs: "thu", thursday: "thu",
+      fri: "fri", friday: "fri",
+      sat: "sat", saturday: "sat"
+    };
+    const rosterStorageKey = "conglobal-roster-state-v1";
+    const rosterAdditionsKey = "conglobal-roster-additions-v1";
+    const dayforceStorageKey = "conglobal-dayforce-punches-v1";
+    const archiveStorageKey = "conglobal-timesheet-archive-v1";
+    const billingStorageKey = "ops-monthly-v2";
+    const legacyBillingStorageKey = "ops-monthly-v1";
+    const timesheetNotesKey = "conglobal-timesheet-notes-v1";
+    const liftStorageKey = "standalone_hourly_actuals_v1";
+    const groupsStorageKey = "conglobal-performance-groups-v1";
+    const dateStorageKey = "conglobal-performance-date-v1";
+    const lunchStorageKey = "conglobal-performance-lunch-v1";
+    const shiftChangeStorageKey = "conglobal-performance-shift-change-v1";
+    const craneRepairStorageKey = "conglobal-performance-crane-repair-v1";
+    const shiftEndStorageKey = "conglobal-performance-shift-end-v1";
+    const liftPointNotesKey = "conglobal-performance-lift-point-notes-v1";
+    const rosterDayLabels = ["Mon", "Tues", "Wed", "Thurs", "Fri", "Sat", "Sun"];
+    const hourKeys = Array.from({ length: 24 }, function(_, index) { return index; });
+    const timelineHourKeys = Array.from({ length: 24 }, function(_, index) { return (index + 3) % 24; });
+    const sourceNames = {
+      ihosa: "IHOSA load",
+      mhoas: "MHOAS load",
+      coh: "COH load",
+      carryover: "Carry-over",
+      zlbho1: "ZLBHO-13 drop",
+      zpbho: "ZPBHO-15 drop",
+      zlbho2: "ZLBHO-2 drop",
+      flips: "Flips",
+      ups_work: "UPS lift credit"
+    };
+    const shiftLabels = { first: "1st Shift", second: "2nd Shift" };
+    const defaultCraneCapable = [
+      "Stewart Dexter",
+      "Thomas Henry",
+      "Brown James",
+      "Player Keyston",
+      "Hickman Makia",
+      "Hosey Kevin",
+      "Tingle Jason",
+      "Benavides Robert",
+      "Delgado Jose"
+    ];
+    const defaultRoster = {
+      first: [
+        ["Branford Alton", "Mon, Tues"],
+        ["Castruita Armando", "Wed, Thurs"],
+        ["Frazer Dacoyea", "Mon, Tues"],
+        ["Citizen Dante", "Thurs, Fri"],
+        ["Towler Demetrius", "Thurs, Fri"],
+        ["Stewart Dexter", "Sat, Sun"],
+        ["Gardner Dorrean", "Tues, Wed"],
+        ["Thomas Henry", "Sat, Sun"],
+        ["Brown James", "Thurs, Fri"],
+        ["Herrera Jose", "Sat, Sun"],
+        ["Player Keyston", "Mon, Sun"],
+        ["Hickman Makia", "Mon, Sun"],
+        ["Dever Mikey", "Tues, Wed"],
+        ["Wanza Myles", "Mon, Tues"],
+        ["Romero Nelson", "Tues, Wed"],
+        ["McDaniel Charles", "Fri, Sat"],
+        ["Nava Ramon", "Sat, Sun"],
+        ["Tran Tyler", "Thurs, Fri"]
+      ],
+      second: [
+        ["Carruthers Timothy", "Mon, Sun"],
+        ["Caceres Virula Victor", "Mon, Tues"],
+        ["Keme Aweri Jr.", "Mon, Tues"],
+        ["Hosey Kevin", "Mon, Tues"],
+        ["Brown Brandy", "Wed, Thurs"],
+        ["Mejia Aaron", "Thurs, Fri"],
+        ["Bookman Derrell", "Thurs, Fri"],
+        ["Hopkins Alexander", "Mon, Sun"],
+        ["Tingle Jason", "Sat, Sun"],
+        ["Contreras Marco", "Sat, Sun"],
+        ["Benavides Robert", "Wed, Sun"],
+        ["Urtado Ernest", "Tues, Wed"],
+        ["Johnson Messiah", "Tues, Thurs"],
+        ["Gilder Rufus II", "Tues, Wed"],
+        ["Echendu Chimenierm", "Wed, Thurs"],
+        ["Delgado Jose", "Fri, Sat"]
+      ],
+      gate: [
+        ["Candace Warren", "Sat, Sun"],
+        ["Connie Johnson", "Sat, Sun"],
+        ["Jarade Douglas", "Sat, Sun"],
+        ["Gregory Watson II", "Sat, Sun"],
+        ["Bryce Alexander", "Thurs, Fri"],
+        ["Naomisha Hunt", "Thurs, Fri, Sat"],
+        ["Ramacacondra Pratt", "Thurs, Fri"],
+        ["Kane Cabral", "Mon, Tues"],
+        ["Tavares Gariet", "Mon, Tues"]
+      ]
+    };
+    let selectedHour = null;
+    let lastModel = null;
+    let liftImportPreviewRows = [];
+    let liftImportPreviewDate = "";
+    let lunchDragState = null;
+    let suppressTimelineClick = false;
+    let timelineMarkerMode = "lunch";
+
+    function esc(value) {
+      return String(value == null ? "" : value).replace(/[&<>"']/g, function(char) {
+        return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char];
+      });
+    }
+    function readJson(key, fallback) {
+      try {
+        const saved = JSON.parse(localStorage.getItem(key) || "null");
+        return saved == null ? fallback : saved;
+      } catch (error) {
+        return fallback;
+      }
+    }
+    function lunchDateKey(dateValue) {
+      return String(dateValue || localDateValue());
+    }
+    function normalizeLunchPeriod(value) {
+      const numeric = Number(value);
+      if (!Number.isFinite(numeric)) return null;
+      const rounded = Math.round(numeric * 2) / 2;
+      return rounded >= 0 && rounded <= 23.5 ? rounded : null;
+    }
+    const markerStorageKeys = {
+      lunch: lunchStorageKey,
+      shiftChange: shiftChangeStorageKey,
+      craneRepair: craneRepairStorageKey,
+      shiftEnd: shiftEndStorageKey
+    };
+    const markerDefaults = { lunch: 1, shiftChange: 1, craneRepair: .5, shiftEnd: 1 };
+    function markerSlotFromPeriod(period) {
+      const normalized = normalizeLunchPeriod(period);
+      return normalized == null ? null : Math.round((((normalized - 3) + 24) % 24) * 2);
+    }
+    function markerPeriodFromSlot(slot) {
+      return normalizeLunchPeriod((3 + Math.max(0, Math.min(47, Number(slot) || 0)) / 2) % 24);
+    }
+    function normalizeMarkerRange(value) {
+      const legacy = typeof value === "number" ? { start: value, duration: 1 } : value;
+      if (!legacy || typeof legacy !== "object") return null;
+      const start = normalizeLunchPeriod(legacy.start);
+      const startSlot = markerSlotFromPeriod(start);
+      const durationSlots = Math.max(1, Math.min(48 - (startSlot == null ? 0 : startSlot), Math.round((Number(legacy.duration) || 1) * 2)));
+      if (startSlot == null) return null;
+      return { start: start, duration: durationSlots / 2 };
+    }
+    function readMarkerRanges(dateValue, mode) {
+      const saved = readJson(markerStorageKeys[mode], {});
+      const values = saved && Array.isArray(saved[lunchDateKey(dateValue)]) ? saved[lunchDateKey(dateValue)] : [];
+      return values.map(normalizeMarkerRange).filter(Boolean);
+    }
+    function writeMarkerRanges(dateValue, mode, ranges) {
+      const storageKey = markerStorageKeys[mode];
+      const saved = readJson(storageKey, {});
+      const key = lunchDateKey(dateValue);
+      const clean = ranges.map(normalizeMarkerRange).filter(Boolean).sort(function(a, b) {
+        return markerSlotFromPeriod(a.start) - markerSlotFromPeriod(b.start);
+      });
+      if (clean.length) saved[key] = clean;
+      else delete saved[key];
+      localStorage.setItem(storageKey, JSON.stringify(saved));
+    }
+    function markerOccupiedPeriods(dateValue, mode) {
+      const periods = new Set();
+      readMarkerRanges(dateValue, mode).forEach(function(range) {
+        const startSlot = markerSlotFromPeriod(range.start);
+        const durationSlots = Math.round(range.duration * 2);
+        for (let offset = 0; offset < durationSlots; offset += 1) periods.add(markerPeriodFromSlot(startSlot + offset));
+      });
+      return periods;
+    }
+    function readLunchPeriods(dateValue) { return markerOccupiedPeriods(dateValue, "lunch"); }
+    function readShiftChangePeriods(dateValue) { return markerOccupiedPeriods(dateValue, "shiftChange"); }
+    function markerRangeAt(dateValue, mode, period) {
+      const slot = markerSlotFromPeriod(period);
+      return readMarkerRanges(dateValue, mode).findIndex(function(range) {
+        const start = markerSlotFromPeriod(range.start);
+        return slot >= start && slot < start + Math.round(range.duration * 2);
+      });
+    }
+    function toggleTimelineMarkerPeriod(dateValue, mode, period) {
+      const ranges = readMarkerRanges(dateValue, mode);
+      const existing = markerRangeAt(dateValue, mode, period);
+      if (existing >= 0) ranges.splice(existing, 1);
+      else ranges.push({ start: normalizeLunchPeriod(period), duration: markerDefaults[mode] || 1 });
+      writeMarkerRanges(dateValue, mode, ranges);
+    }
+    function updateTimelineMarkerRange(dateValue, mode, index, startSlot, durationSlots) {
+      const ranges = readMarkerRanges(dateValue, mode);
+      if (!ranges[index]) return;
+      const safeStart = Math.max(0, Math.min(47, Math.round(startSlot)));
+      const safeDuration = Math.max(1, Math.min(48 - safeStart, Math.round(durationSlots)));
+      ranges[index] = { start: markerPeriodFromSlot(safeStart), duration: safeDuration / 2 };
+      writeMarkerRanges(dateValue, mode, ranges);
+    }
+    function removeTimelineMarkerRange(dateValue, mode, index) {
+      const ranges = readMarkerRanges(dateValue, mode);
+      if (!ranges[index]) return;
+      ranges.splice(index, 1);
+      writeMarkerRanges(dateValue, mode, ranges);
+    }
+    function markerModeLabel(mode) {
+      return mode === "shiftChange" ? "Shift Change" : mode === "craneRepair" ? "Crane Repair" : mode === "shiftEnd" ? "Shift End" : "Lunch";
+    }
+    function markerModeClass(mode) {
+      return mode === "shiftChange" ? "shift-change" : mode === "craneRepair" ? "crane-repair" : mode === "shiftEnd" ? "shift-end" : "lunch";
+    }
+    function activeMarkerType(button) {
+      if (!button) return "";
+      const preferredClass = markerModeClass(timelineMarkerMode);
+      if (button.classList.contains(preferredClass + "-column") || button.classList.contains(preferredClass + "-between")) return timelineMarkerMode;
+      if (button.classList.contains("lunch-column") || button.classList.contains("lunch-between")) return "lunch";
+      if (button.classList.contains("shift-change-column") || button.classList.contains("shift-change-between")) return "shiftChange";
+      return "";
+    }
+    function markerModeControlsHtml() {
+      return '<span class="timeline-marker-controls" aria-label="Timeline marker mode">' + ["lunch", "shiftChange", "craneRepair", "shiftEnd"].map(function(mode) {
+        return '<button type="button" class="marker-mode-button ' + (timelineMarkerMode === mode ? "active" : "") + '" data-marker-mode="' + mode + '">' + markerModeLabel(mode) + '</button>';
+      }).join("") + '</span>';
+    }
+    function timelineMarkerRangesHtml(dateValue) {
+      return ["lunch", "shiftChange", "craneRepair", "shiftEnd"].map(function(mode) {
+        return readMarkerRanges(dateValue, mode).map(function(range, index) {
+          const startSlot = markerSlotFromPeriod(range.start);
+          const durationSlots = Math.round(range.duration * 2);
+          const left = (startSlot / 48 * 100).toFixed(4) + "%";
+          const width = (durationSlots / 48 * 100).toFixed(4) + "%";
+          const durationText = range.duration < 1 ? "30 min" : (range.duration % 1 ? range.duration.toFixed(1) : range.duration.toFixed(0)) + " hr";
+          return '<div class="timeline-marker-range ' + markerModeClass(mode) + '" data-marker-range="' + index + '" data-marker-type="' + mode + '" data-start-slot="' + startSlot + '" data-duration-slots="' + durationSlots + '" style="--range-left:' + left + ';--range-width:' + width + '" title="Drag to move. Drag an edge to resize. Click to remove."><span>' + markerModeLabel(mode) + ' - ' + durationText + '</span><i class="timeline-marker-resize start" data-resize="start"></i><i class="timeline-marker-resize end" data-resize="end"></i></div>';
+        }).join("");
+      }).join("");
+    }
+    function readLiftPointNotes(dateValue) {
+      const saved = readJson(liftPointNotesKey, {});
+      const notes = saved && saved[lunchDateKey(dateValue)] && typeof saved[lunchDateKey(dateValue)] === "object" ? saved[lunchDateKey(dateValue)] : {};
+      return Object.assign({}, notes);
+    }
+    function writeLiftPointNote(dateValue, hour, note) {
+      const saved = readJson(liftPointNotesKey, {});
+      const key = lunchDateKey(dateValue);
+      const numeric = Number(hour);
+      if (!Number.isInteger(numeric) || numeric < 0 || numeric > 23) return;
+      const notes = saved[key] && typeof saved[key] === "object" ? saved[key] : {};
+      const clean = String(note || "").trim();
+      if (clean) notes[String(numeric)] = clean.slice(0, 48);
+      else delete notes[String(numeric)];
+      if (Object.keys(notes).length) saved[key] = notes;
+      else delete saved[key];
+      localStorage.setItem(liftPointNotesKey, JSON.stringify(saved));
+    }
+    function localDateValue(date) {
+      const d = date || new Date();
+      return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+    }
+    function selectedPerformanceDateValue() {
+      const input = document.getElementById("analysisDate");
+      return input && input.value ? input.value : (localStorage.getItem(dateStorageKey) || localDateValue());
+    }
+    function dateFromInput(value) {
+      const match = String(value || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if (!match) return new Date();
+      const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+      return Number.isNaN(date.getTime()) ? new Date() : date;
+    }
+    function inputDateKeyFromValue(value, fallbackDateValue) {
+      if (value instanceof Date && !Number.isNaN(value.getTime())) {
+        return value.getFullYear() >= 2000 ? localDateValue(value) : "";
+      }
+      if (typeof value === "number" && Number.isFinite(value) && value > 20000 && value < 80000) {
+        const date = new Date(Math.round((value - 25569) * 86400000));
+        return date.getUTCFullYear() + "-" + String(date.getUTCMonth() + 1).padStart(2, "0") + "-" + String(date.getUTCDate()).padStart(2, "0");
+      }
+      const text = String(value || "").trim();
+      if (!text) return "";
+      const fallbackDate = dateFromInput(fallbackDateValue || localDateValue());
+      const fallbackYear = fallbackDate.getFullYear();
+      const months = {
+        jan: 1, january: 1, feb: 2, february: 2, mar: 3, march: 3, apr: 4, april: 4, may: 5,
+        jun: 6, june: 6, jul: 7, july: 7, aug: 8, august: 8, sep: 9, sept: 9, september: 9,
+        oct: 10, october: 10, nov: 11, november: 11, dec: 12, december: 12
+      };
+      let match = text.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+      if (match) return match[1] + "-" + String(Number(match[2])).padStart(2, "0") + "-" + String(Number(match[3])).padStart(2, "0");
+      match = text.match(/(?:[A-Za-z]{3,9},?\s*)?([A-Za-z]{3,9})\s+(\d{1,2})(?:,\s*(\d{4}))?/);
+      if (match && months[match[1].toLowerCase()]) {
+        const year = match[3] ? Number(match[3]) : fallbackYear;
+        return year + "-" + String(months[match[1].toLowerCase()]).padStart(2, "0") + "-" + String(Number(match[2])).padStart(2, "0");
+      }
+      match = text.match(/^(\d{1,2})[\/.-](\d{1,2})(?:[\/.-](\d{2,4}))?/);
+      if (match) {
+        const year = match[3] ? Number(match[3].length === 2 ? "20" + match[3] : match[3]) : fallbackYear;
+        return year + "-" + String(Number(match[1])).padStart(2, "0") + "-" + String(Number(match[2])).padStart(2, "0");
+      }
+      return "";
+    }
+    function longDateLabel(value) {
+      return dateFromInput(value).toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" });
+    }
+    function dayKeyFromDate(date) {
+      return ["sun", "mon", "tue", "wed", "thu", "fri", "sat"][date.getDay()];
+    }
+    function dayKeyFromDateValue(value) {
+      const text = String(value || "");
+      let match = text.match(/\b(\d{1,2})\/(\d{1,2})\/(\d{4})\b/);
+      if (match) return dayKeyFromDate(new Date(Number(match[3]), Number(match[1]) - 1, Number(match[2])));
+      match = text.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if (match) return dayKeyFromDate(new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3])));
+      return "";
+    }
+    function prettyDate(value) {
+      return dateFromInput(value).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric", year: "numeric" });
+    }
+    function normalizeName(name) {
+      const suffixes = new Set(["jr", "sr", "ii", "iii", "iv"]);
+      return String(name || "")
+        .trim()
+        .toLowerCase()
+        .replace(/[,.]/g, " ")
+        .replace(/\bcontrerras\b/g, "contreras")
+        .replace(/\s+/g, " ")
+        .split(" ")
+        .filter(function(part) { return part && !suffixes.has(part); })
+        .sort()
+        .join(" ");
+    }
+    function parseOffDays(text) {
+      return new Set(String(text || "")
+        .split(",")
+        .map(function(item) { return item.trim().toLowerCase(); })
+        .map(function(item) { return dayAliases[item] || dayAliases[item.slice(0, 3)]; })
+        .filter(Boolean));
+    }
+    function rosterOffDaysLabel(days) {
+      return (days || [])
+        .map(function(day, index) { return day === "O" ? rosterDayLabels[index] : ""; })
+        .filter(Boolean)
+        .join(", ");
+    }
+    function readRosterAdditions() {
+      const additions = readJson(rosterAdditionsKey, []);
+      return Array.isArray(additions) ? additions : [];
+    }
+    function craneOperatorKeys() {
+      const saved = readJson(rosterStorageKey, {});
+      const keys = new Set(defaultCraneCapable.map(normalizeName).filter(Boolean));
+      ["first", "second", "gate", "mechanics", "managers"].forEach(function(sectionKey) {
+        const rows = saved && Array.isArray(saved[sectionKey]) ? saved[sectionKey] : [];
+        rows.forEach(function(employee) {
+          const role = String((employee && employee.role) || "").toLowerCase();
+          if (role !== "crane" && role !== "everything") return;
+          const key = normalizeName(employee.name);
+          if (key) keys.add(key);
+        });
+      });
+      readRosterAdditions().forEach(function(addition) {
+        const role = String((addition && addition.role) || "").toLowerCase();
+        if (role !== "crane" && role !== "everything") return;
+        const key = normalizeName(addition.name);
+        if (key) keys.add(key);
+      });
+      return keys;
+    }
+    function isCraneOperator(person, craneKeys) {
+      if (!person) return false;
+      return Boolean(craneKeys && craneKeys.has(person.key || normalizeName(person.name)));
+    }
+    function buildRoster() {
+      const roster = Object.fromEntries(Object.entries(defaultRoster).map(function(entry) {
+        return [entry[0], entry[1].map(function(row) { return { name: row[0], offDays: row[1] }; })];
+      }));
+      const saved = readJson(rosterStorageKey, null);
+      if (saved && typeof saved === "object") {
+        ["first", "second", "gate", "mechanics", "managers"].forEach(function(key) {
+          if (!Array.isArray(saved[key])) return;
+          roster[key] = saved[key]
+            .filter(function(employee) { return employee && employee.name; })
+            .map(function(employee) {
+              return { name: employee.name, offDays: Array.isArray(employee.days) ? rosterOffDaysLabel(employee.days) : "" };
+            });
+        });
+      }
+      const seen = new Set(Object.values(roster).flat().map(function(employee) { return normalizeName(employee.name); }));
+      readRosterAdditions().forEach(function(addition) {
+        if (!addition || !addition.name) return;
+        const shift = addition.shift || "first";
+        const key = normalizeName(addition.name);
+        if (!key || seen.has(key)) return;
+        if (!Array.isArray(roster[shift])) roster[shift] = [];
+        roster[shift].push({ name: addition.name, offDays: Array.isArray(addition.days) ? rosterOffDaysLabel(addition.days) : "" });
+        seen.add(key);
+      });
+      return roster;
+    }
+    function toMilitaryTime(value) {
+      const text = String(value || "").trim();
+      if (!text || text === "Missing?") return "";
+      let match = text.match(/^(\d{1,2}):(\d{2})\s*([ap])m$/i);
+      if (match) {
+        let hour = Number(match[1]);
+        if (match[3].toLowerCase() === "p" && hour !== 12) hour += 12;
+        if (match[3].toLowerCase() === "a" && hour === 12) hour = 0;
+        return String(hour).padStart(2, "0") + match[2];
+      }
+      match = text.match(/^(\d{1,2}):(\d{2})$/);
+      if (match) return String(Number(match[1])).padStart(2, "0") + match[2];
+      match = text.replace(/\D/g, "").match(/^(\d{3,4})$/);
+      return match ? match[1].padStart(4, "0") : text;
+    }
+    function minutesFromMilitary(value) {
+      const match = String(value || "").trim().match(/^(\d{1,2})(\d{2})$/);
+      if (!match) return null;
+      const hour = Number(match[1]);
+      const minute = Number(match[2]);
+      if (hour > 23 || minute > 59) return null;
+      return hour * 60 + minute;
+    }
+    function currentMilitaryTime() {
+      const now = new Date();
+      return String(now.getHours()).padStart(2, "0") + String(now.getMinutes()).padStart(2, "0");
+    }
+    function currentMinutes() {
+      const now = new Date();
+      return now.getHours() * 60 + now.getMinutes();
+    }
+    function actualHours(startValue, lunch, endValue) {
+      const start = minutesFromMilitary(startValue);
+      const endRaw = minutesFromMilitary(endValue);
+      if (start === null || endRaw === null) return 0;
+      let end = endRaw;
+      if (end <= start) end += 1440;
+      let minutes = end - start;
+      if (String(lunch).toUpperCase() === "YES") minutes -= 30;
+      return minutes > 0 ? minutes / 60 : 0;
+    }
+    function paidNoteHoursForText(value) {
+      return /\bfloating holidays?\b|\bvacations?\b/i.test(String(value || "")) ? 8 : 0;
+    }
+    function readManualNotes() {
+      const notes = readJson(timesheetNotesKey, {});
+      return notes && typeof notes === "object" && !Array.isArray(notes) ? notes : {};
+    }
+    function getManualNote(name, notes) {
+      const key = normalizeName(name);
+      return key ? String((notes || readManualNotes())[key] || "").trim() : "";
+    }
+    function readPunches() {
+      const punches = readJson(dayforceStorageKey, []);
+      return Array.isArray(punches) ? punches : [];
+    }
+    function readPunchesForDate(dateValue) {
+      const dateKey = inputDateKeyFromValue(dateValue, dateValue) || localDateValue();
+      const todayKey = localDateValue();
+      return readPunches().filter(function(punch) {
+        const punchDateKey = inputDateKeyFromValue(punch && punch.date, dateKey);
+        if (punchDateKey) return punchDateKey === dateKey;
+        return dateKey === todayKey;
+      });
+    }
+    function previousDateKey(dateValue) {
+      const date = dateFromInput(inputDateKeyFromValue(dateValue, dateValue) || localDateValue());
+      date.setDate(date.getDate() - 1);
+      return localDateValue(date);
+    }
+    function readArchiveStore() {
+      const archive = readJson(archiveStorageKey, {});
+      return archive && typeof archive === "object" && !Array.isArray(archive) ? archive : {};
+    }
+    function previousArchiveCandidateKeys(archive, dateValue) {
+      const dateKey = liftDateKey(dateValue);
+      const previousKey = previousDateKey(dateKey);
+      const seen = new Set();
+      const keys = [];
+      function add(key) {
+        if (!key || seen.has(key) || !archive[key]) return;
+        seen.add(key);
+        keys.push(key);
+      }
+      add(dateKey);
+      add(previousKey);
+      return keys;
+    }
+    function readBillingStore() {
+      const saved = readJson(billingStorageKey, null) || readJson(legacyBillingStorageKey, null);
+      return saved && typeof saved === "object" ? saved : {};
+    }
+    function cleanDropNumber(number, family) {
+      const digits = String(number || "").replace(/\D/g, "").replace(/^0+/, "");
+      if (!digits) return "";
+      if (digits.length <= 2) return digits;
+      if (family === "zlb") {
+        if (digits.startsWith("13")) return "13";
+        return digits[0];
+      }
+      if (family === "zpb") {
+        if (digits.startsWith("15")) return "15";
+        return digits[0];
+      }
+      return digits.slice(0, 2);
+    }
+    function dropSourceKey(family, number) {
+      const cleaned = cleanDropNumber(number, family);
+      if (!cleaned) return "";
+      if (family === "zlb") {
+        if (cleaned === "13") return "zlbho1";
+        if (cleaned === "2") return "zlbho2";
+        return `zlbho${cleaned}`;
+      }
+      if (family === "zpb") {
+        if (cleaned === "15") return "zpbho";
+        return `zpbho${cleaned}`;
+      }
+      return "";
+    }
+    function numberedDropSourceKey(text) {
+      const raw = String(text || "");
+      const compact = raw.toLowerCase().replace(/[^a-z0-9]/g, "");
+      let match = raw.match(/\bzlb(?:ho)?\s*[-#]?\s*(\d{1,2})\b/i) || compact.match(/zlb(?:ho)?(\d+)/);
+      if (match) return dropSourceKey("zlb", match[1]);
+      match = raw.match(/\bzpb(?:ho)?\s*[-#]?\s*(\d{1,2})\b/i) || compact.match(/zpb(?:ho)?(\d+)/);
+      if (match) return dropSourceKey("zpb", match[1]);
+      return "";
+    }
+    function normalizeSourceKey(key) {
+      const raw = String(key || "").trim();
+      const compact = raw.toLowerCase().replace(/[^a-z0-9]/g, "");
+      if (!compact) return "";
+      if (["ramp", "deramp", "unstacked"].includes(compact)) return "";
+      if (["flip", "stacked"].includes(compact)) return "flips";
+      if (compact === "manualactual") return "actual";
+      let match = raw.match(/^zlbho(\d+)$/i) || compact.match(/^zlbho(\d+)$/i);
+      if (match) return dropSourceKey("zlb", match[1]);
+      match = raw.match(/^zpbho(\d+)$/i) || compact.match(/^zpbho(\d+)$/i);
+      if (match) return dropSourceKey("zpb", match[1]);
+      return raw;
+    }
+    function dynamicSourceLabel(key) {
+      key = normalizeSourceKey(key);
+      const zlbMatch = String(key || "").match(/^zlbho(\d+)$/i);
+      if (zlbMatch) return `ZLBHO-${zlbMatch[1]} drop`;
+      const zpbMatch = String(key || "").match(/^zpbho(\d+)$/i);
+      if (zpbMatch) return `ZPBHO-${zpbMatch[1]} drop`;
+      return "";
+    }
+    function sourceKeyHasLabel(key) {
+      key = normalizeSourceKey(key);
+      return Boolean(sourceNames[key] || dynamicSourceLabel(key));
+    }
+    function inferBillingLiftSource(detail) {
+      const field = String(detail && detail.field || "").trim();
+      const text = `${field} ${detail && detail.equipment || ""} ${detail && detail.train || ""} ${detail && (detail.fileName || detail.source) || ""} ${detail && detail.reason || ""}`.toLowerCase();
+      const compact = text.replace(/[^a-z0-9]/g, "");
+      const numberedDrop = numberedDropSourceKey(text);
+      if (numberedDrop) return numberedDrop;
+      if (compact.includes("zlbho")) return "zlbho1";
+      if (compact.includes("ihosa") || compact.includes("mliho") || compact.includes("iho")) return "ihosa";
+      if (compact.includes("mhoas") || compact.includes("yho37r") || compact.includes("yho69r") || /mho/i.test(text)) return "mhoas";
+      if (/coh/i.test(text)) return "coh";
+      if (/ups/i.test(text)) return "ups_work";
+      if (/carry/.test(text)) return "carryover";
+      if (/flip|stack/.test(field) || /flip|stack/.test(String(detail && detail.reason || "").toLowerCase())) return "flips";
+      return "";
+    }
+    function billingSourceKey(field, detail) {
+      const inferred = inferBillingLiftSource(detail);
+      if (inferred && sourceKeyHasLabel(inferred) && inferred !== "actual") return inferred;
+      const explicit = normalizeSourceKey(String(detail && detail.liftSource || "").trim());
+      if (explicit && sourceKeyHasLabel(explicit) && explicit !== "actual") return explicit;
+      return "";
+    }
+    function minutesFromTimeValue(value) {
+      if (value instanceof Date && !Number.isNaN(value.getTime())) return value.getHours() * 60 + value.getMinutes();
+      if (typeof value === "number" && Number.isFinite(value)) {
+        const fraction = value > 1 ? value - Math.floor(value) : value;
+        if (fraction > 0 && fraction < 1) return Math.round(fraction * 1440);
+        const compact = String(Math.round(value)).padStart(4, "0");
+        return minutesFromMilitary(compact.slice(-4));
+      }
+      const text = String(value || "").trim();
+      if (!text) return null;
+      const parsed = new Date(text);
+      if (!Number.isNaN(parsed.getTime()) && /[:apm]/i.test(text)) return parsed.getHours() * 60 + parsed.getMinutes();
+      let match = text.match(/(\d{1,2}):(\d{2})(?::\d{2})?\s*([ap])m?/i);
+      if (match) {
+        let hour = Number(match[1]);
+        const minute = Number(match[2]);
+        if (match[3].toLowerCase() === "p" && hour !== 12) hour += 12;
+        if (match[3].toLowerCase() === "a" && hour === 12) hour = 0;
+        return hour * 60 + minute;
+      }
+      match = text.replace(/\D/g, "").match(/(\d{3,4})$/);
+      return match ? minutesFromMilitary(match[1].padStart(4, "0")) : null;
+    }
+    function billingDailyLiftCount(record) {
+      if (!record || typeof record !== "object") return 0;
+      return ["ramp", "deramp", "flip", "stacked", "unstacked"].reduce(function(sum, field) {
+        return sum + (Number(record[field]) || 0);
+      }, 0);
+    }
+    function addBillingLift(hourly, hour, sourceKey, count, note) {
+      const numericHour = Number(hour);
+      const numericCount = Number(count) || 0;
+      if (!Number.isInteger(numericHour) || numericHour < 0 || numericHour > 23 || numericCount <= 0) return;
+      const key = normalizeSourceKey(sourceKey);
+      if (!hourly[numericHour]) hourly[numericHour] = { value: 0, srcs: [], sourceCounts: {}, note: note || "Billing" };
+      hourly[numericHour].value += numericCount;
+      if (key && key !== "actual") {
+        hourly[numericHour].sourceCounts[key] = (hourly[numericHour].sourceCounts[key] || 0) + numericCount;
+        if (!hourly[numericHour].srcs.includes(key)) hourly[numericHour].srcs.push(key);
+      }
+      if (note) hourly[numericHour].note = note;
+    }
+    function readBillingHourlyLifts(dateValue) {
+      const billing = readBillingStore();
+      const dateKey = liftDateKey(dateValue);
+      const hourly = {};
+      const details = Array.isArray(billing.moveDetails) ? billing.moveDetails : [];
+      const dateDetails = details.filter(function(detail) { return detail && !detail.deleted && detail.date === dateKey; });
+      const dailyTotal = billingDailyLiftCount(billing.data && billing.data[dateKey]);
+      const seen = new Set();
+
+      dateDetails.forEach(function(detail) {
+        const sourceKey = billingSourceKey(detail.field, detail);
+        if (!sourceKey) return;
+        const equipment = String(detail.equipment || "").trim().toUpperCase();
+        const train = String(detail.train || "").trim().toUpperCase();
+        const uniqueKey = [dateKey, sourceKey, equipment || detail.id || detail.rowNumber || "", train].join("|");
+        if (seen.has(uniqueKey)) return;
+        const minutes = minutesFromTimeValue(detail.time);
+        if (minutes == null) return;
+        const hour = Math.floor(minutes / 60) % 24;
+        seen.add(uniqueKey);
+        addBillingLift(hourly, hour, sourceKey, 1, "Billing hourly detail");
+      });
+
+      const hourlyTotal = Object.keys(hourly).reduce(function(sum, hour) {
+        return sum + (Number(hourly[hour].value) || 0);
+      }, 0);
+      const adjustment = Math.max(0, dailyTotal - hourlyTotal);
+      if (adjustment > 0) addBillingLift(hourly, 3, "", adjustment, "Billing daily total");
+
+      return { hourly: hourly, hasData: dailyTotal > 0 || dateDetails.length > 0 };
+    }
+    function previousArchiveBucketsFromSnapshot(snapshot) {
+      const buckets = {};
+      const rows = snapshot && snapshot.shifts && Array.isArray(snapshot.shifts.second) ? snapshot.shifts.second : [];
+
+      rows.forEach(function(row) {
+        if (!row || row.status === "OFF" || row.unpaidAbsence) return;
+        const intervals = workIntervals({
+          start: toMilitaryTime(row.start || ""),
+          end: toMilitaryTime(row.end || ""),
+          lunch: row.lunch
+        }, false);
+        hourKeys.slice(0, 3).forEach(function(hour) {
+          const hours = overlapHours(intervals, hour);
+          if (hours <= 0) return;
+          if (!buckets[hour]) buckets[hour] = [];
+          buckets[hour].push({
+            name: row.name || "Previous shift",
+            shift: "second",
+            hours: hours,
+            note: "Archive previous shift"
+          });
+        });
+      });
+
+      return buckets;
+    }
+    function archiveSnapshotForDate(dateValue) {
+      const archive = readArchiveStore();
+      const dateKey = liftDateKey(dateValue);
+      return archive[dateKey] || null;
+    }
+    function archiveLunchValue(row, start, end) {
+      const text = String(row && row.lunch || "").trim().toUpperCase();
+      if (text === "YES" || text === "NO") return text;
+      if (text === "??") return "??";
+      return start || end ? "" : "";
+    }
+    function buildRowsFromArchive(dateValue) {
+      const snapshot = archiveSnapshotForDate(dateValue);
+      if (!snapshot || !snapshot.shifts) return [];
+      const rows = [];
+      ["first", "second"].forEach(function(shiftKey) {
+        const shiftRows = Array.isArray(snapshot.shifts[shiftKey]) ? snapshot.shifts[shiftKey] : [];
+        shiftRows.forEach(function(row) {
+          if (!row || !row.name || row.status === "OFF") return;
+          const start = toMilitaryTime(row.start || "");
+          const end = toMilitaryTime(row.end || "");
+          const lunch = archiveLunchValue(row, start, end);
+          const intervals = workIntervals({ start: start, end: end, lunch: lunch }, false);
+          const workedHours = intervals.reduce(function(sum, interval) { return sum + (interval.end - interval.start) / 60; }, 0);
+          const noteText = String(row.note || "").trim();
+          const paidNoteHours = row.paidAbsence ? (paidNoteHoursForText(noteText) || Number(row.actual) || 0) : paidNoteHoursForText(noteText);
+
+          rows.push({
+            name: row.name,
+            key: normalizeName(row.name),
+            shift: shiftKey,
+            shiftLabel: shiftLabels[shiftKey] || shiftKey,
+            scheduled: row.scheduled !== false,
+            note: noteText,
+            start: start,
+            lunch: lunch,
+            end: end,
+            workedHours: workedHours,
+            paidHours: Number(row.actual) || workedHours + paidNoteHours,
+            paidAbsenceHours: paidNoteHours,
+            cameInOffDay: Boolean(row.cameInOffDay),
+            intervals: intervals,
+            hourly: {}
+          });
+        });
+      });
+      return rows;
+    }
+    function readPreviousArchiveBuckets(dateValue) {
+      const archive = readArchiveStore();
+      const candidateKeys = previousArchiveCandidateKeys(archive, dateValue);
+
+      for (const key of candidateKeys) {
+        const buckets = previousArchiveBucketsFromSnapshot(archive[key]);
+        if (Object.keys(buckets).length) return buckets;
+      }
+
+      return {};
+    }
+    function normalizeSourceCounts(counts) {
+      if (!counts || typeof counts !== "object" || Array.isArray(counts)) return {};
+      return Object.entries(counts).filter(function(entry) {
+        return entry[0] && Number.isFinite(Number(entry[1])) && Number(entry[1]) > 0;
+      }).map(function(entry) {
+        return [normalizeSourceKey(entry[0]), Number(entry[1])];
+      }).filter(function(entry) {
+        return Boolean(entry[0]) && entry[0] !== "actual";
+      }).reduce(function(out, entry) {
+        out[entry[0]] = (out[entry[0]] || 0) + entry[1];
+        return out;
+      }, {});
+    }
+
+    function normalizeLiftEntry(entry) {
+      if (entry == null) return { value: null, srcs: [], sourceCounts: {}, note: "" };
+      if (typeof entry === "number") return { value: entry, srcs: [], sourceCounts: {}, note: "" };
+      const srcs = Array.isArray(entry.srcs) ? entry.srcs.map(normalizeSourceKey).filter(function(key) { return Boolean(key) && key !== "actual"; }) : [];
+      const sourceCounts = normalizeSourceCounts(entry.sourceCounts || entry.srcCounts);
+      srcs.forEach(function(key) {
+        if (sourceCounts[key] == null && srcs.length === 1 && entry.value != null) sourceCounts[key] = Number(entry.value) || 0;
+      });
+      return {
+        value: entry.value != null && Number.isFinite(Number(entry.value)) ? Number(entry.value) : null,
+        srcs: srcs,
+        sourceCounts: sourceCounts,
+        note: entry.note || ""
+      };
+    }
+    function liftDateKey(dateValue) {
+      return inputDateKeyFromValue(dateValue, dateValue) || localDateValue();
+    }
+    function hasLegacyLiftHours(raw) {
+      return raw && typeof raw === "object" && !Array.isArray(raw) && Object.keys(raw).some(function(key) {
+        return /^\d{1,2}$/.test(key);
+      });
+    }
+    function readLiftStore(dateValue) {
+      const raw = readJson(liftStorageKey, {});
+      if (!raw || typeof raw !== "object" || Array.isArray(raw)) return { version: 2, byDate: {} };
+      const byDate = raw.byDate || raw.__byDate;
+      if (byDate && typeof byDate === "object" && !Array.isArray(byDate)) {
+        return { version: 2, byDate: byDate };
+      }
+      if (hasLegacyLiftHours(raw)) {
+        const key = liftDateKey(dateValue);
+        const store = { version: 2, byDate: {} };
+        store.byDate[key] = raw;
+        localStorage.setItem(liftStorageKey, JSON.stringify(store));
+        return store;
+      }
+      return { version: 2, byDate: {} };
+    }
+    function readLiftMap(dateValue) {
+      const store = readLiftStore(dateValue);
+      const key = liftDateKey(dateValue);
+      return store.byDate && store.byDate[key] && typeof store.byDate[key] === "object" ? store.byDate[key] : {};
+    }
+    function saveLiftMap(dateValue, map) {
+      const store = readLiftStore(dateValue);
+      const key = liftDateKey(dateValue);
+      if (map && typeof map === "object" && Object.keys(map).length) store.byDate[key] = map;
+      else delete store.byDate[key];
+      localStorage.setItem(liftStorageKey, JSON.stringify(store));
+    }
+    function clearLiftMap(dateValue) {
+      const store = readLiftStore(dateValue);
+      delete store.byDate[liftDateKey(dateValue)];
+      localStorage.setItem(liftStorageKey, JSON.stringify(store));
+    }
+    function sourceLabel(key) {
+      key = normalizeSourceKey(key);
+      return sourceNames[key] || dynamicSourceLabel(key) || key || "";
+    }
+    function sourceBreakdown(entry) {
+      const value = Number(entry.value) || 0;
+      const counts = normalizeSourceCounts(entry.sourceCounts || entry.srcCounts);
+      const countKeys = Object.keys(counts).filter(function(key) { return Boolean(key) && key !== "actual"; });
+      if (countKeys.length) {
+        return countKeys.map(function(key) {
+          return { key: key, label: sourceLabel(key), lifts: counts[key], exact: true };
+        });
+      }
+      let srcs = Array.isArray(entry.srcs) ? entry.srcs.map(normalizeSourceKey).filter(function(key) { return Boolean(key) && key !== "actual"; }) : [];
+      if (!srcs.length) return [];
+      if (srcs.length > 1) {
+        return srcs.map(function(key) {
+          return { key: key, label: sourceLabel(key), lifts: 0, estimated: true };
+        });
+      }
+      return [{ key: srcs[0], label: sourceLabel(srcs[0]), lifts: value }];
+    }
+    function parseImportHour(raw) {
+      if (raw == null) return null;
+      if (raw instanceof Date && !Number.isNaN(raw.getTime())) return raw.getHours();
+      if (typeof raw === "number" && Number.isFinite(raw)) {
+        const fraction = raw - Math.floor(raw);
+        return Math.floor(fraction * 24) % 24;
+      }
+      const text = String(raw).trim();
+      if (!text) return null;
+      let match = text.match(/(\d{1,2}):(\d{2})(?::\d{2})?\s*([ap])m?\b/i);
+      if (match) {
+        let hour = Number(match[1]);
+        const suffix = match[3].toLowerCase();
+        if (suffix === "p" && hour !== 12) hour += 12;
+        if (suffix === "a" && hour === 12) hour = 0;
+        return hour % 24;
+      }
+      match = text.match(/(\d{1,2}):(\d{2})(?::\d{2})?/);
+      if (match) return Number(match[1]) % 24;
+      match = text.match(/\b(\d{3,4})\b/);
+      if (match) return Number(match[1].slice(0, -2)) % 24;
+      return null;
+    }
+    function matchLoad(trainId) {
+      const text = String(trainId || "").trim().toUpperCase();
+      if (/^IHOSA\b/.test(text)) return "ihosa";
+      if (/^YHO37R\b/.test(text) || /^YHO69R\b/.test(text) || /^MHOAS\b/.test(text)) return "mhoas";
+      if (/\bCOH\b/.test(text)) return "coh";
+      return null;
+    }
+    function matchGround(trainId) {
+      const rawText = String(trainId || "").trim().toUpperCase();
+      const numberedDrop = numberedDropSourceKey(rawText);
+      if (numberedDrop) return numberedDrop;
+      const text = rawText.replace(/\s*\d+\s*$/, "").trim();
+      if (text === "ZLBHO" || text === "ZLBHO-13" || text === "ZLBHO13") return "zlbho1";
+      if (text === "ZPBHO" || text === "ZPBHO-15" || text === "ZPBHO15") return "zpbho";
+      if (text === "ZLBHO-2" || text === "ZLBHO2") return "zlbho2";
+      return null;
+    }
+    function findImportHeader(headers, candidates) {
+      const wanted = new Set(candidates);
+      for (let index = 0; index < headers.length; index += 1) {
+        const header = String(headers[index] || "").toLowerCase().replace(/[^a-z]/g, "");
+        if (wanted.has(header)) return headers[index];
+      }
+      return null;
+    }
+    function importTrainHeaderCandidates(mode) {
+      const common = [
+        "trainid", "train", "trainname", "traincode", "trainsymbol", "symbol",
+        "symbolid", "inboundtrain", "outboundtrain", "inboundtrn", "outboundtrn",
+        "inboundsymbol", "outboundsymbol", "inboundsym", "outboundsym",
+        "inboundtrainsymbol", "outboundtrainsymbol", "inboundsymbolid",
+        "outboundsymbolid", "loadtrain", "groundtrain", "deramptrain",
+        "ramptrain", "liftgenerated", "generatedlift", "loadgenerated",
+        "linehaultrain", "worktrain", "destinationtrain"
+      ];
+      return mode === "loads"
+        ? ["inboundsymbol", "inboundtrainsymbol", "inboundtrain", "loadtrain", "ramptrain"].concat(common)
+        : ["inboundsymbol", "inboundtrainsymbol", "trainid", "groundtrain", "deramptrain", "outboundtrain", "outboundsymbol"].concat(common);
+    }
+    function detectFlipHeaders(headers) {
+      return Boolean(
+        findImportHeader(headers, ["flippedtochassisid", "flippedchassisid", "flippedtochassis"]) ||
+        findImportHeader(headers, ["originalchassisid", "originalchassis"]) ||
+        findImportHeader(headers, ["reasonforflip", "flipreason"]) ||
+        findImportHeader(headers, ["authorizinguserid"])
+      );
+    }
+    function readLiftImportRows(file) {
+      return new Promise(function(resolve, reject) {
+        if (!window.XLSX) {
+          reject(new Error("XLSX parser did not load"));
+          return;
+        }
+        const reader = new FileReader();
+        reader.onerror = function() { reject(new Error("Could not read file")); };
+        reader.onload = function(event) {
+          try {
+            const workbook = XLSX.read(new Uint8Array(event.target.result), { type: "array", cellDates: true });
+            const sheet = workbook.Sheets[workbook.SheetNames[0]];
+            resolve(XLSX.utils.sheet_to_json(sheet, { defval: null }));
+          } catch (error) {
+            reject(error);
+          }
+        };
+        reader.readAsArrayBuffer(file);
+      });
+    }
+    function buildLiftImportPreview(file, rows, dateValue) {
+      const filename = String(file && file.name || "");
+      const lowerName = filename.toLowerCase();
+      const selectedDateKey = liftDateKey(dateValue);
+      if (!rows.length) return { ok: false, msg: "no rows found" };
+      const headers = Object.keys(rows[0] || {});
+      let mode = /flip/.test(lowerName) ? "flips" : (/deramp|ground/.test(lowerName) ? "grounds" : (/load|\bramp\b/.test(lowerName) ? "loads" : null));
+      if (!mode && detectFlipHeaders(headers)) mode = "flips";
+      if (!mode) return { ok: false, msg: "filename needs load/ramp, ground/deramp, or flips" };
+      const timeCol = findImportHeader(headers, ["completiontime", "completion", "time", "datetime", "dateandtime", "eventtime", "createddatetime", "createdtime"]);
+      const dateCol = findImportHeader(headers, ["date", "workdate", "completiondate", "eventdate", "createddate"]);
+      const trainCol = findImportHeader(headers, importTrainHeaderCandidates(mode));
+      if (!timeCol) return { ok: false, msg: "missing Completion Time, Date/Time, or Time column" };
+      if (mode !== "flips" && !trainCol) return { ok: false, msg: "missing Train ID / Inbound Symbol column" };
+      const buckets = {};
+      rows.forEach(function(row) {
+        const rowDateKey = inputDateKeyFromValue(dateCol ? row[dateCol] : "", selectedDateKey) || inputDateKeyFromValue(row[timeCol], selectedDateKey);
+        if (rowDateKey && rowDateKey !== selectedDateKey) return;
+        const hour = parseImportHour(row[timeCol]);
+        if (hour == null) return;
+        const key = mode === "flips" ? "flips" : (mode === "loads" ? matchLoad(row[trainCol]) : matchGround(row[trainCol]));
+        const id = hour + "|" + (key || "(unmatched)") + "|" + (row[trainCol] || "");
+        if (!buckets[id]) buckets[id] = { hour: hour, key: key, train: row[trainCol], units: 0, file: filename, mode: mode, date: rowDateKey || selectedDateKey };
+        buckets[id].units += 1;
+      });
+      return { ok: true, rows: Object.keys(buckets).map(function(id) { return buckets[id]; }) };
+    }
+    function openLiftImport() {
+      liftImportPreviewRows = [];
+      liftImportPreviewDate = selectedPerformanceDateValue();
+      document.getElementById("liftImportFile").value = "";
+      document.getElementById("liftImportFileList").innerHTML = "";
+      document.getElementById("liftImportTable").innerHTML = "";
+      const summary = document.getElementById("liftImportSummary");
+      summary.innerHTML = "";
+      summary.style.display = "none";
+      document.getElementById("applyLiftImport").disabled = true;
+      document.getElementById("liftImportModal").classList.add("open");
+    }
+    function closeLiftImport() {
+      document.getElementById("liftImportModal").classList.remove("open");
+    }
+    function handleLiftImportFiles(fileList) {
+      const files = Array.from(fileList || []);
+      if (!files.length) return;
+      liftImportPreviewDate = selectedPerformanceDateValue();
+      const list = document.getElementById("liftImportFileList");
+      list.innerHTML = "";
+      liftImportPreviewRows = [];
+      files.forEach(function(file) {
+        list.innerHTML += '<div class="file-item"><span class="tag">File</span>' + esc(file.name) + '</div>';
+      });
+      files.reduce(function(chain, file) {
+        return chain.then(function() {
+          return readLiftImportRows(file)
+            .then(function(rows) { return buildLiftImportPreview(file, rows, liftImportPreviewDate); })
+            .catch(function(error) { return { ok: false, msg: error.message || String(error) }; })
+            .then(function(result) {
+              if (result.ok) {
+                liftImportPreviewRows = liftImportPreviewRows.concat(result.rows);
+              } else {
+                list.innerHTML += '<div class="file-item" style="color:#991b1b"><span class="tag">Error</span>' + esc(file.name) + ': ' + esc(result.msg) + '</div>';
+              }
+            });
+        });
+      }, Promise.resolve()).then(renderLiftImportPreview);
+    }
+    function renderLiftImportPreview() {
+      const matched = liftImportPreviewRows.filter(function(row) { return row.key; });
+      const total = matched.reduce(function(sum, row) { return sum + row.units; }, 0);
+      document.getElementById("applyLiftImport").disabled = matched.length === 0;
+      const summary = document.getElementById("liftImportSummary");
+      summary.innerHTML = '<div><b>' + esc(total) + '</b> units</div><div><b>' + esc(matched.length) + '</b> matched rows</div><div><b>' + esc(prettyDate(liftImportPreviewDate || selectedPerformanceDateValue())) + '</b> target date</div>';
+      summary.style.display = "grid";
+      let html = '<table class="import-table"><thead><tr><th>Window</th><th>Source</th><th>Units</th><th>File</th></tr></thead><tbody>';
+      liftImportPreviewRows.sort(function(a, b) { return a.hour - b.hour || String(a.key || "").localeCompare(String(b.key || "")); }).forEach(function(row) {
+        const rowClass = row.key ? "" : ' class="unmatched"';
+        const source = row.key ? sourceLabel(row.key) : "Unmatched " + (row.train || "");
+        html += "<tr" + rowClass + "><td>" + esc(hourLabel(row.hour)) + "</td><td>" + esc(source) + "</td><td>" + esc(row.units) + "</td><td>" + esc(row.file) + "</td></tr>";
+      });
+      html += "</tbody></table>";
+      document.getElementById("liftImportTable").innerHTML = html;
+    }
+    function applyLiftImport() {
+      const dateValue = liftImportPreviewDate || selectedPerformanceDateValue();
+      const byHour = {};
+      liftImportPreviewRows.filter(function(row) { return row.key; }).forEach(function(row) {
+        if (!byHour[row.hour]) byHour[row.hour] = {};
+        byHour[row.hour][row.key] = (byHour[row.hour][row.key] || 0) + row.units;
+      });
+      const map = readLiftMap(dateValue);
+      Object.keys(byHour).forEach(function(hour) {
+        const entry = normalizeLiftEntry(map[hour]);
+        const added = Object.keys(byHour[hour]).reduce(function(sum, key) { return sum + byHour[hour][key]; }, 0);
+        entry.value = (Number(entry.value) || 0) + added;
+        if (!entry.sourceCounts) entry.sourceCounts = {};
+        Object.keys(byHour[hour]).forEach(function(key) {
+          if (!entry.srcs.includes(key)) entry.srcs.push(key);
+          entry.sourceCounts[key] = (Number(entry.sourceCounts[key]) || 0) + byHour[hour][key];
+        });
+        map[hour] = entry;
+      });
+      saveLiftMap(dateValue, map);
+      const imported = Object.keys(byHour).reduce(function(sum, hour) {
+        return sum + Object.keys(byHour[hour]).reduce(function(hourSum, key) { return hourSum + byHour[hour][key]; }, 0);
+      }, 0);
+      document.getElementById("liftImportStatus").textContent = imported ? imported + " lifts imported for " + prettyDate(dateValue) : "";
+      closeLiftImport();
+      render();
+    }
+    function clearLiftImports(button) {
+      if (!button) return;
+      if (button.dataset.armed !== "1") {
+        button.dataset.armed = "1";
+        button.textContent = "Confirm Clear";
+        button.classList.add("confirming");
+        window.clearTimeout(clearLiftImports.resetTimer);
+        clearLiftImports.resetTimer = window.setTimeout(function() {
+          button.dataset.armed = "";
+          button.textContent = "Clear Imports";
+          button.classList.remove("confirming");
+        }, 3000);
+        return;
+      }
+      window.clearTimeout(clearLiftImports.resetTimer);
+      button.dataset.armed = "";
+      button.textContent = "Clear Imports";
+      button.classList.remove("confirming");
+      clearLiftMap(selectedPerformanceDateValue());
+      liftImportPreviewRows = [];
+      selectedHour = null;
+      document.getElementById("liftImportStatus").textContent = "imports cleared for " + prettyDate(selectedPerformanceDateValue());
+      render();
+    }
+    function hourLabel(hour) {
+      return String(hour).padStart(2, "0") + "00-" + String(hour).padStart(2, "0") + "59";
+    }
+    function displayHour(hour) {
+      return String(hour).padStart(2, "0") + "00";
+    }
+    function subtractLunch(intervals) {
+      return intervals.flatMap(function(interval) {
+        const total = interval.end - interval.start;
+        if (total <= 30) return [interval];
+        const lunchStart = interval.start + Math.floor((total - 30) / 2);
+        const lunchEnd = lunchStart + 30;
+        return [
+          { start: interval.start, end: lunchStart },
+          { start: lunchEnd, end: interval.end }
+        ].filter(function(part) { return part.end > part.start; });
+      });
+    }
+    function workIntervals(row, useCurrentEnd) {
+      const start = minutesFromMilitary(row.start);
+      if (start === null) return [];
+      let end = minutesFromMilitary(row.end);
+      if (end === null) {
+        if (useCurrentEnd === false) return [];
+        end = currentMinutes();
+      }
+      if (end <= start) end += 1440;
+      if (end <= start) return [];
+      let intervals = [{ start: start, end: end }];
+      if (String(row.lunch).toUpperCase() === "YES") intervals = subtractLunch(intervals);
+      return intervals;
+    }
+    function overlapHours(intervals, hour) {
+      let minutes = 0;
+      const starts = [hour * 60, hour * 60 + 1440];
+      intervals.forEach(function(interval) {
+        starts.forEach(function(bucketStart) {
+          const bucketEnd = bucketStart + 60;
+          minutes += Math.max(0, Math.min(interval.end, bucketEnd) - Math.max(interval.start, bucketStart));
+        });
+      });
+      return minutes / 60;
+    }
+    function buildRows(dateValue) {
+      const roster = buildRoster();
+      const punches = new Map(readPunchesForDate(dateValue).map(function(punch) { return [normalizeName(punch.name || ""), punch]; }));
+      const notes = readManualNotes();
+      const selectedDay = dayKeyFromDate(dateFromInput(dateValue));
+      const rows = [];
+      ["first", "second"].forEach(function(shiftKey) {
+        (roster[shiftKey] || []).forEach(function(employee) {
+          const punch = punches.get(normalizeName(employee.name)) || null;
+          const punchNote = String((punch && (punch.note || punch.reason)) || "").trim();
+          const manualNote = getManualNote(employee.name, notes);
+          const noteText = manualNote || punchNote;
+          const workdayKey = punch ? dayKeyFromDateValue(punch.date) || selectedDay : selectedDay;
+          const scheduled = !parseOffDays(employee.offDays).has(workdayKey);
+          const rawLunch = String((punch && punch.lunch) || "").trim();
+          const lunchText = rawLunch.toUpperCase();
+          const start = toMilitaryTime(punch ? punch.start : "");
+          const end = toMilitaryTime(punch ? punch.end : "");
+          const hasClockIn = minutesFromMilitary(start) !== null;
+          const hasClockOut = minutesFromMilitary(end) !== null;
+          const lunch = lunchText === "NO" ? "NO" : (rawLunch ? (["YES", "??"].includes(lunchText) ? lunchText : "YES") : (start || end ? "??" : ""));
+          const paidNoteHours = paidNoteHoursForText(manualNote + " " + punchNote);
+          const intervals = workIntervals({ start: start, end: end, lunch: lunch });
+          const workedHours = intervals.reduce(function(sum, interval) { return sum + (interval.end - interval.start) / 60; }, 0);
+          const paidHours = actualHours(start, lunch, hasClockOut ? end : (hasClockIn ? currentMilitaryTime() : "")) + paidNoteHours;
+          rows.push({
+            name: employee.name,
+            key: normalizeName(employee.name),
+            shift: shiftKey,
+            shiftLabel: shiftLabels[shiftKey] || shiftKey,
+            scheduled: scheduled,
+            note: noteText,
+            start: start,
+            lunch: lunch,
+            end: end,
+            workedHours: workedHours,
+            paidHours: paidHours,
+            paidAbsenceHours: paidNoteHours,
+            cameInOffDay: !scheduled && hasClockIn,
+            intervals: intervals,
+            hourly: {}
+          });
+        });
+      });
+      return rows;
+    }
+    function buildModel() {
+      const dateValue = document.getElementById("analysisDate").value || localDateValue();
+      const liftMap = readLiftMap(dateValue);
+      const billingLiftData = readBillingHourlyLifts(dateValue);
+      const billingHourlyLifts = billingLiftData.hourly || {};
+      const previousArchiveBuckets = readPreviousArchiveBuckets(dateValue);
+      const lunchHours = readLunchPeriods(dateValue);
+      const archiveRows = buildRowsFromArchive(dateValue);
+      const rows = archiveRows.length ? archiveRows : buildRows(dateValue);
+      const buckets = hourKeys.map(function(hour) {
+        const entry = normalizeLiftEntry(billingLiftData.hasData ? billingHourlyLifts[hour] : liftMap[hour]);
+        const rawLifts = entry.value == null ? 0 : Number(entry.value) || 0;
+        const rawSources = sourceBreakdown(entry);
+        const isLunch = lunchHours.has(hour);
+        return {
+          hour: hour,
+          label: hourLabel(hour),
+          lifts: rawLifts,
+          rawLifts: rawLifts,
+          sources: rawSources,
+          rawSources: rawSources,
+          lunch: isLunch,
+          note: entry.note || "",
+          laborHours: 0,
+          people: []
+        };
+      });
+      rows.forEach(function(row) {
+        hourKeys.forEach(function(hour) {
+          const hours = overlapHours(row.intervals, hour);
+          if (hours > 0) {
+            row.hourly[hour] = hours;
+            buckets[hour].laborHours += hours;
+            buckets[hour].people.push({ name: row.name, shift: row.shift, hours: hours, note: row.note });
+          }
+        });
+      });
+      hourKeys.slice(0, 3).forEach(function(hour) {
+        const archiveWorkers = previousArchiveBuckets[hour] || [];
+        if (!archiveWorkers.length || buckets[hour].people.length) return;
+        buckets[hour].laborHours = 0;
+        buckets[hour].people = [];
+        archiveWorkers.forEach(function(worker) {
+          buckets[hour].laborHours += worker.hours;
+          buckets[hour].people.push(worker);
+        });
+      });
+      buckets.forEach(function(bucket) {
+        bucket.people.sort(function(a, b) { return b.hours - a.hours || a.name.localeCompare(b.name); });
+        bucket.lph = bucket.laborHours > 0 ? bucket.lifts / bucket.laborHours : 0;
+      });
+      const people = rows.map(function(row) {
+        return {
+          name: row.name,
+          key: row.key,
+          shift: row.shift,
+          shiftLabel: row.shiftLabel,
+          workedHours: row.workedHours,
+          paidAbsenceHours: row.paidAbsenceHours,
+          allocatedLifts: 0,
+          note: row.note,
+          start: row.start,
+          lunch: row.lunch,
+          end: row.end,
+          cameInOffDay: row.cameInOffDay
+        };
+      });
+      const byKey = new Map(people.map(function(person) { return [person.key, person]; }));
+      buckets.forEach(function(bucket) {
+        if (bucket.lifts <= 0 || bucket.laborHours <= 0) return;
+        bucket.people.forEach(function(worker) {
+          const person = byKey.get(normalizeName(worker.name));
+          if (person) person.allocatedLifts += bucket.lifts * (worker.hours / bucket.laborHours);
+        });
+      });
+      people.forEach(function(person) {
+        person.lph = person.workedHours > 0 ? person.allocatedLifts / person.workedHours : 0;
+      });
+      const totals = {
+        lifts: buckets.reduce(function(sum, bucket) { return sum + bucket.lifts; }, 0),
+        laborHours: buckets.reduce(function(sum, bucket) { return sum + bucket.laborHours; }, 0),
+        paidAbsenceHours: rows.reduce(function(sum, row) { return sum + row.paidAbsenceHours; }, 0),
+        workedPeople: new Set(buckets.flatMap(function(bucket) {
+          return bucket.people.filter(function(worker) { return worker.hours > 0; }).map(function(worker) { return normalizeName(worker.name); });
+        }).filter(Boolean)).size,
+        loggedHours: buckets.filter(function(bucket) { return bucket.lifts > 0; }).length
+      };
+      totals.lph = totals.laborHours > 0 ? totals.lifts / totals.laborHours : 0;
+      totals.bestHour = buckets.reduce(function(best, bucket) {
+        if (bucket.laborHours <= 0 || bucket.lifts <= 0) return best;
+        return !best || bucket.lph > best.lph ? bucket : best;
+      }, null);
+      return { dateValue: dateValue, rows: rows, people: people, buckets: buckets, totals: totals };
+    }
+    function scenarioPayloadFromModel(model) {
+      return {
+        dateValue: model.dateValue,
+        totals: {
+          lifts: Number(model.totals.lifts) || 0,
+          laborHours: Number(model.totals.laborHours) || 0,
+          lph: Number(model.totals.lph) || 0,
+          workedPeople: Number(model.totals.workedPeople) || 0
+        },
+        people: model.people.map(function(person) {
+          return {
+            name: person.name,
+            shift: person.shift,
+            shiftLabel: person.shiftLabel,
+            start: person.start,
+            lunch: person.lunch,
+            end: person.end,
+            workedHours: Number(person.workedHours) || 0,
+            note: person.note || ""
+          };
+        }),
+        buckets: timelineBuckets(model).map(function(bucket) {
+          const sources = (bucket.sources || []).map(function(source) {
+            return {
+              key: source.key || "",
+              label: source.label || source.key || "Lifts",
+              lifts: Number(source.lifts) || 0,
+              exact: Boolean(source.exact),
+              estimated: Boolean(source.estimated)
+            };
+          });
+          const flipLifts = sources.filter(function(source) {
+            return source.key === "flips" || /flip/i.test(String(source.label || ""));
+          }).reduce(function(total, source) {
+            return total + Math.max(0, Number(source.lifts) || 0);
+          }, 0);
+          const totalLifts = Math.max(0, Number(bucket.lifts) || 0);
+          return {
+            hour: Number(bucket.hour),
+            lifts: totalLifts,
+            flipLifts: Math.min(totalLifts, flipLifts),
+            craneLifts: Math.max(0, totalLifts - flipLifts),
+            laborHours: Number(bucket.laborHours) || 0,
+            lph: Number(bucket.lph) || 0,
+            lunch: Boolean(bucket.lunch),
+            note: bucket.note || "",
+            sources: sources,
+            people: (bucket.people || []).map(function(worker) {
+              return {
+                name: worker.name,
+                shift: worker.shift,
+                hours: Number(worker.hours) || 0,
+                note: worker.note || ""
+              };
+            })
+          };
+        })
+      };
+    }
+    function fmt(value, digits) {
+      if (!Number.isFinite(Number(value))) return "0";
+      return Number(value).toFixed(digits == null ? 1 : digits);
+    }
+    function metricHtml(label, value, sub) {
+      return '<article class="metric"><div class="metric-label">' + esc(label) + '</div><div class="metric-value">' + esc(value) + '</div><div class="metric-sub">' + esc(sub) + '</div></article>';
+    }
+    function bestHourLabel(bucket) {
+      return bucket ? displayHour(bucket.hour) + "-" + displayHour((bucket.hour + 1) % 24) : "no lift/labor match";
+    }
+    function timelineBuckets(model) {
+      return timelineHourKeys.map(function(hour) { return model.buckets[hour]; }).filter(Boolean);
+    }
+    function shiftSummaryData(model) {
+      return ["first", "second"].map(function(shift) {
+        const people = model.people.filter(function(person) { return person.shift === shift; });
+        const worked = people.reduce(function(sum, person) { return sum + person.workedHours; }, 0);
+        const lifts = people.reduce(function(sum, person) { return sum + person.allocatedLifts; }, 0);
+        const flipLifts = model.buckets.reduce(function(sum, bucket) {
+          if (!bucket.laborHours || !bucket.sources || !bucket.sources.length) return sum;
+          const shiftLabor = bucket.people
+            .filter(function(worker) { return worker.shift === shift; })
+            .reduce(function(total, worker) { return total + worker.hours; }, 0);
+          if (!shiftLabor) return sum;
+          const bucketFlips = bucket.sources
+            .filter(function(source) { return source.key === "flips" || /flip/i.test(String(source.label || "")); })
+            .reduce(function(total, source) { return total + (Number(source.lifts) || 0); }, 0);
+          return sum + bucketFlips * (shiftLabor / bucket.laborHours);
+        }, 0);
+        const paidOff = people.reduce(function(sum, person) { return sum + person.paidAbsenceHours; }, 0);
+        return {
+          shift: shiftLabels[shift] || shift,
+          shiftKey: shift,
+          people: people.filter(function(person) { return person.workedHours > 0; }).length,
+          labor: worked,
+          lifts: lifts,
+          flipLifts: flipLifts,
+          lph: worked > 0 ? lifts / worked : 0,
+          paidOff: paidOff
+        };
+      });
+    }
+    function shiftMetricHtml(model) {
+      const headers = ["Shift", "People", "Labor", "Est Lifts", "LPH"];
+      const cells = headers.map(function(header) {
+        return '<div class="shift-summary-cell shift-summary-head">' + esc(header) + '</div>';
+      });
+      shiftSummaryData(model).forEach(function(row) {
+        cells.push('<div class="shift-summary-cell shift-summary-name">' + esc(row.shift) + '</div>');
+        cells.push('<div class="shift-summary-cell">' + esc(row.people) + '</div>');
+        cells.push('<div class="shift-summary-cell">' + esc(fmt(row.labor, 0)) + '</div>');
+        cells.push('<div class="shift-summary-cell">' + esc(fmt(row.lifts, 0)) + '</div>');
+        cells.push('<div class="shift-summary-cell shift-summary-lph">' + esc(fmt(row.lph, 1)) + '</div>');
+      });
+      return '<article class="metric shift-card"><div class="metric-label">Shift Performance</div><div class="shift-summary">' + cells.join("") + '</div></article>';
+    }
+    function sourceMixRows(model) {
+      const totals = {};
+      model.buckets.forEach(function(bucket) {
+        bucket.sources.forEach(function(source) {
+          if (!totals[source.key]) totals[source.key] = { label: source.label, lifts: 0 };
+          totals[source.key].lifts += source.lifts;
+        });
+      });
+      return Object.values(totals).sort(function(a, b) { return b.lifts - a.lifts; });
+    }
+    function renderMetrics(model) {
+      const best = model.totals.bestHour;
+      document.getElementById("metrics").innerHTML = [
+        metricHtml("Lifts", fmt(model.totals.lifts, 0), String(model.totals.loggedHours) + " lift hours"),
+        metricHtml("Labor Hrs", fmt(model.totals.laborHours, 1), String(model.totals.workedPeople) + " people worked | " + fmt(model.totals.paidAbsenceHours, 1) + " paid off"),
+        metricHtml("LPH", fmt(model.totals.lph, 1), "overall actual"),
+        metricHtml("Best Hour", best ? fmt(best.lph, 1) : "-", bestHourLabel(best))
+      ].join("");
+    }
+
+    function liftTypeItems(bucket) {
+      if (!bucket || !bucket.sources || !bucket.sources.length) return [];
+      const codes = {
+        zlbho1: { kind: "drop", code: "ZLB13", label: "DROP ZLBHO-13" },
+        zpbho: { kind: "drop", code: "ZPB15", label: "DROP ZPBHO-15" },
+        zlbho2: { kind: "drop", code: "ZLB2", label: "DROP ZLBHO-2" },
+        ihosa: { kind: "load", code: "IHOSA", label: "LOAD IHOSA" },
+        mhoas: { kind: "load", code: "MHOAS", label: "LOAD MHOAS" },
+        coh: { kind: "load", code: "COH", label: "LOAD COH" },
+        flips: { kind: "flip", code: "FLIPS", label: "FLIPS" },
+        ups_work: { kind: "ups", code: "UPS", label: "UPS LIFT CREDIT" },
+        carryover: { kind: "carry", code: "C/O", label: "CARRY-OVER" },
+        actual: { kind: "manual", code: "MANUAL", label: "MANUAL LIFTS" }
+      };
+      return bucket.sources.map(function(source) {
+        const liftCount = Number(source.lifts) || 0;
+        if (codes[source.key]) return Object.assign({ count: liftCount }, codes[source.key]);
+        const zlbMatch = String(source.key || "").match(/^zlbho(\d+)$/i);
+        if (zlbMatch) return { kind: "drop", code: "ZLB" + zlbMatch[1], label: "DROP ZLBHO-" + zlbMatch[1], count: liftCount };
+        const zpbMatch = String(source.key || "").match(/^zpbho(\d+)$/i);
+        if (zpbMatch) return { kind: "drop", code: "ZPB" + zpbMatch[1], label: "DROP ZPBHO-" + zpbMatch[1], count: liftCount };
+        const label = String(source.label || source.key || "").trim();
+        const lower = label.toLowerCase();
+        if (lower.endsWith(" drop")) {
+          const base = label.slice(0, -5).trim().toUpperCase();
+          return { kind: "drop", code: base.replace(/[^A-Z0-9]/g, "").slice(0, 4), label: "DROP " + base, count: liftCount };
+        }
+        if (lower.endsWith(" load")) {
+          const base = label.slice(0, -5).trim().toUpperCase();
+          return { kind: "load", code: base.replace(/[^A-Z0-9]/g, "").slice(0, 3), label: "LOAD " + base, count: liftCount };
+        }
+        if (/ups/i.test(label)) return Object.assign({ count: liftCount }, codes.ups_work);
+        if (/carry/i.test(label)) return Object.assign({ count: liftCount }, codes.carryover);
+        if (/manual|actual/i.test(label)) return Object.assign({ count: liftCount }, codes.actual);
+        return { kind: "other", code: label.toUpperCase().slice(0, 7), label: label.toUpperCase(), count: liftCount };
+      });
+    }
+    function liftTypeText(bucket) {
+      return liftTypeItems(bucket).map(function(item) { return item.label; }).join(" / ");
+    }
+    function liftTypePills(bucket) {
+      const items = liftTypeItems(bucket);
+      return items.length ? items.map(function(item) {
+        const count = Number(item.count) || 0;
+        const label = (count > 0 ? fmt(count, 0) + " " : "") + item.code;
+        return '<span class="type-pill ' + esc(item.kind) + '" title="' + esc((count > 0 ? fmt(count, 0) + " lifts - " : "") + item.label) + '">' + esc(label) + '</span>';
+      }).join("") : '';
+    }
+    function renderTypeLegend() {
+      const legend = document.getElementById("typeLegend");
+      if (!legend) return;
+      const items = [
+        { kind: "drop", code: "ZLB13", meaning: "ZLBHO-13" },
+        { kind: "drop", code: "ZPB15", meaning: "ZPBHO-15" },
+        { kind: "drop", code: "ZLB2", meaning: "ZLBHO-2" },
+        { kind: "load", code: "IHOSA", meaning: "IHOSA" },
+        { kind: "load", code: "MHOAS", meaning: "MHOAS" },
+        { kind: "load", code: "COH", meaning: "COH" }
+      ];
+      legend.innerHTML = '<div class="timeline-key-label">Lift Type Key</div>' + items.map(function(item) {
+        return '<div class="type-legend-item"><span class="type-pill ' + item.kind + '">' + esc(item.code) + '</span>' + (item.meaning ? '<span>' + esc(item.meaning) + '</span>' : '') + '</div>';
+      }).join("");
+    }
+    function maxOf(model, key) {
+      return Math.max(1, ...model.buckets.map(function(bucket) { return Number(bucket[key]) || 0; }));
+    }
+    function targetClass(value, target) {
+      const numeric = Number(value) || 0;
+      if (!target || numeric <= 0) return "";
+      if (numeric >= target) return "target-good";
+      if (numeric >= target * 0.9) return "target-warn";
+      return "target-bad";
+    }
+    function toneKey(value, target) {
+      const numeric = Number(value) || 0;
+      if (!target || numeric <= 0) return "";
+      if (numeric >= target) return "good";
+      if (numeric >= target * 0.9) return "warn";
+      return "bad";
+    }
+    function toneFill(tone) {
+      return tone === "good" ? "oklch(0.66 0.11 152)" : (tone === "warn" ? "oklch(0.78 0.12 85)" : "oklch(0.60 0.14 27)");
+    }
+    function toneText(tone) {
+      return tone === "good" ? "oklch(0.45 0.11 152)" : (tone === "warn" ? "oklch(0.55 0.12 75)" : "oklch(0.48 0.14 27)");
+    }
+    function sourceColor(index) {
+      return ["#1f5f3f", "oklch(0.55 0.09 152)", "#8a8272", "oklch(0.50 0.09 250)", "oklch(0.62 0.09 152)", "oklch(0.60 0.14 27)"][index % 6];
+    }
+    function tipRow(label, value) {
+      return '<div class="tip-row"><span>' + esc(label) + '</span><span>' + esc(value) + '</span></div>';
+    }
+    function sourceUnit(source) {
+      const key = String(source.key || "").toLowerCase();
+      const label = String(source.label || "").toLowerCase();
+      if (/zlbho|zpbho|drop/.test(key + " " + label)) return { one: "drop", many: "drops" };
+      if (/ihosa|mhoas|coh|load/.test(key + " " + label)) return { one: "load", many: "loads" };
+      if (/flip/.test(key + " " + label)) return { one: "flip", many: "flips" };
+      return { one: "lift", many: "lifts" };
+    }
+    function sourceCountText(source) {
+      const count = Number(source.lifts) || 0;
+      const unit = sourceUnit(source);
+      return fmt(count, 0) + " " + (Math.abs(count) === 1 ? unit.one : unit.many);
+    }
+    function sourceRowsHtml(bucket) {
+      if (!bucket.sources.length) return '<div class="tip-note">No lift sources logged for this hour.</div>';
+      return bucket.sources.map(function(source) {
+        return tipRow(source.label, sourceCountText(source));
+      }).join("");
+    }
+    function peopleRowsHtml(bucket) {
+      if (!bucket.people.length) return '<div class="tip-note">No clocked 1st or 2nd shift workers in this hour.</div>';
+      return bucket.people.map(function(worker) {
+        const shift = shiftLabels[worker.shift] || worker.shift || "";
+        return tipRow(worker.name + (shift ? " - " + shift : ""), fmt(worker.hours, 2) + " hr");
+      }).join("");
+    }
+    function timelineTipHtml(row, bucket, value, text, isLunch) {
+      const title = bucket.label + " - " + row.label;
+      let html = '<div class="tip-title">' + esc(title) + '</div>';
+      if (isLunch) {
+        html += '<div class="tip-note">Lunch period - drag this one-hour block to move it.</div>';
+      }
+      if (row.label === "People") {
+        return html + '<div class="tip-main">' + esc(String(bucket.people.length)) + ' people | ' + esc(fmt(bucket.laborHours, 2)) + ' labor hrs</div>' + peopleRowsHtml(bucket);
+      }
+      if (row.label === "LPH") {
+        const formula = fmt(bucket.lifts, 0) + " lifts / " + fmt(bucket.laborHours, 2) + " labor hrs = " + fmt(bucket.lph, 1) + " LPH";
+        return html + '<div class="tip-main">' + esc(formula) + '</div>' + tipRow("Lifts", fmt(bucket.lifts, 0)) + tipRow("Labor hours", fmt(bucket.laborHours, 2)) + tipRow("People", String(bucket.people.length)) + sourceRowsHtml(bucket);
+      }
+      if (row.label === "Lifts") {
+        return html + '<div class="tip-main">' + esc(fmt(bucket.lifts, 0) + " total lifts") + '</div>' + sourceRowsHtml(bucket) + (bucket.note ? '<div class="tip-note">' + esc(bucket.note) + '</div>' : "");
+      }
+      if (row.label === "Lift Type") {
+        return html + '<div class="tip-main">' + esc(text || "No lift type") + '</div>' + sourceRowsHtml(bucket);
+      }
+      return html + '<div class="tip-main">' + esc(text || value || "-") + '</div>';
+    }
+    function hourTipHtml(bucket, isLunch) {
+      let html = '<div class="tip-title">' + esc(bucket.label) + '</div>';
+      if (isLunch) {
+        html += '<div class="tip-note">Lunch period - click again to remove. Drag to another hour to move.</div>';
+      }
+      const formula = fmt(bucket.lifts, 0) + " lifts / " + fmt(bucket.laborHours, 2) + " labor hrs = " + fmt(bucket.lph, 1) + " LPH";
+      html += '<div class="tip-main">' + esc(formula) + '</div>';
+      html += tipRow("People", String(bucket.people.length));
+      html += tipRow("Lifts", fmt(bucket.lifts, 0));
+      html += tipRow("Labor hours", fmt(bucket.laborHours, 2));
+      html += sourceRowsHtml(bucket);
+      html += '<div class="tip-note">Click this hour to add the selected marker. Drag the marker or either edge to adjust it.</div>';
+      return html;
+    }
+    function chartPath(points) {
+      return points.map(function(point, index) {
+        return (index ? "L " : "M ") + point.x.toFixed(1) + " " + point.y.toFixed(1);
+      }).join(" ");
+    }
+    function chartRuns(points) {
+      const runs = [];
+      let current = [];
+      points.forEach(function(point) {
+        if (point.active) {
+          current.push(point);
+        } else if (current.length) {
+          runs.push(current);
+          current = [];
+        }
+      });
+      if (current.length) runs.push(current);
+      return runs;
+    }
+    function chartAreaSegments(points, baseY) {
+      const html = [];
+      chartRuns(points).forEach(function(run) {
+        if (run.length === 1) {
+          const point = run[0];
+          const left = Math.max(0, point.x - 50);
+          const right = point.x + 50;
+          const fill = toneFill(point.tone);
+          html.push('<path class="chart-area" d="M ' + left.toFixed(1) + ' ' + baseY.toFixed(1) + ' L ' + left.toFixed(1) + ' ' + point.y.toFixed(1) + ' L ' + right.toFixed(1) + ' ' + point.y.toFixed(1) + ' L ' + right.toFixed(1) + ' ' + baseY.toFixed(1) + ' Z" fill="' + esc(fill) + '" opacity=".24"></path>');
+          return;
+        }
+        for (let index = 0; index < run.length - 1; index += 1) {
+          const a = run[index];
+          const b = run[index + 1];
+          const left = index === 0 ? Math.max(0, a.x - 50) : a.x - 1;
+          const right = index === run.length - 2 ? b.x + 50 : b.x + 1;
+          const fill = toneFill(b.tone || a.tone);
+          const d = [
+            "M", left.toFixed(1), baseY.toFixed(1),
+            "L", left.toFixed(1), a.y.toFixed(1),
+            "L", a.x.toFixed(1), a.y.toFixed(1),
+            "L", b.x.toFixed(1), b.y.toFixed(1),
+            "L", right.toFixed(1), b.y.toFixed(1),
+            "L", right.toFixed(1), baseY.toFixed(1),
+            "Z"
+          ].join(" ");
+          html.push('<path class="chart-area" d="' + d + '" fill="' + esc(fill) + '" opacity=".24"></path>');
+        }
+      });
+      return html.join("");
+    }
+    function chartGuide(y, cls, width) {
+      return '<line class="chart-guide ' + cls + '" x1="0" y1="' + y.toFixed(1) + '" x2="' + width.toFixed(1) + '" y2="' + y.toFixed(1) + '"></line>';
+    }
+    function guideLabel(y, label, cls, side, placement) {
+      const isBelow = placement === "below";
+      const offset = cls === "target" ? 32 : 7;
+      const top = isBelow ? y + 18 : y - offset;
+      return '<span class="guide-label ' + cls + ' ' + side + (isBelow ? ' below' : '') + '" style="top:' + top.toFixed(1) + 'px">' + esc(label) + '</span>';
+    }
+    function targetPlacement(points, targetY) {
+      const active = points.filter(function(point) { return point.active; });
+      if (!active.length) return "above";
+      const tooClose = active.some(function(point) { return Math.abs(point.y - targetY) < 34; });
+      if (tooClose) return "below";
+      const nearby = active[active.length - 1];
+      return nearby.y <= targetY ? "below" : "above";
+    }
+    function pointMarker(point, formatter, cls, note, attrs) {
+      if (!point || !point.active) return "";
+      const cleanNote = String(note || "").trim();
+      const extraAttrs = attrs || "";
+      const noteClass = cleanNote ? " has-note" : "";
+      const noteHtml = cleanNote ? '<em class="lift-note-bubble">' + esc(cleanNote) + '</em>' : "";
+      return '<div class="chart-point ' + cls + noteClass + '" data-point="' + esc(cls) + '" ' + extraAttrs + ' style="--point-y:' + point.y.toFixed(1) + 'px;--point-color:' + esc(toneText(point.tone)) + '">' + noteHtml + '<span>' + esc(formatter(point.value)) + '</span><i></i></div>';
+    }
+    function renderTimeline(model) {
+      const lunchHours = readLunchPeriods(model.dateValue);
+      const liftPointNotes = readLiftPointNotes(model.dateValue);
+      const buckets = timelineBuckets(model);
+      const chartWidth = buckets.length * 100;
+      const maxLph = Math.max(6, ...buckets.map(function(bucket) { return Number(bucket.lph) || 0; }), 2.5);
+      const maxLifts = Math.max(40, ...buckets.map(function(bucket) { return Number(bucket.lifts) || 0; }), 20);
+      const lphBase = 114;
+      const lphSpan = 76;
+      const liftBase = 248;
+      const liftSpan = 114;
+      const lphTargetY = lphBase - Math.min(1, 2.1 / maxLph) * lphSpan;
+      const liftTargetY = liftBase - Math.min(1, 20 / maxLifts) * liftSpan;
+      const lphPoints = buckets.map(function(bucket, index) {
+        const isLunch = lunchHours.has(bucket.hour);
+        const value = Number(bucket.lph) || 0;
+        return {
+          x: index * 100 + 50,
+          y: lphBase - Math.min(1, value / maxLph) * lphSpan,
+          value: value,
+          tone: toneKey(value, 2.1),
+          active: value > 0
+        };
+      });
+      const liftPoints = buckets.map(function(bucket, index) {
+        const isLunch = lunchHours.has(bucket.hour);
+        const value = Number(bucket.lifts) || 0;
+        return {
+          x: index * 100 + 50,
+          y: liftBase - Math.min(1, value / maxLifts) * liftSpan,
+          value: value,
+          tone: toneKey(value, 20),
+          active: value > 0
+        };
+      });
+      const svg = '<svg class="timeline-lines" viewBox="0 0 ' + chartWidth.toFixed(1) + ' 252" preserveAspectRatio="none" aria-hidden="true">' +
+        chartGuide(lphTargetY, "target", chartWidth) +
+        chartGuide(liftTargetY, "target", chartWidth) +
+        chartAreaSegments(lphPoints, lphBase) +
+        chartAreaSegments(liftPoints, liftBase) +
+        chartRuns(lphPoints).map(function(run) { return '<path class="chart-line" d="' + chartPath(run) + '"></path>'; }).join("") +
+        chartRuns(liftPoints).map(function(run) { return '<path class="chart-line" d="' + chartPath(run) + '"></path>'; }).join("") +
+      '</svg>';
+      const guideLabels =
+        guideLabel(lphTargetY, "2.1 target", "target", "left", targetPlacement(lphPoints, lphTargetY)) +
+        guideLabel(liftTargetY, "20 target", "target", "right", targetPlacement(liftPoints, liftTargetY));
+      const columns = buckets.map(function(bucket, index) {
+        const isLunch = lunchHours.has(bucket.hour);
+        const previousShiftClass = bucket.hour >= 0 && bucket.hour < 3 ? "previous-shift previous-shift-" + (bucket.hour === 0 ? "start" : bucket.hour === 2 ? "end" : "mid") : "";
+        const classes = ["hour-column", previousShiftClass, selectedHour === bucket.hour ? "selected" : ""].filter(Boolean).join(" ");
+        const previousShiftHtml = bucket.hour === 0 ? '<span class="previous-shift-label">Previous Shift</span>' : "";
+        const typeHtml = liftTypePills(bucket);
+        const peopleHtml = bucket.people.length ? '<strong>' + esc(bucket.people.length) + '</strong> ppl' : '&nbsp;';
+        const lphPoint = pointMarker(lphPoints[index], function(value) { return fmt(value, 1); }, "lph");
+        const liftPointNote = liftPointNotes[String(bucket.hour)] || "";
+        const liftPoint = pointMarker(liftPoints[index], function(value) { return fmt(value, 0); }, "lifts", liftPointNote, 'data-note-hour="' + bucket.hour + '" title="Click to add or edit lift note for ' + esc(displayHour(bucket.hour)) + '"');
+        return '<button type="button" class="' + classes + '" data-hour="' + bucket.hour + '" data-lunch-position="' + bucket.hour + '" data-tip="' + esc(hourTipHtml(bucket, isLunch)) + '">' +
+          lphPoint +
+          liftPoint +
+          previousShiftHtml +
+          '<div class="hour-label">' + esc(displayHour(bucket.hour)) + '</div>' +
+          '<div class="people-count">' + peopleHtml + '</div>' +
+          '<div class="chart-type-list">' + typeHtml + '</div>' +
+        '</button>';
+      }).join("");
+      const gapTargets = buckets.slice(0, -1).map(function(bucket, index) {
+        const position = normalizeLunchPeriod(bucket.hour + 0.5);
+        if (position == null) return "";
+        const x = ((index + 1) / buckets.length * 100).toFixed(4) + "%";
+        const title = "Timeline marker between " + displayHour(bucket.hour) + " and " + displayHour(buckets[index + 1].hour);
+        return '<button type="button" class="timeline-gap-button lunch-gap-button" data-lunch-position="' + position + '" data-marker-position="' + position + '" style="--marker-x:' + x + '" aria-label="' + esc(title) + '" title="' + esc(title) + '"></button>';
+      }).join("");
+      document.getElementById("timeline").innerHTML = svg + guideLabels + '<div class="timeline-grid" style="--timeline-hours:' + buckets.length + '">' + columns + gapTargets + timelineMarkerRangesHtml(model.dateValue) + '</div>';
+      document.getElementById("timelineMeta").innerHTML = markerModeControlsHtml() + '<span class="timeline-legend-item"><span class="legend-dot" style="--legend:oklch(0.45 0.11 152)"></span>On target</span><span class="timeline-legend-item"><span class="legend-dot" style="--legend:oklch(0.55 0.12 75)"></span>Close</span><span class="timeline-legend-item"><span class="legend-dot" style="--legend:oklch(0.48 0.14 27)"></span>Below</span>';
+      renderTypeLegend();
+    }
+    function workerEstimate(bucket, worker) {
+      if (!bucket || bucket.laborHours <= 0 || bucket.lifts <= 0) return 0;
+      return bucket.lifts * (worker.hours / bucket.laborHours);
+    }
+    function renderHourDetail(model) {
+      let hour = selectedHour;
+      if (hour == null) {
+        const firstActive = timelineBuckets(model).find(function(bucket) { return bucket.lifts > 0 || bucket.laborHours > 0; });
+        hour = firstActive ? firstActive.hour : timelineHourKeys[0];
+      }
+      selectedHour = hour;
+      const bucket = model.buckets[hour] || timelineBuckets(model)[0];
+      selectedHour = bucket.hour;
+      document.getElementById("hourTitle").textContent = bucket.label;
+      document.getElementById("hourMeta").textContent = fmt(bucket.laborHours, 2) + " labor hrs | " + fmt(bucket.lph, 1) + " LPH";
+      if (!bucket.people.length) {
+        document.getElementById("hourDetail").innerHTML = '<div class="muted">No clocked 1st or 2nd shift workers in this hour.</div>';
+        return;
+      }
+      document.getElementById("hourDetail").innerHTML = '<div class="employee-list">' + bucket.people.map(function(worker) {
+        const shiftClass = worker.shift === "first" ? "first" : "second";
+        return '<div class="person-line"><div>' + esc(worker.name) + '<div class="muted">' + esc(worker.note || "") + '</div></div><span class="pill ' + shiftClass + '">' + esc(shiftLabels[worker.shift] || worker.shift) + '</span><div class="num">' + fmt(worker.hours, 2) + ' hr</div><div class="num">' + fmt(workerEstimate(bucket, worker), 1) + ' est</div></div>';
+      }).join("") + '</div>';
+    }
+    function renderSourceMix(model) {
+      const sourceMeta = document.getElementById("sourceMeta");
+      const sourceMix = document.getElementById("sourceMix");
+      if (!sourceMeta || !sourceMix) return;
+      const rows = sourceMixRows(model);
+      const max = Math.max(1, ...rows.map(function(row) { return Number(row.lifts) || 0; }));
+      sourceMeta.textContent = rows.length ? String(rows.length) + " sources - " + fmt(model.totals.lifts, 0) + " lifts" : "no sources";
+      sourceMix.innerHTML = rows.length ? rows.slice(0, 8).map(function(row, index) {
+        const pct = Math.max(2, Math.min(100, (Number(row.lifts) || 0) / max * 100));
+        return '<div class="source-bar-row"><div class="source-bar-name">' + esc(row.label) + '</div><div class="source-bar-track"><div class="source-bar-fill" style="width:' + pct.toFixed(2) + '%;background:' + sourceColor(index) + '"></div></div><div class="source-bar-count">' + esc(fmt(row.lifts, 0)) + '</div></div>';
+      }).join("") : '<div class="muted">No lift sources logged.</div>';
+    }
+    function table(headers, rows) {
+      return '<table><thead><tr>' + headers.map(function(header) { return '<th' + (header.num ? ' class="num"' : "") + '>' + esc(header.label) + '</th>'; }).join("") + '</tr></thead><tbody>' + rows.join("") + '</tbody></table>';
+    }
+    function td(value, numeric) {
+      return '<td' + (numeric ? ' class="num"' : "") + '>' + esc(value) + '</td>';
+    }
+    function renderShiftTable(model) {
+      const target = document.getElementById("shiftPerformance");
+      if (!target) return;
+      const craneKeys = craneOperatorKeys();
+      const cards = shiftSummaryData(model).map(function(row) {
+        const tone = toneKey(row.lph, 2.1);
+        const liftsText = fmt(row.lifts, 0);
+        const flipBadge = row.shiftKey === "first" ? '<span class="flip-badge">' + esc(fmt(row.flipLifts, 0) + " flips") + '</span>' : "";
+        const liftValueHtml = '<span class="lift-total">' + esc(liftsText) + '</span>' + flipBadge;
+        const workers = model.people
+          .filter(function(person) { return person.shift === row.shiftKey && person.workedHours > 0; })
+          .sort(function(a, b) {
+            const aCrane = isCraneOperator(a, craneKeys) ? 0 : 1;
+            const bCrane = isCraneOperator(b, craneKeys) ? 0 : 1;
+            return aCrane - bCrane || a.name.localeCompare(b.name);
+          });
+        const workerHtml = workers.length
+          ? workers.map(function(person) {
+              const chipClass = "shift-worker-chip" + (isCraneOperator(person, craneKeys) ? " crane-operator" : "") + (person.cameInOffDay ? " off-day-worker" : "");
+              const chipTitle = person.cameInOffDay ? ' title="Came in on off day"' : "";
+              return '<span class="' + chipClass + '"' + chipTitle + '>' + esc(person.name) + '</span>';
+            }).join("")
+          : '<span class="shift-worker-chip empty">No workers clocked</span>';
+        return '<div class="shift-performance-card"><div class="shift-performance-name">' + esc(row.shift) + '</div>' +
+          '<div class="shift-stat"><div class="shift-stat-value">' + esc(row.people) + '</div><div class="shift-stat-label">People</div></div>' +
+          '<div class="shift-stat"><div class="shift-stat-value">' + esc(fmt(row.labor, 0)) + '</div><div class="shift-stat-label">Labor hrs</div></div>' +
+          '<div class="shift-stat"><div class="shift-stat-value shift-lift-value">' + liftValueHtml + '</div><div class="shift-stat-label">Est lifts</div></div>' +
+          '<div class="shift-stat"><div class="shift-stat-value" style="color:' + toneText(tone) + '">' + esc(fmt(row.lph, 1)) + '</div><div class="shift-stat-label">LPH</div></div>' +
+          '<div class="shift-workers">' + workerHtml + '</div>' +
+        '</div>';
+      }).join("");
+      target.innerHTML = '<h2>Shift Performance</h2><div class="shift-card-list">' + cards + '</div>';
+    }
+    function parseGroups(text) {
+      return String(text || "").split(/\n+/).map(function(line) {
+        const parts = line.split(":");
+        if (parts.length < 2) return null;
+        const name = parts.shift().trim();
+        const members = parts.join(":").split(",").map(function(item) { return item.trim(); }).filter(Boolean);
+        return name && members.length ? { name: name, members: members, keys: members.map(normalizeName) } : null;
+      }).filter(Boolean);
+    }
+    function renderGroupTable(model) {
+      const groups = parseGroups(document.getElementById("groupInput").value);
+      if (!groups.length) {
+        document.getElementById("groupTable").innerHTML = '<div class="status-note">No custom groups saved.</div>';
+        return;
+      }
+      const rows = groups.map(function(group) {
+        const people = model.people.filter(function(person) { return group.keys.includes(person.key); });
+        const worked = people.reduce(function(sum, person) { return sum + person.workedHours; }, 0);
+        const lifts = people.reduce(function(sum, person) { return sum + person.allocatedLifts; }, 0);
+        return '<tr>' + td(group.name) + td(people.length, true) + td(fmt(worked, 1), true) + td(fmt(lifts, 1), true) + td(fmt(worked > 0 ? lifts / worked : 0, 1), true) + '</tr>';
+      });
+      document.getElementById("groupTable").innerHTML = table([
+        { label: "Group" }, { label: "People", num: true }, { label: "Labor", num: true }, { label: "Est Lifts", num: true }, { label: "LPH", num: true }
+      ], rows);
+    }
+    function renderIndividualTable(model) {
+      const rows = model.people
+        .filter(function(person) { return person.workedHours > 0 || person.paidAbsenceHours > 0 || person.note; })
+        .sort(function(a, b) { return b.lph - a.lph || b.workedHours - a.workedHours || a.name.localeCompare(b.name); })
+        .map(function(person) {
+          const times = [person.start || "-", person.lunch || "-", person.end || "-"].join(" / ");
+          return '<tr>' + td(person.name) + td(person.shiftLabel) + td(times) + td(fmt(person.workedHours, 1), true) + td(fmt(person.paidAbsenceHours, 1), true) + td(fmt(person.allocatedLifts, 1), true) + td(fmt(person.lph, 1), true) + td(person.note || (person.cameInOffDay ? "Came in off day" : "")) + '</tr>';
+        });
+      document.getElementById("individualTable").innerHTML = rows.length ? table([
+        { label: "Employee" }, { label: "Shift" }, { label: "Start/Lunch/End" }, { label: "Labor", num: true }, { label: "Paid Off", num: true }, { label: "Est Lifts", num: true }, { label: "LPH", num: true }, { label: "Note" }
+      ], rows) : '<div class="status-note">No timesheet rows with work, paid absence, or notes.</div>';
+    }
+    function render() {
+      const dateValue = document.getElementById("analysisDate").value || localDateValue();
+      document.getElementById("analysisDate").value = dateValue;
+      document.getElementById("displayDate").textContent = longDateLabel(dateValue);
+      localStorage.setItem(dateStorageKey, dateValue);
+      const model = buildModel();
+      lastModel = model;
+      renderMetrics(model);
+      if (selectedHour == null) {
+        const firstActive = timelineBuckets(model).find(function(bucket) { return bucket.lifts > 0 || bucket.laborHours > 0; });
+        selectedHour = firstActive ? firstActive.hour : timelineHourKeys[0];
+      }
+      renderTimeline(model);
+      renderHourDetail(model);
+      renderSourceMix(model);
+      renderShiftTable(model);
+      renderGroupTable(model);
+      renderIndividualTable(model);
+    }
+    window.addEventListener("message", function(event) {
+      const data = event.data || {};
+      if (data.type !== "conglobal-build-performance-scenario") return;
+      const requestId = String(data.requestId || "");
+      const requestedDate = inputDateKeyFromValue(data.date, data.date) || localDateValue();
+      const previousDate = document.getElementById("analysisDate").value;
+      try {
+        document.getElementById("analysisDate").value = requestedDate;
+        const scenarioModel = buildModel();
+        window.parent.postMessage({
+          type: "conglobal-performance-scenario-result",
+          requestId: requestId,
+          scenario: scenarioPayloadFromModel(scenarioModel)
+        }, "*");
+      } catch (error) {
+        window.parent.postMessage({
+          type: "conglobal-performance-scenario-result",
+          requestId: requestId,
+          error: error && error.message ? error.message : String(error)
+        }, "*");
+      } finally {
+        document.getElementById("analysisDate").value = previousDate;
+      }
+    });
+    const timelineElement = document.getElementById("timeline");
+    function timelineTooltip() {
+      return document.getElementById("timelineTooltip");
+    }
+    function positionTimelineTooltip(event) {
+      const tooltip = timelineTooltip();
+      if (!tooltip) return;
+      const pad = 12;
+      let left = event.clientX + 14;
+      let top = event.clientY + 14;
+      const rect = tooltip.getBoundingClientRect();
+      if (left + rect.width + pad > window.innerWidth) left = event.clientX - rect.width - 14;
+      if (top + rect.height + pad > window.innerHeight) top = event.clientY - rect.height - 14;
+      tooltip.style.left = Math.max(pad, left) + "px";
+      tooltip.style.top = Math.max(pad, top) + "px";
+    }
+    function showTimelineTooltip(button, event) {
+      const tooltip = timelineTooltip();
+      if (!tooltip || !button || !button.dataset.tip) return;
+      tooltip.innerHTML = button.dataset.tip;
+      tooltip.classList.add("open");
+      positionTimelineTooltip(event);
+    }
+    function hideTimelineTooltip() {
+      const tooltip = timelineTooltip();
+      if (!tooltip) return;
+      tooltip.classList.remove("open");
+      tooltip.innerHTML = "";
+    }
+    function timelineSlotFromPoint(clientX) {
+      const grid = timelineElement.querySelector(".timeline-grid");
+      if (!grid) return 0;
+      const rect = grid.getBoundingClientRect();
+      if (!rect.width) return 0;
+      return Math.max(0, Math.min(48, Math.round(((clientX - rect.left) / rect.width) * 48)));
+    }
+    function previewTimelineMarker(state, startSlot, durationSlots) {
+      const grid = timelineElement.querySelector(".timeline-grid");
+      if (!grid || !state.overlay) return;
+      const gridRect = grid.getBoundingClientRect();
+      const parentRect = state.overlay.offsetParent.getBoundingClientRect();
+      state.overlay.style.left = (gridRect.left - parentRect.left + startSlot / 48 * gridRect.width) + "px";
+      state.overlay.style.width = (durationSlots / 48 * gridRect.width) + "px";
+      state.previewStart = startSlot;
+      state.previewDuration = durationSlots;
+    }
+    function refreshLunchTimeline() {
+      selectedHour = null;
+      render();
+    }
+    function finishLunchDrag(event, canceled) {
+      const state = lunchDragState;
+      if (!state) return;
+      document.body.classList.remove("lunch-dragging");
+      if (state.overlay) state.overlay.classList.remove("dragging");
+      if (state.overlay && state.overlay.releasePointerCapture) {
+        try { state.overlay.releasePointerCapture(state.pointerId); } catch (error) {}
+      }
+      lunchDragState = null;
+      if (!canceled && state.moved && lastModel) {
+        updateTimelineMarkerRange(lastModel.dateValue, state.markerType, state.rangeIndex, state.previewStart, state.previewDuration);
+        suppressTimelineClick = true;
+        window.setTimeout(function() { suppressTimelineClick = false; }, 350);
+        refreshLunchTimeline();
+        event.preventDefault();
+      }
+    }
+    timelineElement.addEventListener("pointerdown", function(event) {
+      if (event.button !== 0) return;
+      const overlay = event.target.closest(".timeline-marker-range");
+      if (!overlay || !timelineElement.contains(overlay)) return;
+      const resizeHandle = event.target.closest("[data-resize]");
+      const startSlot = Number(overlay.dataset.startSlot);
+      const durationSlots = Number(overlay.dataset.durationSlots);
+      lunchDragState = {
+        pointerId: event.pointerId,
+        overlay: overlay,
+        markerType: overlay.dataset.markerType,
+        rangeIndex: Number(overlay.dataset.markerRange),
+        action: resizeHandle ? resizeHandle.dataset.resize : "move",
+        startSlot: startSlot,
+        durationSlots: durationSlots,
+        previewStart: startSlot,
+        previewDuration: durationSlots,
+        pointerSlot: timelineSlotFromPoint(event.clientX),
+        startX: event.clientX,
+        startY: event.clientY,
+        moved: false
+      };
+      overlay.classList.add("dragging");
+      document.body.classList.add("lunch-dragging");
+      if (overlay.setPointerCapture) {
+        try { overlay.setPointerCapture(event.pointerId); } catch (error) {}
+      }
+      hideTimelineTooltip();
+      event.preventDefault();
+    });
+    timelineElement.addEventListener("pointermove", function(event) {
+      if (!lunchDragState || event.pointerId !== lunchDragState.pointerId) return;
+      const distance = Math.hypot(event.clientX - lunchDragState.startX, event.clientY - lunchDragState.startY);
+      if (distance > 4) lunchDragState.moved = true;
+      if (!lunchDragState.moved) return;
+      const slot = timelineSlotFromPoint(event.clientX);
+      const state = lunchDragState;
+      let start = state.startSlot;
+      let duration = state.durationSlots;
+      if (state.action === "start") {
+        const end = state.startSlot + state.durationSlots;
+        start = Math.max(0, Math.min(end - 1, slot));
+        duration = end - start;
+      } else if (state.action === "end") {
+        duration = Math.max(1, Math.min(48 - start, slot - start));
+      } else {
+        start = Math.max(0, Math.min(48 - duration, state.startSlot + slot - state.pointerSlot));
+      }
+      previewTimelineMarker(state, start, duration);
+      event.preventDefault();
+    });
+    timelineElement.addEventListener("pointerup", function(event) {
+      if (!lunchDragState || event.pointerId !== lunchDragState.pointerId) return;
+      finishLunchDrag(event, false);
+    });
+    timelineElement.addEventListener("pointercancel", function(event) {
+      if (!lunchDragState || event.pointerId !== lunchDragState.pointerId) return;
+      finishLunchDrag(event, true);
+    });
+    timelineElement.addEventListener("mouseover", function(event) {
+      const button = event.target.closest("button[data-tip]");
+      if (!button || !timelineElement.contains(button)) return;
+      showTimelineTooltip(button, event);
+    });
+    timelineElement.addEventListener("mousemove", function(event) {
+      const tooltip = timelineTooltip();
+      if (tooltip && tooltip.classList.contains("open")) positionTimelineTooltip(event);
+    });
+    timelineElement.addEventListener("mouseout", function(event) {
+      const button = event.target.closest("button[data-tip]");
+      if (!button) return;
+      if (event.relatedTarget && button.contains(event.relatedTarget)) return;
+      hideTimelineTooltip();
+    });
+    timelineElement.addEventListener("focusin", function(event) {
+      const button = event.target.closest("button[data-tip]");
+      if (!button) return;
+      const rect = button.getBoundingClientRect();
+      showTimelineTooltip(button, { clientX: rect.left + rect.width / 2, clientY: rect.top });
+    });
+    timelineElement.addEventListener("focusout", hideTimelineTooltip);
+    timelineElement.addEventListener("click", function(event) {
+      const liftPoint = event.target.closest(".chart-point.lifts");
+      const hourButton = event.target.closest("button[data-hour]");
+      const lunchButton = event.target.closest("button[data-lunch-position]");
+      const markerRange = event.target.closest(".timeline-marker-range");
+      const markerModeButton = event.target.closest("button[data-marker-mode]");
+      if (markerModeButton) {
+        timelineMarkerMode = markerStorageKeys[markerModeButton.dataset.markerMode] ? markerModeButton.dataset.markerMode : "lunch";
+        if (lastModel) renderTimeline(lastModel);
+        return;
+      }
+      if (markerRange) {
+        if (suppressTimelineClick) {
+          suppressTimelineClick = false;
+          return;
+        }
+        if (lastModel) {
+          removeTimelineMarkerRange(lastModel.dateValue, markerRange.dataset.markerType, Number(markerRange.dataset.markerRange));
+          refreshLunchTimeline();
+        }
+        return;
+      }
+      if (!hourButton && !lunchButton) return;
+      if (liftPoint && hourButton && lastModel) {
+        event.preventDefault();
+        event.stopPropagation();
+        const hour = Number(liftPoint.dataset.noteHour || hourButton.dataset.hour);
+        const notes = readLiftPointNotes(lastModel.dateValue);
+        const current = notes[String(hour)] || "";
+        const next = window.prompt("Lift note for " + displayHour(hour) + " (blank clears)", current);
+        if (next === null) return;
+        writeLiftPointNote(lastModel.dateValue, hour, next);
+        renderTimeline(lastModel);
+        return;
+      }
+      if (suppressTimelineClick) {
+        suppressTimelineClick = false;
+        return;
+      }
+      if (lastModel && lunchButton) {
+        toggleTimelineMarkerPeriod(lastModel.dateValue, timelineMarkerMode, Number(lunchButton.dataset.lunchPosition));
+        refreshLunchTimeline();
+        return;
+      }
+    });
+    document.addEventListener("click", function(event) {
+      const markerModeButton = event.target.closest("button[data-marker-mode]");
+      if (markerModeButton) {
+        timelineMarkerMode = markerStorageKeys[markerModeButton.dataset.markerMode] ? markerModeButton.dataset.markerMode : "lunch";
+        if (lastModel) renderTimeline(lastModel);
+        return;
+      }
+      if (event.target.closest("#timeline")) return;
+      if (selectedHour == null) return;
+      selectedHour = null;
+      if (lastModel) renderTimeline(lastModel);
+    });
+    const performanceDateBox = document.getElementById("performanceDateBox");
+    const performanceDateButton = document.getElementById("performanceDateButton");
+    const performanceDatePopover = document.getElementById("performanceDatePopover");
+    const analysisDateInput = document.getElementById("analysisDate");
+    function openPerformanceDatePicker() {
+      analysisDateInput.value = analysisDateInput.value || localStorage.getItem(dateStorageKey) || localDateValue();
+      performanceDateBox.classList.add("open");
+      analysisDateInput.focus({ preventScroll: true });
+      if (typeof analysisDateInput.showPicker === "function") {
+        try {
+          analysisDateInput.showPicker();
+          return;
+        } catch (error) {}
+      }
+      analysisDateInput.click();
+    }
+
+    performanceDateButton.addEventListener("click", function(event) {
+      event.stopPropagation();
+      openPerformanceDatePicker();
+    });
+    performanceDatePopover.addEventListener("click", function(event) {
+      event.stopPropagation();
+    });
+    document.addEventListener("click", function(event) {
+      if (!event.target.closest("#performanceDateBox")) {
+        performanceDateBox.classList.remove("open");
+      }
+    });
+    document.getElementById("analysisDate").addEventListener("change", function() {
+      selectedHour = null;
+      performanceDateBox.classList.remove("open");
+      render();
+    });
+    document.getElementById("openLiftImport").addEventListener("click", openLiftImport);
+    document.getElementById("clearLiftImports").addEventListener("click", function(event) {
+      clearLiftImports(event.currentTarget);
+    });
+    document.getElementById("chooseLiftImport").addEventListener("click", function() {
+      document.getElementById("liftImportFile").click();
+    });
+    document.getElementById("liftImportFile").addEventListener("change", function(event) {
+      handleLiftImportFiles(event.target.files);
+    });
+    document.getElementById("closeLiftImportTop").addEventListener("click", closeLiftImport);
+    document.getElementById("cancelLiftImport").addEventListener("click", closeLiftImport);
+    document.getElementById("applyLiftImport").addEventListener("click", applyLiftImport);
+    document.getElementById("liftImportModal").addEventListener("click", function(event) {
+      if (event.target === event.currentTarget) closeLiftImport();
+    });
+    document.getElementById("saveGroups").addEventListener("click", function() {
+      localStorage.setItem(groupsStorageKey, document.getElementById("groupInput").value);
+      render();
+    });
+    document.getElementById("groupInput").addEventListener("change", function(event) {
+      localStorage.setItem(groupsStorageKey, event.target.value);
+      renderGroupTable(lastModel || buildModel());
+    });
+    document.getElementById("analysisDate").value = localStorage.getItem(dateStorageKey) || localDateValue();
+    document.getElementById("groupInput").value = localStorage.getItem(groupsStorageKey) || "";
+    window.addEventListener("focus", render);
+    render();
+  </script>
+</body>
+</html>

@@ -1,0 +1,1954 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Timesheet Archive</title>
+  <script src="xlsx.full.min.js"></script>
+  <script>
+    if (!window.XLSX) {
+      document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"><\/script>');
+    }
+  </script>
+  <style>
+    :root {
+      --ink: #111827;
+      --muted: #6b7280;
+      --soft: #f8fafc;
+      --line: #d8dee8;
+      --purple: #312e81;
+      --purple-soft: #eef2ff;
+      --green: #16a34a;
+      --green-soft: #dcfce7;
+      --red: #dc2626;
+      --red-soft: #fee2e2;
+      --gold: #d97706;
+      --gold-soft: #fffbeb;
+      --violet-soft: #ede9fe;
+      --gray-soft: #eef0f3;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: #fff;
+      color: var(--ink);
+      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+      font-size: 13px;
+      overflow-x: hidden;
+    }
+
+    .page-switcher {
+      width: 100%;
+      display: flex;
+      gap: 4px;
+      align-items: center;
+      padding: 6px 8px;
+      background: #111;
+      border-bottom: 2px solid #000;
+    }
+
+    .page-switcher a {
+      min-width: 118px;
+      height: 28px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid #777;
+      background: #e7e6e6;
+      color: #000;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .page-switcher a.active {
+      background: #ffff00;
+      border-color: #ffff00;
+    }
+
+    .archive-shell {
+      width: min(1180px, calc(100% - 20px));
+      margin: 10px auto 18px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      overflow: hidden;
+    }
+
+    .archive-toolbar {
+      min-height: 58px;
+      display: grid;
+      grid-template-columns: minmax(210px, 1fr) auto;
+      gap: 16px;
+      align-items: center;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--line);
+      background: #f8fafc;
+    }
+
+    .month-controls,
+    .save-controls {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .save-controls {
+      width: 100%;
+      justify-self: stretch;
+      justify-content: flex-end;
+    }
+
+    .save-message:empty {
+      display: none;
+    }
+
+    .save-message:not(:empty) {
+      order: -1;
+      margin-right: auto;
+    }
+
+    .month-title {
+      min-width: 170px;
+      color: var(--ink);
+      font-size: 18px;
+      font-weight: 900;
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+    .icon-button,
+    .primary-button,
+    .secondary-button {
+      height: 30px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      background: #fff;
+      color: var(--ink);
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .icon-button {
+      width: 32px;
+    }
+
+    .primary-button {
+      padding: 0 14px;
+      border-color: #0f172a;
+      background: #0f172a;
+      color: #fff;
+    }
+
+    .secondary-button {
+      padding: 0 12px;
+    }
+
+    .save-controls input[type="date"] {
+      height: 30px;
+      min-width: 142px;
+      padding: 0 8px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      color: var(--ink);
+      font-weight: 800;
+    }
+
+    .save-message {
+      min-width: 118px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .archive-file-input {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .danger-month-button {
+      border-color: #fecaca;
+      background: #fff;
+      color: #b91c1c;
+    }
+
+    .danger-month-button.confirming {
+      border-color: #b91c1c;
+      background: #fee2e2;
+      color: #7f1d1d;
+    }
+
+    .calendar-weekdays,
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 5px;
+      padding: 0 8px;
+    }
+
+    .calendar-weekdays {
+      padding-top: 10px;
+      padding-bottom: 4px;
+    }
+
+    .weekday {
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fff;
+      color: #334155;
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    .calendar-grid {
+      padding-bottom: 10px;
+    }
+
+    .day-cell {
+      min-height: 92px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 6px;
+      padding: 7px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fff;
+      cursor: pointer;
+    }
+
+    .day-cell:hover,
+    .day-cell.selected {
+      border-color: #94a3b8;
+      box-shadow: inset 0 0 0 1px #94a3b8;
+    }
+
+    .day-cell.muted {
+      background: #f8fafc;
+      color: #a0a8b5;
+    }
+
+    .day-cell.today {
+      border-color: #4338ca;
+    }
+
+    .day-number {
+      color: inherit;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .archive-pill {
+      max-width: 100%;
+      min-height: 22px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3px 8px;
+      border: 1px solid #c7d2fe;
+      border-radius: 999px;
+      background: var(--purple-soft);
+      color: #4338ca;
+      font-size: 11px;
+      font-weight: 900;
+      line-height: 1.1;
+      text-align: center;
+      white-space: normal;
+      cursor: pointer;
+    }
+
+    .day-cell.missing-punch-day {
+      border-color: #dc2626;
+      background: #fff7f7;
+      box-shadow: inset 0 0 0 1px rgba(220, 38, 38, .18);
+    }
+
+    .missing-punch-pill {
+      max-width: 100%;
+      min-height: 22px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3px 8px;
+      border: 1px solid #ef4444;
+      border-radius: 999px;
+      background: #fee2e2;
+      color: #b91c1c;
+      font-size: 10px;
+      font-weight: 950;
+      line-height: 1.1;
+      text-align: center;
+      white-space: normal;
+      cursor: pointer;
+    }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 30;
+      display: none;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 24px 14px;
+      background: rgba(15, 23, 42, .45);
+    }
+
+    .modal-backdrop.open {
+      display: flex;
+    }
+
+    .preview-modal {
+      width: min(1080px, 100%);
+      max-height: calc(100vh - 48px);
+      overflow: auto;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      background: #e7e5df;
+      box-shadow: 0 22px 60px rgba(15, 23, 42, .28);
+    }
+
+    .preview-top {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 14px;
+      background: var(--purple);
+      color: #fff;
+    }
+
+    .preview-title {
+      font-size: 18px;
+      font-weight: 900;
+    }
+
+    .preview-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .preview-actions button {
+      height: 30px;
+      padding: 0 12px;
+      border: 1px solid rgba(255, 255, 255, .55);
+      border-radius: 5px;
+      background: rgba(255, 255, 255, .12);
+      color: #fff;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .preview-actions .update-button {
+      background: #fff;
+      color: var(--purple);
+    }
+
+    .preview-actions .delete-button {
+      border-color: #fecaca;
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .preview-actions .delete-button.confirm-delete {
+      border-color: #fff;
+      background: #dc2626;
+      color: #fff;
+    }
+
+    .preview-body {
+      padding: 14px;
+    }
+
+    .manager-assignment-panel {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 10px;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: #fff;
+    }
+
+    .manager-assignment-field {
+      display: grid;
+      grid-template-columns: auto minmax(150px, 1fr);
+      align-items: center;
+      gap: 9px;
+    }
+
+    .manager-assignment-field label {
+      color: #475569;
+      font-size: 11px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .manager-assignment-field select {
+      width: 100%;
+      height: 32px;
+      padding: 0 9px;
+      border: 1px solid #cbd5e1;
+      border-radius: 5px;
+      background: #f8fafc;
+      color: var(--ink);
+      font: inherit;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .manager-assignment-field select:focus {
+      border-color: var(--purple);
+      outline: 2px solid rgba(55, 48, 163, .12);
+    }
+
+    .kpis {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .kpi {
+      min-height: 62px;
+      padding: 7px 10px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      text-align: center;
+    }
+
+    .kpi.good {
+      background: #f0fdf4;
+      border-color: #bbf7d0;
+    }
+
+    .kpi.warn {
+      background: var(--gold-soft);
+      border-color: #fde68a;
+    }
+
+    .kpi.bad {
+      background: #fef2f2;
+      border-color: #fecaca;
+    }
+
+    .kpi-label {
+      width: 100%;
+      color: #9ca3af;
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: .05em;
+      line-height: 1;
+      text-transform: uppercase;
+    }
+
+    .kpi-value {
+      color: var(--ink);
+      font-size: 19px;
+      font-weight: 900;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .kpi.good .kpi-label,
+    .kpi.good .kpi-value {
+      color: #15803d;
+    }
+
+    .kpi.warn .kpi-label,
+    .kpi.warn .kpi-value {
+      color: #92400e;
+    }
+
+    .kpi.bad .kpi-label,
+    .kpi.bad .kpi-value {
+      color: #b91c1c;
+    }
+
+    .cards {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .shift-card {
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .shift-head,
+    .md-row {
+      display: grid;
+      grid-template-columns: minmax(142px, 1fr) 88px minmax(150px, 1.45fr) 118px 54px 66px 86px;
+      gap: 7px;
+      align-items: center;
+      padding: 0 13px;
+    }
+
+    .shift-head {
+      min-height: 26px;
+      border-top: 2px solid #000;
+      border-bottom: 2px solid #000;
+      border-left: 3px solid #d9d9d9;
+      background: #d9d9d9;
+      color: #000;
+      font-size: 11px;
+      font-weight: 900;
+      text-align: center;
+    }
+
+    .shift-head span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .shift-head .shift-name {
+      text-align: left;
+    }
+
+    .md-row {
+      min-height: 28px;
+      border-bottom: 1px solid #f1f3f6;
+      border-left: 3px solid #e5e7eb;
+      font-size: 13px;
+      line-height: 1.15;
+    }
+
+    .md-row.in-row,
+    .md-row.out-row {
+      border-left-color: #22c55e;
+    }
+
+    .md-row.missing-row,
+    .md-row.invalid-row {
+      border-left-color: #ef4444;
+      background: #fef4f4;
+    }
+
+    .md-row.offday-row {
+      border-left-color: #14b8a6;
+      background: #f0fdfa;
+    }
+
+    .md-row.absence-row,
+    .md-row.unpaid-row {
+      border-left-color: #a78bfa;
+      background: var(--violet-soft);
+    }
+
+    .name {
+      overflow: hidden;
+      color: var(--ink);
+      font-weight: 600;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .off {
+      overflow: hidden;
+      color: #9ca3af;
+      font-size: 11.5px;
+      text-align: center;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .note-edit,
+    .time-edit,
+    .lunch-edit {
+      width: 100%;
+      height: 22px;
+      border: 1px solid transparent;
+      border-radius: 4px;
+      background: transparent;
+      color: var(--ink);
+      font: inherit;
+      font-weight: 800;
+      text-align: center;
+    }
+
+    .note-edit {
+      color: #6d28d9;
+      font-size: 11px;
+      white-space: normal;
+    }
+
+    .time-edit,
+    .lunch-edit {
+      color: var(--green);
+      font-family: "SFMono-Regular", Consolas, monospace;
+      font-size: 14px;
+    }
+
+    .time-edit.missing {
+      color: var(--red);
+    }
+
+    .time-edit:focus,
+    .lunch-edit:focus,
+    .note-edit:focus {
+      border-color: #f59e0b;
+      outline: 0;
+      background: #fffbeb;
+    }
+
+    .actual {
+      color: var(--ink);
+      font-weight: 900;
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .off-footer {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 6px 13px 8px;
+      background: #fcfcfd;
+      color: #9ca3af;
+      font-size: 9px;
+      line-height: 1.45;
+    }
+
+    .off-footer strong {
+      color: var(--muted);
+      letter-spacing: .05em;
+      text-transform: uppercase;
+    }
+
+    .off-chip {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 18px;
+      padding: 2px 9px;
+      border-radius: 4px;
+      background: #f1f3f6;
+      color: #64748b;
+      font-size: 9px;
+      font-weight: 800;
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    @media (max-width: 860px) {
+      .archive-toolbar {
+        grid-template-columns: 1fr;
+      }
+
+      .calendar-weekdays,
+      .calendar-grid {
+        gap: 3px;
+        padding-inline: 5px;
+      }
+
+      .day-cell {
+        min-height: 78px;
+        padding: 5px;
+      }
+
+      .kpis {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .manager-assignment-panel {
+        grid-template-columns: 1fr;
+      }
+
+      .shift-head,
+      .md-row {
+        grid-template-columns: minmax(112px, 1fr) 66px minmax(102px, 1.3fr) 86px 38px 44px 68px;
+        gap: 4px;
+        padding-inline: 8px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="archive-shell">
+    <header class="archive-toolbar">
+      <div class="month-controls">
+        <button class="icon-button" id="prevMonth" type="button" aria-label="Previous month">&lt;</button>
+        <div class="month-title" id="monthTitle"></div>
+        <button class="icon-button" id="nextMonth" type="button" aria-label="Next month">&gt;</button>
+        <button class="secondary-button" id="todayButton" type="button">Today</button>
+      </div>
+      <div class="save-controls">
+        <input id="archiveDate" type="date" aria-label="Archive date" />
+        <button class="primary-button" id="saveTimesheet" type="button">Save Current Timesheet</button>
+        <button class="secondary-button" id="importArchiveTimesheets" type="button">Mass Import</button>
+        <input class="archive-file-input" id="archiveTimesheetInput" type="file" multiple accept=".xlsx,.xls,.html,.htm" />
+        <button class="secondary-button danger-month-button" id="clearArchiveMonth" type="button">Clear Current Month</button>
+        <span class="save-message" id="saveMessage"></span>
+      </div>
+    </header>
+
+    <section class="calendar-weekdays" aria-hidden="true">
+      <div class="weekday">Sun</div>
+      <div class="weekday">Mon</div>
+      <div class="weekday">Tue</div>
+      <div class="weekday">Wed</div>
+      <div class="weekday">Thu</div>
+      <div class="weekday">Fri</div>
+      <div class="weekday">Sat</div>
+    </section>
+    <section class="calendar-grid" id="calendarGrid" aria-label="Timesheet archive calendar"></section>
+  </main>
+
+  <div class="modal-backdrop" id="previewModal" aria-hidden="true">
+    <section class="preview-modal" role="dialog" aria-modal="true" aria-labelledby="previewTitle">
+      <header class="preview-top">
+        <div class="preview-title" id="previewTitle">Archived Timesheet</div>
+        <div class="preview-actions">
+          <button class="update-button" id="updateArchive" type="button">Update</button>
+          <button class="delete-button" id="deleteArchive" type="button">Delete</button>
+          <button id="closePreview" type="button">X</button>
+        </div>
+      </header>
+      <div class="preview-body">
+        <section class="manager-assignment-panel" aria-label="Managers worked">
+          <div class="manager-assignment-field">
+            <label for="archiveFirstManager">1st Shift Manager</label>
+            <select id="archiveFirstManager" aria-label="First shift manager"></select>
+          </div>
+          <div class="manager-assignment-field">
+            <label for="archiveSecondManager">2nd Shift Manager</label>
+            <select id="archiveSecondManager" aria-label="Second shift manager"></select>
+          </div>
+        </section>
+        <section class="kpis" id="previewKpis" aria-label="Archived metrics"></section>
+        <section class="cards" id="previewCards" aria-label="Archived timesheet preview"></section>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const dayAliases = {
+      sun: "sun", sunday: "sun",
+      mon: "mon", monday: "mon",
+      tue: "tue", tues: "tue", tuesday: "tue",
+      wed: "wed", weds: "wed", wednesday: "wed",
+      thu: "thu", thur: "thu", thurs: "thu", thursday: "thu",
+      fri: "fri", friday: "fri",
+      sat: "sat", saturday: "sat"
+    };
+
+    const archiveStorageKey = "conglobal-timesheet-archive-v1";
+    const rosterStorageKey = "conglobal-roster-state-v1";
+    const rosterAdditionsKey = "conglobal-roster-additions-v1";
+    const dayforceStorageKey = "conglobal-dayforce-punches-v1";
+    const previousTimesheetStorageKey = "conglobal-previous-timesheet-hours-v1";
+    const timesheetSettingsKey = "conglobal-timesheet-settings-v1";
+    const archiveSelectedDateKey = "conglobal-archive-selected-date-v1";
+    const rosterDayLabels = ["Mon", "Tues", "Wed", "Thurs", "Fri", "Sat", "Sun"];
+    const lpmhGoal = 2.0;
+    const today = new Date();
+    const todayKey = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"][today.getDay()];
+    let viewDate = new Date(today.getFullYear(), today.getMonth(), 1);
+    let selectedDateKey = isoDate(today);
+    const requestedArchiveDate = localStorage.getItem(archiveSelectedDateKey) || "";
+    if (/^\d{4}-\d{2}-\d{2}$/.test(requestedArchiveDate)) {
+      selectedDateKey = requestedArchiveDate;
+      const requestedDate = dateFromKey(requestedArchiveDate);
+      viewDate = new Date(requestedDate.getFullYear(), requestedDate.getMonth(), 1);
+    }
+    let activeArchiveKey = "";
+    let activeArchive = null;
+    let clearMonthTimer = null;
+    const deleteArchiveButton = document.getElementById("deleteArchive");
+    const clearArchiveMonthButton = document.getElementById("clearArchiveMonth");
+    const archiveTimesheetInput = document.getElementById("archiveTimesheetInput");
+
+    const defaultRoster = {
+      first: [
+        ["Branford Alton", "Mon, Tues"],
+        ["Castruita Armando", "Wed, Thurs"],
+        ["Frazer Dacoyea", "Mon, Tues"],
+        ["Citizen Dante", "Thurs, Fri"],
+        ["Towler Demetrius", "Thurs, Fri"],
+        ["Stewart Dexter", "Sat, Sun"],
+        ["Gardner Dorrean", "Tues, Wed"],
+        ["Thomas Henry", "Sat, Sun"],
+        ["Brown James", "Thurs, Fri"],
+        ["Herrera Jose", "Sat, Sun"],
+        ["Player Keyston", "Mon, Sun"],
+        ["Hickman Makia", "Mon, Sun"],
+        ["Dever Mikey", "Tues, Wed"],
+        ["Wanza Myles", "Mon, Tues"],
+        ["Romero Nelson", "Tues, Wed"],
+        ["McDaniel Charles", "Fri, Sat"],
+        ["Nava Ramon", "Sat, Sun"],
+        ["Tran Tyler", "Thurs, Fri"]
+      ],
+      second: [
+        ["Carruthers Timothy", "Mon, Sun"],
+        ["Caceres Virula Victor", "Mon, Tues"],
+        ["Keme Aweri Jr.", "Mon, Tues"],
+        ["Hosey Kevin", "Mon, Tues"],
+        ["Brown Brandy", "Wed, Thurs"],
+        ["Mejia Aaron", "Thurs, Fri"],
+        ["Bookman Derrell", "Thurs, Fri"],
+        ["Hopkins Alexander", "Mon, Sun"],
+        ["Tingle Jason", "Sat, Sun"],
+        ["Contreras Marco", "Sat, Sun"],
+        ["Benavides Robert", "Wed, Sun"],
+        ["Urtado Ernest", "Tues, Wed"],
+        ["Johnson Messiah", "Tues, Thurs"],
+        ["Gilder Rufus II", "Tues, Wed"],
+        ["Echendu Chimenierm", "Wed, Thurs"],
+        ["Delgado Jose", "Fri, Sat"]
+      ],
+      gate: [
+        ["Candace Warren", "Sat, Sun"],
+        ["Connie Johnson", "Sat, Sun"],
+        ["Jarade Douglas", "Sat, Sun"],
+        ["Gregory Watson II", "Sat, Sun"],
+        ["Bryce Alexander", "Thurs, Fri"],
+        ["Naomisha Hunt", "Thurs, Fri, Sat"],
+        ["Ramacacondra Pratt", "Thurs, Fri"],
+        ["Kane Cabral", "Mon, Tues"],
+        ["Tavares Gariet", "Mon, Tues"]
+      ]
+    };
+
+    const defaultArchiveManagerNames = [
+      "Neal Profit",
+      "Jarvis Atkins",
+      "Mike Stewart",
+      "Dave Augustine",
+      "Keyston Player",
+      "Jose Delgado",
+      "Jacob Prado",
+      "Jason Tingle",
+      "Shannon Howard"
+    ];
+
+    const shiftLabels = {
+      first: "1st Shift",
+      second: "2nd Shift",
+      gate: "Gate",
+      mechanics: "Mechanics",
+      managers: "Managers"
+    };
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, (char) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+      }[char]));
+    }
+
+    function isoDate(date) {
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+    }
+
+    function dateFromKey(key) {
+      const [year, month, day] = String(key || "").split("-").map(Number);
+      return new Date(year || today.getFullYear(), (month || 1) - 1, day || 1);
+    }
+
+    function monthDayLabel(key) {
+      const date = dateFromKey(key);
+      return `${date.getMonth() + 1}-${date.getDate()}`;
+    }
+
+    function normalizeName(name) {
+      const suffixes = new Set(["jr", "sr", "ii", "iii", "iv"]);
+      return String(name || "")
+        .trim()
+        .toLowerCase()
+        .replace(/[,.]/g, " ")
+        .replace(/\bcontrerras\b/g, "contreras")
+        .replace(/\s+/g, " ")
+        .split(" ")
+        .filter((part) => part && !suffixes.has(part))
+        .sort()
+        .join(" ");
+    }
+
+    function parseOffDays(text) {
+      return new Set(String(text || "")
+        .split(",")
+        .map((item) => item.trim().toLowerCase())
+        .map((item) => dayAliases[item] || dayAliases[item.slice(0, 3)])
+        .filter(Boolean));
+    }
+
+    function rosterOffDaysLabel(days) {
+      return days
+        .map((day, index) => day === "O" ? rosterDayLabels[index] : "")
+        .filter(Boolean)
+        .join(", ");
+    }
+
+    function migrateMcDanielToDays(state) {
+      if (!state || !Array.isArray(state.second)) return state;
+      if (!Array.isArray(state.first)) state.first = [];
+      const alreadyOnDays = state.first.some((employee) => normalizeName(employee.name || "") === "charles mcdaniel");
+      const secondIndex = state.second.findIndex((employee) => normalizeName(employee.name || "") === "charles mcdaniel");
+      if (secondIndex === -1) return state;
+      const [employee] = state.second.splice(secondIndex, 1);
+      if (!alreadyOnDays) state.first.push(employee);
+      localStorage.setItem(rosterStorageKey, JSON.stringify(state));
+      return state;
+    }
+
+    function readRosterAdditions() {
+      try {
+        const additions = JSON.parse(localStorage.getItem(rosterAdditionsKey) || "[]");
+        return Array.isArray(additions) ? additions : [];
+      } catch (error) {
+        localStorage.removeItem(rosterAdditionsKey);
+        return [];
+      }
+    }
+
+    function buildRoster() {
+      const roster = Object.fromEntries(Object.entries(defaultRoster).map(([key, rows]) => [
+        key,
+        rows.map(([name, offDays]) => ({ name, offDays }))
+      ]));
+
+      try {
+        const saved = localStorage.getItem(rosterStorageKey);
+        if (saved) {
+          const state = migrateMcDanielToDays(JSON.parse(saved));
+          ["first", "second", "gate", "mechanics", "managers"].forEach((key) => {
+            if (!Array.isArray(state[key])) return;
+            roster[key] = state[key]
+              .filter((employee) => employee && employee.name)
+              .map((employee) => ({
+                name: employee.name,
+                offDays: Array.isArray(employee.days) ? rosterOffDaysLabel(employee.days) : ""
+              }));
+          });
+        }
+      } catch (error) {
+        localStorage.removeItem(rosterStorageKey);
+      }
+
+      const seen = new Set(Object.values(roster).flat().map((employee) => normalizeName(employee.name)));
+      readRosterAdditions().forEach((addition) => {
+        if (!addition || !addition.name) return;
+        const key = addition.shift || "first";
+        const nameKey = normalizeName(addition.name);
+        if (!nameKey || seen.has(nameKey)) return;
+        if (!Array.isArray(roster[key])) roster[key] = [];
+        roster[key].push({
+          name: addition.name,
+          offDays: Array.isArray(addition.days) ? rosterOffDaysLabel(addition.days) : ""
+        });
+        seen.add(nameKey);
+      });
+
+      return roster;
+    }
+
+    function toMilitaryTime(value) {
+      const text = String(value || "").trim();
+      if (!text) return "";
+      const match = text.match(/^(\d{1,2}):(\d{2})\s*([ap])m$/i);
+      if (!match) return text;
+      let hour = Number(match[1]);
+      const minute = match[2];
+      const period = match[3].toLowerCase();
+      if (period === "p" && hour !== 12) hour += 12;
+      if (period === "a" && hour === 12) hour = 0;
+      return `${String(hour).padStart(2, "0")}${minute}`;
+    }
+
+    function minutesFromMilitary(value) {
+      const text = String(value || "").trim();
+      const match = text.match(/^(\d{1,2})(\d{2})$/);
+      if (!match) return null;
+      const hours = Number(match[1]);
+      const minutes = Number(match[2]);
+      if (hours > 24 || minutes > 59 || (hours === 24 && minutes !== 0)) return null;
+      return (hours * 60) + minutes;
+    }
+
+    function militaryFromMinutes(value) {
+      const minutes = ((Math.round(value) % 1440) + 1440) % 1440;
+      const hours = Math.floor(minutes / 60);
+      const mins = minutes % 60;
+      return `${String(hours).padStart(2, "0")}${String(mins).padStart(2, "0")}`;
+    }
+
+    function currentMinutes() {
+      const now = new Date();
+      return (now.getHours() * 60) + now.getMinutes();
+    }
+
+    function currentMilitaryTime() {
+      return militaryFromMinutes(currentMinutes());
+    }
+
+    function dayKeyFromDateValue(value) {
+      const text = String(value || "").trim();
+      if (!text) return "";
+      const dayNameMatch = text.match(/^([a-z]{3,9})\b/i);
+      const explicitDay = dayNameMatch ? dayAliases[dayNameMatch[1].toLowerCase()] : "";
+      if (explicitDay) return explicitDay;
+      const match = text.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+      const date = match
+        ? new Date(Number(match[3].length === 2 ? `20${match[3]}` : match[3]), Number(match[1]) - 1, Number(match[2]))
+        : new Date(text);
+      if (Number.isNaN(date.getTime())) return "";
+      return ["sun", "mon", "tue", "wed", "thu", "fri", "sat"][date.getDay()];
+    }
+
+    function dayKeyFromArchiveDate(key) {
+      const date = dateFromKey(key);
+      return ["sun", "mon", "tue", "wed", "thu", "fri", "sat"][date.getDay()];
+    }
+
+    function readPunches() {
+      try {
+        const punches = JSON.parse(localStorage.getItem(dayforceStorageKey) || "[]");
+        return Array.isArray(punches) ? punches : [];
+      } catch (error) {
+        localStorage.removeItem(dayforceStorageKey);
+        return [];
+      }
+    }
+
+    function previousShiftHours() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(previousTimesheetStorageKey) || "null");
+        return saved && typeof saved.hours === "number" ? Math.max(Number(saved.hours) || 0, 0) : 0;
+      } catch (error) {
+        localStorage.removeItem(previousTimesheetStorageKey);
+        return 0;
+      }
+    }
+
+    function readTimesheetSettings() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(timesheetSettingsKey) || "null");
+        return {
+          lifts: saved && saved.lifts !== undefined ? Number(saved.lifts) || 0 : 339,
+          flips: saved && saved.flips !== undefined ? Number(saved.flips) || 0 : 5,
+          shiftEndMode: (saved && saved.shiftEndMode) || "1500",
+          shiftEndCustom: String((saved && saved.shiftEndCustom) || "")
+        };
+      } catch (error) {
+        localStorage.removeItem(timesheetSettingsKey);
+        return { lifts: 339, flips: 5, shiftEndMode: "1500", shiftEndCustom: "" };
+      }
+    }
+
+    function shiftEndFromSettings(settings) {
+      if (settings.shiftEndMode && settings.shiftEndMode !== "other") return settings.shiftEndMode;
+      return String(settings.shiftEndCustom || "1500").trim().padStart(4, "0");
+    }
+
+    function readArchive() {
+      try {
+        const archive = JSON.parse(localStorage.getItem(archiveStorageKey) || "{}");
+        return archive && typeof archive === "object" && !Array.isArray(archive) ? archive : {};
+      } catch (error) {
+        localStorage.removeItem(archiveStorageKey);
+        return {};
+      }
+    }
+
+    function writeArchive(archive) {
+      localStorage.setItem(archiveStorageKey, JSON.stringify(archive));
+    }
+
+    function shouldCheckMissingStart(shiftKey) {
+      if (shiftKey === "gate") return false;
+      if (shiftKey === "second") return currentMinutes() >= minutesFromMilitary("1500");
+      return true;
+    }
+
+    function actualHours(startValue, lunch, endValue) {
+      const start = minutesFromMilitary(startValue);
+      const end = minutesFromMilitary(endValue);
+      if (start === null || end === null) return 0;
+      let minutes = end - start;
+      if (minutes < 0) minutes += 1440;
+      if (String(lunch).toUpperCase() === "YES") minutes -= 30;
+      return minutes > 0 ? minutes / 60 : 0;
+    }
+
+    function paidNoteHoursForText(value) {
+      return /\bfloating holidays?\b|\bvacations?\b/i.test(String(value || "")) ? 8 : 0;
+    }
+
+    function noteIsPurple(note, row = {}) {
+      return Boolean(row.paidAbsence || row.unpaidAbsence || /\bfloating holidays?\b|\bvacations?\b|\bsick\b|\bunpaid\b/i.test(String(note || "")));
+    }
+
+    function rowRank(row) {
+      if (row.scheduled && row.hasClockIn && !row.purpleAbsence) return 0;
+      if (!row.scheduled && row.hasClockIn) return 1;
+      if (row.purpleAbsence) return 2;
+      if (row.scheduled && !row.hasClockIn) return 3;
+      return 4;
+    }
+
+    function makeRows(dateKey = selectedDateKey) {
+      const roster = buildRoster();
+      const punches = new Map(readPunches().map((punch) => [normalizeName(punch.name || ""), punch]));
+      const fallbackDayKey = dayKeyFromArchiveDate(dateKey) || todayKey;
+
+      return Object.fromEntries(Object.entries(roster).map(([shiftKey, employees]) => {
+        const rows = employees.map((employee) => {
+          const punch = punches.get(normalizeName(employee.name)) || null;
+          const workdayKey = punch ? dayKeyFromDateValue(punch.date) || fallbackDayKey : fallbackDayKey;
+          const scheduled = !parseOffDays(employee.offDays).has(workdayKey);
+          const note = String((punch && (punch.note || punch.reason)) || "").trim();
+          const rawLunch = String((punch && punch.lunch) || "").trim();
+          const noLunch = rawLunch.toUpperCase() === "NO";
+          const start = toMilitaryTime(punch ? punch.start : "");
+          const importedEnd = toMilitaryTime(punch ? punch.end : "");
+          const hasClockIn = minutesFromMilitary(start) !== null;
+          const hasClockOut = minutesFromMilitary(importedEnd) !== null;
+          const end = hasClockIn && !hasClockOut ? currentMilitaryTime() : importedEnd;
+          const lunch = noLunch ? "NO" : (rawLunch ? "YES" : (start || end ? "??" : ""));
+          const actual = actualHours(start, lunch, end) + paidNoteHoursForText(note);
+          const hasClockTime = Boolean(start || end);
+          const cameInOffDay = !scheduled && hasClockTime;
+          const unpaidAbsence = Boolean(punch && punch.absenceUnpaid);
+          const paidAbsence = Boolean(punch && punch.absencePaid);
+          const purpleAbsence = noteIsPurple(note, { paidAbsence, unpaidAbsence });
+          const invalid = Boolean((start && minutesFromMilitary(start) === null) || (end && minutesFromMilitary(end) === null));
+          const missing = shouldCheckMissingStart(shiftKey) && scheduled && !note && !hasClockIn;
+          let status = "OPEN";
+          if (invalid) status = "INVALID";
+          else if (unpaidAbsence) status = "UNPAID";
+          else if (paidAbsence) status = "PAID";
+          else if (missing) status = "NO SHOW";
+          else if (hasClockIn && !hasClockOut) status = "IN";
+          else if (hasClockIn && hasClockOut) status = "OUT";
+          else if (!scheduled) status = "OFF";
+
+          return {
+            ...employee,
+            shiftKey,
+            scheduled,
+            note,
+            start,
+            lunch,
+            end,
+            actual,
+            hasClockIn,
+            hasClockOut,
+            cameInOffDay,
+            purpleAbsence,
+            unpaidAbsence,
+            paidAbsence,
+            invalid,
+            missing,
+            status
+          };
+        });
+
+        rows.sort((a, b) => rowRank(a) - rowRank(b) || a.name.localeCompare(b.name));
+        return [shiftKey, rows];
+      }));
+    }
+
+    function hoursUntilShiftEnd(value) {
+      const endMinutes = minutesFromMilitary(value);
+      if (endMinutes === null) return 0;
+      let remaining = endMinutes - currentMinutes();
+      if (remaining <= 0) remaining += 1440;
+      return remaining / 60;
+    }
+
+    function metricsFor(rowsByShift, settings) {
+      const lifts = Number(settings.lifts) || 0;
+      const flips = Number(settings.flips) || 0;
+      const firstHours = (rowsByShift.first || []).reduce((sum, row) => sum + (Number(row.actual) || 0), 0);
+      const secondHours = (rowsByShift.second || []).reduce((sum, row) => sum + (Number(row.actual) || 0), 0);
+      const currentHours = firstHours + secondHours;
+      const previousHoursValue = Number(settings.previousHours);
+      const previousHours = Number.isFinite(previousHoursValue) ? Math.max(previousHoursValue, 0) : previousShiftHours();
+      const shiftHours = currentHours + previousHours;
+      const totalMoves = Math.max(lifts + flips, 0);
+      const currentRate = shiftHours > 0 ? totalMoves / shiftHours : 0;
+      const neededValue = Math.ceil(shiftHours * lpmhGoal);
+      const remainValue = neededValue - totalMoves;
+      const remainingHours = hoursUntilShiftEnd(settings.shiftEnd || shiftEndFromSettings(settings));
+      const goalMet = shiftHours > 0 && currentRate >= lpmhGoal;
+      const neededLph = goalMet ? "MET GOAL!" : (remainingHours > 0 ? (Math.max(remainValue, 0) / remainingHours).toFixed(1) : "0.0");
+      return { lifts, flips, shiftEnd: settings.shiftEnd || shiftEndFromSettings(settings), currentHours, previousHours, shiftHours, totalMoves, currentRate, neededValue, remainValue, remainingHours, goalMet, neededLph };
+    }
+
+    function snapshotCurrentTimesheet(dateKey) {
+      const settings = readTimesheetSettings();
+      const rowsByShift = makeRows(dateKey);
+      const metrics = metricsFor(rowsByShift, {
+        ...settings,
+        shiftEnd: shiftEndFromSettings(settings),
+        previousHours: previousShiftHours()
+      });
+      return {
+        dateKey,
+        savedAt: new Date().toISOString(),
+        managerAssignments: { first: "", second: "" },
+        metrics,
+        shifts: rowsByShift
+      };
+    }
+
+    function normalizeManagerAssignments(value) {
+      return {
+        first: String(value && value.first || "").trim(),
+        second: String(value && value.second || "").trim()
+      };
+    }
+
+    function archiveManagerNames(snapshot) {
+      const roster = buildRoster();
+      const names = [...defaultArchiveManagerNames];
+      if (Array.isArray(roster.managers)) {
+        roster.managers.forEach((employee) => names.push(employee && employee.name));
+      }
+      if (snapshot && snapshot.shifts && Array.isArray(snapshot.shifts.managers)) {
+        snapshot.shifts.managers.forEach((employee) => names.push(employee && employee.name));
+      }
+
+      const unique = new Map();
+      names.filter(Boolean).forEach((name) => {
+        const cleanName = String(name).trim();
+        const key = normalizeName(cleanName);
+        if (key && !unique.has(key)) unique.set(key, cleanName);
+      });
+      return Array.from(unique.values()).sort((a, b) => a.localeCompare(b));
+    }
+
+    function renderManagerAssignments(snapshot) {
+      snapshot.managerAssignments = normalizeManagerAssignments(snapshot.managerAssignments);
+      const managers = archiveManagerNames(snapshot);
+      const selectedNames = [snapshot.managerAssignments.first, snapshot.managerAssignments.second].filter(Boolean);
+      selectedNames.forEach((name) => {
+        if (!managers.some((manager) => normalizeName(manager) === normalizeName(name))) managers.push(name);
+      });
+      managers.sort((a, b) => a.localeCompare(b));
+
+      const options = [
+        `<option value="">Select manager</option>`,
+        ...managers.map((name) => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`)
+      ].join("");
+      const firstSelect = document.getElementById("archiveFirstManager");
+      const secondSelect = document.getElementById("archiveSecondManager");
+      firstSelect.innerHTML = options;
+      secondSelect.innerHTML = options;
+      firstSelect.value = snapshot.managerAssignments.first;
+      secondSelect.value = snapshot.managerAssignments.second;
+    }
+
+    function archivedMissingPunches(snapshot) {
+      if (!snapshot || !snapshot.shifts || typeof snapshot.shifts !== "object") return [];
+      return Object.values(snapshot.shifts).flatMap((rows) => Array.isArray(rows) ? rows : []).filter((row) => {
+        if (!row || typeof row !== "object") return false;
+        const hasStart = typeof row.hasClockIn === "boolean"
+          ? row.hasClockIn
+          : minutesFromMilitary(row.start) !== null;
+        const hasEnd = typeof row.hasClockOut === "boolean"
+          ? row.hasClockOut
+          : minutesFromMilitary(row.end) !== null;
+        // Only a missing start/end punch is an archive exception. Lunch is intentionally ignored.
+        return hasStart !== hasEnd;
+      });
+    }
+
+    function renderCalendar() {
+      const archive = readArchive();
+      const monthTitle = document.getElementById("monthTitle");
+      const grid = document.getElementById("calendarGrid");
+      const first = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1);
+      const start = new Date(first);
+      start.setDate(first.getDate() - first.getDay());
+      monthTitle.textContent = first.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+
+      const cells = [];
+      for (let index = 0; index < 42; index += 1) {
+        const date = new Date(start);
+        date.setDate(start.getDate() + index);
+        const key = isoDate(date);
+        const archived = archive[key];
+        const missingPunches = archivedMissingPunches(archived);
+        const missingPunchNames = missingPunches.map((row) => String(row.name || "Unknown").trim()).filter(Boolean);
+        const classes = [
+          "day-cell",
+          date.getMonth() !== viewDate.getMonth() ? "muted" : "",
+          key === isoDate(today) ? "today" : "",
+          key === selectedDateKey ? "selected" : "",
+          missingPunches.length ? "missing-punch-day" : ""
+        ].filter(Boolean).join(" ");
+        cells.push(`
+          <button class="${classes}" type="button" data-date="${escapeHtml(key)}">
+            <span class="day-number">${date.getDate()}</span>
+            ${archived ? `<span class="archive-pill" data-open="${escapeHtml(key)}">${escapeHtml(`${monthDayLabel(key)} Timesheet`)}</span>` : ""}
+            ${missingPunches.length ? `<span class="missing-punch-pill" data-open="${escapeHtml(key)}" title="${escapeHtml(`Missing punch: ${missingPunchNames.join(", ")}`)}">${escapeHtml(`Missing Punch${missingPunches.length > 1 ? ` (${missingPunches.length})` : ""}`)}</span>` : ""}
+          </button>
+        `);
+      }
+      grid.innerHTML = cells.join("");
+      document.getElementById("archiveDate").value = selectedDateKey;
+      localStorage.setItem(archiveSelectedDateKey, selectedDateKey);
+    }
+
+    function saveCurrentTimesheet() {
+      const dateKey = document.getElementById("archiveDate").value || selectedDateKey;
+      selectedDateKey = dateKey;
+      viewDate = new Date(dateFromKey(dateKey).getFullYear(), dateFromKey(dateKey).getMonth(), 1);
+      const archive = readArchive();
+      const snapshot = snapshotCurrentTimesheet(dateKey);
+      snapshot.managerAssignments = normalizeManagerAssignments(archive[dateKey] && archive[dateKey].managerAssignments);
+      archive[dateKey] = snapshot;
+      writeArchive(archive);
+      setArchiveMessage("Saved " + monthDayLabel(dateKey));
+      renderCalendar();
+    }
+
+    function setArchiveMessage(message) {
+      document.getElementById("saveMessage").textContent = message;
+    }
+
+    function activeMonthKey() {
+      return viewDate.getFullYear() + "-" + String(viewDate.getMonth() + 1).padStart(2, "0");
+    }
+
+    function activeMonthTitle() {
+      return viewDate.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+    }
+
+    function resetClearMonthButton() {
+      clearTimeout(clearMonthTimer);
+      clearArchiveMonthButton.textContent = "Clear Current Month";
+      clearArchiveMonthButton.classList.remove("confirming");
+      clearArchiveMonthButton.dataset.confirming = "0";
+    }
+
+    function clearCurrentArchiveMonth() {
+      const monthKey = activeMonthKey();
+      const archive = readArchive();
+      const keys = Object.keys(archive).filter((key) => key.startsWith(monthKey));
+      if (!keys.length) {
+        resetClearMonthButton();
+        setArchiveMessage("No archived timesheets found for " + activeMonthTitle());
+        return;
+      }
+
+      if (clearArchiveMonthButton.dataset.confirming !== "1") {
+        clearArchiveMonthButton.textContent = "Confirm Clear";
+        clearArchiveMonthButton.classList.add("confirming");
+        clearArchiveMonthButton.dataset.confirming = "1";
+        setArchiveMessage("Click Confirm Clear again to permanently remove " + keys.length + " archived day" + (keys.length === 1 ? "" : "s"));
+        clearMonthTimer = setTimeout(resetClearMonthButton, 12000);
+        return;
+      }
+
+      keys.forEach((key) => delete archive[key]);
+      writeArchive(archive);
+      if (activeArchiveKey && activeArchiveKey.startsWith(monthKey)) closePreview();
+      resetClearMonthButton();
+      setArchiveMessage("Cleared " + keys.length + " archived day" + (keys.length === 1 ? "" : "s") + " for " + activeMonthTitle());
+      renderCalendar();
+    }
+
+
+
+    function readArchiveWorkbook(buffer) {
+      try {
+        return XLSX.read(buffer, { type: "array", cellDates: true });
+      } catch (error) {
+        const text = new TextDecoder().decode(buffer);
+        return XLSX.read(text, { type: "string", cellDates: true });
+      }
+    }
+
+    function archiveSheetRows(workbook, sheetName) {
+      return XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1, raw: false, defval: "" });
+    }
+
+    function firstFilledCell(row) {
+      return (row || []).map((cell) => String(cell || "").trim()).find(Boolean) || "";
+    }
+
+    function importDateKey(value, sourceName = "") {
+      if (value instanceof Date && !Number.isNaN(value.getTime())) return isoDate(value);
+      const text = String(value || "").trim();
+      const monthNames = { jan: 1, january: 1, feb: 2, february: 2, mar: 3, march: 3, apr: 4, april: 4, may: 5, jun: 6, june: 6, jul: 7, july: 7, aug: 8, august: 8, sep: 9, sept: 9, september: 9, oct: 10, october: 10, nov: 11, november: 11, dec: 12, december: 12 };
+      let match = text.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+      if (match) return match[1] + "-" + String(Number(match[2])).padStart(2, "0") + "-" + String(Number(match[3])).padStart(2, "0");
+      match = text.match(/(?:[A-Za-z]{3,9},?\s*)?([A-Za-z]{3,9})\s+(\d{1,2})(?:,\s*(\d{4}))?/);
+      if (match && monthNames[match[1].toLowerCase()]) {
+        const year = match[3] ? Number(match[3]) : viewDate.getFullYear();
+        return year + "-" + String(monthNames[match[1].toLowerCase()]).padStart(2, "0") + "-" + String(Number(match[2])).padStart(2, "0");
+      }
+      match = text.match(/^(\d{1,2})[\/.-](\d{1,2})(?:[\/.-](\d{2,4}))?/);
+      if (match) {
+        const year = match[3] ? Number(match[3].length === 2 ? "20" + match[3] : match[3]) : viewDate.getFullYear();
+        return year + "-" + String(Number(match[1])).padStart(2, "0") + "-" + String(Number(match[2])).padStart(2, "0");
+      }
+      const name = String(sourceName || "");
+      match = name.match(/(?:^|[^\d])(\d{1,2})[._ -](\d{1,2})[._ -](\d{2,4})(?:[^\d]|$)/);
+      if (match) {
+        const year = Number(match[3].length === 2 ? "20" + match[3] : match[3]);
+        return year + "-" + String(Number(match[1])).padStart(2, "0") + "-" + String(Number(match[2])).padStart(2, "0");
+      }
+      match = name.match(/(?:^|[^\d])(\d{1,2})[._ -](\d{1,2})(?:[^\d]|$)/);
+      if (match) return viewDate.getFullYear() + "-" + String(Number(match[1])).padStart(2, "0") + "-" + String(Number(match[2])).padStart(2, "0");
+      return "";
+    }
+
+    function timesheetMdDateFromRows(rows, sourceName = "") {
+      for (const row of rows) {
+        const key = importDateKey(firstFilledCell(row), sourceName);
+        if (key) return key;
+      }
+      return importDateKey("", sourceName);
+    }
+
+    function timesheetMdShiftFromHeader(value) {
+      const text = String(value || "").trim();
+      const lower = text.toLowerCase();
+      const label = text.replace(/\s*\[[^\]]*\]\s*$/, "").trim();
+      if (/\b1st\b|first/.test(lower)) return { key: "first", label: label || "1st SHIFT" };
+      if (/\b2nd\b|second/.test(lower)) return { key: "second", label: label || "2ND SHIFT" };
+      if (/\bgate\b/.test(lower)) return { key: "gate", label: label || "GATE" };
+      if (/mechanic/.test(lower)) return { key: "mechanics", label: label || "MECHANICS" };
+      if (/manager|\bmgr\b/.test(lower)) return { key: "managers", label: label || "MANAGERS" };
+      return null;
+    }
+
+    function rowIsTimesheetMdShiftHeader(row) {
+      const first = String(row[0] || "").trim();
+      const joined = row.map((cell) => String(cell || "").trim().toLowerCase()).join("|");
+      return Boolean(timesheetMdShiftFromHeader(first) && joined.includes("off days") && joined.includes("note"));
+    }
+
+    function rowsLookLikeTimesheetMdExport(rows) {
+      return rows.some((row) => /time input - daily sheet/i.test(firstFilledCell(row))) || rows.some(rowIsTimesheetMdShiftHeader);
+    }
+
+    function cleanTimesheetMdNote(value) {
+      const text = String(value || "").trim();
+      return text === "-" ? "" : text;
+    }
+
+    function cleanTimesheetMdLunch(value) {
+      const text = String(value || "").trim().toUpperCase();
+      return text === "-" ? "" : text;
+    }
+
+    function normalizeTimesheetMdTime(value) {
+      const text = String(value || "").trim();
+      if (!text || /^missing\??$/i.test(text) || text === "-") return "";
+      const digits = text.replace(/\D/g, "");
+      if (/^\d{1,4}$/.test(digits)) return digits.padStart(4, "0").slice(-4);
+      return text;
+    }
+
+    function timesheetMdActualValue(value) {
+      const cleaned = String(value || "").replace(/[^0-9.-]/g, "");
+      const number = Number(cleaned);
+      return Number.isFinite(number) ? number : 0;
+    }
+
+    function parseTimesheetMdExportRows(rows, sourceName) {
+      if (!rowsLookLikeTimesheetMdExport(rows)) return null;
+      const dateKey = timesheetMdDateFromRows(rows, sourceName);
+      if (!dateKey) return null;
+      const records = [];
+      let currentShift = null;
+      rows.forEach((row) => {
+        if (!row.some(Boolean)) return;
+        if (rowIsTimesheetMdShiftHeader(row)) {
+          currentShift = timesheetMdShiftFromHeader(row[0]);
+          return;
+        }
+        if (!currentShift) return;
+        const name = String(row[0] || "").trim();
+        if (!name || /^off\s*-/i.test(name) || /time input - daily sheet/i.test(name) || /^(employee|name)$/i.test(name)) return;
+        const start = normalizeTimesheetMdTime(row[3]);
+        const lunch = cleanTimesheetMdLunch(row[4]);
+        const end = normalizeTimesheetMdTime(row[5]);
+        const actual = timesheetMdActualValue(row[6]);
+        const note = cleanTimesheetMdNote(row[2]);
+        if (!start && !end && !actual && !note) return;
+        records.push({ shiftKey: currentShift.key, name, dateKey, offDays: String(row[1] || "").trim(), note, start, lunch, end, actual });
+      });
+      return records.length ? { dateKey, records } : null;
+    }
+
+    function archiveRowFromImportRecord(record, dateKey) {
+      const shiftKey = record.shiftKey || "first";
+      const scheduled = !parseOffDays(record.offDays).has(dayKeyFromArchiveDate(dateKey));
+      const note = String(record.note || "").trim();
+      const start = normalizeTimesheetMdTime(record.start);
+      const lunch = cleanTimesheetMdLunch(record.lunch);
+      const end = normalizeTimesheetMdTime(record.end);
+      const hasClockIn = minutesFromMilitary(start) !== null;
+      const hasClockOut = minutesFromMilitary(end) !== null;
+      const computedActual = actualHours(start, lunch, end) + paidNoteHoursForText(note);
+      const actual = Number(record.actual) || computedActual;
+      const hasClockTime = Boolean(start || end);
+      const cameInOffDay = !scheduled && hasClockTime;
+      const unpaidAbsence = /\bunpaid\b/i.test(note);
+      const paidAbsence = /\bfloating holidays?\b|\bvacations?\b/i.test(note);
+      const purpleAbsence = noteIsPurple(note, { paidAbsence, unpaidAbsence });
+      const invalid = Boolean((start && minutesFromMilitary(start) === null) || (end && minutesFromMilitary(end) === null));
+      const missing = shouldCheckMissingStart(shiftKey) && scheduled && !note && !hasClockIn;
+      let status = "OPEN";
+      if (invalid) status = "INVALID";
+      else if (unpaidAbsence) status = "UNPAID";
+      else if (paidAbsence) status = "PAID";
+      else if (missing) status = "NO SHOW";
+      else if (hasClockIn && !hasClockOut) status = "IN";
+      else if (hasClockIn && hasClockOut) status = "OUT";
+      else if (!scheduled) status = "OFF";
+      return { name: record.name, offDays: record.offDays || "", shiftKey, scheduled, note, start, lunch, end, actual, hasClockIn, hasClockOut, cameInOffDay, purpleAbsence, unpaidAbsence, paidAbsence, invalid, missing, status };
+    }
+
+    function snapshotFromTimesheetMdImport(parsed, sourceName) {
+      const shifts = { first: [], second: [], gate: [], mechanics: [], managers: [] };
+      parsed.records.forEach((record) => {
+        const key = shifts[record.shiftKey] ? record.shiftKey : "first";
+        shifts[key].push(archiveRowFromImportRecord({ ...record, shiftKey: key }, parsed.dateKey));
+      });
+      const settings = readTimesheetSettings();
+      const metrics = metricsFor(shifts, { ...settings, shiftEnd: shiftEndFromSettings(settings), previousHours: 0 });
+      return { dateKey: parsed.dateKey, savedAt: new Date().toISOString(), importedFrom: sourceName || "Mass import", metrics, shifts };
+    }
+
+
+
+    function rosterImportLookup() {
+      const lookup = new Map();
+      Object.entries(buildRoster()).forEach(([shiftKey, employees]) => {
+        (employees || []).forEach((employee) => {
+          const key = normalizeName(employee.name || "");
+          if (!key || lookup.has(key)) return;
+          lookup.set(key, { shiftKey, name: employee.name, offDays: employee.offDays || "" });
+        });
+      });
+      return lookup;
+    }
+
+    function cleanDayforceImportName(value) {
+      let text = String(value || "").replace(/\s+\d{4,}\s*$/, "").trim();
+      if (!text) return "";
+      if (text.includes(",")) {
+        const parts = text.split(",");
+        const last = parts[0].trim();
+        const first = parts.slice(1).join(" ").trim();
+        text = [first, last].filter(Boolean).join(" ");
+      }
+      return text.replace(/\s+/g, " ").trim();
+    }
+
+    function dayforceHeaderIndex(row, label) {
+      const wanted = String(label || "").trim().toLowerCase();
+      return row.findIndex((cell) => String(cell || "").trim().toLowerCase() === wanted);
+    }
+
+    function dayforceImportActualHours(startValue, mealStartValue, mealEndValue, endValue) {
+      const start = minutesFromMilitary(toMilitaryTime(startValue));
+      let end = minutesFromMilitary(toMilitaryTime(endValue));
+      if (start === null || end === null) return 0;
+      if (end <= start) end += 1440;
+      let minutes = end - start;
+      let mealStart = minutesFromMilitary(toMilitaryTime(mealStartValue));
+      let mealEnd = minutesFromMilitary(toMilitaryTime(mealEndValue));
+      if (mealStart !== null && mealEnd !== null) {
+        if (mealStart < start && start >= 720) mealStart += 1440;
+        if (mealEnd <= mealStart) mealEnd += 1440;
+        const overlap = Math.max(0, Math.min(end, mealEnd) - Math.max(start, mealStart));
+        minutes -= overlap;
+      }
+      return Math.max(0, Math.round((minutes / 60) * 100) / 100);
+    }
+
+    function parseDayforceTimeEntryRows(rows, sourceName) {
+      const lookup = rosterImportLookup();
+      const recordsByDate = new Map();
+      for (let index = 0; index < rows.length - 1; index += 1) {
+        const header = rows[index] || [];
+        const startIndex = dayforceHeaderIndex(header, "Start Shift");
+        const mealStartIndex = dayforceHeaderIndex(header, "Start Meal");
+        const mealEndIndex = dayforceHeaderIndex(header, "End Meal");
+        const endIndex = dayforceHeaderIndex(header, "End Shift");
+        if (startIndex < 0 || endIndex < 0) continue;
+
+        const rawName = header.map((cell) => String(cell || "").trim()).find((cell) => /[A-Za-z]/.test(cell) && !/start|end|meal|shift/i.test(cell)) || "";
+        const cleanedName = cleanDayforceImportName(rawName);
+        if (!cleanedName) continue;
+        const rosterEntry = lookup.get(normalizeName(cleanedName));
+        const row = rows[index + 1] || [];
+        const dateKey = importDateKey(row[1] || firstFilledCell(row), sourceName);
+        if (!dateKey) continue;
+
+        const start = toMilitaryTime(row[startIndex]);
+        const end = toMilitaryTime(row[endIndex]);
+        if (!start && !end) continue;
+        const mealStart = mealStartIndex >= 0 ? toMilitaryTime(row[mealStartIndex]) : "";
+        const mealEnd = mealEndIndex >= 0 ? toMilitaryTime(row[mealEndIndex]) : "";
+        const startMinutes = minutesFromMilitary(start);
+        const shiftKey = rosterEntry ? rosterEntry.shiftKey : (startMinutes !== null && startMinutes >= 12 * 60 ? "second" : "first");
+        const actual = dayforceImportActualHours(start, mealStart, mealEnd, end);
+        const record = {
+          shiftKey,
+          name: rosterEntry ? rosterEntry.name : cleanedName,
+          dateKey,
+          offDays: rosterEntry ? rosterEntry.offDays : "",
+          note: "",
+          start,
+          lunch: mealStart && mealEnd ? "YES" : "NO",
+          end,
+          actual
+        };
+        if (!recordsByDate.has(dateKey)) recordsByDate.set(dateKey, []);
+        recordsByDate.get(dateKey).push(record);
+      }
+      return Array.from(recordsByDate.entries()).map(([dateKey, records]) => ({ dateKey, records }));
+    }
+
+    async function importArchiveTimesheetFiles(event) {
+      const files = Array.from(event.target.files || []);
+      event.target.value = "";
+      if (!files.length) return;
+      if (!window.XLSX) {
+        setArchiveMessage("XLSX parser unavailable");
+        return;
+      }
+      const archive = readArchive();
+      let imported = 0;
+      const failed = [];
+      for (const file of files) {
+        try {
+          const workbook = readArchiveWorkbook(await file.arrayBuffer());
+          let snapshots = [];
+          for (const sheetName of workbook.SheetNames) {
+            const rows = archiveSheetRows(workbook, sheetName);
+            const parsed = parseTimesheetMdExportRows(rows, file.name);
+            if (parsed) {
+              snapshots = [snapshotFromTimesheetMdImport(parsed, file.name)];
+              break;
+            }
+            const dayforceParsed = parseDayforceTimeEntryRows(rows, file.name);
+            if (dayforceParsed.length) {
+              snapshots = dayforceParsed.map((item) => snapshotFromTimesheetMdImport(item, file.name));
+              break;
+            }
+          }
+          if (!snapshots.length) {
+            failed.push(file.name + ": no Timesheet MD or Dayforce time-entry rows");
+            continue;
+          }
+          snapshots.forEach((snapshot) => {
+            archive[snapshot.dateKey] = snapshot;
+            imported += 1;
+            selectedDateKey = snapshot.dateKey;
+          });
+        } catch (error) {
+          failed.push(file.name + ": " + error.message);
+        }
+      }
+      if (imported) {
+        writeArchive(archive);
+        const selected = dateFromKey(selectedDateKey);
+        viewDate = new Date(selected.getFullYear(), selected.getMonth(), 1);
+        renderCalendar();
+      }
+      const failedText = failed.length ? " Failed: " + failed.join("; ") : "";
+      setArchiveMessage("Imported " + imported + " archived timesheet" + (imported === 1 ? "" : "s") + "." + failedText);
+    }
+
+    function rowClass(row) {
+      const classes = ["md-row"];
+      if (row.status === "IN") classes.push("in-row");
+      if (row.status === "OUT") classes.push("out-row");
+      if (row.cameInOffDay) classes.push("offday-row");
+      if (row.missing) classes.push("missing-row");
+      if (row.invalid) classes.push("invalid-row");
+      if (row.purpleAbsence || row.paidAbsence) classes.push("absence-row");
+      if (row.unpaidAbsence) classes.push("unpaid-row");
+      return classes.join(" ");
+    }
+
+    function shiftHeaderLabel(shiftKey) {
+      if (shiftKey === "first") return "1st SHIFT";
+      if (shiftKey === "second") return "2ND SHIFT";
+      return String(shiftLabels[shiftKey] || shiftKey).toUpperCase();
+    }
+
+    function sectionStats(rows, shiftKey) {
+      const rowsWithIndex = rows.map((row, index) => ({ ...row, archiveIndex: index }));
+      const scheduled = rows.filter((row) => row.scheduled).length;
+      const here = rows.filter((row) => row.hasClockIn && !row.hasClockOut).length;
+      const out = rows.filter((row) => row.scheduled && !row.unpaidAbsence && !(row.hasClockIn && !row.hasClockOut)).length;
+      const actual = rows.reduce((sum, row) => sum + (Number(row.actual) || 0), 0);
+      const visibleRows = rowsWithIndex.filter((row) => !(row.status === "OFF" && !row.note));
+      const offRows = rowsWithIndex.filter((row) => row.status === "OFF" && !row.note);
+      return { scheduled, here, out, actual, visibleRows, offRows, shiftKey };
+    }
+
+    function renderKpis(snapshot) {
+      const details = metricsFor(snapshot.shifts, snapshot.metrics || {});
+      const remainText = details.goalMet ? "MET GOAL!" : String(Math.max(details.remainValue, 0));
+      document.getElementById("previewKpis").innerHTML = [
+        ["Lifts", details.lifts, ""],
+        ["Flips", details.flips, ""],
+        ["Shift End", details.shiftEnd, ""],
+        ["Lifts Needed", details.neededValue, ""],
+        ["Current LPMH", details.currentRate.toFixed(1), details.currentRate >= lpmhGoal ? "good" : "bad"],
+        ["LPH Needed", details.neededLph, details.goalMet ? "good" : "warn"],
+        ["Lifts Remain", remainText, details.goalMet ? "good" : "warn"]
+      ].map(([label, value, className]) => `
+        <div class="kpi ${className}">
+          <div class="kpi-label">${escapeHtml(label)}</div>
+          <div class="kpi-value">${escapeHtml(value)}</div>
+        </div>
+      `).join("");
+    }
+
+    function renderEmployeeRow(row, shiftKey, rowIndex) {
+      const lunchOptions = ["", "NO", "YES", "??"].map((value) => (
+        `<option value="${escapeHtml(value)}" ${String(row.lunch || "") === value ? "selected" : ""}>${escapeHtml(value || "-")}</option>`
+      )).join("");
+      return `
+        <div class="${rowClass(row)}" data-shift="${escapeHtml(shiftKey)}" data-row="${rowIndex}">
+          <span class="name ${row.missing ? "missing" : ""}">${escapeHtml(row.name)}</span>
+          <span class="off">${escapeHtml(row.offDays)}</span>
+          <input class="note-edit" value="${escapeHtml(row.note || "")}" aria-label="${escapeHtml(row.name)} note" />
+          <input class="time-edit ${row.missing ? "missing" : ""}" value="${escapeHtml(row.missing ? "Missing?" : row.start || "")}" aria-label="${escapeHtml(row.name)} start" />
+          <select class="lunch-edit" aria-label="${escapeHtml(row.name)} lunch">${lunchOptions}</select>
+          <input class="time-edit" value="${escapeHtml(row.end || "")}" aria-label="${escapeHtml(row.name)} end" />
+          <span class="actual">${Number(row.actual) ? Number(row.actual).toFixed(1) : ""}</span>
+        </div>
+      `;
+    }
+
+    function renderShiftCard(shiftKey, rows) {
+      const stats = sectionStats(rows, shiftKey);
+      const offList = stats.offRows.length
+        ? stats.offRows.map((row) => `<span class="off-chip">${escapeHtml(row.name)}</span>`).join("")
+        : `<span class="off-chip">None</span>`;
+      const body = stats.visibleRows.length
+        ? stats.visibleRows.map((row) => renderEmployeeRow(row, shiftKey, row.archiveIndex)).join("")
+        : `<div class="off-footer"><strong>No rows</strong></div>`;
+
+      return `
+        <section class="shift-card">
+          <header class="shift-head">
+            <span class="shift-name">${escapeHtml(`${shiftHeaderLabel(shiftKey)} [${stats.scheduled} sch]`)}</span>
+            <span>Off Days</span>
+            <span>NOTE</span>
+            <span>${escapeHtml(`${stats.here} HERE, ${stats.out} OUT`)}</span>
+            <span>Lunch</span>
+            <span>End</span>
+            <span>${escapeHtml(`Actual ${stats.actual.toFixed(1)}`)}</span>
+          </header>
+          ${body}
+          <div class="off-footer"><strong>${escapeHtml(`OFF - ${stats.offRows.length}`)}</strong>${offList}</div>
+        </section>
+      `;
+    }
+
+    function renderPreview(snapshot) {
+      document.getElementById("previewTitle").textContent = `${monthDayLabel(snapshot.dateKey)} Timesheet`;
+      renderManagerAssignments(snapshot);
+      renderKpis(snapshot);
+      document.getElementById("previewCards").innerHTML = ["first", "second", "gate", "mechanics", "managers"]
+        .filter((key) => Array.isArray(snapshot.shifts[key]) && snapshot.shifts[key].length)
+        .map((key) => renderShiftCard(key, snapshot.shifts[key]))
+        .join("");
+    }
+
+    function resetDeleteArchiveButton() {
+      deleteArchiveButton.textContent = "Delete";
+      deleteArchiveButton.classList.remove("confirm-delete");
+      deleteArchiveButton.dataset.confirming = "0";
+    }
+
+    function openArchive(dateKey) {
+      const archive = readArchive();
+      if (!archive[dateKey]) return;
+      activeArchiveKey = dateKey;
+      activeArchive = JSON.parse(JSON.stringify(archive[dateKey]));
+      resetDeleteArchiveButton();
+      renderPreview(activeArchive);
+      document.getElementById("previewModal").classList.add("open");
+      document.getElementById("previewModal").setAttribute("aria-hidden", "false");
+    }
+
+    function closePreview() {
+      document.getElementById("previewModal").classList.remove("open");
+      document.getElementById("previewModal").setAttribute("aria-hidden", "true");
+      resetDeleteArchiveButton();
+      activeArchiveKey = "";
+      activeArchive = null;
+    }
+
+    function deleteActiveArchive() {
+      if (!activeArchiveKey) return;
+      if (deleteArchiveButton.dataset.confirming !== "1") {
+        deleteArchiveButton.textContent = "Confirm";
+        deleteArchiveButton.classList.add("confirm-delete");
+        deleteArchiveButton.dataset.confirming = "1";
+        return;
+      }
+
+      const deletedKey = activeArchiveKey;
+      const archive = readArchive();
+      delete archive[deletedKey];
+      writeArchive(archive);
+      closePreview();
+      setArchiveMessage("Deleted " + monthDayLabel(deletedKey));
+      renderCalendar();
+    }
+
+    function statusFromEdited(row, start, end, note, shiftKey) {
+      const hasClockIn = minutesFromMilitary(start) !== null;
+      const hasClockOut = minutesFromMilitary(end) !== null;
+      const invalid = Boolean((start && start !== "Missing?" && minutesFromMilitary(start) === null) || (end && minutesFromMilitary(end) === null));
+      const purpleAbsence = noteIsPurple(note, row);
+      const missing = shouldCheckMissingStart(shiftKey) && row.scheduled && !note && !hasClockIn;
+      if (invalid) return "INVALID";
+      if (row.unpaidAbsence || /\bunpaid\b/i.test(note)) return "UNPAID";
+      if (row.paidAbsence || purpleAbsence) return "PAID";
+      if (missing) return "NO SHOW";
+      if (hasClockIn && !hasClockOut) return "IN";
+      if (hasClockIn && hasClockOut) return "OUT";
+      if (!row.scheduled) return "OFF";
+      return "OPEN";
+    }
+
+    function updateArchiveFromPreview() {
+      if (!activeArchive || !activeArchiveKey) return;
+      document.querySelectorAll("#previewCards .md-row").forEach((element) => {
+        const shiftKey = element.dataset.shift;
+        const rowIndex = Number(element.dataset.row);
+        const row = activeArchive.shifts[shiftKey] && activeArchive.shifts[shiftKey][rowIndex];
+        if (!row) return;
+        const inputs = element.querySelectorAll(".time-edit");
+        const note = element.querySelector(".note-edit").value.trim();
+        const start = inputs[0].value.trim() === "Missing?" ? "" : inputs[0].value.trim();
+        const lunch = element.querySelector(".lunch-edit").value.trim();
+        const end = inputs[1].value.trim();
+        row.note = note;
+        row.start = start;
+        row.lunch = lunch;
+        row.end = end;
+        row.hasClockIn = minutesFromMilitary(start) !== null;
+        row.hasClockOut = minutesFromMilitary(end) !== null;
+        row.actual = actualHours(start, lunch, end) + paidNoteHoursForText(note);
+        row.cameInOffDay = !row.scheduled && Boolean(start || end);
+        row.unpaidAbsence = /\bunpaid\b/i.test(note);
+        row.paidAbsence = !row.unpaidAbsence && /\bfloating holidays?\b|\bvacations?\b|\bsick\b/i.test(note);
+        row.purpleAbsence = noteIsPurple(note, row);
+        row.invalid = Boolean((start && minutesFromMilitary(start) === null) || (end && minutesFromMilitary(end) === null));
+        row.missing = shouldCheckMissingStart(shiftKey) && row.scheduled && !note && !row.hasClockIn;
+        row.status = statusFromEdited(row, start, end, note, shiftKey);
+      });
+
+      activeArchive.managerAssignments = {
+        first: document.getElementById("archiveFirstManager").value,
+        second: document.getElementById("archiveSecondManager").value
+      };
+      activeArchive.savedAt = new Date().toISOString();
+      activeArchive.metrics = metricsFor(activeArchive.shifts, activeArchive.metrics || {});
+      const archive = readArchive();
+      archive[activeArchiveKey] = activeArchive;
+      writeArchive(archive);
+      renderPreview(activeArchive);
+      renderCalendar();
+    }
+
+    document.getElementById("prevMonth").addEventListener("click", () => {
+      viewDate = new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1);
+      renderCalendar();
+    });
+
+    document.getElementById("nextMonth").addEventListener("click", () => {
+      viewDate = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 1);
+      renderCalendar();
+    });
+
+    document.getElementById("todayButton").addEventListener("click", () => {
+      selectedDateKey = isoDate(today);
+      viewDate = new Date(today.getFullYear(), today.getMonth(), 1);
+      renderCalendar();
+    });
+
+    document.getElementById("archiveDate").addEventListener("change", (event) => {
+      selectedDateKey = event.target.value || selectedDateKey;
+      const selected = dateFromKey(selectedDateKey);
+      viewDate = new Date(selected.getFullYear(), selected.getMonth(), 1);
+      renderCalendar();
+    });
+
+    document.getElementById("saveTimesheet").addEventListener("click", saveCurrentTimesheet);
+    document.getElementById("importArchiveTimesheets").addEventListener("click", () => archiveTimesheetInput.click());
+    archiveTimesheetInput.addEventListener("change", importArchiveTimesheetFiles);
+    clearArchiveMonthButton.addEventListener("click", clearCurrentArchiveMonth);
+    document.getElementById("closePreview").addEventListener("click", closePreview);
+    document.getElementById("updateArchive").addEventListener("click", updateArchiveFromPreview);
+    deleteArchiveButton.addEventListener("click", deleteActiveArchive);
+    document.getElementById("previewModal").addEventListener("click", (event) => {
+      if (event.target.id === "previewModal") closePreview();
+    });
+
+    document.getElementById("calendarGrid").addEventListener("click", (event) => {
+      const pill = event.target.closest("[data-open]");
+      if (pill) {
+        event.stopPropagation();
+        openArchive(pill.dataset.open);
+        return;
+      }
+      const cell = event.target.closest("[data-date]");
+      if (!cell) return;
+      selectedDateKey = cell.dataset.date;
+      document.getElementById("archiveDate").value = selectedDateKey;
+      renderCalendar();
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") closePreview();
+    });
+
+    document.getElementById("archiveDate").value = selectedDateKey;
+    renderCalendar();
+  </script>
+</body>
+</html>
