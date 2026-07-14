@@ -1,0 +1,17 @@
+﻿# Windows and local noise
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.tmp
+
+# Local backups / exports
+*.bak
+*.backup
+*.xlsx
+*.xls
+*.csv
