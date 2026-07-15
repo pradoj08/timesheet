@@ -788,6 +788,27 @@
       font-weight: 900;
     }
 
+    .staff-pill > .staff-pill-flags {
+      min-width: max-content;
+      display: inline-flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 3px;
+      overflow-wrap: normal;
+    }
+
+    .staff-pill .role-assignment-flag {
+      color: #0f4c81;
+      font-weight: 1000;
+    }
+
+    .staff-pill .role-unassigned-flag {
+      color: #dc2626;
+      font-size: 13px;
+      font-weight: 1000;
+      line-height: .8;
+    }
+
     .employee-bank-backdrop {
       position: fixed;
       inset: 0;
@@ -998,6 +1019,8 @@
     .employee-role-action span { font-size: 8px; font-weight: 900; }
     .employee-role-action.hostler { background: #fff7cc; color: #854d0e; }
     .employee-role-action.groundman { background: #ffedd5; color: #9a3412; }
+    .employee-role-action.trainee-hostler { background: #fef3c7; color: #92400e; }
+    .employee-role-action.trainee-groundman { background: #ffedd5; color: #c2410c; }
     .employee-role-action.flip-operator { background: #ede9fe; color: #6d28d9; }
     .employee-role-action.crane { background: #dbeafe; color: #1d4ed8; }
     .employee-role-action.clear { background: #fff; color: #64748b; }
@@ -1718,7 +1741,7 @@
       box-shadow: inset 0 0 12px rgba(0, 0, 0, .28);
     }
 
-    .yard-drive-lane.top { top: 12px; }
+    .yard-drive-lane.top { top: 32px; }
     .yard-drive-lane.bottom { bottom: 12px; }
 
     .yard-drive-lane::after {
@@ -1732,19 +1755,50 @@
       transform: translateY(-50%);
     }
 
-    .yard-drive-lane-label {
+    .yard-headcount-pill {
       position: absolute;
-      z-index: 3;
+      z-index: 8;
+      top: 8px;
       right: 8px;
-      color: rgba(226, 232, 240, .66);
-      font-size: 8px;
-      font-weight: 900;
-      letter-spacing: .09em;
+      min-width: 142px;
+      padding: 7px 11px;
+      border: 2px solid transparent;
+      border-radius: 4px;
+      font-family: "Arial Black", Impact, sans-serif;
+      font-size: 11px;
+      font-weight: 1000;
+      letter-spacing: .05em;
+      text-align: center;
       text-transform: uppercase;
+      white-space: nowrap;
     }
 
-    .yard-drive-lane-label.top { top: 16px; }
-    .yard-drive-lane-label.bottom { bottom: 91px; }
+    .yard-headcount-pill.high {
+      border-color: #86efac;
+      background: #14532d;
+      color: #fff;
+      box-shadow: 0 3px 0 #052e16, 0 5px 10px rgba(0, 0, 0, .42);
+      -webkit-text-stroke: .3px #fff;
+      text-shadow: .35px 0 #fff, -.35px 0 #fff;
+    }
+
+    .yard-headcount-pill.mid {
+      border-color: #fff7cc;
+      background: #facc15;
+      color: #111827;
+      box-shadow: 0 3px 0 #92400e, 0 5px 10px rgba(0, 0, 0, .42);
+      -webkit-text-stroke: .45px #111827;
+      text-shadow: .35px 0 #111827, -.35px 0 #111827;
+    }
+
+    .yard-headcount-pill.low {
+      border-color: #fecaca;
+      background: #b91c1c;
+      color: #fff;
+      box-shadow: 0 3px 0 #7f1d1d, 0 5px 10px rgba(0, 0, 0, .42);
+      -webkit-text-stroke: .3px #fff;
+      text-shadow: .35px 0 #fff, -.35px 0 #fff;
+    }
 
     .yard-track {
       position: absolute;
@@ -1755,7 +1809,7 @@
       background: repeating-linear-gradient(90deg, transparent 0 18px, rgba(196, 181, 147, .58) 18px 21px);
     }
 
-    .yard-track.one { top: 116px; }
+    .yard-track.one { top: 126px; }
     .yard-track.two { top: 174px; }
 
     .yard-track::before,
@@ -1793,7 +1847,7 @@
     }
 
     .yard-crew-unit.hostler {
-      width: 110px;
+      width: 132px;
     }
     .yard-crew-unit.crane1,
     .yard-crew-unit.crane2 {
@@ -1819,18 +1873,12 @@
       white-space: nowrap;
     }
 
-    .yard-crew-unit.crane1 > .yard-crew-name,
-    .yard-crew-unit.crane2 > .yard-crew-name {
+    .yard-crane-operator-name {
       position: absolute;
       z-index: 6;
-      bottom: -20px;
-      left: 50%;
-      transform: translateX(-50%);
-    }
-
-    .yard-crew-unit.crane2 > .yard-crew-name {
       top: -20px;
-      bottom: auto;
+      left: 52px;
+      transform: translateX(-50%);
     }
 
     .yard-machine { position: relative; flex: 0 0 auto; }
@@ -1844,8 +1892,8 @@
     }
 
     .yard-hostler-sprite {
-      width: 110px;
-      height: 74px;
+      width: 132px;
+      height: 89px;
     }
 
     .yard-crew-unit.mirrored-hostler .yard-hostler-sprite {
@@ -1858,6 +1906,25 @@
 
     .yard-crew-unit.label-below-hostler > .yard-crew-name {
       order: 2;
+    }
+
+    .yard-crew-name-stack {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+    }
+
+    .yard-crew-unit.label-below-hostler > .yard-crew-name-stack {
+      order: 2;
+    }
+
+    .yard-crew-name.trainee {
+      border-color: #fbbf24;
+      background: rgba(120, 53, 15, .92);
+      color: #fef3c7;
+      font-size: 9px;
     }
 
     .yard-crane-sprite {
@@ -1875,12 +1942,46 @@
       flex: 0 0 auto;
     }
 
+    .yard-crane-pair.has-trainee {
+      width: 230px;
+    }
+
+    .yard-crane-pair.has-trainee .yard-crane-groundman-slot:not(.trainee) {
+      right: auto;
+      left: 167px;
+      width: 63px;
+    }
+
+    .yard-crane-groundman-slot.trainee {
+      right: auto;
+      left: 0;
+      width: 63px;
+    }
+
+    .yard-crane-pair.has-trainee .yard-crane-sprite {
+      left: 63px;
+    }
+
+    .yard-crane-pair.has-trainee .yard-crane-operator-name {
+      left: 115px;
+    }
+
+    .yard-crane-pair.has-trainee .yard-crane-groundman-name {
+      max-width: 70px;
+    }
+
+    .yard-crane-groundman-slot.trainee .yard-crane-groundman-name {
+      border-color: #fbbf24;
+      background: rgba(120, 53, 15, .92);
+      color: #fef3c7;
+    }
+
     .yard-crane-groundman-slot {
       position: absolute;
       right: 0;
       bottom: 3px;
       width: 54px;
-      min-height: 67px;
+      min-height: 82px;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -1904,8 +2005,8 @@
     }
 
     .yard-crane-groundman {
-      width: 25px;
-      height: 51px;
+      width: 32px;
+      height: 65px;
     }
 
     .yard-crane-groundman-slot.missing .yard-crane-groundman-name {
@@ -1915,8 +2016,8 @@
     }
 
     .yard-groundman-missing-icon {
-      width: 25px;
-      height: 51px;
+      width: 32px;
+      height: 65px;
       display: grid;
       place-items: center;
       border: 2px dashed #f87171;
@@ -1933,8 +2034,8 @@
     }
 
     .yard-groundman-sprite {
-      width: 34px;
-      height: 70px;
+      width: 42px;
+      height: 86px;
     }
 
     .yard-scene-empty {
@@ -1952,6 +2053,22 @@
       font-weight: 800;
       text-align: center;
       transform: translate(-50%, -50%);
+    }
+
+    .staff-pill.out-status,
+    .two-week-mode .staff-pill.out-status,
+    .three-day-mode .staff-pill.out-status {
+      border-color: #cbd5e1;
+      background-color: #e2e8f0;
+      background-image: none;
+      color: #64748b;
+    }
+
+    .staff-pill.out-status small,
+    .staff-pill.out-status .status-flag,
+    .staff-pill.out-status .bn-flag,
+    .staff-pill.out-status .crane-flag {
+      color: #64748b;
     }
 
     @keyframes yardCrewIdle {
@@ -2022,8 +2139,7 @@
     <section class="yard-crew-panel" id="yardCrewPanel" aria-label="Animated visual idle standing view" hidden>
       <div class="yard-crew-layout">
         <div class="yard-crew-scene" id="yardCrewScene" aria-label="Two-track idle crew visualization">
-          <span class="yard-drive-lane-label top">Drive lane</span>
-          <span class="yard-drive-lane-label bottom">Drive lane</span>
+          <span class="yard-headcount-pill low" id="yardCrewHeadcount">Current Headcount 0</span>
           <div class="yard-drive-lane top" aria-hidden="true"></div>
           <div class="yard-track one" aria-hidden="true"></div>
           <div class="yard-track two" aria-hidden="true"></div>
@@ -2092,6 +2208,8 @@
           <div class="employee-role-actions" id="employeeRoleActions">
             <button class="employee-role-action hostler" type="button" data-quick-role="hostler">Hostler<span>(H)</span></button>
             <button class="employee-role-action groundman" type="button" data-quick-role="groundman">Groundman<span>(G)</span></button>
+            <button class="employee-role-action trainee-hostler" type="button" data-quick-role="traineehostler">Trainee Hostler<span>(TH)</span></button>
+            <button class="employee-role-action trainee-groundman" type="button" data-quick-role="traineegroundman">Trainee Groundman<span>(TG)</span></button>
             <button class="employee-role-action flip-operator" type="button" data-quick-role="flipoperator">Flip Operator<span>(FO)</span></button>
             <button class="employee-role-action crane" type="button" data-quick-role="crane1">Crane 1<span>(C1)</span></button>
             <button class="employee-role-action crane" type="button" data-quick-role="crane2">Crane 2<span>(C2)</span></button>
@@ -2130,11 +2248,22 @@
     const yardCrewRoleLabels = {
       hostler: "Hostler",
       groundman: "Groundman",
+      traineehostler: "Trainee Hostler",
+      traineegroundman: "Trainee Groundman",
       flipoperator: "Flip Operator",
       crane1: "Crane 1",
       crane2: "Crane 2"
     };
-    const yardCrewRoleOrder = ["crane1", "hostler", "groundman", "flipoperator", "crane2"];
+    const yardCrewRoleCodes = {
+      crane1: "C",
+      crane2: "C",
+      groundman: "G",
+      traineegroundman: "G",
+      flipoperator: "FL",
+      hostler: "H",
+      traineehostler: "H"
+    };
+    const yardCrewRoleOrder = ["crane1", "groundman", "traineegroundman", "hostler", "traineehostler", "flipoperator", "crane2"];
     let yardCrewTodayStaffing = null;
     let selectedStatusDate = "";
     let selectedStatusName = "";
@@ -3172,7 +3301,24 @@
         classes.push("plain");
       }
 
-      return `<button class="${classes.join(" ")}" type="button" data-status-name="${escapeHtml(employee.name)}" data-status-date="${escapeHtml(dateKey)}" title="${escapeHtml(title)}"><span>${escapeHtml(employee.name)}</span>${flag}</button>`;
+      let roleFlag = "";
+      if (dateKey === isoDate(today) && employee.working && ["first", "second"].includes(employee.shift)) {
+        const assignedRole = yardCrewRoleForEmployeeToday(employee.name, employee.shift);
+        const roleCode = yardCrewRoleCodes[assignedRole] || "";
+        if (roleCode) {
+          title += ` - assigned ${yardCrewRoleLabels[assignedRole]}`;
+          if (!flag.includes(`(${roleCode})`)) {
+            roleFlag = `<small class="role-assignment-flag" aria-label="Assigned ${escapeHtml(yardCrewRoleLabels[assignedRole])}">(${escapeHtml(roleCode)})</small>`;
+          }
+        } else {
+          title += " - role not assigned";
+          roleFlag = '<small class="role-unassigned-flag" aria-label="Role not assigned" title="Role not assigned">&#9873;</small>';
+        }
+      }
+
+      const flagsHtml = flag || roleFlag ? `<span class="staff-pill-flags">${flag}${roleFlag}</span>` : "";
+
+      return `<button class="${classes.join(" ")}" type="button" data-status-name="${escapeHtml(employee.name)}" data-status-date="${escapeHtml(dateKey)}" title="${escapeHtml(title)}"><span>${escapeHtml(employee.name)}</span>${flagsHtml}</button>`;
     }
 
     function shiftStaffHtml(label, employees, dateKey, shiftKey, extraClass = "") {
@@ -3346,11 +3492,11 @@
       return cleaned;
     }
 
-    function yardCrewMachineHtml(role, companion = null) {
+    function yardCrewMachineHtml(role, companion = null, operatorName = "") {
       if (role === "hostler") {
         return '<img class="yard-machine yard-equipment-sprite yard-hostler-sprite" src="assets/yard-crew/yard-hostler.png" alt="" draggable="false">';
       }
-      if (role === "groundman") {
+      if (["groundman", "traineegroundman", "traineehostler"].includes(role)) {
         return '<img class="yard-machine yard-equipment-sprite yard-groundman-sprite" src="assets/yard-crew/yard-groundman.png" alt="" draggable="false">';
       }
       if (role === "flipoperator") {
@@ -3359,19 +3505,39 @@
       const companionHtml = companion?.name
         ? `<div class="yard-crane-groundman-slot"><span class="yard-crane-groundman-name">${escapeHtml(companion.name)}</span><img class="yard-equipment-sprite yard-crane-groundman" src="assets/yard-crew/yard-groundman.png" alt="" draggable="false"></div>`
         : `<div class="yard-crane-groundman-slot missing"><span class="yard-crane-groundman-name">${escapeHtml(companion?.missingLabel || "Missing Groundman")}</span><span class="yard-groundman-missing-icon">!</span></div>`;
-      return `<div class="yard-machine yard-crane-pair" aria-hidden="true"><img class="yard-equipment-sprite yard-crane-sprite" src="assets/yard-crew/yard-crane.png" alt="" draggable="false">${companionHtml}</div>`;
+      const traineeHtml = companion?.traineeName
+        ? `<div class="yard-crane-groundman-slot trainee"><span class="yard-crane-groundman-name">${escapeHtml(companion.traineeName)}</span><img class="yard-equipment-sprite yard-crane-groundman" src="assets/yard-crew/yard-groundman.png" alt="" draggable="false"></div>`
+        : "";
+      return `<div class="yard-machine yard-crane-pair${traineeHtml ? " has-trainee" : ""}" aria-hidden="true"><span class="yard-crew-name yard-crane-operator-name">${escapeHtml(operatorName)}</span><img class="yard-equipment-sprite yard-crane-sprite" src="assets/yard-crew/yard-crane.png" alt="" draggable="false">${companionHtml}${traineeHtml}</div>`;
     }
 
     function yardCrewUnitHtml(name, role, index, total, companion = null, position = null) {
       const left = position?.left ?? (total === 1 ? 50 : 8 + (index * 84 / Math.max(total - 1, 1)));
       const bottom = position?.bottom ?? 38;
       const positionClass = `${position?.mirroredHostler ? " mirrored-hostler" : ""}${position?.labelBelowHostler ? " label-below-hostler" : ""}`;
+      const isCrane = role === "crane1" || role === "crane2";
+      const traineeNames = role === "hostler" && Array.isArray(companion?.traineeNames) ? companion.traineeNames : [];
+      const nameHtml = isCrane
+        ? ""
+        : traineeNames.length
+        ? `<div class="yard-crew-name-stack"><span class="yard-crew-name">${escapeHtml(name)}</span>${traineeNames.map((traineeName) => `<span class="yard-crew-name trainee">Trainee: ${escapeHtml(traineeName)}</span>`).join("")}</div>`
+        : `<span class="yard-crew-name">${escapeHtml(name)}</span>`;
       return `
         <div class="yard-crew-unit ${escapeHtml(role)}${positionClass}" style="--yard-left:${left.toFixed(2)}%;--yard-bottom:${bottom.toFixed(2)}px;--yard-delay:${(-index * .31).toFixed(2)}s" title="${escapeHtml(name)}">
-          <span class="yard-crew-name">${escapeHtml(name)}</span>
-          ${yardCrewMachineHtml(role, companion)}
+          ${nameHtml}
+          ${yardCrewMachineHtml(role, companion, isCrane ? name : "")}
         </div>
       `;
+    }
+
+    function yardCrewStableIndex(value, length) {
+      if (!length) return 0;
+      let hash = 2166136261;
+      String(value).split("").forEach((character) => {
+        hash ^= character.charCodeAt(0);
+        hash = Math.imul(hash, 16777619);
+      });
+      return (hash >>> 0) % length;
     }
 
     function renderYardCrewPanel(staffing = yardCrewTodayStaffing) {
@@ -3379,6 +3545,7 @@
       if (!panel) return;
       const state = readYardCrewState();
       const units = document.getElementById("yardCrewUnits");
+      const headcount = document.getElementById("yardCrewHeadcount");
       const assignedEntries = [];
 
       ["first", "second"].forEach((shiftKey) => {
@@ -3389,6 +3556,12 @@
         Object.entries(assignments).forEach(([name, role]) => assignedEntries.push({ name, role, shiftKey }));
       });
 
+      const headcountValue = assignedEntries.length;
+      const headcountLevel = headcountValue > 9 ? "high" : headcountValue < 8 ? "low" : "mid";
+      headcount.textContent = `Current Headcount ${headcountValue}`;
+      headcount.classList.remove("high", "mid", "low");
+      headcount.classList.add(headcountLevel);
+
       assignedEntries.sort((left, right) => {
         const roleDifference = yardCrewRoleOrder.indexOf(left.role) - yardCrewRoleOrder.indexOf(right.role);
         const shiftDifference = left.shiftKey.localeCompare(right.shiftKey);
@@ -3396,37 +3569,55 @@
       });
 
       const craneCompanions = new Map();
-      const consumedGroundmen = new Set();
+      const consumedCrewMembers = new Set();
       ["first", "second"].forEach((shiftKey) => {
         const shiftEntries = assignedEntries.filter((entry) => entry.shiftKey === shiftKey);
         const groundmen = shiftEntries.filter((entry) => entry.role === "groundman")
           .sort((left, right) => left.name.localeCompare(right.name, undefined, { sensitivity: "base" }));
+        const groundTrainees = shiftEntries.filter((entry) => entry.role === "traineegroundman")
+          .sort((left, right) => left.name.localeCompare(right.name, undefined, { sensitivity: "base" }));
         const crane1 = shiftEntries.find((entry) => entry.role === "crane1");
         const crane2 = shiftEntries.find((entry) => entry.role === "crane2");
         if (crane1) {
-          craneCompanions.set(`${shiftKey}:crane1`, groundmen[0]
+          const crane1Companion = groundmen[0]
             ? { name: groundmen[0].name }
-            : { missingLabel: "Missing Groundman" });
-          if (groundmen[0]) consumedGroundmen.add(`${shiftKey}:${normalizeName(groundmen[0].name)}`);
+            : { missingLabel: "Missing Groundman" };
+          if (groundTrainees[0]) crane1Companion.traineeName = groundTrainees[0].name;
+          craneCompanions.set(`${shiftKey}:crane1`, crane1Companion);
+          if (groundmen[0]) consumedCrewMembers.add(`${shiftKey}:${normalizeName(groundmen[0].name)}`);
+          if (groundTrainees[0]) consumedCrewMembers.add(`${shiftKey}:${normalizeName(groundTrainees[0].name)}`);
         }
         if (crane2) {
           craneCompanions.set(`${shiftKey}:crane2`, groundmen[1]
             ? { name: groundmen[1].name }
             : { missingLabel: "Missing 2nd Groundman" });
-          if (groundmen[1]) consumedGroundmen.add(`${shiftKey}:${normalizeName(groundmen[1].name)}`);
+          if (groundmen[1]) consumedCrewMembers.add(`${shiftKey}:${normalizeName(groundmen[1].name)}`);
         }
       });
 
       const displayEntries = assignedEntries.filter((entry) =>
-        entry.role !== "groundman" || !consumedGroundmen.has(`${entry.shiftKey}:${normalizeName(entry.name)}`)
+        !["groundman", "traineegroundman"].includes(entry.role) || !consumedCrewMembers.has(`${entry.shiftKey}:${normalizeName(entry.name)}`)
       );
 
       const hostlers = displayEntries.filter((entry) => entry.role === "hostler").slice(0, 8);
       const bottomLaneHostlers = hostlers.slice(0, 4);
       const topLaneHostlers = hostlers.slice(4, 8);
+      const hostlerTrainees = new Map();
+      const pairedHostlerTrainees = new Set();
+      displayEntries.filter((entry) => entry.role === "traineehostler").forEach((trainee) => {
+        const sameShiftHostlers = hostlers.filter((hostler) => hostler.shiftKey === trainee.shiftKey);
+        const candidates = sameShiftHostlers.length ? sameShiftHostlers : hostlers;
+        if (!candidates.length) return;
+        const hostler = candidates[yardCrewStableIndex(`${isoDate(new Date())}:${trainee.shiftKey}:${trainee.name}`, candidates.length)];
+        const names = hostlerTrainees.get(hostler) || [];
+        names.push(trainee.name);
+        hostlerTrainees.set(hostler, names);
+        pairedHostlerTrainees.add(`${trainee.shiftKey}:${normalizeName(trainee.name)}`);
+      });
       const stagedSingletonRoles = new Set();
       const otherEntries = displayEntries.filter((entry) => {
         if (entry.role === "hostler") return false;
+        if (entry.role === "traineehostler" && pairedHostlerTrainees.has(`${entry.shiftKey}:${normalizeName(entry.name)}`)) return false;
         if (!["crane1", "crane2", "flipoperator"].includes(entry.role)) return true;
         if (stagedSingletonRoles.has(entry.role)) return false;
         stagedSingletonRoles.add(entry.role);
@@ -3436,26 +3627,29 @@
       const entryPositions = new Map();
 
       topLaneHostlers.forEach((entry, index) => {
-        entryPositions.set(entry, { left: 8 + (index * 10.5), bottom: 222, labelBelowHostler: true });
+        const traineeCount = (hostlerTrainees.get(entry) || []).length;
+        entryPositions.set(entry, { left: 8.5 + (index * 13), bottom: 202 - (traineeCount * 21), labelBelowHostler: true });
       });
       bottomLaneHostlers.forEach((entry, index) => {
-        entryPositions.set(entry, { left: 92 - (index * 12), bottom: 12, mirroredHostler: true });
+        entryPositions.set(entry, { left: 91.5 - (index * 13), bottom: 12, mirroredHostler: true });
       });
       otherEntries.forEach((entry, index) => {
-        if (entry.role === "crane1") entryPositions.set(entry, { left: 44, bottom: 188 });
-        else if (entry.role === "crane2") entryPositions.set(entry, { left: 62, bottom: 130 });
+        if (entry.role === "crane1") entryPositions.set(entry, { left: 44, bottom: 178 });
+        else if (entry.role === "crane2") entryPositions.set(entry, { left: 70, bottom: 130 });
         else if (entry.role === "flipoperator") entryPositions.set(entry, { left: 18, bottom: 12 });
-        else if (entry.role === "groundman") entryPositions.set(entry, { left: Math.min(74 + index * 5, 82), bottom: 12 });
+        else if (["groundman", "traineegroundman", "traineehostler"].includes(entry.role)) entryPositions.set(entry, { left: Math.min(74 + index * 5, 82), bottom: 12 });
       });
 
       units.innerHTML = layoutEntries.length
-        ? layoutEntries.map(({ name, role, shiftKey }, index) => yardCrewUnitHtml(
-          name,
-          role,
+        ? layoutEntries.map((entry, index) => yardCrewUnitHtml(
+          entry.name,
+          entry.role,
           index,
           layoutEntries.length,
-          craneCompanions.get(`${shiftKey}:${role}`) || null,
-          entryPositions.get(layoutEntries[index]) || null
+          entry.role === "hostler"
+            ? { traineeNames: hostlerTrainees.get(entry) || [] }
+            : craneCompanions.get(`${entry.shiftKey}:${entry.role}`) || null,
+          entryPositions.get(entry) || null
         )).join("")
         : '<div class="yard-scene-empty">Assign today\'s roles from an employee\'s Quick Actions menu.</div>';
     }
