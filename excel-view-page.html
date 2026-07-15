@@ -1409,6 +1409,12 @@
     color: #050505;
     line-height: 1.15;
   }
+  .inbound-summary-table .projected-free-footage {
+    margin-left: 4px;
+    font-weight: 1000;
+  }
+  .inbound-summary-table .projected-free-footage.is-positive { color: #08783e; }
+  .inbound-summary-table .projected-free-footage.is-negative { color: #c1121f; }
   .inbound-summary-table .summary-muted { color: #dce7ee; }
   .inbound-summary-train {
     display: inline-flex;
@@ -4474,6 +4480,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     const onHand = INBOUND_AVAILABLE_FOOTAGE_BASE - occupiedWithout803;
     const with803 = onHand - track803Footage;
     return {
+      onHandValue: onHand,
+      with803Value: with803,
       onHand: fmtInt(onHand),
       with803: fmtInt(with803),
       note: key === "TODAY" ? "21 UPS (No Concerns)" : ""
@@ -4532,6 +4540,12 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       const totalLabel = totalFt >= 10500 ? "HEAVY" : totalFt >= 9000 ? "AVERAGE" : "LIGHT";
       const dayClass = inboundSummaryDayClass(group.day);
       const stock = inboundSummaryStock(group.day);
+      const projectedOnHand = stock.onHandValue - totalFt;
+      const projectedClass = projectedOnHand > 0 ? "is-positive" : projectedOnHand < 0 ? "is-negative" : "";
+      const onHandDisplayHtml = escapeHtml(stock.onHand) + ' <span class="projected-free-footage ' + projectedClass + '">(' + escapeHtml(fmtInt(projectedOnHand)) + ')</span>';
+      const projectedWith803 = stock.with803Value - totalFt;
+      const projectedWith803Class = projectedWith803 > 0 ? "is-positive" : projectedWith803 < 0 ? "is-negative" : "";
+      const with803DisplayHtml = escapeHtml(stock.with803) + ' <span class="projected-free-footage ' + projectedWith803Class + '">(' + escapeHtml(fmtInt(projectedWith803)) + ')</span>';
       group.plans.forEach((plan, index) => {
         body += '<tr class="' + dayClass + (index === group.plans.length - 1 ? ' inbound-summary-group-end' : '') + '">';
         if (index === 0) body += '<td class="inbound-summary-day ' + dayClass + '" rowspan="' + group.plans.length + '">' + escapeHtml(inboundSummaryDayLabel(group.day)) + '</td>';
@@ -4543,8 +4557,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         if (index === 0) body += '<td class="summary-rollup" rowspan="' + group.plans.length + '"><div class="summary-ft-pill ' + totalClass + '"><span>' + totalLabel + '</span><b>' + escapeHtml(fmtInt(totalFt)) + '</b></div></td>';
         body += '<td class="summary-muted">' + escapeHtml(inboundSummaryLiftCount(plan)) + '</td>';
         if (index === 0) body += '<td class="summary-rollup" rowspan="' + group.plans.length + '">' + (totalFt ? '<div class="summary-info-pill">LIGHT</div>' : '') + '</td>';
-        if (index === 0) body += '<td class="summary-note" rowspan="' + group.plans.length + '">' + (stock.onHand ? '<div class="summary-info-pill">' + escapeHtml(stock.onHand) + '</div>' : '') + '</td>';
-        if (index === 0) body += '<td class="summary-note" rowspan="' + group.plans.length + '">' + (stock.with803 ? '<div class="summary-info-pill">' + escapeHtml(stock.with803) + '</div>' : '') + '</td>';
+        if (index === 0) body += '<td class="summary-note" rowspan="' + group.plans.length + '">' + (stock.onHand ? '<div class="summary-info-pill">' + onHandDisplayHtml + '</div>' : '') + '</td>';
+        if (index === 0) body += '<td class="summary-note" rowspan="' + group.plans.length + '">' + (stock.with803 ? '<div class="summary-info-pill">' + with803DisplayHtml + '</div>' : '') + '</td>';
         body += '</tr>';
       });
     });
