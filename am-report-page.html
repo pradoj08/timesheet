@@ -2721,8 +2721,67 @@ tags will be replaced.-->
       .replace(/"/g, "&quot;");
   }
 
-  function matrixToHtml(matrix) {
-    return "<table>" + matrix.map(row => "<tr>" + row.map(value => "<td>" + escapeHtml(value) + "</td>").join("") + "</tr>").join("") + "</table>";
+  function clipboardCellStyle(cell) {
+    const style = window.getComputedStyle(cell);
+    const rect = cell.getBoundingClientRect();
+    return [
+      "background-color:" + style.backgroundColor,
+      "color:" + style.color,
+      "font-family:" + style.fontFamily,
+      "font-size:" + style.fontSize,
+      "font-weight:" + style.fontWeight,
+      "font-style:" + style.fontStyle,
+      "text-align:" + style.textAlign,
+      "vertical-align:" + style.verticalAlign,
+      "white-space:pre-wrap",
+      "word-break:normal",
+      "padding:" + style.padding,
+      "border-top:" + style.borderTopWidth + " " + style.borderTopStyle + " " + style.borderTopColor,
+      "border-right:" + style.borderRightWidth + " " + style.borderRightStyle + " " + style.borderRightColor,
+      "border-bottom:" + style.borderBottomWidth + " " + style.borderBottomStyle + " " + style.borderBottomColor,
+      "border-left:" + style.borderLeftWidth + " " + style.borderLeftStyle + " " + style.borderLeftColor,
+      "height:" + Math.max(1, Math.round(rect.height)) + "px",
+      "mso-number-format:\"\\@\""
+    ].join(";");
+  }
+
+  function selectionToHtml() {
+    if (!selectionBounds) return "";
+    const columnWidths = [];
+    for (let columnIndex = selectionBounds.minColumn; columnIndex <= selectionBounds.maxColumn; columnIndex += 1) {
+      const header = table.tHead && table.tHead.rows[0] && table.tHead.rows[0].cells[columnIndex + 1];
+      const width = header ? header.getBoundingClientRect().width : 120;
+      columnWidths.push(Math.max(1, Math.round(width)));
+    }
+    const rows = [];
+    for (let row = selectionBounds.minRow; row <= selectionBounds.maxRow; row += 1) {
+      const cells = [];
+      for (let columnIndex = selectionBounds.minColumn; columnIndex <= selectionBounds.maxColumn; columnIndex += 1) {
+        const address = addressAt(columnIndex, row);
+        const cell = cellMap.get(address);
+        if (!cell || cell.classList.contains("merged-covered-cell")) continue;
+        const colspan = Math.min(Number(cell.colSpan) || 1, selectionBounds.maxColumn - columnIndex + 1);
+        const rowspan = Math.min(Number(cell.rowSpan) || 1, selectionBounds.maxRow - row + 1);
+        const value = escapeHtml(readCell(address)).replace(/\r?\n/g, "<br>");
+        cells.push(
+          "<td" +
+          (colspan > 1 ? " colspan=\"" + colspan + "\"" : "") +
+          (rowspan > 1 ? " rowspan=\"" + rowspan + "\"" : "") +
+          " style=\"" + escapeHtml(clipboardCellStyle(cell)) + "\">" + value + "</td>"
+        );
+      }
+      rows.push("<tr>" + cells.join("") + "</tr>");
+    }
+    const colgroup = "<colgroup>" + columnWidths.map(width => "<col style=\"width:" + width + "px\">").join("") + "</colgroup>";
+    return [
+      "<html><head><meta charset=\"utf-8\"></head><body>",
+      "<!--StartFragment-->",
+      "<table role=\"presentation\" cellspacing=\"0\" cellpadding=\"0\" style=\"border-collapse:collapse;table-layout:fixed;font-family:Arial,sans-serif;mso-table-lspace:0;mso-table-rspace:0\">",
+      colgroup,
+      "<tbody>", rows.join(""), "</tbody></table>",
+      "<!--EndFragment-->",
+      "</body></html>"
+    ].join("");
   }
 
   function fallbackCopy(text) {
@@ -2739,16 +2798,55 @@ tags will be replaced.-->
     return copied;
   }
 
+  function fallbackRichCopy(html, text) {
+    const host = document.createElement("div");
+    host.contentEditable = "true";
+    host.style.position = "fixed";
+    host.style.left = "-10000px";
+    host.style.top = "0";
+    host.innerHTML = html;
+    document.body.appendChild(host);
+    const selection = window.getSelection();
+    const range = document.createRange();
+    range.selectNodeContents(host);
+    selection.removeAllRanges();
+    selection.addRange(range);
+    let copied = false;
+    try { copied = document.execCommand("copy"); } catch (_) {}
+    selection.removeAllRanges();
+    host.remove();
+    if (selectedCell) selectedCell.focus({ preventScroll: true });
+    return copied || fallbackCopy(text);
+  }
+
   async function copySelectedCells() {
     const text = matrixToTsv(selectionMatrix());
+    const html = selectionToHtml();
     if (!text && boundsArea(selectionBounds) === 0) return;
     try {
-      if (!navigator.clipboard || !navigator.clipboard.writeText) throw new Error("Clipboard API unavailable");
-      await navigator.clipboard.writeText(text);
-      announceSaved("Selection copied");
+      if (!navigator.clipboard || !navigator.clipboard.write || typeof ClipboardItem === "undefined") {
+        throw new Error("Rich Clipboard API unavailable");
+      }
+      await navigator.clipboard.write([new ClipboardItem({
+        "text/plain": new Blob([text], { type: "text/plain" }),
+        "text/html": new Blob([html], { type: "text/html" })
+      })]);
+      announceSaved("Selection copied with Excel formatting");
     } catch (_) {
-      announceSaved(fallbackCopy(text) ? "Selection copied" : "Press Ctrl+C to copy");
+      announceSaved(fallbackRichCopy(html, text) ? "Selection copied with Excel formatting" : "Press Ctrl+C to copy");
     }
+  }
+
+  function copySelectionFromKeyboard(event) {
+    if (!selectionBounds || !event.clipboardData) return;
+    const active = document.activeElement;
+    if (active && /^(INPUT|TEXTAREA)$/.test(active.tagName)
+      && typeof active.selectionStart === "number"
+      && active.selectionStart !== active.selectionEnd) return;
+    event.preventDefault();
+    event.clipboardData.setData("text/plain", matrixToTsv(selectionMatrix()));
+    event.clipboardData.setData("text/html", selectionToHtml());
+    announceSaved("Selection copied with Excel formatting");
   }
 
   function parseClipboardMatrix(text) {
@@ -3008,6 +3106,7 @@ tags will be replaced.-->
     button.addEventListener("click", () => applyAlignment(button.dataset.sheetAlign, button.dataset.alignValue));
   });
   copyButton.addEventListener("click", copySelectedCells);
+  gridWrap.addEventListener("copy", copySelectionFromKeyboard);
   mergeButton.addEventListener("click", mergeSelection);
   unmergeButton.addEventListener("click", unmergeSelection);
   dropdownButton.addEventListener("click", openDropdownDialog);
