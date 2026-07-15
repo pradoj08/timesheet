@@ -7,6 +7,7 @@ const pages = {
   excelView: "excel-view-page.html",
   roster: "roster-page.html",
   timeMd: "timesheet-md-page.html",
+  timeOff: "time-off-page.html",
 };
 
 function stripPageSwitcher(html) {
@@ -15,6 +16,19 @@ function stripPageSwitcher(html) {
 
 function escapeScriptString(value) {
   return JSON.stringify(value).replace(/<\/script/gi, "<\\/script");
+}
+
+function inlineYardCrewSprites(html) {
+  const spritePaths = [
+    "assets/yard-crew/yard-crane.png",
+    "assets/yard-crew/yard-flip-machine.png",
+    "assets/yard-crew/yard-groundman.png",
+    "assets/yard-crew/yard-hostler.png",
+  ];
+  return spritePaths.reduce((updated, spritePath) => {
+    const dataUri = `data:image/png;base64,${fs.readFileSync(spritePath).toString("base64")}`;
+    return updated.replaceAll(spritePath, dataUri);
+  }, html);
 }
 
 function validatePageScripts(pageId, html) {
@@ -45,7 +59,8 @@ syncPerformanceIntoBilling();
 let output = fs.readFileSync(workbookPath, "utf8");
 
 for (const [pageId, sourcePath] of Object.entries(pages)) {
-  const pageHtml = stripPageSwitcher(fs.readFileSync(sourcePath, "utf8"));
+  let pageHtml = stripPageSwitcher(fs.readFileSync(sourcePath, "utf8"));
+  if (pageId === "timeOff") pageHtml = inlineYardCrewSprites(pageHtml);
   validatePageScripts(pageId, pageHtml);
   const entry = new RegExp(
     `(\\"${pageId}\\"\\s*:\\s*\\{\\s*\\"?label\\"?\\s*:\\s*\\"[^\\"]+\\"\\s*,\\s*\\"?html\\"?\\s*:\\s*)(\\"(?:\\\\.|[^\\"\\\\])*\\")`

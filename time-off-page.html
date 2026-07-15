@@ -900,6 +900,48 @@
       padding: 14px;
     }
 
+    .employee-quick-columns {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 7px;
+      padding: 0 6px 6px;
+    }
+
+    .employee-quick-column {
+      min-width: 0;
+      overflow: hidden;
+      border: 1px solid #cbd5e1;
+      border-radius: 5px;
+      background: #f8fafc;
+    }
+
+    .employee-quick-column h3 {
+      min-height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 5px;
+      margin: 0;
+      padding: 4px 7px;
+      border-bottom: 1px solid #cbd5e1;
+      background: #eef2f7;
+      color: #334155;
+      font-size: 9px;
+      font-weight: 900;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+    }
+
+    .employee-quick-column h3 span {
+      min-width: 0;
+      overflow: hidden;
+      color: #64748b;
+      font-size: 8px;
+      letter-spacing: 0;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
     .employee-status-action {
       min-height: 42px;
       border: 1px solid #cbd5e1;
@@ -930,6 +972,38 @@
     .employee-status-action.clear { border-color: #94a3b8; background: #ffffff; color: #475569; }
     .employee-status-action.active { box-shadow: inset 0 0 0 2px currentColor; }
 
+    .employee-role-actions {
+      display: grid;
+      grid-template-columns: 1fr;
+    }
+
+    .employee-role-action {
+      min-height: 29px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      padding: 4px 8px;
+      border: 1px solid #d7dee8;
+      border-width: 0 0 1px;
+      background: #fff;
+      color: #334155;
+      font-size: 10px;
+      font-weight: 900;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .employee-role-action:last-child { border-bottom: 0; }
+    .employee-role-action span { font-size: 8px; font-weight: 900; }
+    .employee-role-action.hostler { background: #fff7cc; color: #854d0e; }
+    .employee-role-action.groundman { background: #ffedd5; color: #9a3412; }
+    .employee-role-action.flip-operator { background: #ede9fe; color: #6d28d9; }
+    .employee-role-action.crane { background: #dbeafe; color: #1d4ed8; }
+    .employee-role-action.clear { background: #fff; color: #64748b; }
+    .employee-role-action.active { box-shadow: inset 0 0 0 2px currentColor; }
+    .employee-role-action:disabled { background: #f1f5f9; color: #a0a8b5; cursor: not-allowed; box-shadow: none; }
+
     #employeeStatusBackdrop {
       display: none;
       padding: 0;
@@ -941,7 +1015,7 @@
 
     #employeeStatusBackdrop .employee-bank-dialog {
       position: fixed;
-      width: 190px;
+      width: min(382px, calc(100vw - 12px));
       border-radius: 5px;
       pointer-events: auto;
       box-shadow: 0 9px 24px rgba(15, 23, 42, .24);
@@ -955,7 +1029,7 @@
     #employeeStatusBackdrop .employee-status-actions {
       grid-template-columns: 1fr;
       gap: 0;
-      padding: 0 5px 5px;
+      padding: 0;
     }
 
     #employeeStatusBackdrop .employee-status-action {
@@ -1603,6 +1677,295 @@
       background: #ffe4e6;
       color: #be123c;
     }
+
+    .yard-crew-panel {
+      margin-top: 10px;
+      overflow: hidden;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      background: #f8fafc;
+      box-shadow: 0 3px 12px rgba(15, 23, 42, .08);
+    }
+
+    .yard-crew-panel[hidden] { display: none !important; }
+
+    .yard-crew-layout {
+      padding: 9px;
+    }
+
+    .yard-crew-scene {
+      min-width: 0;
+      min-height: 330px;
+      position: relative;
+      overflow: hidden;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      background:
+        linear-gradient(rgba(255, 255, 255, .075) 1px, transparent 1px) 0 0 / 100% 24px,
+        linear-gradient(90deg, rgba(255, 255, 255, .075) 1px, transparent 1px) 0 0 / 40px 100%,
+        linear-gradient(#4b6258 0 66%, #687a71 66% 100%);
+    }
+
+    .yard-drive-lane {
+      position: absolute;
+      z-index: 1;
+      right: 2%;
+      left: 2%;
+      height: 76px;
+      border-top: 2px solid rgba(234, 179, 8, .7);
+      border-bottom: 2px solid rgba(234, 179, 8, .7);
+      background: rgba(56, 72, 65, .62);
+      box-shadow: inset 0 0 12px rgba(0, 0, 0, .28);
+    }
+
+    .yard-drive-lane.top { top: 12px; }
+    .yard-drive-lane.bottom { bottom: 12px; }
+
+    .yard-drive-lane::after {
+      content: "";
+      position: absolute;
+      right: 0;
+      top: 50%;
+      left: 0;
+      height: 2px;
+      background: repeating-linear-gradient(90deg, rgba(226, 232, 240, .42) 0 20px, transparent 20px 36px);
+      transform: translateY(-50%);
+    }
+
+    .yard-drive-lane-label {
+      position: absolute;
+      z-index: 3;
+      right: 8px;
+      color: rgba(226, 232, 240, .66);
+      font-size: 8px;
+      font-weight: 900;
+      letter-spacing: .09em;
+      text-transform: uppercase;
+    }
+
+    .yard-drive-lane-label.top { top: 16px; }
+    .yard-drive-lane-label.bottom { bottom: 91px; }
+
+    .yard-track {
+      position: absolute;
+      z-index: 2;
+      right: 7%;
+      left: 7%;
+      height: 26px;
+      background: repeating-linear-gradient(90deg, transparent 0 18px, rgba(196, 181, 147, .58) 18px 21px);
+    }
+
+    .yard-track.one { top: 116px; }
+    .yard-track.two { top: 174px; }
+
+    .yard-track::before,
+    .yard-track::after {
+      content: "";
+      position: absolute;
+      right: 0;
+      left: 0;
+      height: 2px;
+      background: linear-gradient(#d7dde2, #5e6972 55%, #adb5bc);
+      box-shadow: 0 1px 1px rgba(0, 0, 0, .8);
+    }
+
+    .yard-track::before { top: 3px; }
+    .yard-track::after { bottom: 3px; }
+
+    .yard-crew-units {
+      position: absolute;
+      z-index: 4;
+      inset: 0;
+    }
+
+    .yard-crew-unit {
+      position: absolute;
+      bottom: var(--yard-bottom, 38px);
+      left: var(--yard-left);
+      width: 82px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      animation: yardCrewIdle 2.8s ease-in-out infinite alternate;
+      animation-delay: var(--yard-delay);
+      transform: translateX(-50%);
+    }
+
+    .yard-crew-unit.hostler {
+      width: 110px;
+    }
+    .yard-crew-unit.crane1,
+    .yard-crew-unit.crane2 {
+      width: 158px;
+    }
+    .yard-crew-unit.flipoperator {
+      z-index: 5;
+      width: 260px;
+    }
+
+    .yard-crew-name {
+      max-width: 120px;
+      overflow: hidden;
+      padding: 3px 8px;
+      border: 1px solid rgba(148, 163, 184, .55);
+      border-radius: 999px;
+      background: rgba(15, 23, 42, .88);
+      color: #f8fafc;
+      font-size: 11px;
+      font-weight: 900;
+      line-height: 1.1;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .yard-crew-unit.crane1 > .yard-crew-name,
+    .yard-crew-unit.crane2 > .yard-crew-name {
+      position: absolute;
+      z-index: 6;
+      bottom: -20px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    .yard-crew-unit.crane2 > .yard-crew-name {
+      top: -20px;
+      bottom: auto;
+    }
+
+    .yard-machine { position: relative; flex: 0 0 auto; }
+
+    .yard-equipment-sprite {
+      display: block;
+      object-fit: contain;
+      filter: drop-shadow(0 3px 5px rgba(0, 0, 0, .55));
+      pointer-events: none;
+      user-select: none;
+    }
+
+    .yard-hostler-sprite {
+      width: 110px;
+      height: 74px;
+    }
+
+    .yard-crew-unit.mirrored-hostler .yard-hostler-sprite {
+      transform: scaleX(-1);
+    }
+
+    .yard-crew-unit.label-below-hostler > .yard-machine {
+      order: 1;
+    }
+
+    .yard-crew-unit.label-below-hostler > .yard-crew-name {
+      order: 2;
+    }
+
+    .yard-crane-sprite {
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      width: 104px;
+      height: 118px;
+    }
+
+    .yard-crane-pair {
+      position: relative;
+      width: 158px;
+      height: 118px;
+      flex: 0 0 auto;
+    }
+
+    .yard-crane-groundman-slot {
+      position: absolute;
+      right: 0;
+      bottom: 3px;
+      width: 54px;
+      min-height: 67px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 2px;
+    }
+
+    .yard-crane-groundman-name {
+      max-width: 112px;
+      overflow: hidden;
+      padding: 3px 7px;
+      border: 1px solid rgba(148, 163, 184, .65);
+      border-radius: 999px;
+      background: rgba(15, 23, 42, .9);
+      color: #f8fafc;
+      font-size: 9px;
+      font-weight: 900;
+      line-height: 1.1;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .yard-crane-groundman {
+      width: 25px;
+      height: 51px;
+    }
+
+    .yard-crane-groundman-slot.missing .yard-crane-groundman-name {
+      border-color: #f87171;
+      background: rgba(127, 29, 29, .92);
+      color: #fee2e2;
+    }
+
+    .yard-groundman-missing-icon {
+      width: 25px;
+      height: 51px;
+      display: grid;
+      place-items: center;
+      border: 2px dashed #f87171;
+      border-radius: 5px;
+      background: rgba(127, 29, 29, .28);
+      color: #fee2e2;
+      font-size: 20px;
+      font-weight: 900;
+    }
+
+    .yard-flip-sprite {
+      width: 260px;
+      height: 138px;
+    }
+
+    .yard-groundman-sprite {
+      width: 34px;
+      height: 70px;
+    }
+
+    .yard-scene-empty {
+      position: absolute;
+      z-index: 5;
+      top: 50%;
+      left: 50%;
+      width: min(280px, 84%);
+      padding: 8px 12px;
+      border: 1px dashed #64748b;
+      border-radius: 7px;
+      background: rgba(15, 23, 42, .8);
+      color: #cbd5e1;
+      font-size: 10px;
+      font-weight: 800;
+      text-align: center;
+      transform: translate(-50%, -50%);
+    }
+
+    @keyframes yardCrewIdle {
+      from { transform: translate(-50%, 0); }
+      to { transform: translate(-50%, -2px); }
+    }
+
+    @media (max-width: 780px) {
+      .yard-crew-scene { min-height: 330px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .yard-crew-unit { animation: none; }
+    }
   </style>
 </head>
 <body>
@@ -1656,6 +2019,19 @@
       <section class="calendar-grid" id="calendarGrid" aria-label="Time off calendar"></section>
     </div>
     <section class="view-pane staff-list-view" id="listView" aria-label="Staffing list" hidden></section>
+    <section class="yard-crew-panel" id="yardCrewPanel" aria-label="Animated visual idle standing view" hidden>
+      <div class="yard-crew-layout">
+        <div class="yard-crew-scene" id="yardCrewScene" aria-label="Two-track idle crew visualization">
+          <span class="yard-drive-lane-label top">Drive lane</span>
+          <span class="yard-drive-lane-label bottom">Drive lane</span>
+          <div class="yard-drive-lane top" aria-hidden="true"></div>
+          <div class="yard-track one" aria-hidden="true"></div>
+          <div class="yard-track two" aria-hidden="true"></div>
+          <div class="yard-drive-lane bottom" aria-hidden="true"></div>
+          <div class="yard-crew-units" id="yardCrewUnits"></div>
+        </div>
+      </div>
+    </section>
   </main>
 
   <section class="day-editor-backdrop" id="dayEditorBackdrop" aria-hidden="true">
@@ -1695,17 +2071,33 @@
     <div class="employee-bank-dialog" role="dialog" aria-modal="false" aria-labelledby="employeeStatusTitle">
       <header><h2 id="employeeStatusTitle">Quick Actions</h2><button id="closeEmployeeStatus" type="button" aria-label="Close status editor">X</button></header>
       <div class="employee-status-name" id="employeeStatusName"></div>
-      <div class="employee-status-actions" id="employeeStatusActions">
-        <button class="employee-status-action here" type="button" data-quick-status="here">Here<span>(&#10003;)</span></button>
-        <button class="employee-status-action flipline" type="button" data-quick-status="flipline">Flip Line<span>(FL)</span></button>
-        <button class="employee-status-action sic" type="button" data-quick-status="sic">Sick<span>(S)</span></button>
-        <button class="employee-status-action vac" type="button" data-quick-status="vac">Vacation<span>(V)</span></button>
-        <button class="employee-status-action calledoff" type="button" data-quick-status="calledoff">Called Off<span>(CO)</span></button>
-        <button class="employee-status-action out" type="button" data-quick-status="out">Out<span>(O)</span></button>
-        <button class="employee-status-action ncns" type="button" data-quick-status="ncns">NCNS<span>(NC)</span></button>
-        <button class="employee-status-action bnsf" type="button" data-quick-status="bnsf">BNSF<span>(BN)</span></button>
-        <button class="employee-status-action unknown" type="button" data-quick-status="unknown">Unknown<span>(??)</span></button>
-        <button class="employee-status-action clear" type="button" data-quick-status="clear">Clear Selection<span>(&mdash;)</span></button>
+      <div class="employee-quick-columns">
+        <section class="employee-quick-column">
+          <h3>Status <span>Selected day</span></h3>
+          <div class="employee-status-actions" id="employeeStatusActions">
+            <button class="employee-status-action here" type="button" data-quick-status="here">Here<span>(&#10003;)</span></button>
+            <button class="employee-status-action flipline" type="button" data-quick-status="flipline">Flip Line<span>(FL)</span></button>
+            <button class="employee-status-action sic" type="button" data-quick-status="sic">Sick<span>(S)</span></button>
+            <button class="employee-status-action vac" type="button" data-quick-status="vac">Vacation<span>(V)</span></button>
+            <button class="employee-status-action calledoff" type="button" data-quick-status="calledoff">Called Off<span>(CO)</span></button>
+            <button class="employee-status-action out" type="button" data-quick-status="out">Out<span>(O)</span></button>
+            <button class="employee-status-action ncns" type="button" data-quick-status="ncns">NCNS<span>(NC)</span></button>
+            <button class="employee-status-action bnsf" type="button" data-quick-status="bnsf">BNSF<span>(BN)</span></button>
+            <button class="employee-status-action unknown" type="button" data-quick-status="unknown">Unknown<span>(??)</span></button>
+            <button class="employee-status-action clear" type="button" data-quick-status="clear">Clear Selection<span>(&mdash;)</span></button>
+          </div>
+        </section>
+        <section class="employee-quick-column">
+          <h3>Today's Role <span id="employeeRoleShiftLabel">Current shift</span></h3>
+          <div class="employee-role-actions" id="employeeRoleActions">
+            <button class="employee-role-action hostler" type="button" data-quick-role="hostler">Hostler<span>(H)</span></button>
+            <button class="employee-role-action groundman" type="button" data-quick-role="groundman">Groundman<span>(G)</span></button>
+            <button class="employee-role-action flip-operator" type="button" data-quick-role="flipoperator">Flip Operator<span>(FO)</span></button>
+            <button class="employee-role-action crane" type="button" data-quick-role="crane1">Crane 1<span>(C1)</span></button>
+            <button class="employee-role-action crane" type="button" data-quick-role="crane2">Crane 2<span>(C2)</span></button>
+            <button class="employee-role-action clear" type="button" data-quick-role="clear">Clear Role<span>(&mdash;)</span></button>
+          </div>
+        </section>
       </div>
       <div class="employee-bank-status" id="employeeStatusMessage" aria-live="polite"></div>
     </div>
@@ -1734,6 +2126,16 @@
     const employeeBankStorageKey = "conglobal-time-off-employee-bank-v1";
     const employeeDayStatusStorageKey = "conglobal-time-off-day-status-v1";
     const employeeDayAdditionsStorageKey = "conglobal-time-off-day-additions-v1";
+    const yardCrewStorageKey = "conglobal-three-day-yard-crew-v1";
+    const yardCrewRoleLabels = {
+      hostler: "Hostler",
+      groundman: "Groundman",
+      flipoperator: "Flip Operator",
+      crane1: "Crane 1",
+      crane2: "Crane 2"
+    };
+    const yardCrewRoleOrder = ["crane1", "hostler", "groundman", "flipoperator", "crane2"];
+    let yardCrewTodayStaffing = null;
     let selectedStatusDate = "";
     let selectedStatusName = "";
     const rosterStorageKey = "conglobal-roster-state-v1";
@@ -2334,7 +2736,7 @@
       if (!dialog || !anchor) return;
       const rect = anchor.getBoundingClientRect();
       const gap = 5;
-      const width = dialog.offsetWidth || 190;
+      const width = dialog.offsetWidth || 382;
       const height = dialog.offsetHeight || 310;
       let left = rect.right + gap;
       if (left + width > window.innerWidth - 6) left = rect.left - width - gap;
@@ -2355,7 +2757,20 @@
         button.classList.toggle("active", active);
         button.setAttribute("aria-pressed", String(active));
       });
-      document.getElementById("employeeStatusMessage").textContent = "Choose a status for this date.";
+      const roleShift = yardCrewShiftForEmployeeToday(selectedStatusName);
+      const currentRole = roleShift ? yardCrewRoleForEmployeeToday(selectedStatusName, roleShift) : "";
+      document.querySelectorAll("[data-quick-role]").forEach((button) => {
+        const active = button.dataset.quickRole === currentRole || (!currentRole && button.dataset.quickRole === "clear");
+        button.classList.toggle("active", active);
+        button.setAttribute("aria-pressed", String(active));
+        button.disabled = !roleShift;
+      });
+      document.getElementById("employeeRoleShiftLabel").textContent = roleShift === "first"
+        ? "Day shift"
+        : roleShift === "second" ? "Night shift" : "Not working";
+      document.getElementById("employeeStatusMessage").textContent = roleShift
+        ? "Choose a status or today's role."
+        : "Choose a status. Role assignment requires working today.";
       const backdrop = document.getElementById("employeeStatusBackdrop");
       backdrop.classList.add("open");
       backdrop.setAttribute("aria-hidden", "false");
@@ -2871,6 +3286,207 @@
       }
 
       list.innerHTML = weeks.join("");
+      yardCrewTodayStaffing = staffDays.find((staffing) => isoDate(staffing.date) === isoDate(today)) || null;
+      renderYardCrewPanel(yardCrewTodayStaffing);
+    }
+
+    function readYardCrewState() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(yardCrewStorageKey) || "{}");
+        return saved && typeof saved === "object" && !Array.isArray(saved) ? saved : {};
+      } catch (error) {
+        localStorage.removeItem(yardCrewStorageKey);
+        return {};
+      }
+    }
+
+    function yardCrewAssignmentsForShift(state = readYardCrewState(), shiftKey = "first") {
+      const dayState = state[isoDate(today)];
+      const assignments = dayState && dayState[shiftKey];
+      return assignments && typeof assignments === "object" && !Array.isArray(assignments) ? { ...assignments } : {};
+    }
+
+    function writeYardCrewAssignments(assignments, shiftKey = "first") {
+      const state = readYardCrewState();
+      const dateKey = isoDate(today);
+      if (!state[dateKey] || typeof state[dateKey] !== "object" || Array.isArray(state[dateKey])) state[dateKey] = {};
+      state[dateKey][shiftKey] = assignments;
+      localStorage.setItem(yardCrewStorageKey, JSON.stringify(state));
+    }
+
+    function yardCrewWorkingEmployees(staffing = yardCrewTodayStaffing, shiftKey = "first") {
+      if (!staffing) return [];
+      return (staffing.shifts[shiftKey] || [])
+        .filter((employee) => isCountedStaffEmployee(employee))
+        .sort((left, right) => String(left.name || "").localeCompare(String(right.name || ""), undefined, { sensitivity: "base" }));
+    }
+
+    function yardCrewShiftForEmployeeToday(name) {
+      const target = normalizeName(name);
+      return ["first", "second"].find((shiftKey) =>
+        yardCrewWorkingEmployees(yardCrewTodayStaffing, shiftKey).some((employee) => normalizeName(employee.name) === target)
+      ) || "";
+    }
+
+    function yardCrewRoleForEmployeeToday(name, shiftKey = yardCrewShiftForEmployeeToday(name)) {
+      if (!shiftKey) return "";
+      const target = normalizeName(name);
+      const entry = Object.entries(yardCrewAssignmentsForShift(readYardCrewState(), shiftKey))
+        .find(([assignedName]) => normalizeName(assignedName) === target);
+      return entry && yardCrewRoleLabels[entry[1]] ? entry[1] : "";
+    }
+
+    function cleanYardCrewAssignments(assignments, employees) {
+      const employeeNames = new Map(employees.map((employee) => [normalizeName(employee.name), employee.name]));
+      const cleaned = {};
+      Object.entries(assignments).forEach(([name, role]) => {
+        const currentName = employeeNames.get(normalizeName(name));
+        if (currentName && yardCrewRoleLabels[role]) cleaned[currentName] = role;
+      });
+      return cleaned;
+    }
+
+    function yardCrewMachineHtml(role, companion = null) {
+      if (role === "hostler") {
+        return '<img class="yard-machine yard-equipment-sprite yard-hostler-sprite" src="assets/yard-crew/yard-hostler.png" alt="" draggable="false">';
+      }
+      if (role === "groundman") {
+        return '<img class="yard-machine yard-equipment-sprite yard-groundman-sprite" src="assets/yard-crew/yard-groundman.png" alt="" draggable="false">';
+      }
+      if (role === "flipoperator") {
+        return '<img class="yard-machine yard-equipment-sprite yard-flip-sprite" src="assets/yard-crew/yard-flip-machine.png" alt="" draggable="false">';
+      }
+      const companionHtml = companion?.name
+        ? `<div class="yard-crane-groundman-slot"><span class="yard-crane-groundman-name">${escapeHtml(companion.name)}</span><img class="yard-equipment-sprite yard-crane-groundman" src="assets/yard-crew/yard-groundman.png" alt="" draggable="false"></div>`
+        : `<div class="yard-crane-groundman-slot missing"><span class="yard-crane-groundman-name">${escapeHtml(companion?.missingLabel || "Missing Groundman")}</span><span class="yard-groundman-missing-icon">!</span></div>`;
+      return `<div class="yard-machine yard-crane-pair" aria-hidden="true"><img class="yard-equipment-sprite yard-crane-sprite" src="assets/yard-crew/yard-crane.png" alt="" draggable="false">${companionHtml}</div>`;
+    }
+
+    function yardCrewUnitHtml(name, role, index, total, companion = null, position = null) {
+      const left = position?.left ?? (total === 1 ? 50 : 8 + (index * 84 / Math.max(total - 1, 1)));
+      const bottom = position?.bottom ?? 38;
+      const positionClass = `${position?.mirroredHostler ? " mirrored-hostler" : ""}${position?.labelBelowHostler ? " label-below-hostler" : ""}`;
+      return `
+        <div class="yard-crew-unit ${escapeHtml(role)}${positionClass}" style="--yard-left:${left.toFixed(2)}%;--yard-bottom:${bottom.toFixed(2)}px;--yard-delay:${(-index * .31).toFixed(2)}s" title="${escapeHtml(name)}">
+          <span class="yard-crew-name">${escapeHtml(name)}</span>
+          ${yardCrewMachineHtml(role, companion)}
+        </div>
+      `;
+    }
+
+    function renderYardCrewPanel(staffing = yardCrewTodayStaffing) {
+      const panel = document.getElementById("yardCrewPanel");
+      if (!panel) return;
+      const state = readYardCrewState();
+      const units = document.getElementById("yardCrewUnits");
+      const assignedEntries = [];
+
+      ["first", "second"].forEach((shiftKey) => {
+        const employees = yardCrewWorkingEmployees(staffing, shiftKey);
+        const savedAssignments = yardCrewAssignmentsForShift(state, shiftKey);
+        const assignments = cleanYardCrewAssignments(savedAssignments, employees);
+        if (JSON.stringify(assignments) !== JSON.stringify(savedAssignments)) writeYardCrewAssignments(assignments, shiftKey);
+        Object.entries(assignments).forEach(([name, role]) => assignedEntries.push({ name, role, shiftKey }));
+      });
+
+      assignedEntries.sort((left, right) => {
+        const roleDifference = yardCrewRoleOrder.indexOf(left.role) - yardCrewRoleOrder.indexOf(right.role);
+        const shiftDifference = left.shiftKey.localeCompare(right.shiftKey);
+        return roleDifference || shiftDifference || left.name.localeCompare(right.name, undefined, { sensitivity: "base" });
+      });
+
+      const craneCompanions = new Map();
+      const consumedGroundmen = new Set();
+      ["first", "second"].forEach((shiftKey) => {
+        const shiftEntries = assignedEntries.filter((entry) => entry.shiftKey === shiftKey);
+        const groundmen = shiftEntries.filter((entry) => entry.role === "groundman")
+          .sort((left, right) => left.name.localeCompare(right.name, undefined, { sensitivity: "base" }));
+        const crane1 = shiftEntries.find((entry) => entry.role === "crane1");
+        const crane2 = shiftEntries.find((entry) => entry.role === "crane2");
+        if (crane1) {
+          craneCompanions.set(`${shiftKey}:crane1`, groundmen[0]
+            ? { name: groundmen[0].name }
+            : { missingLabel: "Missing Groundman" });
+          if (groundmen[0]) consumedGroundmen.add(`${shiftKey}:${normalizeName(groundmen[0].name)}`);
+        }
+        if (crane2) {
+          craneCompanions.set(`${shiftKey}:crane2`, groundmen[1]
+            ? { name: groundmen[1].name }
+            : { missingLabel: "Missing 2nd Groundman" });
+          if (groundmen[1]) consumedGroundmen.add(`${shiftKey}:${normalizeName(groundmen[1].name)}`);
+        }
+      });
+
+      const displayEntries = assignedEntries.filter((entry) =>
+        entry.role !== "groundman" || !consumedGroundmen.has(`${entry.shiftKey}:${normalizeName(entry.name)}`)
+      );
+
+      const hostlers = displayEntries.filter((entry) => entry.role === "hostler").slice(0, 8);
+      const bottomLaneHostlers = hostlers.slice(0, 4);
+      const topLaneHostlers = hostlers.slice(4, 8);
+      const stagedSingletonRoles = new Set();
+      const otherEntries = displayEntries.filter((entry) => {
+        if (entry.role === "hostler") return false;
+        if (!["crane1", "crane2", "flipoperator"].includes(entry.role)) return true;
+        if (stagedSingletonRoles.has(entry.role)) return false;
+        stagedSingletonRoles.add(entry.role);
+        return true;
+      });
+      const layoutEntries = [...hostlers, ...otherEntries];
+      const entryPositions = new Map();
+
+      topLaneHostlers.forEach((entry, index) => {
+        entryPositions.set(entry, { left: 8 + (index * 10.5), bottom: 222, labelBelowHostler: true });
+      });
+      bottomLaneHostlers.forEach((entry, index) => {
+        entryPositions.set(entry, { left: 92 - (index * 12), bottom: 12, mirroredHostler: true });
+      });
+      otherEntries.forEach((entry, index) => {
+        if (entry.role === "crane1") entryPositions.set(entry, { left: 44, bottom: 188 });
+        else if (entry.role === "crane2") entryPositions.set(entry, { left: 62, bottom: 130 });
+        else if (entry.role === "flipoperator") entryPositions.set(entry, { left: 18, bottom: 12 });
+        else if (entry.role === "groundman") entryPositions.set(entry, { left: Math.min(74 + index * 5, 82), bottom: 12 });
+      });
+
+      units.innerHTML = layoutEntries.length
+        ? layoutEntries.map(({ name, role, shiftKey }, index) => yardCrewUnitHtml(
+          name,
+          role,
+          index,
+          layoutEntries.length,
+          craneCompanions.get(`${shiftKey}:${role}`) || null,
+          entryPositions.get(layoutEntries[index]) || null
+        )).join("")
+        : '<div class="yard-scene-empty">Assign today\'s roles from an employee\'s Quick Actions menu.</div>';
+    }
+
+    function assignYardCrewRole(name, role, shiftKey = yardCrewShiftForEmployeeToday(name)) {
+      if (!name || !shiftKey || !yardCrewRoleLabels[role]) return;
+      const workingEmployees = yardCrewWorkingEmployees(yardCrewTodayStaffing, shiftKey);
+      const eligible = workingEmployees.some((employee) => normalizeName(employee.name) === normalizeName(name));
+      if (!eligible) return;
+      const assignments = cleanYardCrewAssignments(yardCrewAssignmentsForShift(readYardCrewState(), shiftKey), workingEmployees);
+      if (role === "crane1" || role === "crane2") {
+        Object.keys(assignments).forEach((assignedName) => {
+          if (assignments[assignedName] === role && normalizeName(assignedName) !== normalizeName(name)) delete assignments[assignedName];
+        });
+      }
+      Object.keys(assignments).forEach((assignedName) => {
+        if (normalizeName(assignedName) === normalizeName(name) && assignedName !== name) delete assignments[assignedName];
+      });
+      assignments[name] = role;
+      writeYardCrewAssignments(assignments, shiftKey);
+      renderYardCrewPanel();
+    }
+
+    function clearYardCrewRole(name, shiftKey = yardCrewShiftForEmployeeToday(name)) {
+      if (!name || !shiftKey) return;
+      const assignments = yardCrewAssignmentsForShift(readYardCrewState(), shiftKey);
+      Object.keys(assignments).forEach((assignedName) => {
+        if (normalizeName(assignedName) === normalizeName(name)) delete assignments[assignedName];
+      });
+      writeYardCrewAssignments(assignments, shiftKey);
+      renderYardCrewPanel();
     }
 
     function syncViewMode() {
@@ -2880,6 +3496,7 @@
       const threeDayActive = !calendarActive && listRange === "three-day";
       document.getElementById("calendarView").hidden = !calendarActive;
       document.getElementById("listView").hidden = calendarActive;
+      document.getElementById("yardCrewPanel").hidden = !threeDayActive;
       const shell = document.querySelector(".calendar-shell");
       shell.classList.toggle("list-mode", !calendarActive);
       shell.classList.toggle("two-week-list-mode", twoWeekActive);
@@ -3114,6 +3731,21 @@
       saveEmployeeStatus(selectedStatusName, selectedStatusDate, nextStatus);
       const statusLabel = unselect ? "Unselected" : ({ here: "Here", flipline: "Flip Line", vac: "Vacation", sic: "Sick", calledoff: "Called Off", out: "Out", ncns: "NCNS", bnsf: "BNSF", unknown: "Unknown" }[status] || status);
       document.getElementById("employeeStatusMessage").textContent = `${selectedStatusName} updated to ${statusLabel}.`;
+      renderCalendar();
+      closeEmployeeStatus();
+    });
+    document.getElementById("employeeRoleActions").addEventListener("click", (event) => {
+      const action = event.target.closest("[data-quick-role]");
+      if (!action || action.disabled || !selectedStatusName) return;
+      const shiftKey = yardCrewShiftForEmployeeToday(selectedStatusName);
+      if (!shiftKey) return;
+      const role = action.dataset.quickRole;
+      const currentRole = yardCrewRoleForEmployeeToday(selectedStatusName, shiftKey);
+      const clearing = role === "clear" || role === currentRole;
+      if (clearing) clearYardCrewRole(selectedStatusName, shiftKey);
+      else assignYardCrewRole(selectedStatusName, role, shiftKey);
+      const roleLabel = clearing ? "No role" : yardCrewRoleLabels[role];
+      document.getElementById("employeeStatusMessage").textContent = `${selectedStatusName} updated to ${roleLabel}.`;
       renderCalendar();
       closeEmployeeStatus();
     });
