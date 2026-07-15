@@ -55,6 +55,21 @@
     box-shadow: 0 5px 20px rgba(10, 22, 39, .22);
   }
   .brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+  .brand-quick-actions {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    flex-wrap: wrap;
+    margin-left: 8px;
+  }
+  .brand-quick-actions .btn {
+    min-height: 31px;
+    padding: 5px 10px;
+    border-color: rgba(255,255,255,.32);
+    background: rgba(255,255,255,.12);
+    font-size: 11px;
+  }
+  .brand-quick-actions .btn:hover { background: rgba(255,255,255,.20); }
   .brand-mark {
     width: 42px; height: 42px; border: 2px solid rgba(255,255,255,.75);
     border-radius: 9px; position: relative; flex: 0 0 auto;
@@ -1519,35 +1534,43 @@
   .block-context-menu {
     position: fixed;
     z-index: 10020;
-    min-width: 150px;
-    padding: 6px;
+    width: 180px;
+    min-width: 0;
+    max-width: calc(100vw - 12px);
+    padding: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    box-sizing: border-box;
     border: 1px solid #64748b;
-    border-radius: 8px;
+    border-radius: 7px;
     background: #0f172a;
     box-shadow: 0 14px 35px rgba(15,23,42,.36);
   }
   .block-context-menu[hidden] { display: none; }
   .block-context-menu button {
     width: 100%;
+    box-sizing: border-box;
     border: 1px solid #ef4444;
-    border-radius: 6px;
-    padding: 8px 12px;
+    border-radius: 5px;
+    padding: 6px 9px;
     background: #7f1d1d;
     color: #fff;
-    font: 800 12px/1 "Segoe UI", Arial, sans-serif;
+    font: 800 11px/1.1 "Segoe UI", Arial, sans-serif;
     text-align: left;
+    white-space: nowrap;
     cursor: pointer;
   }
   .block-context-menu button:hover { background: #b91c1c; }
   .block-context-menu .raw-menu-action {
-    margin-bottom: 6px;
+    margin-bottom: 0;
     border-color: #38bdf8;
     background: #075985;
   }
   .block-context-menu .raw-menu-action:hover { background: #0369a1; }
   .block-context-menu .copy-menu-action,
   .block-context-menu .paste-menu-action {
-    margin-bottom: 6px;
+    margin-bottom: 0;
     border-color: #60a5fa;
     background: #1d4ed8;
   }
@@ -1747,6 +1770,24 @@
   .cut-cell.fire { background: linear-gradient(135deg,#260505,#991b1b,#ea580c); color: #fff; }
   .cut-cell.ice { background: linear-gradient(135deg,#0f172a,#1e3a8a,#0891b2); color: #ecfeff; }
   .cut-cell.grape { background: linear-gradient(135deg,#2e1065,#581c87,#9333ea); color: #fff; }
+  .cut-cell.solid-black { background: #050505; color: #fff; }
+  .cut-cell.solid-charcoal { background: #1f2937; color: #fff; }
+  .cut-cell.solid-slate { background: #475569; color: #fff; }
+  .cut-cell.solid-navy { background: #172554; color: #fff; }
+  .cut-cell.solid-blue { background: #1d4ed8; color: #fff; }
+  .cut-cell.solid-sky { background: #0369a1; color: #fff; }
+  .cut-cell.solid-cyan { background: #0e7490; color: #fff; }
+  .cut-cell.solid-teal { background: #0f766e; color: #fff; }
+  .cut-cell.solid-green { background: #15803d; color: #fff; }
+  .cut-cell.solid-lime { background: #4d7c0f; color: #fff; }
+  .cut-cell.solid-gold { background: #a16207; color: #fff; }
+  .cut-cell.solid-yellow { background: #eab308; color: #111827; }
+  .cut-cell.solid-orange { background: #c2410c; color: #fff; }
+  .cut-cell.solid-red { background: #dc2626; color: #fff; }
+  .cut-cell.solid-crimson { background: #be123c; color: #fff; }
+  .cut-cell.solid-magenta { background: #a21caf; color: #fff; }
+  .cut-cell.solid-purple { background: #6d28d9; color: #fff; }
+  .cut-cell.solid-brown { background: #7c2d12; color: #fff; }
   .cut-cell.steel { background: linear-gradient(135deg,#020617,#1f2937,#64748b); color: #fff; }
   .cut-cell.zebra { background: repeating-linear-gradient(135deg,#020617 0 7px,#334155 7px 14px); color: #fff; }
   .cut-cell .overflow {
@@ -1880,6 +1921,8 @@
   @media (max-width: 720px) {
     .topbar { position: static; align-items: flex-start; }
     .top-actions { display: none; }
+    .brand { flex-wrap: wrap; }
+    .brand-quick-actions { width: 100%; margin-left: 54px; }
     .main { padding: 10px; }
     .side-column { grid-template-columns: 1fr; }
     .paste-layout, .status-strip { grid-template-columns: 1fr; }
@@ -2155,6 +2198,156 @@
   .compact-checklist-status.skipped { border-color: #e8cf9e; background: #fff7e7; color: #8a5a00; }
   .compact-checklist-empty { padding: 22px 14px; color: #64748b; text-align: center; font-size: 11px; font-weight: 800; }
 
+  /* Floating Urgent Notes priority matrix */
+  .excel-urgent-notes-popup {
+    position: fixed;
+    top: 82px;
+    left: 50%;
+    z-index: 245;
+    width: min(1120px, calc(100vw - 28px));
+    height: min(680px, calc(100vh - 100px));
+    min-width: 560px;
+    min-height: 410px;
+    max-width: calc(100vw - 8px);
+    max-height: calc(100vh - 50px);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transform: translateX(-50%);
+    border: 1px solid #9fb1c3;
+    border-radius: 14px;
+    background: #f4f7fb;
+    box-shadow: 0 22px 54px rgba(15, 23, 42, .32);
+  }
+  .excel-urgent-notes-popup[hidden] { display: none !important; }
+  .excel-urgent-notes-head {
+    min-height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex: 0 0 auto;
+    padding: 9px 12px 9px 18px;
+    border-bottom: 1px solid #b9c8d7;
+    background: #deebf5;
+    color: #122b44;
+    cursor: move;
+    user-select: none;
+  }
+  .excel-urgent-notes-title { font-size: 20px; font-weight: 950; letter-spacing: .01em; }
+  .excel-urgent-notes-close {
+    min-width: 62px;
+    min-height: 33px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    background: #fff;
+    color: #111827;
+    font-size: 11px;
+    font-weight: 900;
+    box-shadow: 0 3px 8px rgba(15, 23, 42, .12);
+  }
+  .excel-urgent-notes-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+    padding: 16px;
+    scrollbar-gutter: stable;
+  }
+  .excel-urgent-notes-board { min-width: 510px; }
+  .excel-urgent-notes-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  .excel-urgent-notes-board-title { color: #122b44; font-size: 17px; font-weight: 950; }
+  .excel-urgent-notes-status {
+    padding: 7px 11px;
+    border: 1px solid #b9d8ec;
+    border-radius: 999px;
+    background: #eef8ff;
+    color: #285975;
+    font-size: 10px;
+    font-weight: 900;
+    white-space: nowrap;
+  }
+  .excel-urgent-notes-matrix { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+  .excel-urgent-card {
+    min-height: 215px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid #c9d5df;
+    border-radius: 16px;
+    background: #edf4fa;
+    box-shadow: 0 8px 20px rgba(15, 23, 42, .07);
+  }
+  .excel-urgent-card[data-urgent-section="urgent"] { background: #edf7f2; border-color: #b9d7c8; }
+  .excel-urgent-card[data-urgent-section="norush"] { background: #f7f2e8; border-color: #dccfb8; }
+  .excel-urgent-card[data-urgent-section="endweek"] { background: #f2eef8; border-color: #d3c8df; }
+  .excel-urgent-card-head { padding: 12px 14px 10px; border-bottom: 1px solid rgba(100, 116, 139, .22); }
+  .excel-urgent-card-title { color: #172033; font-size: 17px; font-weight: 950; line-height: 1.05; text-decoration: underline; text-underline-offset: 3px; }
+  .excel-urgent-card-sub { margin-top: 4px; color: #6b7280; font-size: 10px; font-weight: 850; }
+  .excel-urgent-lines { margin: 10px 12px 12px; overflow: hidden; border: 1px solid #d2dae3; border-radius: 11px; background: rgba(255, 255, 255, .72); }
+  .excel-urgent-line {
+    min-height: 34px;
+    display: grid;
+    grid-template-columns: 34px minmax(0, 1fr);
+    border-bottom: 1px solid #d2dae3;
+  }
+  .excel-urgent-line:last-child { border-bottom: 0; }
+  .excel-urgent-line-num {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-right: 1px solid #d2dae3;
+    background: #e9eff6;
+    color: #27364a;
+    font-size: 10px;
+    font-weight: 900;
+  }
+  .excel-urgent-input {
+    width: 100%;
+    min-width: 0;
+    border: 0;
+    outline: 0;
+    padding: 5px 9px;
+    background: transparent;
+    color: #172033;
+    font-size: 11px;
+    font-weight: 750;
+  }
+  .excel-urgent-input:focus { background: #fff; box-shadow: inset 0 0 0 2px #93c5fd; }
+  .excel-urgent-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 14px;
+    padding: 9px 10px;
+    border: 1px solid #c9d5df;
+    border-radius: 11px;
+    background: #eaf2f8;
+  }
+  .excel-urgent-clear { background: #a95252; color: #fff; border-color: #944444; }
+  .excel-urgent-notes-resize-grip {
+    position: absolute;
+    right: 3px;
+    bottom: 3px;
+    z-index: 4;
+    width: 20px;
+    height: 20px;
+    cursor: nwse-resize;
+    background: linear-gradient(135deg, transparent 0 43%, #64748b 44% 51%, transparent 52% 62%, #64748b 63% 70%, transparent 71%);
+    opacity: .9;
+  }
+  #toggleUrgentNotes.active { border-color: #f5c84c; background: #f5c84c; color: #172033; }
+  @media (max-width: 760px) {
+    .excel-urgent-notes-popup { min-width: 320px; }
+    .excel-urgent-notes-board { min-width: 0; }
+    .excel-urgent-notes-matrix { grid-template-columns: 1fr; }
+  }
+
 
   /* Floating Inbounds planner */
   .workspace.has-inbound,
@@ -2235,7 +2428,7 @@
   #colorTabModal.color-tab-backdrop {
     inset: auto 16px auto auto;
     top: 72px;
-    width: min(560px, calc(100vw - 24px));
+    width: min(600px, calc(100vw - 24px));
     max-width: none;
     padding: 0;
     overflow: visible;
@@ -2298,12 +2491,13 @@
   #colorTabModal .color-rule-hint { font-size: 9px; }
   #colorTabModal .color-rule-rows { gap: 5px; }
   #colorTabModal .color-rule-row {
-    grid-template-columns: 188px minmax(110px, 1fr) 28px;
+    grid-template-columns: 225px minmax(110px, 1fr) 28px;
     gap: 6px;
   }
   #colorTabModal .color-picker-grid {
-    grid-template-columns: repeat(10, 16px);
+    grid-template-columns: repeat(12, 16px);
     gap: 3px;
+    width: 225px;
   }
   #colorTabModal .color-swatch {
     width: 16px;
@@ -2352,14 +2546,17 @@
         <h1>SETTEGAST FORECASTOR</h1>
         <p>Created by Jacob Prado</p>
       </div>
+      <div class="brand-quick-actions" aria-label="Inbound tools">
+        <button class="btn btn-light" id="toggleInboundPlanner" type="button" aria-pressed="false">Inbounds</button>
+        <button class="btn btn-light" id="inboundArchiveBtn" type="button">Inbound Archive</button>
+      </div>
     </div>
     <div class="top-actions">
       <input id="inventoryFileTop" type="file" accept=".xlsx,.csv,.txt,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" hidden>
-      <button class="btn btn-light" id="inboundArchiveBtn" type="button">Inbound Archive</button>
       <button class="btn btn-light" id="toggleTodayRoster" type="button">Today's Roster</button>
       <button class="btn btn-light" id="toggleCompactChecklist" type="button">Checklist</button>
+      <button class="btn btn-light" id="toggleUrgentNotes" type="button" aria-pressed="false">Urgent Notes</button>
       <button class="btn btn-light" id="resolveSsBtn" type="button" onclick="document.getElementById('ssResolverModal').hidden=false;document.getElementById('ssResolverModal').classList.add('open');document.body.classList.add('modal-open')">Resolve SS</button>
-      <button class="btn btn-light" id="toggleInboundPlanner" type="button" aria-pressed="false">Inbounds</button>
       <button class="btn btn-light" id="toggleFootageCalc" type="button">Calculator</button>
       <button class="btn btn-light" id="toggleCurrentWork" type="button">Current Work</button>
       <button class="btn btn-primary" onclick="window.print()">Print Dashboard</button>
@@ -2472,6 +2669,27 @@
     <div class="compact-checklist-resize-grip" id="compactChecklistResizeGrip" title="Drag to resize" aria-label="Resize Checklist"></div>
   </section>
 
+  <section class="excel-urgent-notes-popup" id="excelUrgentNotesPopup" hidden aria-label="Urgent Notes priority matrix">
+    <header class="excel-urgent-notes-head" id="excelUrgentNotesDragHandle">
+      <div class="excel-urgent-notes-title">Urgent Notes</div>
+      <button class="excel-urgent-notes-close" id="closeExcelUrgentNotes" type="button">Close</button>
+    </header>
+    <div class="excel-urgent-notes-scroll">
+      <div class="excel-urgent-notes-board">
+        <div class="excel-urgent-notes-top">
+          <div class="excel-urgent-notes-board-title">Priority Matrix</div>
+          <div class="excel-urgent-notes-status" id="excelUrgentNotesStatus">Priority board is empty</div>
+        </div>
+        <div class="excel-urgent-notes-matrix" id="excelUrgentNotesMatrix"></div>
+        <div class="excel-urgent-actions">
+          <button class="btn btn-white btn-small" id="saveExcelUrgentNotes" type="button">Save Board</button>
+          <button class="btn btn-small excel-urgent-clear" id="clearExcelUrgentNotes" type="button">Clear Board</button>
+        </div>
+      </div>
+    </div>
+    <div class="excel-urgent-notes-resize-grip" id="excelUrgentNotesResizeGrip" aria-hidden="true"></div>
+  </section>
+
 <main class="main">
 <section class="workspace has-inbound" id="excelWorkspace">
       <aside class="panel inbound-panel" id="inboundPanel" aria-label="Inbound Planner">
@@ -2480,7 +2698,7 @@
             <div class="inbound-popup-title">Inbounds</div>
             <div class="inbound-popup-sub">Expected trains and block breakdowns</div>
           </div>
-          <button class="inbound-popup-close" id="closeInboundPlanner" type="button" aria-label="Close Inbounds">Ã—</button>
+          <button class="inbound-popup-close" id="closeInboundPlanner" type="button" aria-label="Close Inbounds">&times;</button>
         </header>
         <div class="inbound-body" id="inboundPlannerList"></div>
         <div class="inbound-popup-resize-grip" id="inboundPopupResizeGrip" title="Drag to resize" aria-label="Resize Inbounds"></div>
@@ -2526,7 +2744,7 @@
         <div class="panel-title">Non-SS Dwell Adjustment</div>
         <div class="dwell-summary-actions">
           <button class="btn btn-danger btn-small" id="clearDwellBtn" type="button">Clear SS Inputs</button>
-          <span class="chev">âŒ„</span>
+          <span class="chev">&#9662;</span>
         </div>
       </summary>
       <div class="panel-body">
@@ -2535,7 +2753,7 @@
             <thead>
               <tr>
                 <th>Non-SS Unique Block</th>
-                <th><span class="header-copy-wrap">Example Car <button class="copy-column-btn" id="copyExampleCarsBtn" type="button" title="Copy all example car values separated by commas" aria-label="Copy all example car values separated by commas">ðŸ“‹</button></span></th>
+                <th><span class="header-copy-wrap">Example Car <button class="copy-column-btn" id="copyExampleCarsBtn" type="button" title="Copy all example car values separated by commas" aria-label="Copy all example car values separated by commas">&#128203;</button></span></th>
                 <th>Arrival</th>
                 <th>SS Start</th>
                 <th>SS End</th>
@@ -2550,7 +2768,7 @@
         </div>
         <div class="dwell-footer">
           <span id="dwellMeta">No non-SS blocks found.</span>
-          <span class="dwell-format-note">Accepted: MDDHHMM Â· MM/DD HH:MM Â· MM/DD/YYYY HH:MM Â· Excel date/time</span>
+          <span class="dwell-format-note">Accepted: MDDHHMM &middot; MM/DD HH:MM &middot; MM/DD/YYYY HH:MM &middot; Excel date/time</span>
         </div>
       </div>
     </details>
@@ -2561,7 +2779,7 @@
           <div class="panel-title">Car-Level Inventory Editor</div>
           <div class="panel-subtitle">Review, correct, add, or delete individual rows</div>
         </div>
-        <span class="chev">âŒ„</span>
+        <span class="chev">&#9662;</span>
       </summary>
       <div class="panel-body">
         <div class="inventory-toolbar">
@@ -2745,6 +2963,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   const BLOCK_CLIPBOARD_STORAGE_KEY = "rampBlockingControl.blockClipboard.v1";
   const BLOCK_CLIPBOARD_PREFIX = "CONGLOBAL_BLOCKS_V1\n";
   const TRACKS = [801,802,803,804,805,806,807,808,809];
+  const INBOUND_AVAILABLE_FOOTAGE_BASE = 18850;
+  const INBOUND_FREE_TRACKS = Object.freeze([801,802,804,805,806,807,808,809]);
   const TRACK_CAPACITY_FT = Object.freeze({
     801: 1750,
     802: 1750,
@@ -2798,7 +3018,25 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     {id:"sunset", label:"Dark Sunset", style:"background:linear-gradient(135deg,#4c0519,#c2410c,#ca8a04)"},
     {id:"ocean", label:"Deep Ocean", style:"background:linear-gradient(135deg,#082f49,#0f766e,#166534)"},
     {id:"fire", label:"Dark Fire", style:"background:linear-gradient(135deg,#260505,#991b1b,#ea580c)"},
-    {id:"grape", label:"Dark Grape", style:"background:linear-gradient(135deg,#2e1065,#581c87,#9333ea)"}
+    {id:"grape", label:"Dark Grape", style:"background:linear-gradient(135deg,#2e1065,#581c87,#9333ea)"},
+    {id:"solid-black", label:"Solid Black", style:"background:#050505"},
+    {id:"solid-charcoal", label:"Solid Charcoal", style:"background:#1f2937"},
+    {id:"solid-slate", label:"Solid Slate", style:"background:#475569"},
+    {id:"solid-navy", label:"Solid Navy", style:"background:#172554"},
+    {id:"solid-blue", label:"Solid Blue", style:"background:#1d4ed8"},
+    {id:"solid-sky", label:"Solid Sky", style:"background:#0369a1"},
+    {id:"solid-cyan", label:"Solid Cyan", style:"background:#0e7490"},
+    {id:"solid-teal", label:"Solid Teal", style:"background:#0f766e"},
+    {id:"solid-green", label:"Solid Green", style:"background:#15803d"},
+    {id:"solid-lime", label:"Solid Lime", style:"background:#4d7c0f"},
+    {id:"solid-gold", label:"Solid Gold", style:"background:#a16207"},
+    {id:"solid-yellow", label:"Solid Yellow", style:"background:#eab308"},
+    {id:"solid-orange", label:"Solid Orange", style:"background:#c2410c"},
+    {id:"solid-red", label:"Solid Red", style:"background:#dc2626"},
+    {id:"solid-crimson", label:"Solid Crimson", style:"background:#be123c"},
+    {id:"solid-magenta", label:"Solid Magenta", style:"background:#a21caf"},
+    {id:"solid-purple", label:"Solid Purple", style:"background:#6d28d9"},
+    {id:"solid-brown", label:"Solid Brown", style:"background:#7c2d12"}
   ]);
   const COLOR_CLASSES = COLOR_PALETTE.map(color => color.id);
   const DEFAULT_COLOR_RULES = Object.freeze([
@@ -3163,7 +3401,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   }
 
   function formatDwellDate(d) {
-    if (!(d instanceof Date) || Number.isNaN(d.getTime())) return "â€”";
+    if (!(d instanceof Date) || Number.isNaN(d.getTime())) return "\u2014";
     return d.toLocaleString([], {
       month:"2-digit", day:"2-digit", year:"2-digit", hour:"2-digit", minute:"2-digit"
     });
@@ -4227,9 +4465,19 @@ https://github.com/nodeca/pako/blob/main/LICENSE
 
   function inboundSummaryStock(day) {
     const key = String(day || "").toUpperCase();
-    if (key === "TODAY") return {onHand:"18850 (13448)", with803:"20600 (15198)", note:"21 UPS (No Concerns)"};
-    if (key === "TOMORROW") return {onHand:"18850 (9241)", with803:"18850 (10991)", note:""};
-    return {onHand:"", with803:"", note:""};
+    const trackFootage = computed && computed.trackFootage ? computed.trackFootage : {};
+    const occupiedWithout803 = INBOUND_FREE_TRACKS.reduce(
+      (sum, track) => sum + Math.max(0, Number(trackFootage[track]) || 0),
+      0
+    );
+    const track803Footage = Math.max(0, Number(trackFootage[803]) || 0);
+    const onHand = INBOUND_AVAILABLE_FOOTAGE_BASE - occupiedWithout803;
+    const with803 = onHand - track803Footage;
+    return {
+      onHand: fmtInt(onHand),
+      with803: fmtInt(with803),
+      note: key === "TODAY" ? "21 UPS (No Concerns)" : ""
+    };
   }
 
   function inboundSummaryLiftCount(plan) {
@@ -5339,6 +5587,13 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     blockContextGridId = "";
     blockContextBlockId = "";
   }
+  function positionBlockContextMenu(menu, event) {
+    const rect = menu.getBoundingClientRect();
+    const menuWidth = rect.width || 180;
+    const menuHeight = rect.height || 96;
+    menu.style.left = `${Math.max(6, Math.min(window.innerWidth - menuWidth - 6, event.clientX))}px`;
+    menu.style.top = `${Math.max(6, Math.min(window.innerHeight - menuHeight - 6, event.clientY))}px`;
+  }
   function openBlockContextMenu(event) {
     const grid = event.currentTarget;
     if (grid.id === "yardGrid" && !blockReorderingAvailable()) return;
@@ -5363,10 +5618,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       clearButton.hidden = false;
       deleteButton.hidden = true;
       menu.hidden = false;
-      const menuWidth = 178;
-      const menuHeight = 88;
-      menu.style.left = `${Math.max(6, Math.min(window.innerWidth - menuWidth - 6, event.clientX))}px`;
-      menu.style.top = `${Math.max(6, Math.min(window.innerHeight - menuHeight - 6, event.clientY))}px`;
+      positionBlockContextMenu(menu, event);
       return;
     }
     const block = event.target.closest(".cut-cell[data-block-id]");
@@ -5398,10 +5650,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     const deleteButton = $("#deleteSelectedBlocks");
     if (deleteButton) deleteButton.hidden = false;
     menu.hidden = false;
-    const menuWidth = 178;
-    const menuHeight = grid.id === "yardGrid" ? 174 : 136;
-    menu.style.left = `${Math.max(6, Math.min(window.innerWidth - menuWidth - 6, event.clientX))}px`;
-    menu.style.top = `${Math.max(6, Math.min(window.innerHeight - menuHeight - 6, event.clientY))}px`;
+    positionBlockContextMenu(menu, event);
   }
   function deleteSelectedBlocksFromPrimary() {
     if (!computed || !selectedBlockIds.size) return false;
@@ -5903,7 +6152,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   }
 
   function dwellCellText(value, decimals=1) {
-    if (!Number.isFinite(value)) return "??";
+    if (!Number.isFinite(value)) return "\u2014";
     const rounded = decimals === 0 ? Math.round(value) : Math.round(value * 10) / 10;
     return `${decimals === 0 ? rounded : fmtOne(rounded)}H`;
   }
@@ -5918,34 +6167,34 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     }
 
     body.innerHTML = records.map(record => {
-      let ruleText = "â€”";
+      let ruleText = "\u2014";
       let ruleClass = "";
       if (record.rawStart && record.rawEnd) {
         if (!Number.isFinite(record.ssDuration) || record.ssDuration < 0) {
           ruleText = "CHECK TIMES";
           ruleClass = "unknown";
         } else if (record.ssDuration >= 24) {
-          ruleText = `YES Â· ${fmtOne(record.ssDuration)}H`;
+          ruleText = `YES \u00B7 ${fmtOne(record.ssDuration)}H`;
           ruleClass = "ready";
         } else {
-          ruleText = `NO Â· ${fmtOne(record.ssDuration)}H`;
+          ruleText = `NO \u00B7 ${fmtOne(record.ssDuration)}H`;
           ruleClass = "warning";
         }
       }
       const arrivalToSsText = record.rawStart
-        ? (Number.isFinite(record.arrivalToSs) && record.arrivalToSs >= 0 ? dwellCellText(record.arrivalToSs) : "??")
-        : "â€”";
-      const dwellText = Number.isFinite(record.dwell) ? dwellCellText(record.dwell) : "??";
-      const futureText = Number.isFinite(record.futureDwell) ? dwellCellText(record.futureDwell) : "??";
+        ? (Number.isFinite(record.arrivalToSs) && record.arrivalToSs >= 0 ? dwellCellText(record.arrivalToSs) : "\u2014")
+        : "\u2014";
+      const dwellText = Number.isFinite(record.dwell) ? dwellCellText(record.dwell) : "\u2014";
+      const futureText = Number.isFinite(record.futureDwell) ? dwellCellText(record.futureDwell) : "\u2014";
       const dwellClass = Number.isFinite(record.dwell) ? "ready" : "unknown";
       return `<tr>
         <td class="block-cell mono">${escapeHtml(record.block)}</td>
-        <td class="car-cell mono">${escapeHtml(record.exampleCar || "â€”")}</td>
+        <td class="car-cell mono">${escapeHtml(record.exampleCar || "\u2014")}</td>
         <td class="arrival-cell">${escapeHtml(formatDwellDate(record.arrival))}</td>
         <td class="manual-cell"><input type="text" autocomplete="off" spellcheck="false" data-dwell-key="${escapeAttr(record.key)}" data-dwell-field="ssStart" value="${escapeAttr(record.rawStart)}"></td>
         <td class="manual-cell"><input type="text" autocomplete="off" spellcheck="false" data-dwell-key="${escapeAttr(record.key)}" data-dwell-field="ssEnd" value="${escapeAttr(record.rawEnd)}"></td>
         <td class="rule-cell ${ruleClass}">${escapeHtml(ruleText)}</td>
-        <td class="arrival-to-ss-cell ${arrivalToSsText === "??" ? "unknown" : ""}">${escapeHtml(arrivalToSsText)}</td>
+        <td class="arrival-to-ss-cell ${arrivalToSsText === "\u2014" ? "unknown" : ""}">${escapeHtml(arrivalToSsText)}</td>
         <td class="dwell-cell ${dwellClass}">${escapeHtml(dwellText)}</td>
         <td class="future-cell ${Number.isFinite(record.futureDwell) ? "ready" : "unknown"}">${escapeHtml(futureText)}</td>
       </tr>`;
@@ -5953,7 +6202,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
 
     const ready = records.filter(record => Number.isFinite(record.dwell)).length;
     const entered = records.filter(record => record.rawStart || record.rawEnd).length;
-    $("#dwellMeta").textContent = `${records.length} eligible non-SS blocks Â· ${entered} with SS entries Â· ${ready} dwell values feeding the grid Â· ZLBHO/ZPBHO ignored`;
+    $("#dwellMeta").textContent = `${records.length} eligible non-SS blocks \u00B7 ${entered} with SS entries \u00B7 ${ready} dwell values feeding the grid \u00B7 ZLBHO/ZPBHO ignored`;
   }
 
   function renderInventory() {
@@ -5966,7 +6215,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     body.innerHTML = state.rows.map((row,rowIndex) => `
       <tr>
         ${row.slice(0, COLUMN_NAMES.length).map((value,colIndex) => `<td><input class="${[2,10,12].includes(colIndex)?"wide":""}" data-row="${rowIndex}" data-col="${colIndex}" value="${escapeAttr(value)}"></td>`).join("")}
-        <td class="delete-cell"><button class="icon-btn" data-delete="${rowIndex}" title="Delete row">Ã—</button></td>
+        <td class="delete-cell"><button class="icon-btn" data-delete="${rowIndex}" title="Delete row">&times;</button></td>
       </tr>`).join("");
   }
 
@@ -6237,20 +6486,20 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       .filter(Boolean);
     const button=$("#copyExampleCarsBtn");
     if (!values.length) {
-      button.textContent="âš ï¸";
+      button.textContent="\u26A0\uFE0F";
       button.title="No example car values to copy";
       setTimeout(() => {
-        button.textContent="ðŸ“‹";
+        button.textContent="\uD83D\uDCCB";
         button.title="Copy all example car values separated by commas";
       },1200);
       return;
     }
 
     const copied=await copyTextToClipboard(values.join(","));
-    button.textContent=copied ? "âœ…" : "âš ï¸";
+    button.textContent=copied ? "\u2705" : "\u26A0\uFE0F";
     button.title=copied ? `${values.length} example car values copied` : "Copy failed";
     setTimeout(() => {
-      button.textContent="ðŸ“‹";
+      button.textContent="\uD83D\uDCCB";
       button.title="Copy all example car values separated by commas";
     },1200);
   }
@@ -6266,11 +6515,11 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     const button=$("#importFileBtnTop");
     const originalText=button.textContent;
     button.disabled=true;
-    button.textContent="ImportingÃ¢Â€Â¦";
+    button.textContent="Importing\u2026";
     try {
       const parsed=await importInventoryFile(file);
       state.rows=parsed.rows;
-      state.sourceName=`${file.name}${parsed.sheet ? ` Ã‚Â· ${parsed.sheet}` : ""}`;
+      state.sourceName=`${file.name}${parsed.sheet ? ` \u00B7 ${parsed.sheet}` : ""}`;
       renderAll();
       ssShowToast(`${parsed.rows.length} car rows imported from ${file.name}${parsed.sheet ? ` (${parsed.sheet})` : ""}.`);
     } catch (error) {
@@ -6840,7 +7089,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       partial ? `${partial} partial` : "",
       unmatched ? `${unmatched} unmatched` : "",
       noUsableTimes ? `${noUsableTimes} without Houston SS events` : ""
-    ].filter(Boolean).join(" Â· ");
+    ].filter(Boolean).join(" \u00B7 ");
     ssShowToast(detail);
     ssResolverSummary.textContent = `${detail}. The Non-SS Dwell Adjustment table and ramp grid have been recalculated.`;
   }
@@ -7329,6 +7578,176 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       document.addEventListener("pointerup", stop);
     });
   }
+
+  const EXCEL_URGENT_NOTES_KEY = "sdt_urgent_notes_v8";
+  const EXCEL_URGENT_NOTES_LAYOUT_KEY = "settegast-excel-urgent-notes-layout-v1";
+  const excelUrgentNotesSections = [
+    { key: "crises", title: "Crises and Fires &lt; 1 HR", subtitle: "Immediate action / escalate now" },
+    { key: "urgent", title: "Urgent &lt; 2-3 HR", subtitle: "Needs attention this shift" },
+    { key: "norush", title: "No Rush 4-6 HR / End of Day 6-12 HR", subtitle: "Handle later today / before shift end" },
+    { key: "endweek", title: "End of the Week 24 HR+", subtitle: "Backlog / planning / nonurgent work" }
+  ];
+  const excelUrgentNotesPopup = document.getElementById("excelUrgentNotesPopup");
+  const excelUrgentNotesMatrix = document.getElementById("excelUrgentNotesMatrix");
+
+  function excelUrgentNotesBlankBoard() {
+    return { crises: ["", "", "", "", ""], urgent: ["", "", "", "", ""], norush: ["", "", "", "", ""], endweek: ["", "", "", "", ""] };
+  }
+
+  function excelUrgentNotesNormalizeLines(value) {
+    if (Array.isArray(value)) return [0, 1, 2, 3, 4].map(index => String(value[index] || ""));
+    if (typeof value === "string") return value.split(/\n/).slice(0, 5).concat(["", "", "", "", ""]).slice(0, 5);
+    return ["", "", "", "", ""];
+  }
+
+  function excelUrgentNotesRead() {
+    let saved = null;
+    try { saved = JSON.parse(localStorage.getItem(EXCEL_URGENT_NOTES_KEY) || "null"); } catch (_) {}
+    const board = excelUrgentNotesBlankBoard();
+    if (!saved || typeof saved !== "object") return board;
+    excelUrgentNotesSections.forEach(section => { board[section.key] = excelUrgentNotesNormalizeLines(saved[section.key]); });
+    return board;
+  }
+
+  function excelUrgentNotesHasContent(board) {
+    return Object.values(board).flat().some(value => String(value || "").trim());
+  }
+
+  function excelUrgentNotesUpdateStatus(board, savedLabel) {
+    const status = document.getElementById("excelUrgentNotesStatus");
+    if (!status) return;
+    status.textContent = excelUrgentNotesHasContent(board) ? (savedLabel || "Saved priority board") : "Priority board is empty";
+  }
+
+  function excelUrgentNotesCollect() {
+    const board = excelUrgentNotesBlankBoard();
+    excelUrgentNotesMatrix.querySelectorAll(".excel-urgent-input").forEach(input => {
+      const section = input.dataset.urgentSection;
+      const line = Number(input.dataset.urgentLine);
+      if (board[section] && Number.isInteger(line) && line >= 0 && line < 5) board[section][line] = input.value;
+    });
+    return board;
+  }
+
+  function excelUrgentNotesWrite(board, savedLabel) {
+    localStorage.setItem(EXCEL_URGENT_NOTES_KEY, JSON.stringify(board));
+    excelUrgentNotesUpdateStatus(board, savedLabel);
+  }
+
+  function excelUrgentNotesRender() {
+    const board = excelUrgentNotesRead();
+    excelUrgentNotesMatrix.innerHTML = excelUrgentNotesSections.map(section => {
+      const lines = board[section.key].map((value, index) =>
+        '<label class="excel-urgent-line"><span class="excel-urgent-line-num">' + (index + 1) + '</span><input class="excel-urgent-input" data-urgent-section="' + section.key + '" data-urgent-line="' + index + '" autocomplete="off"></label>'
+      ).join("");
+      return '<section class="excel-urgent-card" data-urgent-section="' + section.key + '"><header class="excel-urgent-card-head"><div class="excel-urgent-card-title">' + section.title + '</div><div class="excel-urgent-card-sub">' + section.subtitle + '</div></header><div class="excel-urgent-lines">' + lines + '</div></section>';
+    }).join("");
+    excelUrgentNotesMatrix.querySelectorAll(".excel-urgent-input").forEach(input => {
+      input.value = board[input.dataset.urgentSection][Number(input.dataset.urgentLine)] || "";
+    });
+    excelUrgentNotesUpdateStatus(board);
+  }
+
+  function excelUrgentNotesOpen() {
+    excelUrgentNotesRender();
+    excelUrgentNotesPopup.hidden = false;
+    document.getElementById("toggleUrgentNotes").classList.add("active");
+    document.getElementById("toggleUrgentNotes").setAttribute("aria-pressed", "true");
+  }
+
+  function excelUrgentNotesClose() {
+    if (!excelUrgentNotesPopup.hidden) excelUrgentNotesWrite(excelUrgentNotesCollect());
+    excelUrgentNotesPopup.hidden = true;
+    document.getElementById("toggleUrgentNotes").classList.remove("active");
+    document.getElementById("toggleUrgentNotes").setAttribute("aria-pressed", "false");
+  }
+
+  function saveExcelUrgentNotesLayout() {
+    const rect = excelUrgentNotesPopup.getBoundingClientRect();
+    localStorage.setItem(EXCEL_URGENT_NOTES_LAYOUT_KEY, JSON.stringify({
+      left: Math.round(rect.left),
+      top: Math.round(rect.top),
+      width: Math.round(rect.width),
+      height: Math.round(rect.height)
+    }));
+  }
+
+  function restoreExcelUrgentNotesLayout() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(EXCEL_URGENT_NOTES_LAYOUT_KEY) || "null");
+      if (!saved) return;
+      excelUrgentNotesPopup.style.transform = "none";
+      if (Number.isFinite(saved.width)) excelUrgentNotesPopup.style.width = Math.max(320, Math.min(saved.width, innerWidth - 8)) + "px";
+      if (Number.isFinite(saved.height)) excelUrgentNotesPopup.style.height = Math.max(300, Math.min(saved.height, innerHeight - 50)) + "px";
+      if (Number.isFinite(saved.left)) excelUrgentNotesPopup.style.left = Math.max(0, Math.min(saved.left, innerWidth - 220)) + "px";
+      if (Number.isFinite(saved.top)) excelUrgentNotesPopup.style.top = Math.max(42, Math.min(saved.top, innerHeight - 80)) + "px";
+    } catch (_) {}
+  }
+
+  document.getElementById("toggleUrgentNotes").addEventListener("click", () => {
+    if (excelUrgentNotesPopup.hidden) excelUrgentNotesOpen();
+    else excelUrgentNotesClose();
+  });
+  document.getElementById("closeExcelUrgentNotes").addEventListener("click", excelUrgentNotesClose);
+  document.getElementById("saveExcelUrgentNotes").addEventListener("click", () => excelUrgentNotesWrite(excelUrgentNotesCollect(), "Saved priority board"));
+  document.getElementById("clearExcelUrgentNotes").addEventListener("click", () => {
+    if (!confirm("Clear every Urgent Notes entry?")) return;
+    excelUrgentNotesWrite(excelUrgentNotesBlankBoard());
+    excelUrgentNotesRender();
+  });
+  excelUrgentNotesMatrix.addEventListener("input", () => excelUrgentNotesWrite(excelUrgentNotesCollect(), "Autosaved locally"));
+
+  restoreExcelUrgentNotesLayout();
+
+  document.getElementById("excelUrgentNotesDragHandle").addEventListener("pointerdown", event => {
+    if (event.target.closest("button")) return;
+    const start = excelUrgentNotesPopup.getBoundingClientRect();
+    const startX = event.clientX;
+    const startY = event.clientY;
+    excelUrgentNotesPopup.style.left = start.left + "px";
+    excelUrgentNotesPopup.style.top = start.top + "px";
+    excelUrgentNotesPopup.style.transform = "none";
+    const move = moveEvent => {
+      excelUrgentNotesPopup.style.left = Math.max(0, Math.min(start.left + moveEvent.clientX - startX, innerWidth - excelUrgentNotesPopup.offsetWidth)) + "px";
+      excelUrgentNotesPopup.style.top = Math.max(42, Math.min(start.top + moveEvent.clientY - startY, innerHeight - 55)) + "px";
+    };
+    const stop = () => {
+      document.removeEventListener("pointermove", move);
+      document.removeEventListener("pointerup", stop);
+      saveExcelUrgentNotesLayout();
+    };
+    document.addEventListener("pointermove", move);
+    document.addEventListener("pointerup", stop);
+  });
+
+  document.getElementById("excelUrgentNotesResizeGrip").addEventListener("pointerdown", event => {
+    event.preventDefault();
+    event.stopPropagation();
+    const start = excelUrgentNotesPopup.getBoundingClientRect();
+    const startX = event.clientX;
+    const startY = event.clientY;
+    excelUrgentNotesPopup.style.left = start.left + "px";
+    excelUrgentNotesPopup.style.top = start.top + "px";
+    excelUrgentNotesPopup.style.transform = "none";
+    const move = moveEvent => {
+      excelUrgentNotesPopup.style.width = Math.max(320, Math.min(start.width + moveEvent.clientX - startX, innerWidth - start.left - 4)) + "px";
+      excelUrgentNotesPopup.style.height = Math.max(300, Math.min(start.height + moveEvent.clientY - startY, innerHeight - start.top - 4)) + "px";
+    };
+    const stop = () => {
+      document.removeEventListener("pointermove", move);
+      document.removeEventListener("pointerup", stop);
+      saveExcelUrgentNotesLayout();
+    };
+    document.addEventListener("pointermove", move);
+    document.addEventListener("pointerup", stop);
+  });
+
+  window.addEventListener("storage", event => {
+    if (event.key === EXCEL_URGENT_NOTES_KEY && !excelUrgentNotesPopup.hidden && !excelUrgentNotesPopup.contains(document.activeElement)) excelUrgentNotesRender();
+  });
+  document.addEventListener("keydown", event => {
+    if (event.key === "Escape" && !excelUrgentNotesPopup.hidden) excelUrgentNotesClose();
+  });
 
 </script>
 </body>

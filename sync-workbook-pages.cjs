@@ -3,11 +3,14 @@ const vm = require("vm");
 
 const workbookPath = "index.html";
 const pages = {
+  amReport: "am-report-page.html",
+  chassisStatus: "chassis-status-page.html",
   billing: "billing-page.html",
   excelView: "excel-view-page.html",
   roster: "roster-page.html",
   timeMd: "timesheet-md-page.html",
   timeOff: "time-off-page.html",
+  audits: "audits-page.html",
 };
 
 function stripPageSwitcher(html) {

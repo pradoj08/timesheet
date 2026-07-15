@@ -3,10 +3,9 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Chassis Reconciliation</title>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<title>Chassis Forecast</title>
+<script async src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script async src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <style>
 html.app-booting body{visibility:hidden}
 :root {
@@ -5504,14 +5503,14 @@ body.forecast-view .forecast-bottom-controls {
 <!-- EXCEL_CE_EVENT_AGE_DAYS_YELLOW: CE rows highlight Event Age and Days Old yellow; header has background color -->
 <!-- CLIENT_SIDE_ADMIN_NOTE: credentials are not displayed in the UI; true protection requires server-side auth/RLS. -->
 </head>
-<body>
+<body class="forecast-view hide-forecast-differences app-initializing">
 <span id="cloudStatus" class="cloud-status-hidden" aria-hidden="true"></span>
 <main class="app">
 
   <section class="hero clean-hero">
     <div class="hero-title-block">
       <div class="eyebrow">SETTEGAST TERMINAL</div>
-      <h1 id="appHeroTitle">Chassis Reconciliation</h1>
+      <h1 id="appHeroTitle">Chassis Forecast</h1>
     </div>
 
     <div class="hero-actions">
@@ -5532,8 +5531,8 @@ body.forecast-view .forecast-bottom-controls {
       </button>
 
       <button id="forecastHeroBtn" class="hero-action-card forecast-hero-card" type="button">
-        <span class="hero-action-icon">📈</span>
-        <span class="hero-action-label">Chassis Forecast</span>
+        <span class="hero-action-icon">↩</span>
+        <span class="hero-action-label">Chassis Reconciliation</span>
       </button>
 
     </div>
@@ -5858,7 +5857,7 @@ body.forecast-view .forecast-bottom-controls {
   <div class="forecast-page">
     <div class="forecast-head">
       <div class="forecast-head-actions">
-        <button id="forecastDifferenceToggleBtn" type="button" class="forecast-tools-toggle-btn forecast-difference-top-toggle">Hide +/-</button>
+        <button id="forecastDifferenceToggleBtn" type="button" class="forecast-tools-toggle-btn forecast-difference-top-toggle">Show +/-</button>
         <button id="forecastSummaryVisibilityToggle" type="button" class="forecast-tools-toggle-btn" aria-expanded="false">Show Deficits &amp; Request Summary</button>
         <button id="forecastUnplannedUnitsBtn" type="button" class="forecast-tools-toggle-btn">Unplanned Units</button>
         <button id="openForecastExcelViewBtn" class="forecast-tools-toggle-btn forecast-excel-open-btn" type="button">Excel View</button>
@@ -6653,7 +6652,14 @@ async function loadCloudState(){
     cloudLoading=false;
     setCloudStatus("Cloud: synced","ok");
     updateArchiveButtonState();
-  render();
+    if(document.body.classList.contains("reconciliation-view")){
+      render();
+      reconciliationPageHydrated=true;
+    }else{
+      reconciliationPageHydrated=false;
+      renderForecastRequestHistoryPreview();
+      renderForecastArchiveList();
+    }
 
     // First device safety: if the cloud current_session is empty, push this page state.
     if(!applied && tableRows.length) queueCloudSave();
@@ -9751,6 +9757,7 @@ function renderYardCalendar(){
 
 let forecastRows=[];
 let forecastPageHydrated=false;
+let reconciliationPageHydrated=false;
 function getDefaultForecastName(){
   const d=new Date();
   const mm=String(d.getMonth()+1).padStart(2,"0");
@@ -9884,8 +9891,10 @@ function placeHeroForAppPage(forecast){
     marker.parentNode.insertBefore(hero,marker.nextSibling);
   }
 }
-function setAppPage(page){
+function setAppPage(page,options={}){
   const forecast=page==="forecast";
+  const hydrate=options.hydrate!==false;
+  const scroll=options.scroll!==false;
   document.body.classList.toggle("forecast-view",forecast);
   document.body.classList.toggle("reconciliation-view",!forecast);
   placeHeroForAppPage(forecast);
@@ -9911,17 +9920,20 @@ function setAppPage(page){
   if(forecast){
     const drop=$("forecastYardDrop");
     if(drop && !drop.innerHTML)drop.innerHTML=YARD_OPTIONS.map(o=>`<option>${o}</option>`).join("");
-    if(!forecastPageHydrated){
+    if(hydrate && !forecastPageHydrated){
       loadForecastState();
       renderForecastImportedUnits();
-      renderForecastOnHandChassis();
       renderForecastRequestHistoryPreview();
       renderForecastArchiveList();
       forecastPageHydrated=true;
     }
-    $("forecastModal")?.scrollIntoView({behavior:"auto",block:"start"});
+    if(scroll)$("forecastModal")?.scrollIntoView({behavior:"auto",block:"start"});
   }else{
-    document.querySelector(".table-card")?.scrollIntoView({behavior:"auto",block:"start"});
+    if(hydrate && !reconciliationPageHydrated){
+      render();
+      reconciliationPageHydrated=true;
+    }
+    if(scroll)document.querySelector(".table-card")?.scrollIntoView({behavior:"auto",block:"start"});
   }
 }
 function openForecastModal(){
@@ -10201,7 +10213,7 @@ function renderForecastExcelView(){
   const calcTable=(title,rows,cls)=>`<section class="forecast-excel-block ${cls}"><h3>${calculatorIcon}<span>${title}</span></h3>${renderForecastExcelTable(
     ["Pool","Size","Inbound","On Hand","Bad Order","Net"],
     rows,
-    r=>`<tr class="calculator-pool-${r.poolCode.toLowerCase()}">${r.rowspan?`<th rowspan="${r.rowspan}">${r.pool}</th>`:""}<th>${r.size}'</th><td>${renderForecastExcelValue(r.inbound)}</td><td>${renderForecastExcelValue(r.onHand)}</td><td>${renderForecastExcelValue(r.badOrder)}</td>${renderForecastExcelNetCell(r.poolCode,r.size,r.total,"calculator-net-flag")}</tr>`
+    r=>`<tr class="calculator-pool-${r.poolCode.toLowerCase()}${r.rowspan?" calculator-pool-start":""}">${r.rowspan?`<th rowspan="${r.rowspan}">${r.pool}</th>`:""}<th>${r.size}'</th><td>${renderForecastExcelValue(r.inbound)}</td><td>${renderForecastExcelValue(r.onHand)}</td><td>${renderForecastExcelValue(r.badOrder)}</td>${renderForecastExcelNetCell(r.poolCode,r.size,r.total,"calculator-net-flag")}</tr>`
   )}</section>`;
   const requestOrder=["TGRP","FGCP","SNCZ","DCLI"];
   const previousSubmission=getForecastPreviousSubmissionValues();
@@ -11169,6 +11181,7 @@ async function importForecastFiles(files){
     });
   }
   forecastImportedUnits=[...forecastImportedUnits,...incoming];
+  if(incoming.length)forecastSelectedDays=new Set();
   saveForecastState();
   renderForecastImportedUnits();
   if(typeof showArchiveToast==="function")showArchiveToast(`${incoming.length} forecast units imported.`);
@@ -12579,9 +12592,10 @@ function renderForecastStatusCards(){
         </div>
       </div>
       <div class="forecast-status-cards-grid">
-        ${dayGroups.map(g=>{
-          const units=unitsForForecastGroup(g.train,g.day);
-          const mix={};
+         ${dayGroups.map(g=>{
+           const units=unitsForForecastGroup(g.train,g.day);
+          const hasImccomllcConsignee=units.some(unit=>String(unit?.consignee||"").trim().toUpperCase()==="**IMCCOMLLC");
+           const mix={};
           units.forEach(unit=>{
             if(isForecastTrailerUnit(unit)){
               mix.TRAILER=(mix.TRAILER||0)+1;
@@ -12697,7 +12711,7 @@ function renderForecastStatusCards(){
             </div>
           </div>` : "";
 
-          return `<div class="forecast-train-card fancy-train-card compact-option-three forecast-quadrant-card ${isNoTrain?"no-train-card":""} ${isHighVolume?"high-volume-train":""} ${isDuplicateInbound?"duplicate-inbound-card":""}" draggable="true" data-forecast-drag-train="${escapeHtml(g.train)}" data-forecast-drag-day="${escapeHtml(g.day)}" title="Drag this inbound to another arrival day">
+          return `<div class="forecast-train-card fancy-train-card compact-option-three forecast-quadrant-card ${isNoTrain?"no-train-card":""} ${isHighVolume?"high-volume-train":""} ${isDuplicateInbound?"duplicate-inbound-card":""} ${hasImccomllcConsignee?"imccomllc-inbound":""}" draggable="true" data-forecast-drag-train="${escapeHtml(g.train)}" data-forecast-drag-day="${escapeHtml(g.day)}" title="Drag this inbound to another arrival day">
             <div class="forecast-train-card-glow"></div>
             <div class="forecast-compact-train-head">
               <div class="forecast-compact-train-main">
@@ -14607,7 +14621,7 @@ if($("forecastNeedsSizeRule"))$("forecastNeedsSizeRule").textContent=needsSize;
 
 
 async function init(){
-  document.body.classList.add("reconciliation-view");
+  document.body.classList.add("hide-forecast-differences");
   setupYardSelectOptions();
   $("yardSelect").onchange=handleYardSelectChange;
   const yardSelectCustomEl=$("yardSelectCustom");
@@ -14662,10 +14676,13 @@ async function init(){
   setupForecastSummaryVisibility();
   const forecastTrainSummaryCard=$("forecastTrainSummaryCard");
   if(forecastTrainSummaryCard)forecastTrainSummaryCard.remove();
-  const forecastDifferenceToggleBtn=$("forecastDifferenceToggleBtn"); if(forecastDifferenceToggleBtn)forecastDifferenceToggleBtn.onclick=()=>{
-    document.body.classList.toggle("hide-forecast-differences");
+  const forecastDifferenceToggleBtn=$("forecastDifferenceToggleBtn"); if(forecastDifferenceToggleBtn){
     forecastDifferenceToggleBtn.textContent=document.body.classList.contains("hide-forecast-differences")?"Show +/-":"Hide +/-";
-  };
+    forecastDifferenceToggleBtn.onclick=()=>{
+      document.body.classList.toggle("hide-forecast-differences");
+      forecastDifferenceToggleBtn.textContent=document.body.classList.contains("hide-forecast-differences")?"Show +/-":"Hide +/-";
+    };
+  }
   const forecastArchiveSortSelect=$("forecastArchiveSortSelect"); if(forecastArchiveSortSelect)forecastArchiveSortSelect.onchange=()=>{forecastArchiveSortMode=forecastArchiveSortSelect.value||"newest";renderForecastArchiveList();};
   const forecastArchivePopupCloseBtn=$("forecastArchivePopupCloseBtn"); if(forecastArchivePopupCloseBtn)forecastArchivePopupCloseBtn.onclick=closeForecastArchivePopup;
   const forecastArchivePopup=$("forecastArchivePopup"); if(forecastArchivePopup)forecastArchivePopup.addEventListener("click",e=>{if(e.target===forecastArchivePopup)closeForecastArchivePopup();});
@@ -14847,18 +14864,21 @@ async function init(){
   const nextCal=$("nextCalendarMonth"); if(nextCal)nextCal.onclick=()=>{yardCalendarMonth=new Date(yardCalendarMonth.getFullYear(),yardCalendarMonth.getMonth()+1,1);renderYardCalendar()};
   const calendarReportsClose=$("calendarReportsClose"); if(calendarReportsClose)calendarReportsClose.onclick=()=>{$("calendarReportsPanel").style.display="none"};
   const calendarPreviewClose=$("calendarPreviewClose"); if(calendarPreviewClose)calendarPreviewClose.onclick=()=>{$("calendarReportPreview").style.display="none"};
-  render();
-  requestAnimationFrame(()=>document.documentElement.classList.remove("app-booting"));
+  setAppPage("forecast",{scroll:false});
+  document.body.classList.remove("app-initializing");
   loadCloudState();
 }
 
 window.addEventListener("beforeunload",()=>{try{saveCurrentSessionToCloud()}catch{}});
-window.addEventListener("DOMContentLoaded",async()=>{
-  try{
-    await init();
-  }finally{
-    document.documentElement.classList.remove("app-booting");
-  }
+window.addEventListener("DOMContentLoaded",()=>{
+  setAppPage("forecast",{hydrate:false,scroll:false});
+  document.documentElement.classList.remove("app-booting");
+  requestAnimationFrame(()=>{
+    init().catch(error=>console.error("Chassis Status initialization failed",error)).finally(()=>{
+      document.body.classList.remove("app-initializing");
+      document.documentElement.classList.remove("app-booting");
+    });
+  });
 },{once:true});
 </script>
 
@@ -24929,6 +24949,49 @@ body.forecast-view.forecast-print-clean-view #forecastModal .forecast-page > .he
   .forecast-unplanned-modal {
     padding-top: 10px !important;
     padding-bottom: 10px !important;
+  }
+}
+
+/* Chassis Calculator (24H): clearly separate each chassis-pool section. */
+#forecastExcelView .forecast-excel-block.hours24 .forecast-excel-table tbody
+  tr.calculator-pool-start:not(:first-child) > * {
+  border-top: 2px solid #111827 !important;
+}
+
+/* Flag every inbound containing consignee **IMCCOMLLC. */
+@keyframes forecastImccomllcGoldGlow {
+  from {
+    filter: drop-shadow(0 0 3px rgba(251, 191, 36, .48));
+    box-shadow:
+      0 0 0 1px rgba(251, 191, 36, .72),
+      0 0 12px rgba(251, 191, 36, .46),
+      inset 0 0 12px rgba(251, 191, 36, .12);
+  }
+  to {
+    filter: drop-shadow(0 0 9px rgba(253, 230, 138, .92));
+    box-shadow:
+      0 0 0 2px rgba(253, 230, 138, .96),
+      0 0 25px rgba(251, 191, 36, .88),
+      inset 0 0 20px rgba(251, 191, 36, .22);
+  }
+}
+#forecastStatusCards .forecast-train-card.imccomllc-inbound {
+  border: 2px solid #fbbf24 !important;
+  outline: 1px solid rgba(253, 230, 138, .72);
+  outline-offset: 1px;
+  box-shadow:
+    0 0 0 2px rgba(253, 230, 138, .9),
+    0 0 22px rgba(251, 191, 36, .76),
+    inset 0 0 16px rgba(251, 191, 36, .18) !important;
+  animation: forecastImccomllcGoldGlow 1.6s ease-in-out infinite alternate;
+}
+@media (prefers-reduced-motion: reduce) {
+  #forecastStatusCards .forecast-train-card.imccomllc-inbound {
+    animation: none;
+    box-shadow:
+      0 0 0 2px rgba(253, 230, 138, .88),
+      0 0 22px rgba(251, 191, 36, .78),
+      inset 0 0 16px rgba(251, 191, 36, .18) !important;
   }
 }
 </style>

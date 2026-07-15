@@ -1755,51 +1755,6 @@
       transform: translateY(-50%);
     }
 
-    .yard-headcount-pill {
-      position: absolute;
-      z-index: 8;
-      top: 8px;
-      right: 8px;
-      min-width: 142px;
-      padding: 7px 11px;
-      border: 2px solid transparent;
-      border-radius: 4px;
-      font-family: "Arial Black", Impact, sans-serif;
-      font-size: 11px;
-      font-weight: 1000;
-      letter-spacing: .05em;
-      text-align: center;
-      text-transform: uppercase;
-      white-space: nowrap;
-    }
-
-    .yard-headcount-pill.high {
-      border-color: #86efac;
-      background: #14532d;
-      color: #fff;
-      box-shadow: 0 3px 0 #052e16, 0 5px 10px rgba(0, 0, 0, .42);
-      -webkit-text-stroke: .3px #fff;
-      text-shadow: .35px 0 #fff, -.35px 0 #fff;
-    }
-
-    .yard-headcount-pill.mid {
-      border-color: #fff7cc;
-      background: #facc15;
-      color: #111827;
-      box-shadow: 0 3px 0 #92400e, 0 5px 10px rgba(0, 0, 0, .42);
-      -webkit-text-stroke: .45px #111827;
-      text-shadow: .35px 0 #111827, -.35px 0 #111827;
-    }
-
-    .yard-headcount-pill.low {
-      border-color: #fecaca;
-      background: #b91c1c;
-      color: #fff;
-      box-shadow: 0 3px 0 #7f1d1d, 0 5px 10px rgba(0, 0, 0, .42);
-      -webkit-text-stroke: .3px #fff;
-      text-shadow: .35px 0 #fff, -.35px 0 #fff;
-    }
-
     .yard-track {
       position: absolute;
       z-index: 2;
@@ -1859,8 +1814,10 @@
     }
 
     .yard-crew-name {
-      max-width: 120px;
-      overflow: hidden;
+      width: max-content;
+      max-width: none;
+      min-width: max-content;
+      overflow: visible;
       padding: 3px 8px;
       border: 1px solid rgba(148, 163, 184, .55);
       border-radius: 999px;
@@ -1869,7 +1826,7 @@
       font-size: 11px;
       font-weight: 900;
       line-height: 1.1;
-      text-overflow: ellipsis;
+      text-overflow: clip;
       white-space: nowrap;
     }
 
@@ -1879,6 +1836,14 @@
       top: -20px;
       left: 52px;
       transform: translateX(-50%);
+    }
+
+    .yard-crane-operator-name,
+    .yard-crew-unit.flipoperator > .yard-crew-name {
+      border-color: #f59e0b;
+      background: #fbbf24;
+      color: #422006;
+      box-shadow: 0 2px 5px rgba(120, 53, 15, .34);
     }
 
     .yard-machine { position: relative; flex: 0 0 auto; }
@@ -1921,9 +1886,9 @@
     }
 
     .yard-crew-name.trainee {
-      border-color: #fbbf24;
-      background: rgba(120, 53, 15, .92);
-      color: #fef3c7;
+      border-color: #fca5a5;
+      background: #b91c1c;
+      color: #fff;
       font-size: 9px;
     }
 
@@ -1966,14 +1931,10 @@
       left: 115px;
     }
 
-    .yard-crane-pair.has-trainee .yard-crane-groundman-name {
-      max-width: 70px;
-    }
-
     .yard-crane-groundman-slot.trainee .yard-crane-groundman-name {
-      border-color: #fbbf24;
-      background: rgba(120, 53, 15, .92);
-      color: #fef3c7;
+      border-color: #fca5a5;
+      background: #b91c1c;
+      color: #fff;
     }
 
     .yard-crane-groundman-slot {
@@ -1990,8 +1951,10 @@
     }
 
     .yard-crane-groundman-name {
-      max-width: 112px;
-      overflow: hidden;
+      width: max-content;
+      max-width: none;
+      min-width: max-content;
+      overflow: visible;
       padding: 3px 7px;
       border: 1px solid rgba(148, 163, 184, .65);
       border-radius: 999px;
@@ -2000,7 +1963,7 @@
       font-size: 9px;
       font-weight: 900;
       line-height: 1.1;
-      text-overflow: ellipsis;
+      text-overflow: clip;
       white-space: nowrap;
     }
 
@@ -2139,7 +2102,6 @@
     <section class="yard-crew-panel" id="yardCrewPanel" aria-label="Animated visual idle standing view" hidden>
       <div class="yard-crew-layout">
         <div class="yard-crew-scene" id="yardCrewScene" aria-label="Two-track idle crew visualization">
-          <span class="yard-headcount-pill low" id="yardCrewHeadcount">Current Headcount 0</span>
           <div class="yard-drive-lane top" aria-hidden="true"></div>
           <div class="yard-track one" aria-hidden="true"></div>
           <div class="yard-track two" aria-hidden="true"></div>
@@ -2267,6 +2229,8 @@
     let yardCrewTodayStaffing = null;
     let selectedStatusDate = "";
     let selectedStatusName = "";
+    let employeeQuickStatusChosen = false;
+    let employeeQuickRoleChosen = false;
     const rosterStorageKey = "conglobal-roster-state-v1";
     const rosterAdditionsKey = "conglobal-roster-additions-v1";
     const embeddedInTimesheet = window.frameElement && window.frameElement.id === "inlineToolFrame";
@@ -2875,31 +2839,53 @@
       dialog.style.top = `${Math.round(top)}px`;
     }
 
-    function openEmployeeStatus(name, dateKey, anchor) {
-      selectedStatusName = String(name || "").trim();
-      selectedStatusDate = String(dateKey || "");
-      if (!selectedStatusName || !selectedStatusDate) return;
-      document.getElementById("employeeStatusName").textContent = `${selectedStatusName} - ${friendlyDate(selectedStatusDate)}`;
-      const currentStatus = employeeStatusForDate(selectedStatusName, selectedStatusDate);
+    function syncEmployeeQuickStatusButtons(currentStatus) {
       document.querySelectorAll("[data-quick-status]").forEach((button) => {
         const active = button.dataset.quickStatus === currentStatus;
         button.classList.toggle("active", active);
         button.setAttribute("aria-pressed", String(active));
       });
-      const roleShift = yardCrewShiftForEmployeeToday(selectedStatusName);
-      const currentRole = roleShift ? yardCrewRoleForEmployeeToday(selectedStatusName, roleShift) : "";
+    }
+
+    function syncEmployeeQuickRoleButtons(currentRole, roleShift) {
       document.querySelectorAll("[data-quick-role]").forEach((button) => {
         const active = button.dataset.quickRole === currentRole || (!currentRole && button.dataset.quickRole === "clear");
         button.classList.toggle("active", active);
         button.setAttribute("aria-pressed", String(active));
         button.disabled = !roleShift;
       });
+    }
+
+    function finishEmployeeQuickAction(message) {
+      if (employeeQuickStatusChosen && employeeQuickRoleChosen) {
+        closeEmployeeStatus();
+        return;
+      }
+      const roleShift = yardCrewShiftForEmployeeToday(selectedStatusName);
+      const nextStep = !employeeQuickStatusChosen
+        ? "Now choose a status."
+        : roleShift ? "Now choose today's role." : "Role is unavailable today; use X when finished.";
+      document.getElementById("employeeStatusMessage").textContent = `${message} ${nextStep}`;
+    }
+
+    function openEmployeeStatus(name, dateKey, anchor) {
+      selectedStatusName = String(name || "").trim();
+      selectedStatusDate = String(dateKey || "");
+      if (!selectedStatusName || !selectedStatusDate) return;
+      employeeQuickStatusChosen = false;
+      employeeQuickRoleChosen = false;
+      document.getElementById("employeeStatusName").textContent = `${selectedStatusName} - ${friendlyDate(selectedStatusDate)}`;
+      const currentStatus = employeeStatusForDate(selectedStatusName, selectedStatusDate);
+      syncEmployeeQuickStatusButtons(currentStatus);
+      const roleShift = yardCrewShiftForEmployeeToday(selectedStatusName);
+      const currentRole = roleShift ? yardCrewRoleForEmployeeToday(selectedStatusName, roleShift) : "";
+      syncEmployeeQuickRoleButtons(currentRole, roleShift);
       document.getElementById("employeeRoleShiftLabel").textContent = roleShift === "first"
         ? "Day shift"
         : roleShift === "second" ? "Night shift" : "Not working";
       document.getElementById("employeeStatusMessage").textContent = roleShift
-        ? "Choose a status or today's role."
-        : "Choose a status. Role assignment requires working today.";
+        ? "Choose one status and one role. This closes after both are selected."
+        : "Choose a status. Role assignment is unavailable; use X when finished.";
       const backdrop = document.getElementById("employeeStatusBackdrop");
       backdrop.classList.add("open");
       backdrop.setAttribute("aria-hidden", "false");
@@ -3545,7 +3531,6 @@
       if (!panel) return;
       const state = readYardCrewState();
       const units = document.getElementById("yardCrewUnits");
-      const headcount = document.getElementById("yardCrewHeadcount");
       const assignedEntries = [];
 
       ["first", "second"].forEach((shiftKey) => {
@@ -3555,12 +3540,6 @@
         if (JSON.stringify(assignments) !== JSON.stringify(savedAssignments)) writeYardCrewAssignments(assignments, shiftKey);
         Object.entries(assignments).forEach(([name, role]) => assignedEntries.push({ name, role, shiftKey }));
       });
-
-      const headcountValue = assignedEntries.length;
-      const headcountLevel = headcountValue > 9 ? "high" : headcountValue < 8 ? "low" : "mid";
-      headcount.textContent = `Current Headcount ${headcountValue}`;
-      headcount.classList.remove("high", "mid", "low");
-      headcount.classList.add(headcountLevel);
 
       assignedEntries.sort((left, right) => {
         const roleDifference = yardCrewRoleOrder.indexOf(left.role) - yardCrewRoleOrder.indexOf(right.role);
@@ -3634,8 +3613,8 @@
         entryPositions.set(entry, { left: 91.5 - (index * 13), bottom: 12, mirroredHostler: true });
       });
       otherEntries.forEach((entry, index) => {
-        if (entry.role === "crane1") entryPositions.set(entry, { left: 44, bottom: 178 });
-        else if (entry.role === "crane2") entryPositions.set(entry, { left: 70, bottom: 130 });
+        if (entry.role === "crane1") entryPositions.set(entry, { left: 85, bottom: 178 });
+        else if (entry.role === "crane2") entryPositions.set(entry, { left: 64, bottom: 130 });
         else if (entry.role === "flipoperator") entryPositions.set(entry, { left: 18, bottom: 12 });
         else if (["groundman", "traineegroundman", "traineehostler"].includes(entry.role)) entryPositions.set(entry, { left: Math.min(74 + index * 5, 82), bottom: 12 });
       });
@@ -3906,13 +3885,6 @@
       renderCalendar();
     });
     document.getElementById("closeEmployeeStatus").addEventListener("click", closeEmployeeStatus);
-    document.getElementById("employeeStatusBackdrop").addEventListener("click", (event) => { if (event.target.id === "employeeStatusBackdrop") closeEmployeeStatus(); });
-    document.addEventListener("click", (event) => {
-      const backdrop = document.getElementById("employeeStatusBackdrop");
-      if (!backdrop.classList.contains("open")) return;
-      if (event.target.closest("#employeeStatusBackdrop .employee-bank-dialog, [data-status-name]")) return;
-      closeEmployeeStatus();
-    });
     document.getElementById("closeOffSchedule").addEventListener("click", closeOffSchedule);
     document.getElementById("offScheduleBackdrop").addEventListener("click", (event) => { if (event.target.id === "offScheduleBackdrop") closeOffSchedule(); });
     document.getElementById("employeeStatusActions").addEventListener("click", (event) => {
@@ -3924,9 +3896,10 @@
       const nextStatus = unselect ? "" : status;
       saveEmployeeStatus(selectedStatusName, selectedStatusDate, nextStatus);
       const statusLabel = unselect ? "Unselected" : ({ here: "Here", flipline: "Flip Line", vac: "Vacation", sic: "Sick", calledoff: "Called Off", out: "Out", ncns: "NCNS", bnsf: "BNSF", unknown: "Unknown" }[status] || status);
-      document.getElementById("employeeStatusMessage").textContent = `${selectedStatusName} updated to ${statusLabel}.`;
+      employeeQuickStatusChosen = true;
+      syncEmployeeQuickStatusButtons(nextStatus);
       renderCalendar();
-      closeEmployeeStatus();
+      finishEmployeeQuickAction(`${selectedStatusName} updated to ${statusLabel}.`);
     });
     document.getElementById("employeeRoleActions").addEventListener("click", (event) => {
       const action = event.target.closest("[data-quick-role]");
@@ -3939,9 +3912,10 @@
       if (clearing) clearYardCrewRole(selectedStatusName, shiftKey);
       else assignYardCrewRole(selectedStatusName, role, shiftKey);
       const roleLabel = clearing ? "No role" : yardCrewRoleLabels[role];
-      document.getElementById("employeeStatusMessage").textContent = `${selectedStatusName} updated to ${roleLabel}.`;
+      employeeQuickRoleChosen = true;
+      syncEmployeeQuickRoleButtons(clearing ? "" : role, shiftKey);
       renderCalendar();
-      closeEmployeeStatus();
+      finishEmployeeQuickAction(`${selectedStatusName} updated to ${roleLabel}.`);
     });
     document.getElementById("dailyEmployeeList").addEventListener("change", (event) => {
       const select = event.target.closest("[data-daily-status-name]");
@@ -3990,7 +3964,6 @@
       if (event.key !== "Escape") return;
       closeDayEditor();
       closeEmployeeBank();
-      closeEmployeeStatus();
       closeOffSchedule();
     });
 
