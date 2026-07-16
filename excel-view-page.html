@@ -3171,6 +3171,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   const WITH_803_AVAILABLE_FOOTAGE_BASE = 20600;
   const INBOUND_FREE_TRACKS = Object.freeze([801,802,804,805,806,807,808,809]);
   const WITH_803_TRACKS = Object.freeze([801,802,803,804,805,806,807,808,809]);
+  const TODAY_ZPBHO_SUMMARY_STORAGE_KEY = "conglobal-am-report-zpbho-summary-v1";
   const TRACK_CAPACITY_FT = Object.freeze({
     801: 1750,
     802: 1750,
@@ -4787,9 +4788,33 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       onHandValue: onHand,
       with803Value: with803,
       onHand: fmtInt(onHand),
-      with803: fmtInt(with803),
-      note: key === "TODAY" ? "21 UPS (No Concerns)" : ""
+      with803: fmtInt(with803)
     };
+  }
+
+  function readTodayAmReportZpbhoSummary() {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(TODAY_ZPBHO_SUMMARY_STORAGE_KEY) || "null");
+      if (parsed && typeof parsed === "object") return parsed;
+    } catch (_) {}
+    try {
+      const report = JSON.parse(localStorage.getItem("settegast-am-report-v1") || "null");
+      const values = report && report.version >= 2 && report.values ? report.values : report;
+      if (values && typeof values === "object") {
+        return { upsCount:values.A18 || "", concerns:values.A21 || "" };
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  function todayAmReportZpbhoNote() {
+    const summary = readTodayAmReportZpbhoSummary();
+    if (!summary) return "";
+    const count = clean(summary.upsCount || "");
+    const concerns = clean(summary.concerns || "");
+    if (!count && !concerns) return "";
+    const upsLabel = count ? count + " UPS" : "UPS";
+    return concerns ? upsLabel + " (" + concerns + ")" : upsLabel;
   }
 
   function normalizeInboundTrainKey(value) {
@@ -4822,8 +4847,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   function inboundSummaryUpsPill(plan, groupDay) {
     const train = String(plan && plan.train || "").toUpperCase();
     if (!train.includes("ZPBHO") && !train.includes("ZG4MQ")) return "";
-    const stock = inboundSummaryStock(groupDay || plan.day);
-    const note = clean((plan && plan.ups) || stock.note || "");
+    const day = String(groupDay || plan.day || "").toUpperCase();
+    const note = clean(day === "TODAY" ? todayAmReportZpbhoNote() : (plan && plan.ups) || "");
     if (!note) return "";
     return '<span class="inbound-summary-ups-pill">' + escapeHtml(note) + '</span>';
   }
@@ -7615,6 +7640,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
 
   setInterval(updateCurrentWorkForecast, 1000);
   window.addEventListener("storage", event => {
+    if (event.key === TODAY_ZPBHO_SUMMARY_STORAGE_KEY) renderInboundSummary();
     if (["conglobal-roster-state-v1", "conglobal-roster-additions-v1", "conglobal-dayforce-punches-v1",
       "conglobal-time-off-calendar-v1", "conglobal-timesheet-notes-v1", "settegast-staff-role-preferences-v1"].includes(event.key)
       && !$("#todayRosterPopup").hidden) renderTodayRoster();

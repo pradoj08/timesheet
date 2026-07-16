@@ -48,16 +48,6 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:1
   text-align:right;
 }
 
-/* INLINE AUTH */
-.nav-auth-form{display:flex;align-items:center;gap:7px}
-.nav-auth-form input[type="text"]{width:110px;background:#0f1117;border:1px solid var(--border2);border-radius:4px;padding:4px 8px;font-family:var(--mono);font-size:11px;color:var(--muted);outline:none;}
-.nav-auth-form input[type="password"]{width:130px;background:#0f1117;border:1px solid var(--border2);border-radius:4px;padding:4px 8px;font-family:var(--mono);font-size:11px;color:var(--text);outline:none;transition:border-color .15s;}
-.nav-auth-form input[type="password"]:focus{border-color:var(--accent)}
-.nav-auth-btn{font-family:var(--mono);font-size:10px;letter-spacing:.5px;text-transform:uppercase;padding:4px 11px;border-radius:4px;cursor:pointer;border:1px solid var(--accent);background:rgba(74,158,255,.12);color:#9ec8ff;white-space:nowrap;transition:all .15s;}
-.nav-auth-btn:hover{background:rgba(74,158,255,.22)}
-.nav-signout-btn{font-family:var(--mono);font-size:10px;letter-spacing:.5px;text-transform:uppercase;padding:4px 11px;border-radius:4px;cursor:pointer;border:1px solid var(--border2);background:transparent;color:var(--muted);white-space:nowrap;transition:all .15s;}
-.nav-signout-btn:hover{border-color:#ef4444;color:#f87171}
-.nav-auth-status{font-family:var(--mono);font-size:11px;color:#6ee7b7;white-space:nowrap;}
 .page{display:none}.page.active{display:block}
 
 body{
@@ -5127,34 +5117,7 @@ body.employee-card-mode #employee-card-list{display:grid!important;}
 }
 </style>
 
-<style id="employee-password-update-and-notes-restore-css">
-/* Employee ID password action: less urgent than missing/attention alerts. */
-#page-employees .missing-field-btn.missing-password{
-  border-color:rgba(148,163,184,.38) !important;
-  background:rgba(148,163,184,.10) !important;
-  color:#cbd5e1 !important;
-  box-shadow:none !important;
-  font-weight:800 !important;
-  letter-spacing:.06em !important;
-}
-#page-employees .missing-field-btn.missing-password::before{
-  content:'ÃƒÂ¢Ã¢â‚¬Â Ã‚Â»' !important;
-  color:#cbd5e1 !important;
-  font-size:12px !important;
-}
-#page-employees .missing-field-btn.missing-password:hover{
-  border-color:rgba(203,213,225,.62) !important;
-  background:rgba(148,163,184,.16) !important;
-  color:#ffffff !important;
-  transform:translateY(-1px);
-}
-#page-employees .employee-card-field.has-missing .employee-password-update-card,
-#page-employees .employee-card-value.employee-password-update-card{
-  border-color:rgba(148,163,184,.38) !important;
-  background:rgba(148,163,184,.10) !important;
-  color:#cbd5e1 !important;
-  box-shadow:none !important;
-}
+<style id="employee-notes-restore-css">
 /* Restore / protect Employee Notes visibility after the note flag patch. */
 #page-employees .employee-notes-toggle{
   display:inline-flex !important;
@@ -5370,7 +5333,6 @@ body.employee-card-mode #employee-card-list{display:grid!important;}
 #page-employees .emp-id,
 #page-employees .phone-cell,
 #page-employees .days-off,
-#page-employees .emp-password-cell,
 #page-employees .emp-table-value,
 #page-employees .employee-card-value{
   font-family:var(--emp-font) !important;
@@ -5495,12 +5457,6 @@ body.employee-card-mode #employee-card-list{display:grid!important;}
 }
 </style>
 
-
-<style id="employee-hide-password-list-css">
-/* Employee ID: passwords are only shown/edited inside the Edit Employee popup. */
-#page-employees #employee-table-main .emp-password-cell,
-#page-employees #employee-table-main .missing-password{display:none!important;}
-</style>
 
 <style id="employee-id-metric-card-bigger-text">
 /* Employee ID metric cards: larger, easier-to-read numbers and labels. */
@@ -6110,7 +6066,6 @@ body.employee-card-mode #employee-card-list{display:grid!important;}
 #page-employees .phone-cell,
 #page-employees .days-off,
 #page-employees .emp-table-value,
-#page-employees .emp-password-cell,
 #page-employees .shift-badge,
 #page-employees .status-dot,
 #page-employees .action-btn,
@@ -6543,27 +6498,13 @@ var ACTIVITY_KEY = 'eit_activity_v1';
 var _toastTimer2;
 
 function getCurrentActivityUser(){
-  try{
-    var raw = sessionStorage.getItem('conglobal_current_user_v1');
-    if(raw){
-      var u = JSON.parse(raw);
-      return (u.display_name || u.id || u.username || eqLoginUsername || 'Unknown User');
-    }
-  }catch(e){}
   return eqLoginUsername || 'Unknown User';
-}
-function currentActivityUserIsAdmin(){
-  try{
-    var raw = sessionStorage.getItem('conglobal_current_user_v1');
-    if(raw){ return String((JSON.parse(raw) || {}).role || '').toLowerCase() === 'admin'; }
-  }catch(e){}
-  return String(eqLoginUsername || '').toLowerCase() === 'admin';
 }
 
 async function saveActivityEntryToSupabase(entry){
   try{
     if(!window.supabaseClient) return;
-    await window.supabaseClient.from('activity_log').insert([{
+    var result = await window.supabaseClient.from('activity_log').insert([{
       id: entry.id,
       category: entry.type,
       message: entry.msg,
@@ -6571,6 +6512,9 @@ async function saveActivityEntryToSupabase(entry){
       created_at: new Date(entry.ts).toISOString(),
       last_edited_by: entry.author || getCurrentActivityUser()
     }]);
+    if(result && result.error){
+      console.warn('Activity Supabase save failed:', result.error.message || result.error);
+    }
   }catch(err){ console.warn('Activity Supabase save failed:', err && (err.message || err)); }
 }
 
@@ -6592,11 +6536,23 @@ function getActivityLog() {
   try { return JSON.parse(localStorage.getItem(ACTIVITY_KEY) || '[]'); } catch(e) { return []; }
 }
 
-function clearActivityLog() {
-  if (!currentActivityUserIsAdmin()) { alert('Only the admin can clear the activity log.'); return; }
+async function clearActivityLog() {
   if (!confirm('Clear all activity history?')) return;
+  if(window.supabaseClient){
+    try{
+      var result = await window.supabaseClient.from('activity_log').delete().neq('id','__never_match__');
+      if(result && result.error){
+        alert('Cloud activity history could not be cleared. Local history was left unchanged.');
+        console.warn('Activity Supabase clear failed:', result.error.message || result.error);
+        return;
+      }
+    }catch(err){
+      alert('Cloud activity history could not be cleared. Local history was left unchanged.');
+      console.warn('Activity Supabase clear failed:', err && (err.message || err));
+      return;
+    }
+  }
   localStorage.removeItem(ACTIVITY_KEY);
-  try{ if(window.supabaseClient) window.supabaseClient.from('activity_log').delete().neq('id','__never_match__'); }catch(e){}
   updateActivityBadge();
   renderActivityFeed();
 }
@@ -6840,49 +6796,52 @@ function stripColumnFromRows(rows, column){
   });
 }
 
-async function supabaseInsertReplacingTable(tableName, rows){
-  if(!supabaseClient || !Array.isArray(rows)) return { error:null };
-  var payload = rows.slice();
-  for(var tries=0; tries<30; tries++){
-    var del = await supabaseClient.from(tableName).delete().neq('__never_match__','__never_match__');
-    // Some schemas reject unknown filter columns. Retry with a known-ish harmless filter per table.
-    if(del.error){
-      if(tableName === 'employees') del = await supabaseClient.from(tableName).delete().neq('employee_id','__never_match__');
-      if(tableName === 'equipment') del = await supabaseClient.from(tableName).delete().neq('unit','__never_match__');
-    }
-    if(del.error){ return { error: del.error }; }
-    if(!payload.length) return { error:null };
-    var ins = await supabaseClient.from(tableName).insert(payload);
-    if(!ins.error) return { error:null };
-    var missing = dbMissingColumn(ins.error);
-    if(!missing) return { error: ins.error };
-    payload = stripColumnFromRows(payload, missing);
-  }
-  return { error: { message:'Supabase insert failed after schema fallback retries.' } };
-}
-
 async function supabaseUpsertWithColumnFallback(tableName, rows, options){
   if(!supabaseClient || !Array.isArray(rows)) return { error:null };
   var payload = rows.slice();
   var opts = options || {};
   for(var tries=0; tries<30; tries++){
-    var res;
-    if(opts.onConflict && payload.length && Object.prototype.hasOwnProperty.call(payload[0], opts.onConflict)){
-      res = await supabaseClient.from(tableName).upsert(payload, { onConflict: opts.onConflict });
-    }else{
-      res = await supabaseInsertReplacingTable(tableName, payload);
+    if(!payload.length) return { error:null };
+    if(!opts.onConflict || !Object.prototype.hasOwnProperty.call(payload[0], opts.onConflict)){
+      return { error:{ message:'Safe Supabase upsert for '+tableName+' requires a stable conflict key.' } };
     }
+    var res = await supabaseClient.from(tableName).upsert(payload, { onConflict: opts.onConflict });
     if(!res.error) return { error:null };
     var missing = dbMissingColumn(res.error);
     if(!missing) return { error: res.error };
+    if(missing === opts.onConflict){
+      return { error:{ message:'Required conflict column "'+opts.onConflict+'" is missing from '+tableName+'. No rows were deleted.' } };
+    }
     console.warn('Supabase schema fallback: removing missing column "'+missing+'" from '+tableName+' payload.');
     payload = stripColumnFromRows(payload, missing);
-    if(missing === opts.onConflict){
-      opts = Object.assign({}, opts);
-      delete opts.onConflict;
-    }
   }
   return { error: { message:'Supabase save failed after schema fallback retries.' } };
+}
+
+async function supabaseReplaceByKeySafely(tableName, rows, key){
+  if(!supabaseClient || !Array.isArray(rows)) return { error:null };
+  if(!rows.length){
+    return { error:{ message:'Refusing to replace '+tableName+' with an empty payload.' } };
+  }
+  if(!key || rows.some(function(row){ return !row || row[key] === undefined || row[key] === null || row[key] === ''; })){
+    return { error:{ message:'Safe replacement for '+tableName+' requires "'+key+'" on every row.' } };
+  }
+
+  var existing = await supabaseClient.from(tableName).select(key);
+  if(existing.error) return { error:existing.error };
+
+  var saved = await supabaseUpsertWithColumnFallback(tableName, rows, { onConflict:key });
+  if(saved.error) return saved;
+
+  var desired = new Set(rows.map(function(row){ return String(row[key]); }));
+  var stale = (existing.data || []).map(function(row){ return row && row[key]; }).filter(function(value){
+    return value !== undefined && value !== null && !desired.has(String(value));
+  });
+  if(stale.length){
+    var removed = await supabaseClient.from(tableName).delete().in(key, stale);
+    if(removed.error) return { error:removed.error };
+  }
+  return { error:null };
 }
 
 async function loadEmployees(){
@@ -7219,11 +7178,6 @@ function render(){
     var phoneCell=(e.phone&&String(e.phone).trim())
       ?'<span class="phone-cell emp-table-value">'+e.phone+'</span>'
       :'<button type="button" class="missing-field-btn missing-phone" data-eid="'+e.id+'" title="Add phone number">Missing Phone</button>';
-    var canSeePw = (typeof canViewEmployeePasswords === 'function') ? canViewEmployeePasswords() : false;
-    var pwText = '';
-    var pwCell = pwText
-      ? '<span class="emp-id emp-table-value emp-password-cell" title="'+(canSeePw ? pwText.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : 'Password hidden')+'">'+(canSeePw ? pwText.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : 'ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢')+'</span>'
-      : '<button type="button" class="missing-field-btn missing-password" data-eid="'+e.id+'" title="Update password">Update</button>';
     var emailCell=(e.email&&String(e.email).trim())
       ?'<span class="phone-cell emp-table-value">'+String(e.email).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</span>'
       :'<button type="button" class="missing-field-btn missing-email" data-eid="'+e.id+'" title="Add email">Missing Email</button>';
@@ -7248,33 +7202,6 @@ function openModal(id){
   editId=id||null;
   var title=document.getElementById('modal-title');
   var delBtn=document.getElementById('del-btn');
-  var pwInput=document.getElementById('f-password');
-  var canSeePw = (typeof canViewEmployeePasswords === 'function') ? canViewEmployeePasswords() : false;
-
-  function setPasswordAccess(value){
-    var wrap = pwInput ? pwInput.closest('.form-group') : null;
-    var existing = wrap ? wrap.querySelector('.password-locked-note') : null;
-    if(existing) existing.remove();
-    if(!pwInput) return;
-    pwInput.type = canSeePw ? 'text' : 'password';
-    pwInput.classList.toggle('password-locked', !canSeePw);
-    pwInput.readOnly = !canSeePw;
-    pwInput.dataset.lockedPassword = canSeePw ? '' : String(value || '');
-    if(!canSeePw){
-      pwInput.value = value ? 'ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢' : '';
-      pwInput.placeholder = 'Password hidden';
-      if(wrap){
-        var note=document.createElement('div');
-        note.className='password-locked-note';
-        note.textContent='Password hidden ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â admin permission required.';
-        wrap.appendChild(note);
-      }
-    }else{
-      pwInput.value = value || '';
-      pwInput.placeholder = 'Set password';
-    }
-  }
-
   if(id){
     var e=employees.find(function(x){return x.id===id;});
     if(!e) return;
@@ -7283,7 +7210,6 @@ function openModal(id){
     document.getElementById('f-last').value=e.last;
     document.getElementById('f-empid').value=e.empId;
     document.getElementById('f-upid').value=e.upId;
-    setPasswordAccess('');
     document.getElementById('f-email').value=e.email || '';
     document.getElementById('f-shift').value=e.shift;
     document.getElementById('f-phone').value=e.phone;
@@ -7292,24 +7218,18 @@ function openModal(id){
   } else {
     title.textContent='Add Employee'; delBtn.style.display='none';
     ['f-first','f-last','f-empid','f-upid','f-email','f-phone','f-days'].forEach(function(i){document.getElementById(i).value='';});
-    setPasswordAccess('');
     document.getElementById('f-shift').value='Day';
     var mtBox=document.getElementById('f-mobile-token'); if(mtBox) mtBox.checked=false;
   }
   document.getElementById('modal-bg').classList.add('open');
 }
-function closeModal(){var n=document.querySelector('#modal-bg .password-locked-note'); if(n)n.remove(); var p=document.getElementById('f-password'); if(p){p.readOnly=false;p.classList.remove('password-locked');p.dataset.lockedPassword='';} document.getElementById('modal-bg').classList.remove('open');editId=null;}
+function closeModal(){document.getElementById('modal-bg').classList.remove('open');editId=null;}
 
 function saveEmp(){
   var first=document.getElementById('f-first').value.trim();
   var last=document.getElementById('f-last').value.trim();
   if(!first||!last){alert('First and last name required.');return;}
-  var pwInput=document.getElementById('f-password');
-  var canSeePw = (typeof canViewEmployeePasswords === 'function') ? canViewEmployeePasswords() : false;
   var currentEmp = editId ? employees.find(function(x){return x.id===editId;}) : null;
-  var safePassword = canSeePw
-    ? (pwInput ? pwInput.value.trim() : '')
-    : '';
   var data={first:first,last:last,empId:document.getElementById('f-empid').value.trim(),upId:document.getElementById('f-upid').value.trim(),email:document.getElementById('f-email').value.trim(),shift:document.getElementById('f-shift').value,phone:formatEmployeePhone(document.getElementById('f-phone').value.trim()),daysOff:document.getElementById('f-days').value.trim(),status:(currentEmp && currentEmp.status) ? currentEmp.status : 'active',mobileToken:!!(document.getElementById('f-mobile-token')&&document.getElementById('f-mobile-token').checked)};
   if(editId){
     var idx=employees.findIndex(function(x){return x.id===editId;});
@@ -7338,7 +7258,6 @@ function exportCSV(){
 
 // ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ REVERT ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
 function openRevertModal(){
-  if(!currentActivityUserIsAdmin()){ alert('Only admin can use Revert.'); return; }
   var hist=JSON.parse(localStorage.getItem(HISTORY_KEY)||'[]');
   var list=document.getElementById('revert-list');
   if(!hist.length){list.innerHTML='<p style="font-family:var(--mono);font-size:12px;color:var(--muted);text-align:center;padding:24px;">No history yet.</p>';}
@@ -7354,7 +7273,6 @@ function openRevertModal(){
   document.getElementById('revert-modal-bg').classList.add('open');
 }
 function restoreSnapshot(i){
-  if(!currentActivityUserIsAdmin()){ alert('Only admin can restore snapshots.'); return; }
   var hist=JSON.parse(localStorage.getItem(HISTORY_KEY)||'[]');
   if(!hist[i]) return;
   if(!confirm('Restore to this saved state?')) return;
@@ -7861,13 +7779,13 @@ async function applyImportedEquipmentListOnce(){
           status_changed_day: null
         };
       });
-      var res = await supabaseInsertReplacingTable('equipment', payload);
+      var res = await supabaseReplaceByKeySafely('equipment', payload, 'id');
       if(res && res.error){
-        console.warn('Equipment import saved locally but Supabase replace failed:', res.error.message || res.error);
+        console.warn('Equipment import saved locally but safe Supabase replacement failed:', res.error.message || res.error);
       }
     }
   }catch(err){
-    console.warn('Equipment import saved locally but Supabase replace failed:', err.message || err);
+    console.warn('Equipment import saved locally but safe Supabase replacement failed:', err.message || err);
   }
   try{ localStorage.setItem('eq_import_version', EQ_IMPORT_VERSION); }catch(e){}
 }

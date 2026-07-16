@@ -2321,6 +2321,7 @@
     const employeeDayStatusStorageKey = "conglobal-time-off-day-status-v1";
     const employeeDayAdditionsStorageKey = "conglobal-time-off-day-additions-v1";
     const yardCrewStorageKey = "conglobal-three-day-yard-crew-v1";
+    const threeDayManpowerSummaryStorageKey = "conglobal-three-day-manpower-summary-v1";
     const yardCrewRoleLabels = {
       hostler: "Hostler",
       groundman: "Groundman",
@@ -3563,6 +3564,20 @@
 
       list.innerHTML = weeks.join("");
       yardCrewTodayStaffing = staffDays.find((staffing) => isoDate(staffing.date) === isoDate(today)) || null;
+      if (yardCrewTodayStaffing) {
+        const dayEmployees = yardCrewTodayStaffing.shifts.first || [];
+        const nightEmployees = yardCrewTodayStaffing.shifts.second || [];
+        const presentCount = employees => employees.filter(isCountedStaffEmployee).length;
+        const dayScheduled = dayEmployees.length;
+        const nightScheduled = nightEmployees.length;
+        localStorage.setItem(threeDayManpowerSummaryStorageKey, JSON.stringify({
+          version: 1,
+          date: isoDate(today),
+          updatedAt: Date.now(),
+          day: { scheduled: dayScheduled, present: presentCount(dayEmployees) },
+          night: { scheduled: nightScheduled, present: nightScheduled }
+        }));
+      }
       renderYardCrewPanel(yardCrewTodayStaffing);
     }
 
