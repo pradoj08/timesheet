@@ -11,6 +11,7 @@ const pages = {
   timeMd: "timesheet-md-page.html",
   timeOff: "time-off-page.html",
   audits: "audits-page.html",
+  checklist: "checklist-page.html",
 };
 
 function stripPageSwitcher(html) {

@@ -758,136 +758,6 @@ tr.eq-row-needs-notes td:first-child {
 .equip-del-btn:hover{color:var(--danger)}
 .down-count-badge{font-size:10px;padding:1px 7px;border-radius:10px;background:rgba(239,68,68,.18);color:#fca5a5;border:1px solid rgba(239,68,68,.3)}
 
-.eq-auth-panel{
-  margin:10px 24px 0;
-  padding:10px 12px;
-  border:1px solid var(--border);
-  border-radius:8px;
-  background:rgba(30,35,51,.72);
-  display:flex;
-  align-items:center;
-  gap:8px;
-  flex-wrap:wrap;
-}
-.eq-auth-panel input{
-  width:180px;
-  max-width:100%;
-  background:var(--bg);
-  border:1px solid var(--border2);
-  border-radius:5px;
-  padding:7px 10px;
-  font-family:var(--mono);
-  font-size:12px;
-  color:var(--text);
-  outline:none;
-}
-.eq-auth-panel input[readonly]{
-  opacity:.82;
-  cursor:default;
-}
-.eq-auth-panel input:focus{border-color:var(--accent)}
-.eq-auth-btn{
-  font-family:var(--mono);
-  font-size:11px;
-  letter-spacing:.5px;
-  text-transform:uppercase;
-  padding:6px 12px;
-  border-radius:5px;
-  cursor:pointer;
-  border:1px solid var(--accent);
-  background:rgba(74,158,255,.12);
-  color:#9ec8ff;
-}
-.eq-auth-secondary{
-  border-color:var(--border2);
-  background:transparent;
-  color:var(--muted);
-}
-.eq-auth-status{
-  font-family:var(--mono);
-  font-size:11px;
-  color:var(--muted);
-  margin-left:auto;
-  white-space:nowrap;
-}
-.eq-lock-overlay{
-  margin:16px 24px 0;
-  padding:18px;
-  border:1px solid var(--border);
-  border-radius:8px;
-  background:rgba(30,35,51,.55);
-  font-family:var(--mono);
-  color:var(--muted);
-}
-
-
-.eq-login-overlay{
-  position:fixed;
-  inset:0;
-  background:rgba(5,8,15,.88);
-  backdrop-filter:blur(6px);
-  z-index:99999;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-}
-.eq-login-modal{
-  width:420px;
-  max-width:92%;
-  background:#111827;
-  border:1px solid rgba(74,158,255,.35);
-  border-radius:16px;
-  padding:28px;
-  box-shadow:0 25px 80px rgba(0,0,0,.55);
-}
-.eq-login-title{
-  font-size:24px;
-  font-weight:700;
-  margin-bottom:6px;
-  color:#fff;
-}
-.eq-login-sub{
-  font-size:13px;
-  color:#9ca3af;
-  margin-bottom:20px;
-}
-.eq-login-user{
-  width:100%;
-  background:#0b1220;
-  border:1px solid rgba(255,255,255,.08);
-  border-radius:10px;
-  padding:12px;
-  color:#d1d5db;
-  margin-bottom:12px;
-  font-family:var(--mono);
-}
-.eq-login-pass{
-  width:100%;
-  background:#0b1220;
-  border:1px solid rgba(255,255,255,.08);
-  border-radius:10px;
-  padding:12px;
-  color:#fff;
-  margin-bottom:16px;
-  font-family:var(--mono);
-}
-.eq-login-btn{
-  width:100%;
-  border:none;
-  border-radius:10px;
-  padding:12px;
-  background:#4a9eff;
-  color:#fff;
-  font-weight:700;
-  cursor:pointer;
-}
-.eq-login-error{
-  margin-top:10px;
-  color:#fca5a5;
-  font-size:12px;
-  display:none;
-}
-
 /* AUDITS & TRAINING PAGE */
 .audits-wrap{padding:20px 24px 40px;display:flex;flex-direction:column;gap:28px}
 .audit-section-header{font-family:var(--mono);font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);padding:0 0 10px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;margin-bottom:16px}
@@ -937,15 +807,6 @@ tr.eq-row-needs-notes td:first-child {
 .add-audit-btn:hover{background:rgba(74,158,255,.22)}
 ::-webkit-scrollbar-track{background:var(--bg)}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
-
-/* Login overlay is visible until the correct password is entered. */
-#eq-login-overlay{display:flex;}
-@media (max-width: 640px){
-  .app-auth-bar{margin:8px 12px 0; gap:6px}
-  .app-auth-bar input{width:100%; flex:1 1 100%}
-  .app-auth-bar .eq-auth-status{width:100%; margin-left:0}
-}
-
 
 @media (max-width: 640px){
   #callout-banner,#equip-banner{padding:6px 12px 0;gap:8px}
@@ -1143,20 +1004,6 @@ textarea{
 }
 
 /* ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ AUTH BAR MOBILE ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ */
-#auth-bar { display: flex; }
-@media (max-width: 640px) {
-  #auth-bar { padding: 10px 12px; gap: 8px; }
-  #auth-signin-form { flex-direction: column; align-items: stretch; gap: 8px; }
-  #auth-signin-form input { width: 100% !important; max-width: 100% !important; min-width: 0 !important; font-size: 16px !important; padding: 10px 12px !important; }
-  #auth-signin-form .nav-auth-btn { width: 100%; padding: 10px; font-size: 13px; letter-spacing: 1px; }
-  #auth-signed-in { width: 100%; }
-}
-
-/* forced login overlay visibility for preview */
-#eq-login-overlay.eq-login-overlay{display:flex;z-index:2147483647;}
-#eq-login-overlay[style*="none"]{display:none !important;}
-
-
 /* EQUIPMENT TABLE READABILITY OVERHAUL */
 #page-equipment .equip-page-wrap{
   padding:18px 18px 42px;
@@ -3390,61 +3237,6 @@ try {
   supabaseClient = null;
 }
 
-window.APP_LOGIN_PASSWORD = "admin";
-
-function isAppUnlocked(){
-  try{
-    return sessionStorage.getItem('eq_app_logged_in') === 'true';
-  }catch(e){
-    return false;
-  }
-}
-
-function unlockApplication(){
-  try{ sessionStorage.setItem('eq_app_logged_in','true'); }catch(e){}
-  var overlay=document.getElementById('eq-login-overlay');
-  if(overlay) overlay.style.display='none';
-}
-
-function showLoginOverlay(){
-  var overlay=document.getElementById('eq-login-overlay');
-  if(overlay) overlay.style.display='flex';
-  setTimeout(function(){
-    var input=document.getElementById('eq-popup-password');
-    if(input) input.focus();
-  },50);
-}
-
-function handlePopupLogin(){
-  var input=document.getElementById('eq-popup-password');
-  var error=document.getElementById('eq-login-error');
-
-  if(!input) return;
-
-  if(input.value===window.APP_LOGIN_PASSWORD){
-    if(error) error.style.display='none';
-    unlockApplication();
-  }else{
-    if(error) error.style.display='block';
-    input.value='';
-    input.focus();
-  }
-}
-
-window.addEventListener('DOMContentLoaded',function(){
-  if(isAppUnlocked()) unlockApplication();
-  else showLoginOverlay();
-
-  var input=document.getElementById('eq-popup-password');
-  if(input){
-    input.addEventListener('keydown',function(e){
-      if(e.key==='Enter'){
-        handlePopupLogin();
-      }
-    });
-  }
-});
-
 setInterval(function(){
   if(document.hidden) return;
   var equipPage = document.getElementById('page-equipment');
@@ -5156,7 +4948,7 @@ function clearEqNotesInline(btn){
 </style>
 
 
-<style id="employee-password-email-columns">
+<style id="employee-email-columns">
 #page-employees .table-wrap table{table-layout:fixed;min-width:1180px;}
 #page-employees .table-wrap th,#page-employees .table-wrap td{text-align:center;vertical-align:middle;}
 #page-employees .table-wrap th:nth-child(1),#page-employees .table-wrap td:nth-child(1){width:16%;text-align:left;}
@@ -5168,11 +4960,10 @@ function clearEqNotesInline(btn){
 #page-employees .table-wrap th:nth-child(7),#page-employees .table-wrap td:nth-child(7){width:10%;}
 #page-employees .table-wrap th:nth-child(8),#page-employees .table-wrap td:nth-child(8){width:10%;}
 #page-employees .table-wrap th:nth-child(9),#page-employees .table-wrap td:nth-child(9){width:8%;}
-#page-employees .emp-password-cell{letter-spacing:.14em;font-weight:700;color:#c7d2fe;}
 #page-employees .table-wrap{overflow-x:auto;}
 </style>
 
-<style id="employee-id-white-bold-and-password-lock">
+<style id="employee-id-white-bold">
 /* Employee ID page: make roster text high-contrast and bold. */
 #page-employees,
 #page-employees .header-title,
@@ -5197,34 +4988,11 @@ function clearEqNotesInline(btn){
   color:#ffffff !important;
   font-weight:700 !important;
 }
-#page-employees .emp-password-cell{
-  color:#ffffff !important;
-  font-weight:800 !important;
-  letter-spacing:.16em;
-}
 #page-employees th{
   color:#dbeafe !important;
 }
 #page-employees .missing-field-btn{
   border-color:rgba(255,255,255,.35) !important;
-}
-#modal-bg #f-password.password-locked{
-  color:#ffffff !important;
-  font-weight:800 !important;
-  letter-spacing:.16em;
-  -webkit-text-security:disc;
-  opacity:.86;
-  border-color:rgba(148,163,184,.35) !important;
-  background:rgba(15,17,23,.75) !important;
-  cursor:not-allowed;
-}
-#modal-bg .password-locked-note{
-  font-family:var(--mono);
-  font-size:10px;
-  color:#fbbf24 !important;
-  font-weight:700;
-  margin-top:5px;
-  letter-spacing:.03em;
 }
 </style>
 
@@ -6908,6 +6676,10 @@ function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(
 
 function normalizeEmployeeRecord(e){
   e = e || {};
+  var clean = Object.assign({}, e);
+  delete clean.password;
+  delete clean.userPassword;
+  delete clean.user_password;
   var first = String(e.first || '').trim();
   var last  = String(e.last || '').trim();
   var full = (first + ' ' + last).replace(/\s+/g,' ').trim().toLowerCase();
@@ -6943,13 +6715,12 @@ function normalizeEmployeeRecord(e){
     'wanda myles':['Myles','Wanza']
   };
   if(fixes[full]){ first = fixes[full][0]; last = fixes[full][1]; }
-  return Object.assign({}, e, {
+  return Object.assign(clean, {
     id: e.id || e.empId || e.employee_id || uid(),
     first: first,
     last: last,
     empId: String(e.empId || '').trim(),
     upId: String(e.upId || '').trim(),
-    password: String(e.password || e.userPassword || '').trim(),
     email: String(e.email || '').trim(),
     shift: e.shift || 'Day',
     phone: String(e.phone || '').trim(),
@@ -6979,6 +6750,44 @@ function load(){
 }
 
 var EMP_CACHE_KEY = 'eit_emp_cache_v1';
+
+function purgeStoredEmployeePasswords(){
+  function cleanEmployeeList(list){
+    return Array.isArray(list) ? list.map(normalizeEmployeeRecord) : list;
+  }
+  try{
+    [EMP_CACHE_KEY, STORAGE_KEY].forEach(function(key){
+      var raw = localStorage.getItem(key);
+      if(!raw) return;
+      var parsed = JSON.parse(raw);
+      if(Array.isArray(parsed)) localStorage.setItem(key, JSON.stringify(cleanEmployeeList(parsed)));
+    });
+  }catch(e){}
+  try{
+    var history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+    if(Array.isArray(history)){
+      history = history.map(function(entry){
+        var copy = Object.assign({}, entry);
+        try{ copy.data = JSON.stringify(cleanEmployeeList(JSON.parse(copy.data || '[]'))); }catch(e){}
+        return copy;
+      });
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+    }
+  }catch(e){}
+  try{
+    var auditKey = 'eit_employee_audit_log_v1';
+    var auditRows = JSON.parse(localStorage.getItem(auditKey) || '[]');
+    if(Array.isArray(auditRows)){
+      auditRows = auditRows.filter(function(row){
+        var field = String((row && (row.field || row.field_name || row.fieldLabel || row.field_label)) || '').toLowerCase();
+        return field.indexOf('password') === -1;
+      });
+      localStorage.setItem(auditKey, JSON.stringify(auditRows));
+    }
+  }catch(e){}
+}
+
+purgeStoredEmployeePasswords();
 
 
 function rosterLooksBroken(){
@@ -7077,11 +6886,6 @@ async function supabaseUpsertWithColumnFallback(tableName, rows, options){
 }
 
 async function loadEmployees(){
-  if(!eqLoggedIn){
-    employees = [];
-    return;
-  }
-
   // Keep the last successful local snapshot available immediately.
   if(!Array.isArray(employees) || !employees.length){
     loadEmployeesFromCache();
@@ -7098,7 +6902,7 @@ async function loadEmployees(){
 
     const { data, error } = await supabaseClient
       .from('employees')
-      .select('*')
+      .select('id,employee_id,first_name,last_name,up_id,email,shift,phone,days_off,status,notes,notes_edited_at,notes_edited_by')
       .order('last_name', { ascending: true })
       .order('first_name', { ascending: true });
 
@@ -7115,7 +6919,6 @@ async function loadEmployees(){
         last: row.last_name || '',
         empId: row.employee_id || '',
         upId: row.up_id || '',
-        password: row.password || '',
         email: row.email || '',
         shift: row.shift || 'Day',
         phone: row.phone || '',
@@ -7141,8 +6944,6 @@ async function loadEmployees(){
 }
 
 async function saveEmployees(){
-  if(!eqLoggedIn) return;
-
   saveEmployeesToCache();
 
   try{
@@ -7158,7 +6959,6 @@ async function saveEmployees(){
         last_name: e.last,
         employee_id: e.empId,
         up_id: e.upId,
-        password: e.password || '',
         email: e.email || '',
         shift: e.shift,
         phone: e.phone,
@@ -7186,6 +6986,7 @@ async function saveEmployees(){
 
 function pushHistory(){
   try{
+    normalizeEmployeeRoster();
     var hist=JSON.parse(localStorage.getItem(HISTORY_KEY))||[];
     hist.unshift({ts:Date.now(),data:JSON.stringify(employees)});
     if(hist.length>10) hist=hist.slice(0,10);
@@ -7211,7 +7012,7 @@ function save(){
 }
 
 function ensureEmployeeRoster(){
-  if(eqLoggedIn && (!Array.isArray(employees) || !employees.length || rosterLooksBroken())){
+  if(!Array.isArray(employees) || !employees.length || rosterLooksBroken()){
     restoreActualEmployeeRoster('employee roster missing or invalid');
   }
 }
@@ -7399,30 +7200,12 @@ function toggleNeedsAttention(){
 }
 
 
-function canViewEmployeePasswords(){
-  try{
-    var raw = sessionStorage.getItem('conglobal_current_user_v1');
-    var u = raw ? JSON.parse(raw) : null;
-    if(!u) return String(window.eqLoginUsername || '').toLowerCase() === 'admin';
-    if(String(u.role || '').toLowerCase() === 'admin') return true;
-    return !!(u.permissions && u.permissions.employees && u.permissions.employees.passwords);
-  }catch(e){ return false; }
-}
-
 function render(){
   normalizeEmployeeRoster();
   var list=getFiltered();
   var tbody=document.getElementById('emp-table');
   var noData=document.getElementById('no-data');
-  if(!eqLoggedIn){
-    tbody.innerHTML='';
-    if(noData){
-      noData.style.display='block';
-      noData.textContent='Sign in to unlock the employee roster.';
-    }
-    updateStats(); updateBanner(); updateTabCounts(); updateEmployeeNeedsAttentionButton();
-    return;
-  }
+  if(!tbody) return;
   if(noData) noData.textContent='No employees found.';
   if(!list.length){tbody.innerHTML='';noData.style.display='block';updateStats(); updateBanner(); updateTabCounts(); updateEmployeeNeedsAttentionButton();return;}
   noData.style.display='none';
@@ -7437,7 +7220,7 @@ function render(){
       ?'<span class="phone-cell emp-table-value">'+e.phone+'</span>'
       :'<button type="button" class="missing-field-btn missing-phone" data-eid="'+e.id+'" title="Add phone number">Missing Phone</button>';
     var canSeePw = (typeof canViewEmployeePasswords === 'function') ? canViewEmployeePasswords() : false;
-    var pwText = e.password && String(e.password).trim() ? String(e.password).trim() : '';
+    var pwText = '';
     var pwCell = pwText
       ? '<span class="emp-id emp-table-value emp-password-cell" title="'+(canSeePw ? pwText.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : 'Password hidden')+'">'+(canSeePw ? pwText.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : 'ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢')+'</span>'
       : '<button type="button" class="missing-field-btn missing-password" data-eid="'+e.id+'" title="Update password">Update</button>';
@@ -7500,7 +7283,7 @@ function openModal(id){
     document.getElementById('f-last').value=e.last;
     document.getElementById('f-empid').value=e.empId;
     document.getElementById('f-upid').value=e.upId;
-    setPasswordAccess(e.password || '');
+    setPasswordAccess('');
     document.getElementById('f-email').value=e.email || '';
     document.getElementById('f-shift').value=e.shift;
     document.getElementById('f-phone').value=e.phone;
@@ -7526,8 +7309,8 @@ function saveEmp(){
   var currentEmp = editId ? employees.find(function(x){return x.id===editId;}) : null;
   var safePassword = canSeePw
     ? (pwInput ? pwInput.value.trim() : '')
-    : (currentEmp ? (currentEmp.password || '') : '');
-  var data={first:first,last:last,empId:document.getElementById('f-empid').value.trim(),upId:document.getElementById('f-upid').value.trim(),password:safePassword,email:document.getElementById('f-email').value.trim(),shift:document.getElementById('f-shift').value,phone:formatEmployeePhone(document.getElementById('f-phone').value.trim()),daysOff:document.getElementById('f-days').value.trim(),status:(currentEmp && currentEmp.status) ? currentEmp.status : 'active',mobileToken:!!(document.getElementById('f-mobile-token')&&document.getElementById('f-mobile-token').checked)};
+    : '';
+  var data={first:first,last:last,empId:document.getElementById('f-empid').value.trim(),upId:document.getElementById('f-upid').value.trim(),email:document.getElementById('f-email').value.trim(),shift:document.getElementById('f-shift').value,phone:formatEmployeePhone(document.getElementById('f-phone').value.trim()),daysOff:document.getElementById('f-days').value.trim(),status:(currentEmp && currentEmp.status) ? currentEmp.status : 'active',mobileToken:!!(document.getElementById('f-mobile-token')&&document.getElementById('f-mobile-token').checked)};
   if(editId){
     var idx=employees.findIndex(function(x){return x.id===editId;});
     if(idx>-1){ employees[idx]=Object.assign({},employees[idx],data); logActivity('employee','<strong>'+data.first+' '+data.last+'</strong> updated','Shift: '+data.shift+' Ãƒâ€šÃ‚Â· Emp ID: '+(data.empId||'ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â')); }
@@ -7548,8 +7331,8 @@ function deleteEmp(){
 }
 
 function exportCSV(){
-  var rows=employees.map(function(e){return[e.first,e.last,e.empId,e.upId,e.password,e.email,e.shift,e.daysOff,e.phone,e.status,e.notes].map(function(v){return'"'+(v||'')+'"';}).join(',');});
-  var csv=['First,Last,Conglobal ID,UP ID,Password,Email,Shift,Days Off,Phone,Status,Notes'].concat(rows).join('\n');
+  var rows=employees.map(function(e){return[e.first,e.last,e.empId,e.upId,e.email,e.shift,e.daysOff,e.phone,e.status,e.notes].map(function(v){return'"'+(v||'')+'"';}).join(',');});
+  var csv=['First,Last,Conglobal ID,UP ID,Email,Shift,Days Off,Phone,Status,Notes'].concat(rows).join('\n');
   var a=document.createElement('a');a.href='data:text/csv,'+encodeURIComponent(csv);a.download='employees.csv';a.click();
 }
 
@@ -7643,8 +7426,8 @@ var equipmentCardView = (function(){
   try{ return localStorage.getItem('equipment_card_view') === 'true'; }
   catch(err){ return false; }
 })();
-var eqLoggedIn = sessionStorage.getItem('eq_logged_in') === '1';
-var eqLoginUsername = sessionStorage.getItem('eq_login_username') || 'admin';
+var eqLoginUsername = 'CONGLOBAL';
+var legacyEquipmentModulesEnabled = false;
 var calloutQueue = [];
 var calloutSyncBusy = false;
 
@@ -7709,34 +7492,6 @@ async function undoEquipmentChange(){
   logActivity('equipment','Undo applied on <strong>Equipment Status</strong>', snap.reason || 'Previous equipment state restored');
 }
 
-function syncEqLoginUI(){
-  var signinForm = document.getElementById('auth-signin-form');
-  var signedIn   = document.getElementById('auth-signed-in');
-  var authBar    = document.getElementById('auth-bar');
-  var st         = document.getElementById('eq-auth-status');
-
-  // Keep the top command bar width stable during login/refresh.
-  // Do not remove the signed-in chip from layout; hide it visually until authenticated.
-  document.body.classList.toggle('app-authenticated', !!eqLoggedIn);
-  if(signedIn){
-    signedIn.style.display = 'flex';
-    signedIn.style.visibility = eqLoggedIn ? 'visible' : 'hidden';
-    signedIn.style.pointerEvents = eqLoggedIn ? 'auto' : 'none';
-  }
-
-  if(eqLoggedIn){
-    if(signinForm) signinForm.style.display = 'none';
-    if(st)         st.textContent = '\u2713 Signed in as ' + eqLoginUsername;
-    // Hide auth bar after sign-in to reclaim space
-    if(authBar)    authBar.style.display = 'none';
-  } else {
-    if(signinForm) signinForm.style.display = 'flex';
-    if(authBar)    authBar.style.display    = 'flex';
-  }
-}
-
-
-
 function stopEquipmentRealtimeSync(){
   try{
     if(equipmentRealtimeChannel && supabaseClient && typeof supabaseClient.removeChannel === 'function'){
@@ -7752,7 +7507,7 @@ function stopEquipmentRealtimeSync(){
 }
 
 async function startEquipmentRealtimeSync(){
-  if(!eqLoggedIn) return;
+  if(!legacyEquipmentModulesEnabled) return;
   if(equipmentRealtimeChannel || equipmentPollTimer) return;
 
   try{
@@ -7761,7 +7516,7 @@ async function startEquipmentRealtimeSync(){
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'equipment' },
         async function(){
-          if(!eqLoggedIn || equipmentSyncBusy || equipmentEditCoolingDown()) return;
+          if(!legacyEquipmentModulesEnabled || equipmentSyncBusy || equipmentEditCoolingDown()) return;
           equipmentSyncBusy = true;
           try{
             await loadEquipment();
@@ -7781,7 +7536,7 @@ async function startEquipmentRealtimeSync(){
 
   // Fallback for environments where realtime is not available
   equipmentPollTimer = setInterval(async function(){
-    if(!eqLoggedIn || equipmentSyncBusy || equipmentEditCoolingDown()) return;
+    if(!legacyEquipmentModulesEnabled || equipmentSyncBusy || equipmentEditCoolingDown()) return;
     if(typeof navigator !== 'undefined' && !navigator.onLine) return; // skip when offline
     equipmentSyncBusy = true;
     try{
@@ -7797,61 +7552,6 @@ async function startEquipmentRealtimeSync(){
     }
   }, 15000);
 }
-
-async function signInEq(){
-  var pw=(document.getElementById('eq-password')||{}).value || '';
-  var u=(document.getElementById('eq-username')||{}).value || 'CONGLOBAL';
-
-  if(!pw){
-    alert('Enter the password.');
-    return;
-  }
-
-  if(pw !== window.APP_LOGIN_PASSWORD){
-    alert('Incorrect password.');
-    var pwEl=document.getElementById('eq-password');
-    if(pwEl) pwEl.value='';
-    return;
-  }
-
-  eqLoginUsername = u.trim() || 'CONGLOBAL';
-  eqLoggedIn = true;
-  sessionStorage.setItem('eq_logged_in','1');
-  sessionStorage.setItem('eq_login_username', eqLoginUsername);
-
-  var pwEl=document.getElementById('eq-password');
-  if(pwEl) pwEl.value='';
-
-  syncEqLoginUI();
-  await applyImportedEquipmentListOnce();
-  await loadEmployees();
-  await loadEquipment();
-  await startEquipmentRealtimeSync();
-  render();
-  renderEquipment();
-  updateEquipmentStatusMeta();
-  refreshEquipmentAgingDisplay();
-}
-
-async function signOutEq(){
-  try{
-    var pendingIds = Object.keys(notesSaveTimers || {});
-    for(var i=0;i<pendingIds.length;i++){
-      try{ await flushEqNotesSave(pendingIds[i]); }catch(err){}
-    }
-  }catch(err){}
-  eqLoggedIn = false;
-  sessionStorage.removeItem('eq_logged_in');
-  stopEquipmentRealtimeSync();
-  syncEqLoginUI();
-  employees = [];
-  equipment = [];
-  render();
-  renderEquipment();
-}
-
-var eqLoginUsername = sessionStorage.getItem('eq_login_username') || 'CONGLOBAL';
-
 
 function canonicalEquipmentType(type){
   var raw = String(type || '').trim();
@@ -8006,7 +7706,7 @@ async function loadEquipment(){
 }
 
 async function migrateEquipmentIds(remoteRows){
-  if(!eqLoggedIn || typeof supabaseClient === 'undefined' || !Array.isArray(remoteRows) || !remoteRows.length) return;
+  if(!legacyEquipmentModulesEnabled || typeof supabaseClient === 'undefined' || !Array.isArray(remoteRows) || !remoteRows.length) return;
   var normalized = remoteRows.map(function(row){
     var copy = normalizeEquipmentRow(row);
     delete copy.__remote_id;
@@ -8822,18 +8522,12 @@ function toggleHostlerChargeReviewFilter(){
 window.toggleHostlerChargeReviewFilter = toggleHostlerChargeReviewFilter;
 
 function renderEquipment(){
+  if(!legacyEquipmentModulesEnabled) return;
   equipment = dedupeEquipmentRows((equipment || []).map(normalizeEquipmentRow));
   renderEquipBanner();
   updateEquipmentStatusMeta();
   var container = document.getElementById('equip-content');
   if(!container) return;
-  syncEqLoginUI();
-  if(!eqLoggedIn){
-    updateEquipmentFilterButton();
-    updateEquipmentViewButton();
-    container.innerHTML = '<div class="eq-lock-overlay">Sign in to unlock equipment editing.</div>';
-    return;
-  }
   var html = '<div class="equip-page-wrap">';
   var renderedAnyEquipmentSection = false;
   var showOutOnly = !!equipmentShowOutOfServiceOnly;
@@ -9611,7 +9305,7 @@ function loadRosterList(type){
 }
 
 async function syncRosterFromSupabase(type){
-  if(!eqLoggedIn || typeof supabaseClient === 'undefined') return null;
+  if(typeof supabaseClient === 'undefined' || !supabaseClient) return null;
   var table = ROSTER_SUPABASE_TABLES[normalizeRosterType(type)];
   try{
     var res = await supabaseClient.from(table).select('*').eq('id', normalizeRosterType(type)).maybeSingle();
@@ -9634,7 +9328,7 @@ async function saveRosterList(type, data, fromUndo){
   saveRosterCacheOnly(type, data);
   rosterLastUpdated[type] = data.updated_at;
 
-  if(eqLoggedIn && typeof supabaseClient !== 'undefined'){
+  if(typeof supabaseClient !== 'undefined' && supabaseClient){
     var table = ROSTER_SUPABASE_TABLES[type];
     try{
       var res = await supabaseClient.from(table).upsert({
@@ -10039,15 +9733,10 @@ async function initAuditsPage(){
 }
 
 load();
-syncEqLoginUI();
 updateActivityBadge();
 initGlobalScale();
 loadEmployeesFromCache();
-if(eqLoggedIn){
-  loadEmployees().then(function(){ initAuditsPage(); }).catch(function(){ initAuditsPage(); });
-} else {
-  initAuditsPage();
-}
+loadEmployees().then(function(){ initAuditsPage(); }).catch(function(){ initAuditsPage(); });
 
 document.addEventListener('input',function(e){
   if(!e.target.classList.contains('tablet-input')) return;
@@ -10070,53 +9759,6 @@ document.addEventListener('input',function(e){
   }
 });
 
-
-window.APP_LOGIN_PASSWORD = "admin";
-
-function isAppUnlocked(){
-  try{
-    return sessionStorage.getItem('eq_app_logged_in') === 'true';
-  }catch(e){
-    return false;
-  }
-}
-
-function unlockApplication(){
-  sessionStorage.setItem('eq_app_logged_in','true');
-  var overlay=document.getElementById('eq-login-overlay');
-  if(overlay) overlay.style.display='none';
-}
-
-function handlePopupLogin(){
-  var input=document.getElementById('eq-popup-password');
-  var error=document.getElementById('eq-login-error');
-
-  if(!input) return;
-
-  if(input.value===window.APP_LOGIN_PASSWORD){
-    unlockApplication();
-  }else{
-    if(error) error.style.display='block';
-    input.value='';
-  }
-}
-
-window.addEventListener('load',function(){
-  var loggedIn=sessionStorage.getItem('eq_app_logged_in');
-
-  if(loggedIn==='true'){
-    unlockApplication();
-  }
-
-  var input=document.getElementById('eq-popup-password');
-  if(input){
-    input.addEventListener('keydown',function(e){
-      if(e.key==='Enter'){
-        handlePopupLogin();
-      }
-    });
-  }
-});
 
 </script>
 
@@ -10948,7 +10590,7 @@ window.addEventListener('load',function(){
   async function saveRemote(type, payload){
     var key = typeKey(type);
     try{
-      if(!(window.eqLoggedIn && typeof supabaseClient !== 'undefined')) return {ok:false, skipped:true};
+      if(typeof supabaseClient === 'undefined' || !supabaseClient) return {ok:false, skipped:true};
       var table = key === 'trainings' ? 'training_roster_lists' : 'audit_roster_lists';
       var res = await supabaseClient.from(table).upsert({
         id: key,
@@ -11150,7 +10792,7 @@ window.addEventListener('load',function(){
   async function pushRemote(type, payload){
     var key = normType(type);
     try{
-      if(!(window.eqLoggedIn && typeof supabaseClient !== 'undefined')) return { ok:false, skipped:true };
+      if(typeof supabaseClient === 'undefined' || !supabaseClient) return { ok:false, skipped:true };
       var table = key === 'trainings' ? 'training_roster_lists' : 'audit_roster_lists';
       var res = await supabaseClient.from(table).upsert({
         id: key,
@@ -11317,7 +10959,7 @@ window.addEventListener('load',function(){
   async function pushRosterRemote(type, payload){
     type = normRosterType(type);
     try{
-      if(!(window.eqLoggedIn && typeof supabaseClient !== 'undefined' && supabaseClient)) return {ok:false, skipped:true};
+      if(typeof supabaseClient === 'undefined' || !supabaseClient) return {ok:false, skipped:true};
       var table = type === 'trainings' ? 'training_roster_lists' : 'audit_roster_lists';
       var res = await supabaseClient.from(table).upsert({
         id: type,
@@ -11433,7 +11075,7 @@ window.addEventListener('load',function(){
 
   async function saveEmployeeRosterState(){
     try{
-      if(!(window.eqLoggedIn && typeof supabaseClient !== 'undefined' && supabaseClient)) return {ok:false, skipped:true};
+      if(typeof supabaseClient === 'undefined' || !supabaseClient) return {ok:false, skipped:true};
       var snap = employeeSnapshot();
       var res = await supabaseClient.from('ppe_compliance_state').upsert({
         id: EMPLOYEE_ROSTER_GLOBAL_ID,
@@ -11452,7 +11094,7 @@ window.addEventListener('load',function(){
 
   async function loadEmployeeRosterState(){
     try{
-      if(!(window.eqLoggedIn && typeof supabaseClient !== 'undefined' && supabaseClient)) return false;
+      if(typeof supabaseClient === 'undefined' || !supabaseClient) return false;
       var res = await supabaseClient.from('ppe_compliance_state').select('state,updated_at,last_edited_by').eq('id', EMPLOYEE_ROSTER_GLOBAL_ID).maybeSingle();
       if(res && res.error) return false;
       var list = res && res.data && res.data.state && res.data.state.employees;
@@ -11513,8 +11155,8 @@ window.addEventListener('load',function(){
   // If the page was already loaded before this patch initialized, pull the global roster once.
   setTimeout(function(){
     try{
-      if(window.eqLoggedIn && typeof window.loadEmployees === 'function'){
-        window.loadEmployees().then(function(){ try{ if(!employeeNotesHasFocus() && typeof render === 'function') render(); }catch(e){} });
+      if(typeof window.loadEmployees === 'function'){
+        window.loadEmployees();
       }
     }catch(e){}
   }, 1200);
@@ -11671,7 +11313,7 @@ window.addEventListener('load',function(){
 </style>
 
 <style id="audits-standalone-extraction-patch">
-  .topbar, .page-nav, #eq-login-overlay { display: none !important; }
+  .topbar, .page-nav { display: none !important; }
   body { min-height: 100vh; }
   #page-audits.page { display: block !important; min-height: 100vh; }
   #page-audits > .header { position: sticky; top: 0; z-index: 10; }
@@ -14558,7 +14200,7 @@ window.addEventListener('load',function(){
     }catch(e){}
     try{ await saveRosterList('trainings', empty); }catch(e){}
     try{
-      if(window.eqLoggedIn && typeof supabaseClient !== 'undefined' && supabaseClient){
+      if(typeof supabaseClient !== 'undefined' && supabaseClient){
         await supabaseClient.from('training_roster_lists').upsert({
           id:'trainings',
           items:[],
@@ -16728,4 +16370,3 @@ window.addEventListener('load',function(){
 </style>
 </body>
 </html>
-

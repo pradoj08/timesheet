@@ -1409,6 +1409,9 @@
     color: #050505;
     line-height: 1.15;
   }
+  .inbound-summary-table .summary-note .summary-info-pill {
+    background: #d1d5db;
+  }
   .inbound-summary-table .projected-free-footage {
     margin-left: 4px;
     font-weight: 1000;
@@ -1735,6 +1738,165 @@
     font-weight: 850;
   }
 
+  /* Modern raw-track data viewer. Existing row color families remain intact. */
+  .raw-track-backdrop {
+    padding: clamp(20px, 4vh, 48px) 14px;
+    background: rgba(7, 12, 20, .76);
+    backdrop-filter: blur(5px);
+  }
+  .raw-track-dialog {
+    width: min(1540px, calc(100vw - 28px));
+    max-height: calc(100vh - clamp(40px, 8vh, 96px));
+    border: 1px solid rgba(251, 146, 60, .38);
+    border-radius: 8px;
+    background: #111319;
+    color: #e5e7eb;
+    box-shadow: 0 24px 70px rgba(0, 0, 0, .54), 0 0 0 1px rgba(255, 255, 255, .025);
+  }
+  .raw-track-head {
+    min-height: 62px;
+    padding: 10px 14px 10px 18px;
+    border: 0;
+    border-bottom: 1px solid rgba(251, 146, 60, .28);
+    box-shadow: inset 4px 0 0 #f97316;
+    background: linear-gradient(90deg, #2a140d 0%, #171316 48%, #101318 100%);
+  }
+  .raw-track-title {
+    gap: 8px;
+    font-family: "Segoe UI", Arial, sans-serif;
+  }
+  .raw-track-title strong {
+    margin-right: 5px;
+    color: #fff7ed;
+    font-size: 15px;
+    font-weight: 900;
+    letter-spacing: 0;
+  }
+  .raw-track-title span {
+    min-height: 27px;
+    padding: 3px 10px;
+    border-color: rgba(251, 146, 60, .28);
+    border-radius: 5px;
+    background: rgba(124, 45, 18, .3);
+    color: #fed7aa;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0;
+  }
+  .raw-track-title .raw-selected-count {
+    border-color: rgba(74, 222, 128, .36);
+    background: rgba(21, 128, 61, .24);
+    color: #bbf7d0;
+  }
+  .raw-track-close {
+    width: 34px;
+    height: 34px;
+    flex: 0 0 34px;
+    border-color: rgba(248, 113, 113, .5);
+    border-radius: 6px;
+    background: rgba(127, 29, 29, .32);
+    color: #fecaca;
+    font: 700 22px/1 "Segoe UI", Arial, sans-serif;
+    cursor: pointer;
+    transition: background-color .15s ease, border-color .15s ease;
+  }
+  .raw-track-close:hover {
+    border-color: #f87171;
+    background: rgba(185, 28, 28, .62);
+  }
+  .raw-track-close:focus-visible {
+    outline: 2px solid #fb923c;
+    outline-offset: 2px;
+  }
+  .raw-track-table-wrap {
+    overflow: auto;
+    scrollbar-color: #475569 #15171d;
+    scrollbar-width: thin;
+    background: #111319;
+  }
+  .raw-track-table {
+    border-collapse: separate;
+    border-spacing: 0;
+    font-family: "Segoe UI", Arial, sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+  .raw-track-table th {
+    height: 34px;
+    padding: 6px 9px;
+    border-bottom: 1px solid rgba(251, 146, 60, .55);
+    background: #8a2d0d;
+    color: #ffedd5;
+    font-size: 10px;
+    font-weight: 850;
+    letter-spacing: 0;
+    box-shadow: 0 1px 0 rgba(0, 0, 0, .35);
+  }
+  .raw-track-table td {
+    height: 34px;
+    padding: 6px 9px;
+    border-bottom-color: rgba(255, 255, 255, .075);
+    color: #dbeafe;
+    transition: background-color .12s ease, box-shadow .12s ease;
+  }
+  .raw-track-table tbody tr:hover td {
+    box-shadow: inset 0 1px rgba(255, 255, 255, .08), inset 0 -1px rgba(255, 255, 255, .08);
+    filter: brightness(1.14);
+  }
+  .raw-track-table td:first-child,
+  .raw-track-table th:first-child {
+    padding-left: 14px;
+  }
+  .raw-track-table .raw-equip {
+    color: #f8fafc;
+    font-family: Consolas, "Cascadia Mono", monospace;
+    font-size: 12px;
+    font-weight: 900;
+    letter-spacing: 0;
+  }
+  .raw-track-table .raw-status { color: #6ee7b7; }
+  .raw-track-table .raw-arrival { color: #fde047; }
+  .raw-track-table .raw-alert { color: #fda4af; }
+  .raw-no-ss {
+    min-height: 20px;
+    padding: 1px 7px;
+    border-color: rgba(248, 113, 113, .45);
+    background: rgba(127, 29, 29, .44);
+    color: #fecaca;
+    font-size: 10px;
+  }
+  .raw-train-pill {
+    min-height: 21px;
+    padding: 2px 9px;
+    border-color: rgba(190, 242, 100, .3);
+    background: rgba(77, 124, 15, .34);
+    color: #d9f99d;
+    font-size: 10px;
+    font-weight: 900;
+  }
+  .raw-track-table tr.raw-row-selected td {
+    background: linear-gradient(90deg, rgba(109, 40, 217, .72), rgba(88, 28, 135, .5)) !important;
+    color: #faf5ff;
+  }
+  .raw-track-table tr.raw-row-selected td:first-child {
+    box-shadow: inset 4px 0 0 #c084fc;
+  }
+  .raw-track-table tr.raw-row-selected:hover td {
+    filter: brightness(1.12);
+  }
+  .raw-track-table input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: #22c55e;
+  }
+  @media (max-width: 760px) {
+    .raw-track-backdrop { padding: 8px; }
+    .raw-track-dialog { width: calc(100vw - 16px); max-height: calc(100vh - 16px); }
+    .raw-track-head { min-height: 54px; padding-left: 14px; }
+    .raw-track-title strong { width: 100%; }
+  }
+
   .cut-cell.block-drop-end,
   .track-remaining.block-drop-end {
     cursor: pointer;
@@ -1873,8 +2035,42 @@
   .dwell-table td.car-cell { font-weight: 790; background: #dedede; }
   .dwell-table td.arrival-cell { background: #e7e7e7; }
   .dwell-table td.manual-cell { padding: 0; background: #ffeda4; }
+  .dwell-table td.arrival-cell.sequence-error,
+  .dwell-table td.manual-cell.sequence-error {
+    background: #fee2e2;
+    color: #991b1b;
+    box-shadow: inset 0 0 0 2px #dc2626;
+  }
+  .dwell-table td.manual-cell.sequence-error input {
+    color: #991b1b;
+    font-weight: 850;
+  }
+  .dwell-order-flag {
+    display: block;
+    width: max-content;
+    max-width: calc(100% - 12px);
+    margin: -2px auto 5px;
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: #dc2626;
+    color: #ffffff;
+    font: 900 9px/1.2 "Arial Narrow", Arial, sans-serif;
+    white-space: nowrap;
+  }
   .dwell-table td.rule-cell { background: #ffc4cf; font-weight: 820; }
   .dwell-table td.arrival-to-ss-cell { background: #c9edf9; font-weight: 820; }
+  .dwell-table .arrival-to-ss-pill.over-eight {
+    display: inline-flex;
+    min-width: 54px;
+    align-items: center;
+    justify-content: center;
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: #dc2626;
+    color: #ffffff;
+    font-weight: 900;
+    line-height: 1.1;
+  }
   .dwell-table td.dwell-cell { background: #d5d5d5; font-weight: 900; }
   .dwell-table td.future-cell { background: #f3f3f3; font-weight: 900; }
   .dwell-table input {
@@ -2962,6 +3158,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   const SAMPLE_ROWS = [[801,1,"DTTB748231",45,54,"    ","CU",7121536,0,1,"ZLBHO 09",7120744,"RAMP"],[801,2,"DTTC748231",38,54,"    ","CU",7121536,0,1,"ZLBHO 09",7120744,"RAMP"],[801,3,"DTTD748231",49,54,"    ","CU",7121536,0,1,"ZLBHO 09",7120744,"RAMP"],[801,4,"DTTE748231",38,54,"    ","CU",7121536,0,1,"ZLBHO 09",7120744,"RAMP"],[801,5,"DTTA748231",47,54,"    ","CU",7121536,0,1,"ZLBHO 09",7120744,"RAMP"],[801,6,"DTTA787604",73,68,"    ","CU",7121406,0,3,"ZLBHO 09",7120736,"__CU"],[801,7,"DTTC787604",74,68,"    ","CU",7121406,0,3,"ZLBHO 09",7120736,"__CU"],[801,8,"DTTB787604",72,68,"    ","CU",7121406,0,3,"ZLBHO 09",7120736,"__CU"],[801,9,"DTTA787175",68,68,"    ","CU",7121406,0,3,"ZLBHO 09",7120736,"__CU"],[801,10,"DTTC787175",53,68,"    ","CU",7121406,0,3,"ZLBHO 09",7120736,"__CU"],[801,11,"DTTB787175",38,68,"    ","CU",7121406,0,3,"ZLBHO 09",7120736,"__CU"],[801,12,"DTTA761169",33,53,"    ","CU",7121406,0,3,"ZLBHO 09",7120736,"__CU"],[801,13,"DTTE761169",32,53,"    ","CU",7121406,0,3,"ZLBHO 09",7120736,"__CU"],[801,14,"DTTD761169",54,53,"    ","CU",7121406,0,3,"ZLBHO 09",7120736,"__CU"],[801,15,"DTTC761169",53,53,"    ","CU",7121406,0,3,"ZLBHO 09",7120736,"__CU"],[801,16,"DTTB761169",37,53,"    ","CU",7121406,0,3,"ZLBHO 09",7120736,"__CU"],[801,17,"DTTX467275",32,77,"    ","CU",7121406,0,3,"ZLBHO 09",7120736,"__CU"],[802,1,"FECB55546",70,68,"    ","CU",7121536,0,1,"ZLBHO 09",7120744,"RAMP"],[802,2,"FECC55546",71,68,"    ","CU",7121536,0,1,"ZLBHO 09",7120744,"RAMP"],[802,3,"FECA55546",75,68,"    ","CU",7121536,0,1,"ZLBHO 09",7120744,"RAMP"],[802,4,"IAIB55215",50,68,"    ","CU",7121536,0,1,"ZLBHO 09",7120744,"RAMP"],[802,5,"IAIC55215",36,68,"    ","CU",7121536,0,1,"ZLBHO 09",7120744,"RAMP"],[802,6,"IAIA55215",43,68,"    ","CU",7121536,0,1,"ZLBHO 09",7120744,"RAMP"],[802,7,"BNSA240063",44,60,"    ","CU",7121536,0,1,"ZLBHO 09",7120744,"RAMP"],[802,8,"BNSE240063",31,60,"    ","CU",7121536,0,1,"ZLBHO 09",7120744,"RAMP"],[802,9,"BNSD240063",32,60,"    ","CU",7121536,0,1,"ZLBHO 09",7120744,"RAMP"],[802,10,"BNSC240063",30,60,"    ","CU",7121536,0,1,"ZLBHO 09",7120744,"RAMP"],[802,11,"BNSB240063",48,60,"    ","CU",7121536,0,1,"ZLBHO 09",7120744,"RAMP"],[802,12,"BNSB240055",49,60,"    ","CU",7121536,0,1,"ZLBHO 09",7120744,"RAMP"],[802,13,"BNSC240055",30,60,"    ","CU",7121536,0,1,"ZLBHO 09",7120744,"RAMP"],[802,14,"BNSD240055",46,60,"    ","CU",7121536,0,1,"ZLBHO 09",7120744,"RAMP"],[802,15,"BNSE240055",40,60,"    ","CU",7121536,0,1,"ZLBHO 09",7120744,"RAMP"],[802,16,"BNSA240055",50,60,"    ","CU",7121536,0,1,"ZLBHO 09",7120744,"RAMP"],[802,17,"DTTB744689",46,54,"    ","CU",7121536,0,1,"ZLBHO 09",7120744,"RAMP"],[802,18,"DTTC744689",34,54,"    ","CU",7121536,0,1,"ZLBHO 09",7120744,"RAMP"],[802,19,"DTTD744689",46,54,"    ","CU",7121536,0,1,"ZLBHO 09",7120744,"RAMP"],[802,20,"DTTE744689",27,54,"    ","CU",7121536,0,1,"ZLBHO 09",7120744,"RAMP"],[802,21,"DTTA744689",36,54,"    ","CU",7121536,0,1,"ZLBHO 09",7120744,"RAMP"],[802,22,"DTTX745448",55,64,"    ","CU",7121536,0,1,"ZLBHO 09",7120744,"RAMP"],[802,23,"AOKA57482",49,68,"    ","CU",7121536,0,1,"ZLBHO 09",7120744,"RAMP"],[802,24,"AOKC57482",45,68,"    ","CU",7121536,0,1,"ZLBHO 09",7120744,"RAMP"],[802,25,"AOKB57482",49,68,"    ","CU",7121536,0,1,"ZLBHO 09",7120744,"RAMP"],[802,26,"DTTX646582",51,77,"    ","CU",7121536,0,1,"ZLBHO 09",7120744,"RAMP"],[804,1,"DTTB620618",25,77,"    ","SS",7121209,0,5,"ZLBHO 09",7120744,"RAMP"],[804,2,"DTTC620618",25,77,"    ","SS",7121209,0,5,"ZLBHO 09",7120744,"RAMP"],[804,3,"DTTA620618",25,77,"    ","SS",7121209,0,5,"ZLBHO 09",7120744,"RAMP"],[804,4,"DTTX470354",29,77,"    ","SS, DB",7121618,0,0,"ZLBHO 09",7120744,"RAMP"],[804,5,"DTTA623128",25,77,"    ","SS",7121627,0,0,"ZLBHO 09",7120744,"RAMP"],[804,6,"DTTC623128",25,77,"    ","SS",7121627,0,0,"ZLBHO 09",7120744,"RAMP"],[804,7,"DTTB623128",25,77,"    ","SS",7121627,0,0,"ZLBHO 09",7120744,"RAMP"],[804,8,"DTTX657963",25,77,"    ","SS",7121621,0,0,"ZLBHO 09",7120744,"RAMP"],[804,9,"DTTA727270",22,68,"    ","SS",7121618,0,0,"ZLBHO 09",7120744,"RAMP"],[804,10,"DTTC727270",22,68,"    ","SS",7121618,0,0,"ZLBHO 09",7120744,"RAMP"],[804,11,"DTTB727270",22,68,"    ","SS",7121618,0,0,"ZLBHO 09",7120744,"RAMP"],[804,12,"DTTA765238",21,68,"    ","SS",7121615,0,0,"ZLBHO 09",7120744,"RAMP"],[804,13,"DTTC765238",21,68,"    ","SS",7121615,0,0,"ZLBHO 09",7120744,"RAMP"],[804,14,"DTTB765238",21,68,"    ","SS",7121615,0,0,"ZLBHO 09",7120744,"RAMP"],[804,15,"SFLA6350",22,68,"    ","SS",7121612,0,1,"ZLBHO 09",7120744,"RAMP"],[804,16,"SFLC6350",19,68,"    ","SS",7121612,0,1,"ZLBHO 09",7120744,"RAMP"],[804,17,"SFLB6350",23,68,"    ","SS",7121612,0,1,"ZLBHO 09",7120744,"RAMP"],[804,18,"DTTX458071",26,65,"    ","SS",7121609,0,1,"ZLBHO 09",7120744,"RAMP"],[804,19,"UCRA57437",22,68,"    ","SS",7121606,0,1,"ZLBHO 09",7120744,"RAMP"],[804,20,"UCRC57437",19,68,"    ","SS",7121606,0,1,"ZLBHO 09",7120744,"RAMP"],[804,21,"UCRB57437",23,68,"    ","SS",7121606,0,1,"ZLBHO 09",7120744,"RAMP"],[804,22,"DTTB733377",22,68,"    ","SS",7121627,0,0,"ZLBHO 09",7120744,"RAMP"],[804,23,"DTTC733377",22,68,"    ","SS",7121627,0,0,"ZLBHO 09",7120744,"RAMP"],[804,24,"DTTA733377",22,68,"    ","SS",7121627,0,0,"ZLBHO 09",7120744,"RAMP"],[804,25,"DTTB74517",18,54,"    ","SS",7121557,0,1,"ZLBHO 09",7120744,"RAMP"],[804,26,"DTTC74517",18,54,"    ","SS",7121557,0,1,"ZLBHO 09",7120744,"RAMP"],[804,27,"DTTD74517",18,54,"    ","SS",7121557,0,1,"ZLBHO 09",7120744,"RAMP"],[804,28,"DTTE74517",18,54,"    ","SS",7121557,0,1,"ZLBHO 09",7120744,"RAMP"],[804,29,"DTTA74517",18,54,"    ","SS",7121557,0,1,"ZLBHO 09",7120744,"RAMP"],[804,30,"BNSA270757",18,53,"    ","SS",7121548,0,1,"ZLBHO 09",7120744,"RAMP"],[804,31,"BNSE270757",18,53,"    ","SS",7121548,0,1,"ZLBHO 09",7120744,"RAMP"],[804,32,"BNSD270757",18,53,"    ","SS",7121548,0,1,"ZLBHO 09",7120744,"RAMP"],[804,33,"BNSC270757",18,53,"    ","SS",7121548,0,1,"ZLBHO 09",7120744,"RAMP"],[804,34,"BNSB270757",18,53,"    ","SS",7121548,0,1,"ZLBHO 09",7120744,"RAMP"],[805,1,"DTTB795308",31,68,"SADS","","",0,0,"ZLBHO 08",7120927,"LDDS"],[805,2,"DTTC795308",31,68,"SADS","","",0,0,"ZLBHO 08",7120927,"LDDS"],[805,3,"DTTA795308",31,68,"SADS","","",0,0,"ZLBHO 08",7120927,"LDDS"],[805,4,"DTTB787609",32,68,"SADS","","",0,0,"ZLBHO 08",7120927,"LDDS"],[805,5,"DTTC787609",32,68,"SADS","","",0,0,"ZLBHO 08",7120927,"LDDS"],[805,6,"DTTA787609",32,68,"SADS","","",0,0,"ZLBHO 08",7120927,"LDDS"],[805,7,"DTTB767856",32,68,"SADS","","",0,0,"ZLBHO 08",7120927,"LDDS"],[805,8,"DTTC767856",32,68,"SADS","","",0,0,"ZLBHO 08",7120927,"LDDS"],[805,9,"DTTA767856",32,68,"SADS","","",0,0,"ZLBHO 08",7120927,"LDDS"],[805,10,"FEC70450",37,77,"SADS","","",0,0,"ZLBHO 08",7120927,"LDDS"],[805,11,"DTTX645596",35,77,"SADS","","",0,0,"ZLBHO 08",7120927,"LDDS"],[805,12,"DTTX475766",39,77,"SADS","","",0,0,"ZLBHO 08",7120927,"LDDS"],[805,13,"DTTA789384",32,68,"SADS","","",0,0,"ZLBHO 08",7120927,"LDDS"],[805,14,"DTTC789384",31,68,"SADS","","",0,0,"ZLBHO 08",7120927,"LDDS"],[805,15,"DTTB789384",32,68,"SADS","","",0,0,"ZLBHO 08",7120927,"LDDS"],[805,16,"DTTB786179",31,68,"FXSI","","",0,0,"ZLBHO 08",7120927,"FXSI"],[805,17,"DTTC786179",31,68,"FXSI","","",0,0,"ZLBHO 08",7120927,"FXSI"],[805,18,"DTTA786179",31,68,"FXSI","","",0,0,"ZLBHO 08",7120927,"FXSI"],[805,19,"DTTX470191",39,77,"FXSI","","",0,0,"ZLBHO 08",7120927,"FXSI"],[805,20,"DTTA888816",33,68,"FXSI","","",0,0,"ZLBHO 08",7120927,"FXSI"],[805,21,"DTTC888816",33,68,"FXSI","","",0,0,"ZLBHO 08",7120927,"FXSI"],[805,22,"DTTB888816",33,68,"FXSI","","",0,0,"ZLBHO 08",7120927,"FXSI"],[806,1,"DTTX452450",51,64,"SIDS","","",0,0,"ZLBHO 08",7120927,"SIDS"],[806,2,"DTTB788725",40,68,"SIDS","","",0,0,"ZLBHO 08",7120927,"SIDS"],[806,3,"DTTC788725",40,68,"SIDS","","",0,0,"ZLBHO 08",7120927,"SIDS"],[806,4,"DTTA788725",60,68,"SIDS","","",0,0,"ZLBHO 08",7120927,"SIDS"],[806,5,"UCRA57415",46,68,"PHNX","","",0,0,"ZLBHO 08",7120927,"PHNX"],[806,6,"UCRC57415",34,68,"PHNX","","",0,0,"ZLBHO 08",7120927,"PHNX"],[806,7,"UCRB57415",40,68,"PHNX","","",0,0,"ZLBHO 08",7120927,"PHNX"],[806,8,"DTTA786603",31,68,"MXFE","","",0,0,"ZLBHO 08",7120927,"MXFE"],[806,9,"DTTC786603",31,68,"MXFE","","",0,0,"ZLBHO 08",7120927,"MXFE"],[806,10,"DTTB786603",31,68,"MXFE","","",0,0,"ZLBHO 08",7120927,"MXFE"],[806,11,"SFLB7426",34,68,"MXFE","","",0,0,"ZLBHO 08",7120927,"MXFE"],[806,12,"SFLC7426",31,68,"MXFE","","",0,0,"ZLBHO 08",7120927,"MXFE"],[806,13,"SFLA7426",34,68,"MXFE","","",0,0,"ZLBHO 08",7120927,"MXFE"],[806,14,"BNSA254116",33,68,"ICTF","","",0,0,"ZLBHO 08",7120657,"ICTF"],[806,15,"BNSC254116",30,68,"ICTF","","",0,0,"ZLBHO 08",7120657,"ICTF"],[806,16,"BNSB254116",33,68,"ICTF","","",0,0,"ZLBHO 08",7120657,"ICTF"],[806,17,"DTTB768971",38,68,"ICTF","","",0,0,"ZLBHO 08",7120927,"ICTF"],[806,18,"DTTC768971",32,68,"ICTF","","",0,0,"ZLBHO 08",7120927,"ICTF"],[806,19,"DTTA768971",38,68,"ICTF","","",0,0,"ZLBHO 08",7120927,"ICTF"],[806,20,"SFLB9303",54,68,"ICTF","","",0,0,"ZLBHO 08",7120927,"ICTF"],[806,21,"SFLC9303",44,68,"ICTF","","",0,0,"ZLBHO 08",7120927,"ICTF"],[806,22,"SFLA9303",33,68,"ICTF","","",0,0,"ZLBHO 08",7120927,"ICTF"],[807,1,"DTTB894065",21,68,"    ","BO, XU, SS",7111816,0,22,"ZLBHO 08",7110857,"__BO"],[807,2,"DTTC894065",21,68,"    ","BO, XU, SS",7111816,0,22,"ZLBHO 08",7110857,"__BO"],[807,3,"DTTA894065",21,68,"    ","BO, XU, SS",7111816,0,22,"ZLBHO 08",7110857,"__BO"],[807,4,"DTTA620544",24,77,"    ","BO, XM",7111031,1,6,"ZPBHO 10",7110824,"__BO"],[807,5,"DTTC620544",24,77,"    ","BO, XM",7111031,1,6,"ZPBHO 10",7110824,"__BO"],[807,6,"DTTB620544",24,77,"    ","BO, XM",7111031,1,6,"ZPBHO 10",7110824,"__BO"],[807,7,"DTTA620700",25,77,"    ","BO, XU, SS",7101301,2,4,"ZLBHO 07",7100844,"__BO"],[807,8,"DTTC620700",25,77,"    ","BO, XU, SS",7101301,2,4,"ZLBHO 07",7100844,"__BO"],[807,9,"DTTB620700",25,77,"    ","BO, XU, SS",7101301,2,4,"ZLBHO 07",7100844,"__BO"],[807,10,"DTTA720622",21,61,"    ","SS",7111703,1,0,"ZLBHO 08",7110857,"__SS"],[807,11,"DTTE720622",21,61,"    ","SS",7111703,1,0,"ZLBHO 08",7110857,"__SS"],[807,12,"DTTD720622",21,61,"    ","SS",7111703,1,0,"ZLBHO 08",7110857,"__SS"],[807,13,"DTTC720622",21,61,"    ","SS",7111703,1,0,"ZLBHO 08",7110857,"__SS"],[807,14,"DTTB720622",21,61,"    ","SS",7111703,1,0,"ZLBHO 08",7110857,"__SS"],[808,1,"TTAX553462",122,291,"    ","CU",7121304,0,4,"ZPBHO 11",7121303,"RAMP"],[808,2,"TTRX360165",77,189,"    ","CU",7121304,0,4,"ZPBHO 11",7121303,"RAMP"],[808,3,"DTTB787711",48,68,"    ","CU",7121304,0,4,"ZPBHO 11",7121303,"RAMP"],[808,4,"DTTC787711",48,68,"    ","CU",7121304,0,4,"ZPBHO 11",7121303,"RAMP"],[808,5,"DTTA787711",70,68,"    ","CU",7121304,0,4,"ZPBHO 11",7121303,"RAMP"],[808,6,"DTTX655118",66,77,"    ","CU",7121304,0,4,"ZPBHO 11",7121303,"RAMP"],[808,7,"DTTX646611",51,77,"    ","CU",7121304,0,4,"ZPBHO 11",7121303,"RAMP"],[808,8,"BNSA254431",70,68,"    ","CU",7121304,0,4,"ZPBHO 11",7121303,"RAMP"],[808,9,"BNSC254431",59,68,"    ","CU",7121304,0,4,"ZPBHO 11",7121303,"RAMP"],[808,10,"BNSB254431",60,68,"    ","CU",7121304,0,4,"ZPBHO 11",7121303,"RAMP"],[808,11,"FEC71603",70,77,"    ","CU",7121304,0,4,"ZPBHO 11",7121303,"RAMP"],[808,12,"DTTB727208",65,68,"    ","CU",7121304,0,4,"ZPBHO 11",7121303,"RAMP"],[808,13,"DTTC727208",73,68,"    ","CU",7121304,0,4,"ZPBHO 11",7121303,"RAMP"],[808,14,"DTTA727208",66,68,"    ","CU",7121304,0,4,"ZPBHO 11",7121303,"RAMP"],[808,15,"TTAX554482",117,291,"    ","CU",7121304,0,4,"ZPBHO 11",7121303,"RAMP"],[808,16,"TTRX370277",131,189,"    ","CU",7121304,0,4,"ZPBHO 11",7121303,"RAMP"],[808,17,"DTTX466354",53,77,"    ","CU",7121304,0,4,"ZPBHO 11",7121303,"RAMP"],[809,1,"DTTA791298",59,68,"    ","CU",7121304,0,4,"ZPBHO 11",7121303,"RAMP"],[809,2,"DTTC791298",44,68,"    ","CU",7121304,0,4,"ZPBHO 11",7121303,"RAMP"],[809,3,"DTTB791298",45,68,"    ","CU",7121304,0,4,"ZPBHO 11",7121303,"RAMP"],[809,4,"DTTA785172",59,68,"    ","CU",7121304,0,4,"ZPBHO 11",7121303,"RAMP"],[809,5,"DTTC785172",52,68,"    ","CU",7121304,0,4,"ZPBHO 11",7121303,"RAMP"],[809,6,"DTTB785172",56,68,"    ","CU",7121304,0,4,"ZPBHO 11",7121303,"RAMP"],[809,7,"DTTX645038",61,77,"    ","CU",7121304,0,4,"ZPBHO 11",7121303,"RAMP"],[809,8,"DTTX467603",63,77,"    ","CU",7121304,0,4,"ZPBHO 11",7121303,"RAMP"],[809,9,"CP527942",67,77,"    ","CU",7121304,0,4,"ZPBHO 11",7121303,"RAMP"],[809,10,"DTTA727226",70,68,"    ","CU",7121304,0,4,"ZPBHO 11",7121303,"RAMP"],[809,11,"DTTC727226",66,68,"    ","CU",7121304,0,4,"ZPBHO 11",7121303,"RAMP"],[809,12,"DTTB727226",56,68,"    ","CU",7121304,0,4,"ZPBHO 11",7121303,"RAMP"],[809,13,"DTTA890503",42,68,"    ","CU",7121304,0,4,"ZPBHO 11",7121303,"RAMP"],[809,14,"DTTC890503",56,68,"    ","CU",7121304,0,4,"ZPBHO 11",7121303,"RAMP"],[809,15,"DTTB890503",56,68,"    ","CU",7121304,0,4,"ZPBHO 11",7121303,"RAMP"],[809,16,"CP527709",51,77,"    ","CU",7121304,0,4,"ZPBHO 11",7121303,"RAMP"],[809,17,"DTTA728424",19,68,"    ","CU",7121304,0,4,"ZPBHO 11",7121303,"RAMP"],[809,18,"DTTC728424",19,68,"    ","CU",7121304,0,4,"ZPBHO 11",7121303,"RAMP"],[809,19,"DTTB728424",49,68,"    ","CU",7121304,0,4,"ZPBHO 11",7121303,"RAMP"],[809,20,"DTTX658732",25,77,"    ","SS",7121318,0,3,"ZPBHO 11",7121303,"RAMP"],[809,21,"DTTX468151",27,77,"    ","SS",7121318,0,3,"ZPBHO 11",7121303,"RAMP"],[809,22,"DTTA893575",48,68,"    ","CU",7121304,0,4,"ZPBHO 11",7121303,"RAMP"],[809,23,"DTTC893575",55,68,"    ","CU",7121304,0,4,"ZPBHO 11",7121303,"RAMP"],[809,24,"DTTB893575",55,68,"    ","CU",7121304,0,4,"ZPBHO 11",7121303,"RAMP"],[809,25,"TTAX555140",183,291,"    ","CU",7121304,0,4,"ZPBHO 11",7121303,"RAMP"],[809,26,"TTRX552434",62,189,"    ","CU",7121304,0,4,"ZPBHO 11",7121208,"__CU"]];
   const SAMPLE_SOURCE = "RAMP OVERVIEW SETTEGAST (6).csv";
   const STORAGE_KEY = "rampBlockingControl.v2";
+  const TABLE_STATE_UPDATED_AT_KEY = "rampBlockingControl.v2.updatedAt";
+  const RAMP_TABLES_STORAGE_KEY = "rampBlockingControl.tables.v1";
   const COLOR_RULES_STORAGE_KEY = "rampBlockingControl.colorRules.v2";
   const COLOR_RULES_LEGACY_STORAGE_KEY = "rampBlockingControl.colorRules.v1";
   const LIVE_STORAGE_KEY = "rampBlockingLive.v1";
@@ -2970,7 +3168,9 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   const BLOCK_CLIPBOARD_PREFIX = "CONGLOBAL_BLOCKS_V1\n";
   const TRACKS = [801,802,803,804,805,806,807,808,809];
   const INBOUND_AVAILABLE_FOOTAGE_BASE = 18850;
+  const WITH_803_AVAILABLE_FOOTAGE_BASE = 20600;
   const INBOUND_FREE_TRACKS = Object.freeze([801,802,804,805,806,807,808,809]);
+  const WITH_803_TRACKS = Object.freeze([801,802,803,804,805,806,807,808,809]);
   const TRACK_CAPACITY_FT = Object.freeze({
     801: 1750,
     802: 1750,
@@ -3208,12 +3408,76 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     };
   }
 
+  function parsePersistedRampTables(raw) {
+    if (!raw) return null;
+    try {
+      const parsed = JSON.parse(raw);
+      if (!parsed || !Array.isArray(parsed.rows)) return null;
+      return parsed;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  function loadPersistedRampTables() {
+    let selected = null;
+    let selectedAt = -1;
+    storageCandidates().forEach((store) => {
+      try {
+        const candidate = parsePersistedRampTables(store.getItem(RAMP_TABLES_STORAGE_KEY));
+        if (!candidate) return;
+        const savedAt = Date.parse(candidate.updatedAt || "") || 0;
+        if (!selected || savedAt >= selectedAt) {
+          selected = candidate;
+          selectedAt = savedAt;
+        }
+      } catch (error) {}
+    });
+    return selected;
+  }
+
+  function applyPersistedRampTables(target, bundle) {
+    if (!target || !bundle || !Array.isArray(bundle.rows)) return target;
+    target.rows = bundle.rows.map(row => Array.isArray(row) ? row.slice() : row);
+    if (Object.prototype.hasOwnProperty.call(bundle, "secondaryGridTwo")) {
+      target.secondaryGridTwo = bundle.secondaryGridTwo == null
+        ? null
+        : JSON.parse(JSON.stringify(bundle.secondaryGridTwo));
+    }
+    if (Object.prototype.hasOwnProperty.call(bundle, "secondaryGridThree")) {
+      target.secondaryGridThree = bundle.secondaryGridThree == null
+        ? null
+        : JSON.parse(JSON.stringify(bundle.secondaryGridThree));
+    }
+    return target;
+  }
+
+  function loadPersistedTableState() {
+    let selected = null;
+    let selectedAt = -1;
+    storageCandidates().forEach((store) => {
+      try {
+        const raw = store.getItem(STORAGE_KEY);
+        if (!raw) return;
+        const candidate = JSON.parse(raw);
+        if (!candidate || !Array.isArray(candidate.rows)) return;
+        const savedAt = Date.parse(store.getItem(TABLE_STATE_UPDATED_AT_KEY) || "") || 0;
+        if (!selected || savedAt >= selectedAt) {
+          selected = candidate;
+          selectedAt = savedAt;
+        }
+      } catch (error) {}
+    });
+    return selected;
+  }
+
   function loadState() {
     const persistedColorRules = loadPersistedColorRules();
+    const persistedRampTables = loadPersistedRampTables();
     try {
-      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+      const saved = loadPersistedTableState();
       if (saved && Array.isArray(saved.rows)) {
-        const merged = { ...defaultState(), ...saved };
+        const merged = applyPersistedRampTables({ ...defaultState(), ...saved }, persistedRampTables);
         if (!merged.dwellOverrides || typeof merged.dwellOverrides !== "object" || Array.isArray(merged.dwellOverrides)) {
           merged.dwellOverrides = {};
         }
@@ -3233,7 +3497,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         return merged;
       }
     } catch (error) {}
-    const fallback = defaultState();
+    const fallback = applyPersistedRampTables(defaultState(), persistedRampTables);
     fallback.inboundPlans = normalizeInboundPlans(fallback.inboundPlans);
     fallback.inboundArchive = [];
     fallback.gridTypography = normalizeGridTypography(fallback.gridTypography);
@@ -3250,13 +3514,38 @@ https://github.com/nodeca/pako/blob/main/LICENSE
 
   function saveState() {
     const serialized = JSON.stringify(state);
-    if (excelViewHistoryReady && !excelViewApplyingUndo && serialized !== lastCommittedExcelViewState) {
+    const changed = serialized !== lastCommittedExcelViewState;
+    if (excelViewHistoryReady && !excelViewApplyingUndo && changed) {
       excelViewUndoStack.push(lastCommittedExcelViewState);
       if (excelViewUndoStack.length > EXCEL_VIEW_UNDO_LIMIT) excelViewUndoStack.shift();
     }
+    const savedAt = changed ? new Date().toISOString() : "";
+    const previousTables = loadPersistedRampTables();
+    const tablesUpdatedAt = savedAt || (previousTables && previousTables.updatedAt) || new Date().toISOString();
+    const tablesSerialized = JSON.stringify({
+      version: 1,
+      updatedAt: tablesUpdatedAt,
+      rows: state.rows,
+      secondaryGridTwo: state.secondaryGridTwo,
+      secondaryGridThree: state.secondaryGridThree
+    });
     try {
-      localStorage.setItem(STORAGE_KEY, serialized);
+      storageCandidates().forEach((store) => {
+        try {
+          store.setItem(STORAGE_KEY, serialized);
+          store.setItem(RAMP_TABLES_STORAGE_KEY, tablesSerialized);
+          if (savedAt) store.setItem(TABLE_STATE_UPDATED_AT_KEY, savedAt);
+        } catch (error) {}
+      });
       persistColorRules();
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({
+          type: "conglobal-excel-table-state-save",
+          state: serialized,
+          tables: tablesSerialized,
+          updatedAt: savedAt || tablesUpdatedAt
+        }, "*");
+      }
     } catch (error) {
       // The dashboard still works when a browser blocks local file storage.
     }
@@ -3438,13 +3727,16 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     const ssDuration = ssStart && ssEnd ? hoursBetween(ssEnd, ssStart) : NaN;
     let dwell = NaN;
 
-    if (ssStart && arrival && Number.isFinite(arrivalToSs) && arrivalToSs >= 0) {
+    if (ssStart && arrival && Number.isFinite(arrivalToSs)) {
       if (!ssEnd) {
-        dwell = hoursBetween(now, arrival);
-      } else {
-        const adjustedSs = Number.isFinite(ssDuration) ? (ssDuration >= 24 ? 0 : ssDuration) : 0;
+        dwell = Math.max(0, hoursBetween(now, arrival));
+      } else if (Number.isFinite(ssDuration) && ssDuration >= 0) {
+        // A trace can predate the imported arrival. Preserve that signed interval
+        // for auditing, but do not let it suppress otherwise valid dwell outputs.
+        const adjustedArrivalToSs = Math.max(0, arrivalToSs);
+        const adjustedSs = ssDuration >= 24 ? 0 : ssDuration;
         const postSs = Math.max(0, hoursBetween(now, ssEnd));
-        dwell = arrivalToSs + adjustedSs + postSs;
+        dwell = adjustedArrivalToSs + adjustedSs + postSs;
       }
     }
 
@@ -4471,14 +4763,26 @@ https://github.com/nodeca/pako/blob/main/LICENSE
 
   function inboundSummaryStock(day) {
     const key = String(day || "").toUpperCase();
-    const trackFootage = computed && computed.trackFootage ? computed.trackFootage : {};
+    const afterSwitchingTracks = state.secondaryGridThree && state.secondaryGridThree.tracks
+      ? state.secondaryGridThree.tracks
+      : {};
+    const tableThreeTrackFootage = track => {
+      const blocks = Array.isArray(afterSwitchingTracks[track]) ? afterSwitchingTracks[track] : [];
+      return blocks.reduce(
+        (trackSum, block) => trackSum + Math.max(0, Number(block && block.footage) || 0),
+        0
+      );
+    };
     const occupiedWithout803 = INBOUND_FREE_TRACKS.reduce(
-      (sum, track) => sum + Math.max(0, Number(trackFootage[track]) || 0),
+      (sum, track) => sum + tableThreeTrackFootage(track),
       0
     );
-    const track803Footage = Math.max(0, Number(trackFootage[803]) || 0);
+    const occupiedAfterSwitching = WITH_803_TRACKS.reduce(
+      (sum, track) => sum + tableThreeTrackFootage(track),
+      0
+    );
     const onHand = INBOUND_AVAILABLE_FOOTAGE_BASE - occupiedWithout803;
-    const with803 = onHand - track803Footage;
+    const with803 = WITH_803_AVAILABLE_FOOTAGE_BASE - occupiedAfterSwitching;
     return {
       onHandValue: onHand,
       with803Value: with803,
@@ -4488,13 +4792,29 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     };
   }
 
+  function normalizeInboundTrainKey(value) {
+    const compact = String(value || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+    const match = compact.match(/^(.*?)(\d+)$/);
+    if (!match) return compact;
+    return match[1] + String(Number(match[2]));
+  }
+
+  function chassisForecastUnitsForTrain(train) {
+    const trainKey = normalizeInboundTrainKey(train);
+    if (!trainKey) return 0;
+    try {
+      const forecast = JSON.parse(localStorage.getItem("chassisForecastReport") || "{}");
+      const units = Array.isArray(forecast.importedUnits) ? forecast.importedUnits : [];
+      return units.reduce((count, unit) => (
+        normalizeInboundTrainKey(unit && unit.trainId) === trainKey ? count + 1 : count
+      ), 0);
+    } catch (error) {
+      return 0;
+    }
+  }
+
   function inboundSummaryLiftCount(plan) {
-    const rows = Array.isArray(plan && plan.rows) ? plan.rows : [];
-    const count = rows.reduce((sum, row) => {
-      const loads = parseInboundFt(row && row.loads);
-      const cars = parseInboundFt(row && row.cars);
-      return sum + (loads || cars || 0);
-    }, 0);
+    const count = chassisForecastUnitsForTrain(plan && plan.train);
     return count > 0 ? "(" + fmtInt(count) + ")" : "";
   }
 
@@ -6195,20 +6515,26 @@ https://github.com/nodeca/pako/blob/main/LICENSE
           ruleClass = "warning";
         }
       }
-      const arrivalToSsText = record.rawStart
-        ? (Number.isFinite(record.arrivalToSs) && record.arrivalToSs >= 0 ? dwellCellText(record.arrivalToSs) : "\u2014")
+      const arrivalToSsText = record.rawStart && Number.isFinite(record.arrivalToSs)
+        ? dwellCellText(record.arrivalToSs)
         : "\u2014";
       const dwellText = Number.isFinite(record.dwell) ? dwellCellText(record.dwell) : "\u2014";
       const futureText = Number.isFinite(record.futureDwell) ? dwellCellText(record.futureDwell) : "\u2014";
       const dwellClass = Number.isFinite(record.dwell) ? "ready" : "unknown";
+      const arrivalToSsClass = Number.isFinite(record.arrivalToSs) && (record.arrivalToSs > 8 || record.arrivalToSs < 0)
+        ? " over-eight" : "";
+      const sequenceError = Number.isFinite(record.arrivalToSs) && record.arrivalToSs < 0;
+      const sequenceErrorClass = sequenceError ? " sequence-error" : "";
+      const sequenceErrorTitle = sequenceError ? ' title="SS Start occurs before the imported Arrival time."' : "";
+      const sequenceErrorFlag = sequenceError ? '<span class="dwell-order-flag">SS BEFORE ARRIVAL</span>' : "";
       return `<tr>
         <td class="block-cell mono">${escapeHtml(record.block)}</td>
         <td class="car-cell mono">${escapeHtml(record.exampleCar || "\u2014")}</td>
-        <td class="arrival-cell">${escapeHtml(formatDwellDate(record.arrival))}</td>
-        <td class="manual-cell"><input type="text" autocomplete="off" spellcheck="false" data-dwell-key="${escapeAttr(record.key)}" data-dwell-field="ssStart" value="${escapeAttr(record.rawStart)}"></td>
+        <td class="arrival-cell${sequenceErrorClass}"${sequenceErrorTitle}>${escapeHtml(formatDwellDate(record.arrival))}</td>
+        <td class="manual-cell${sequenceErrorClass}"${sequenceErrorTitle}><input type="text" autocomplete="off" spellcheck="false" data-dwell-key="${escapeAttr(record.key)}" data-dwell-field="ssStart" value="${escapeAttr(record.rawStart)}">${sequenceErrorFlag}</td>
         <td class="manual-cell"><input type="text" autocomplete="off" spellcheck="false" data-dwell-key="${escapeAttr(record.key)}" data-dwell-field="ssEnd" value="${escapeAttr(record.rawEnd)}"></td>
         <td class="rule-cell ${ruleClass}">${escapeHtml(ruleText)}</td>
-        <td class="arrival-to-ss-cell ${arrivalToSsText === "\u2014" ? "unknown" : ""}">${escapeHtml(arrivalToSsText)}</td>
+        <td class="arrival-to-ss-cell ${arrivalToSsText === "\u2014" ? "unknown" : ""}"><span class="arrival-to-ss-pill${arrivalToSsClass}">${escapeHtml(arrivalToSsText)}</span></td>
         <td class="dwell-cell ${dwellClass}">${escapeHtml(dwellText)}</td>
         <td class="future-cell ${Number.isFinite(record.futureDwell) ? "ready" : "unknown"}">${escapeHtml(futureText)}</td>
       </tr>`;
@@ -6961,12 +7287,11 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   }
 
   function ssRowsToTsv(rows) {
-    // Copy only the two values that belong in the SS START and SS END columns.
-    // Do not include the car ID or a header row, so the clipboard can be pasted
-    // directly into the first SS START cell of the dwell table.
+    // Preserve one clipboard row per parsed car. Missing-event labels stay in
+    // their cells so later rows cannot shift when pasted into the dwell table.
     return rows.map(row => [
-      row.ssStartOk ? clean(row.ssStart) : "",
-      row.ssEndOk ? clean(row.ssEnd) : ""
+      clean(row.ssStart),
+      clean(row.ssEnd)
     ].join("\t")).join("\r\n");
   }
 
@@ -7285,8 +7610,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     else if (selectedBlockIds.size) clearBlockSelection();
   });
 
-  window.addEventListener("pagehide", () => { persistColorRules(); saveCurrentWorkState(); });
-  window.addEventListener("beforeunload", () => { persistColorRules(); saveCurrentWorkState(); });
+  window.addEventListener("pagehide", () => { saveState(); persistColorRules(); saveCurrentWorkState(); });
+  window.addEventListener("beforeunload", () => { saveState(); persistColorRules(); saveCurrentWorkState(); });
 
   setInterval(updateCurrentWorkForecast, 1000);
   window.addEventListener("storage", event => {

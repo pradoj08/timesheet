@@ -651,6 +651,7 @@
       width: 100%;
       min-width: 0;
       min-height: 15px;
+      position: relative;
       display: grid;
       grid-template-columns: minmax(0, 1fr) auto;
       align-items: center;
@@ -668,9 +669,16 @@
       cursor: pointer;
     }
 
+    .staff-pill::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+    }
+
     .staff-pill > span {
       min-width: 0;
       overflow-wrap: anywhere;
+      pointer-events: none;
     }
 
     .staff-pill small {
@@ -692,6 +700,12 @@
       border-color: transparent;
       background: transparent;
       color: #0f172a;
+    }
+
+    .staff-pill.pending {
+      border-color: #cbd5e1;
+      background: #e5e7eb;
+      color: #475569;
     }
 
     .staff-pill.crane {
@@ -1552,9 +1566,44 @@
 
 
     .calendar-shell.three-day-list-mode {
-      width: min(1060px, calc(100% - 8px));
+      width: min(1000px, calc(100% - 16px));
+      padding: 10px 6px 7px;
+    }
+
+    .three-day-list-mode .calendar-toolbar {
+      min-height: 0;
+      gap: 7px 12px;
+      padding-bottom: 8px;
+    }
+
+    .three-day-list-mode .title-block { gap: 6px; }
+    .three-day-list-mode h1 { font-size: 40px; }
+
+    .three-day-list-mode .import-button {
+      min-height: 26px;
+      padding-inline: 9px;
+      font-size: 11px;
+    }
+
+    .three-day-list-mode .month-controls { gap: 5px; }
+
+    .three-day-list-mode .view-toggle button {
+      min-height: 27px;
       padding-inline: 8px;
     }
+
+    .three-day-list-mode .icon-button,
+    .three-day-list-mode .secondary-button { height: 28px; }
+    .three-day-list-mode .icon-button { width: 28px; }
+
+    .three-day-list-mode .status-key {
+      gap: 3px 8px;
+      padding-top: 0;
+      font-size: 10px;
+      line-height: 1.1;
+    }
+
+    .three-day-list-mode .status-key span { gap: 3px; }
 
     .staff-list-view.three-day-mode {
       padding: 0;
@@ -1568,7 +1617,7 @@
 
     .staff-list-view.three-day-mode .staff-week-grid {
       grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-      column-gap: 6px;
+      column-gap: 4px;
       row-gap: 0;
     }
 
@@ -1582,12 +1631,12 @@
     .three-day-mode .staff-day.selected { border-color: #009b95; }
 
     .three-day-mode .staff-day-button {
-      min-height: 34px;
+      min-height: 32px;
       display: flex;
       align-items: center;
       gap: 6px;
       position: relative;
-      padding: 5px 6px;
+      padding: 4px 5px;
       border-bottom: 2px solid #2f3742;
       background: #f7f8fa;
     }
@@ -1612,11 +1661,11 @@
     .three-day-mode .staff-day-button b {
       order: 3;
       margin-left: auto;
-      font-size: 22px;
+      font-size: 20px;
     }
 
     .three-day-mode .staff-shift-grid {
-      min-height: 350px;
+      min-height: 330px;
       align-items: stretch;
     }
 
@@ -1629,9 +1678,9 @@
     }
 
     .three-day-mode .staff-shift h3 {
-      min-height: 25px;
+      min-height: 23px;
       margin: 0;
-      padding: 4px 6px;
+      padding: 3px 5px;
       background: #203144;
       color: #fff;
       font-size: 10px;
@@ -1647,13 +1696,13 @@
     }
 
     .three-day-mode .staff-pill {
-      min-height: 26px;
-      padding: 3px 6px;
+      min-height: 24px;
+      padding: 2px 5px;
       border-width: 0 0 1px;
       border-color: #d8dee8;
       border-radius: 0;
       font-family: "Arial Narrow", "Helvetica Neue", Helvetica, Arial, sans-serif;
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 750;
       line-height: 1.2;
     }
@@ -1666,8 +1715,8 @@
     }
 
     .three-day-mode .staff-pill.plain {
-      min-height: 26px;
-      padding: 3px 6px;
+      min-height: 24px;
+      padding: 2px 5px;
       border-color: #d8dee8;
       background: #fff;
       color: #172536;
@@ -1687,8 +1736,8 @@
     }
 
     .three-day-mode .staff-day-total b {
-      min-height: 22px;
-      padding: 3px 6px;
+      min-height: 20px;
+      padding: 2px 5px;
       background: #dcfce7;
       color: #00745f;
       font-size: 13px;
@@ -1699,6 +1748,27 @@
     .three-day-mode .staff-day-total b.low-staff {
       background: #ffe4e6;
       color: #be123c;
+    }
+
+    .three-day-mode .staff-day-total b.yard-projection-choice {
+      position: relative;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .three-day-mode .staff-day-total b.yard-projection-choice:hover {
+      filter: brightness(.96);
+    }
+
+    .three-day-mode .staff-day-total b.yard-projection-choice:focus-visible {
+      z-index: 1;
+      outline: 2px solid #2563eb;
+      outline-offset: -2px;
+    }
+
+    .three-day-mode .staff-day-total b.yard-projection-shift-selected {
+      z-index: 1;
+      box-shadow: inset 0 0 0 3px #f59e0b;
     }
 
     .yard-crew-panel {
@@ -1781,6 +1851,44 @@
     .yard-track::before { top: 3px; }
     .yard-track::after { bottom: 3px; }
 
+    .yard-role-counter {
+      position: absolute;
+      z-index: 6;
+      top: 5px;
+      right: auto;
+      bottom: auto;
+      left: 2%;
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 5px;
+      padding: 3px 6px;
+      border: 1px solid rgba(148, 163, 184, .72);
+      border-radius: 6px;
+      background: rgba(15, 23, 42, .93);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, .34);
+      color: #e2e8f0;
+      font-size: 9px;
+      font-weight: 900;
+      line-height: 1;
+      white-space: nowrap;
+      transform: none;
+    }
+
+    .yard-role-counter span {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      padding: 2px 5px;
+      border-radius: 4px;
+      background: rgba(51, 65, 85, .88);
+    }
+
+    .yard-role-counter b {
+      color: #fbbf24;
+      font-size: 11px;
+    }
+
     .yard-crew-units {
       position: absolute;
       z-index: 4;
@@ -1806,7 +1914,7 @@
     }
     .yard-crew-unit.crane1,
     .yard-crew-unit.crane2 {
-      width: 158px;
+      width: 237px;
     }
     .yard-crew-unit.flipoperator {
       z-index: 5;
@@ -1834,16 +1942,8 @@
       position: absolute;
       z-index: 6;
       top: -20px;
-      left: 52px;
+      left: 60px;
       transform: translateX(-50%);
-    }
-
-    .yard-crane-operator-name,
-    .yard-crew-unit.flipoperator > .yard-crew-name {
-      border-color: #f59e0b;
-      background: #fbbf24;
-      color: #422006;
-      box-shadow: 0 2px 5px rgba(120, 53, 15, .34);
     }
 
     .yard-machine { position: relative; flex: 0 0 auto; }
@@ -1896,25 +1996,25 @@
       position: absolute;
       left: 0;
       bottom: 0;
-      width: 104px;
-      height: 118px;
+      width: 120px;
+      height: 136px;
     }
 
     .yard-crane-pair {
       position: relative;
-      width: 158px;
-      height: 118px;
+      width: 174px;
+      height: 136px;
       flex: 0 0 auto;
     }
 
     .yard-crane-pair.has-trainee {
-      width: 230px;
+      width: 237px;
     }
 
     .yard-crane-pair.has-trainee .yard-crane-groundman-slot:not(.trainee) {
       right: auto;
-      left: 167px;
-      width: 63px;
+      left: 183px;
+      width: 54px;
     }
 
     .yard-crane-groundman-slot.trainee {
@@ -1928,7 +2028,7 @@
     }
 
     .yard-crane-pair.has-trainee .yard-crane-operator-name {
-      left: 115px;
+      left: 123px;
     }
 
     .yard-crane-groundman-slot.trainee .yard-crane-groundman-name {
@@ -2106,6 +2206,7 @@
           <div class="yard-track one" aria-hidden="true"></div>
           <div class="yard-track two" aria-hidden="true"></div>
           <div class="yard-drive-lane bottom" aria-hidden="true"></div>
+          <div class="yard-role-counter" id="yardRoleCounter" aria-live="polite"></div>
           <div class="yard-crew-units" id="yardCrewUnits"></div>
         </div>
       </div>
@@ -2139,7 +2240,20 @@
       <header><h2 id="employeeBankTitle">Employee Bank</h2><button id="closeEmployeeBank" type="button" aria-label="Close employee bank">X</button></header>
       <form class="employee-bank-form" id="employeeBankForm">
         <label>Employee<select id="employeeBankEmployee"></select></label>
-        <label>Pill<select id="employeeBankTag"><option value="">Roster Default</option><option value="crane">Crane</option><option value="unknown">Unknown</option></select></label>
+        <label>Pill<select id="employeeBankTag">
+          <option value="">Roster Default</option>
+          <option value="crane">Crane</option>
+          <option value="here">Here</option>
+          <option value="flipline">Flip Line</option>
+          <option value="sic">Sick</option>
+          <option value="vac">Vacation</option>
+          <option value="calledoff">Called Off</option>
+          <option value="out">Out</option>
+          <option value="ncns">NCNS</option>
+          <option value="bnsf">BNSF</option>
+          <option value="unknown">Unknown</option>
+          <option value="clear">Clear Selection</option>
+        </select></label>
         <button type="submit">Save</button>
       </form>
       <div class="employee-bank-status" id="employeeBankStatus" aria-live="polite"></div>
@@ -2227,6 +2341,7 @@
     };
     const yardCrewRoleOrder = ["crane1", "groundman", "traineegroundman", "hostler", "traineehostler", "flipoperator", "crane2"];
     let yardCrewTodayStaffing = null;
+    let yardCrewProjectedShift = "first";
     let selectedStatusDate = "";
     let selectedStatusName = "";
     let employeeQuickStatusChosen = false;
@@ -3190,6 +3305,7 @@
         dayAdded: true
       }));
       const shifts = Object.fromEntries(rosterShiftKeys.map((shift) => [shift, []]));
+      const requiresAttendanceConfirmation = dateKey === isoDate(today);
       let scheduled = 0;
       let working = 0;
 
@@ -3205,7 +3321,14 @@
           : activeOverride ? "" : employeeBank[nameKey] || "";
         const overrideOut = ["bn", "bnsf", "unknown", "calledoff", "out", "ncns"].includes(statusOverride);
         const bankOut = ["bn", "unknown"].includes(bankTag);
-        const row = { ...employee, absence, working: !absence && !overrideOut && !bankOut, bankTag, statusOverride };
+        const attendanceConfirmed = ["working", "here", "flipline", "camein"].includes(statusOverride);
+        const row = {
+          ...employee,
+          absence,
+          working: !absence && !overrideOut && !bankOut && (!requiresAttendanceConfirmation || attendanceConfirmed),
+          bankTag,
+          statusOverride
+        };
         if (!shifts[row.shift]) shifts[row.shift] = [];
         shifts[row.shift].push(row);
         scheduled += 1;
@@ -3275,6 +3398,12 @@
         flag = '<small class="bn-flag" aria-label="BN">(BN)</small>';
       } else if (employee.statusOverride === "working") {
         classes.push("plain");
+      } else if (dateKey === isoDate(today) && !employee.working && !employee.statusOverride) {
+        classes.push("pending");
+        title = `${employee.name} - not counted until attendance is marked`;
+        if (employee.bankTag === "crane" || isCraneOperator(employee)) {
+          flag = '<small class="crane-flag" aria-label="Crane operator">(C)</small>';
+        }
       } else if (employee.bankTag === "unknown") {
         classes.push("unknown", "out-status");
         title = `${employee.name} - unknown status`;
@@ -3344,14 +3473,29 @@
         : "";
       const relativeDayHtml = relativeDayLabel ? '<span class="relative-day-label">' + escapeHtml(relativeDayLabel) + '</span>' : "";
       const countableWorker = (employee) => employee.working && employee.bankTag !== "unknown" && employee.statusOverride !== "bnsf";
-      const shiftCount = (employees) => {
+      const shiftCount = (employees, shiftKey) => {
         const countable = employees.filter(countableWorker);
-        const flipLine = countable.filter((employee) => employee.statusOverride === "flipline").length;
+        const flipLine = countable.filter((employee) =>
+          employee.statusOverride === "flipline"
+          || (isToday && yardCrewRoleForEmployeeToday(employee.name, shiftKey) === "flipoperator")
+        ).length;
         const regular = countable.length - flipLine;
         return { total: countable.length, label: flipLine ? `${regular}+${flipLine}` : String(regular) };
       };
-      const firstShiftWorking = shiftCount(staffing.shifts.first || []);
-      const secondShiftWorking = shiftCount(staffing.shifts.second || []);
+      const firstShiftWorking = shiftCount(staffing.shifts.first || [], "first");
+      const secondShiftWorking = shiftCount(staffing.shifts.second || [], "second");
+      const projectionChoice = isToday && listRange === "three-day";
+      const projectionTotalHtml = (shiftKey, working, title) => {
+        const classes = [
+          working.total < 10 ? "low-staff" : "",
+          projectionChoice ? "yard-projection-choice" : "",
+          projectionChoice && yardCrewProjectedShift === shiftKey ? "yard-projection-shift-selected" : ""
+        ].filter(Boolean).join(" ");
+        const attributes = projectionChoice
+          ? ` role="button" tabindex="0" data-yard-projection-shift="${shiftKey}" aria-pressed="${yardCrewProjectedShift === shiftKey}" title="Project ${title} at the bottom"`
+          : ` title="${title} working"`;
+        return `<b class="${classes}"${attributes}>${working.label}</b>`;
+      };
 
       if (outsideMonth) {
         return `
@@ -3375,8 +3519,8 @@
           </div>
           ${supportStaffHtml(staffing, key)}
           <div class="staff-day-total">
-            <b class="${firstShiftWorking.total < 10 ? "low-staff" : ""}" title="1st Shift working">${firstShiftWorking.label}</b>
-            <b class="${secondShiftWorking.total < 10 ? "low-staff" : ""}" title="2nd Shift working">${secondShiftWorking.label}</b>
+            ${projectionTotalHtml("first", firstShiftWorking, "Day shift")}
+            ${projectionTotalHtml("second", secondShiftWorking, "Night shift")}
           </div>
         </article>
       `;
@@ -3506,7 +3650,7 @@
       const nameHtml = isCrane
         ? ""
         : traineeNames.length
-        ? `<div class="yard-crew-name-stack"><span class="yard-crew-name">${escapeHtml(name)}</span>${traineeNames.map((traineeName) => `<span class="yard-crew-name trainee">Trainee: ${escapeHtml(traineeName)}</span>`).join("")}</div>`
+        ? `<div class="yard-crew-name-stack">${traineeNames.map((traineeName) => `<span class="yard-crew-name trainee">${escapeHtml(traineeName)}</span>`).join("")}<span class="yard-crew-name">${escapeHtml(name)}</span></div>`
         : `<span class="yard-crew-name">${escapeHtml(name)}</span>`;
       return `
         <div class="yard-crew-unit ${escapeHtml(role)}${positionClass}" style="--yard-left:${left.toFixed(2)}%;--yard-bottom:${bottom.toFixed(2)}px;--yard-delay:${(-index * .31).toFixed(2)}s" title="${escapeHtml(name)}">
@@ -3538,7 +3682,9 @@
         const savedAssignments = yardCrewAssignmentsForShift(state, shiftKey);
         const assignments = cleanYardCrewAssignments(savedAssignments, employees);
         if (JSON.stringify(assignments) !== JSON.stringify(savedAssignments)) writeYardCrewAssignments(assignments, shiftKey);
-        Object.entries(assignments).forEach(([name, role]) => assignedEntries.push({ name, role, shiftKey }));
+        if (shiftKey === yardCrewProjectedShift) {
+          Object.entries(assignments).forEach(([name, role]) => assignedEntries.push({ name, role, shiftKey }));
+        }
       });
 
       assignedEntries.sort((left, right) => {
@@ -3546,6 +3692,24 @@
         const shiftDifference = left.shiftKey.localeCompare(right.shiftKey);
         return roleDifference || shiftDifference || left.name.localeCompare(right.name, undefined, { sensitivity: "base" });
       });
+
+      const roleCounts = assignedEntries.reduce((counts, entry) => {
+        if (["crane1", "crane2"].includes(entry.role)) counts.cranes += 1;
+        else if (entry.role === "groundman") counts.groundmen += 1;
+        else if (entry.role === "hostler") counts.hostlers += 1;
+        else if (["traineehostler", "traineegroundman"].includes(entry.role)) counts.trainees += 1;
+        return counts;
+      }, { cranes: 0, groundmen: 0, hostlers: 0, trainees: 0 });
+      const roleCounter = document.getElementById("yardRoleCounter");
+      if (roleCounter) {
+        roleCounter.innerHTML = `
+          <span>CRANES <b>${roleCounts.cranes}</b></span>
+          <span>GROUNDMEN <b>${roleCounts.groundmen}</b></span>
+          <span>HOSTLERS <b>${roleCounts.hostlers}</b></span>
+          <span>TRAINEES <b>${roleCounts.trainees}</b></span>
+        `;
+        roleCounter.setAttribute("aria-label", `${roleCounts.cranes} cranes, ${roleCounts.groundmen} groundmen, ${roleCounts.hostlers} hostlers, ${roleCounts.trainees} trainees`);
+      }
 
       const craneCompanions = new Map();
       const consumedCrewMembers = new Set();
@@ -3579,8 +3743,8 @@
       );
 
       const hostlers = displayEntries.filter((entry) => entry.role === "hostler").slice(0, 8);
-      const bottomLaneHostlers = hostlers.slice(0, 4);
-      const topLaneHostlers = hostlers.slice(4, 8);
+      const bottomLaneHostlers = hostlers.slice(0, 6);
+      const topLaneHostlers = hostlers.slice(6, 8);
       const hostlerTrainees = new Map();
       const pairedHostlerTrainees = new Set();
       displayEntries.filter((entry) => entry.role === "traineehostler").forEach((trainee) => {
@@ -3609,13 +3773,21 @@
         const traineeCount = (hostlerTrainees.get(entry) || []).length;
         entryPositions.set(entry, { left: 8.5 + (index * 13), bottom: 202 - (traineeCount * 21), labelBelowHostler: true });
       });
+      const rightSideHostlerCount = roleCounts.cranes === 1
+        ? bottomLaneHostlers.length
+        : Math.ceil(bottomLaneHostlers.length / 2);
       bottomLaneHostlers.forEach((entry, index) => {
-        entryPositions.set(entry, { left: 91.5 - (index * 13), bottom: 12, mirroredHostler: true });
+        if (index < rightSideHostlerCount) {
+          entryPositions.set(entry, { left: 91.5 - (index * 12), bottom: 12, mirroredHostler: true });
+          return;
+        }
+        const leftSideIndex = index - rightSideHostlerCount;
+        entryPositions.set(entry, { left: 8.5 + (leftSideIndex * 12), bottom: 12 });
       });
       otherEntries.forEach((entry, index) => {
-        if (entry.role === "crane1") entryPositions.set(entry, { left: 85, bottom: 178 });
-        else if (entry.role === "crane2") entryPositions.set(entry, { left: 64, bottom: 130 });
-        else if (entry.role === "flipoperator") entryPositions.set(entry, { left: 18, bottom: 12 });
+        if (entry.role === "crane1") entryPositions.set(entry, { left: 85, bottom: 130 });
+        else if (entry.role === "crane2") entryPositions.set(entry, { left: 15, bottom: 130 });
+        else if (entry.role === "flipoperator") entryPositions.set(entry, { left: 50, bottom: 130 });
         else if (["groundman", "traineegroundman", "traineehostler"].includes(entry.role)) entryPositions.set(entry, { left: Math.min(74 + index * 5, 82), bottom: 12 });
       });
 
@@ -3631,6 +3803,19 @@
           entryPositions.get(entry) || null
         )).join("")
         : '<div class="yard-scene-empty">Assign today\'s roles from an employee\'s Quick Actions menu.</div>';
+      const scene = document.getElementById("yardCrewScene");
+      if (scene) scene.setAttribute("aria-label", `${yardCrewProjectedShift === "second" ? "Night" : "Day"} shift two-track idle crew visualization`);
+    }
+
+    function selectYardCrewProjectedShift(shiftKey) {
+      if (!['first', 'second'].includes(shiftKey)) return;
+      yardCrewProjectedShift = shiftKey;
+      document.querySelectorAll('[data-yard-projection-shift]').forEach((choice) => {
+        const selected = choice.dataset.yardProjectionShift === shiftKey;
+        choice.classList.toggle('yard-projection-shift-selected', selected);
+        choice.setAttribute('aria-pressed', String(selected));
+      });
+      renderYardCrewPanel();
     }
 
     function assignYardCrewRole(name, role, shiftKey = yardCrewShiftForEmployeeToday(name)) {
@@ -3816,6 +4001,11 @@
     });
 
     document.getElementById("listView").addEventListener("click", (event) => {
+      const projectionChoice = event.target.closest("[data-yard-projection-shift]");
+      if (projectionChoice) {
+        selectYardCrewProjectedShift(projectionChoice.dataset.yardProjectionShift);
+        return;
+      }
       const offScheduleHeader = event.target.closest("[data-off-schedule-shift]");
       if (offScheduleHeader) {
         openOffSchedule(offScheduleHeader.dataset.offScheduleDate, offScheduleHeader.dataset.offScheduleShift);
@@ -3833,6 +4023,12 @@
 
     document.getElementById("listView").addEventListener("keydown", (event) => {
       if (!['Enter', ' '].includes(event.key)) return;
+      const projectionChoice = event.target.closest("[data-yard-projection-shift]");
+      if (projectionChoice) {
+        event.preventDefault();
+        selectYardCrewProjectedShift(projectionChoice.dataset.yardProjectionShift);
+        return;
+      }
       const offScheduleHeader = event.target.closest("[data-off-schedule-shift]");
       if (!offScheduleHeader) return;
       event.preventDefault();
@@ -3878,10 +4074,26 @@
       if (!name) return;
       const bank = readEmployeeBank();
       const key = normalizeName(name);
-      if (tag) bank[key] = tag;
-      else delete bank[key];
+      const clearing = !tag || tag === "clear";
+      if (clearing) delete bank[key];
+      else bank[key] = tag;
       writeEmployeeBank(bank);
-      document.getElementById("employeeBankStatus").textContent = tag ? `${name} saved as ${tag === "crane" ? "Crane" : "Unknown"}.` : `${name} returned to roster default.`;
+      const tagLabel = {
+        crane: "Crane",
+        here: "Here",
+        flipline: "Flip Line",
+        sic: "Sick",
+        vac: "Vacation",
+        calledoff: "Called Off",
+        out: "Out",
+        ncns: "NCNS",
+        bnsf: "BNSF",
+        unknown: "Unknown"
+      }[tag] || "Roster Default";
+      document.getElementById("employeeBankStatus").textContent = clearing
+        ? `${name} returned to roster default.`
+        : `${name} saved as ${tagLabel}.`;
+      if (tag === "clear") document.getElementById("employeeBankTag").value = "";
       renderCalendar();
     });
     document.getElementById("closeEmployeeStatus").addEventListener("click", closeEmployeeStatus);
@@ -3899,6 +4111,12 @@
       employeeQuickStatusChosen = true;
       syncEmployeeQuickStatusButtons(nextStatus);
       renderCalendar();
+      const roleShift = yardCrewShiftForEmployeeToday(selectedStatusName);
+      const currentRole = roleShift ? yardCrewRoleForEmployeeToday(selectedStatusName, roleShift) : "";
+      syncEmployeeQuickRoleButtons(currentRole, roleShift);
+      document.getElementById("employeeRoleShiftLabel").textContent = roleShift === "first"
+        ? "Day shift"
+        : roleShift === "second" ? "Night shift" : "Not working";
       finishEmployeeQuickAction(`${selectedStatusName} updated to ${statusLabel}.`);
     });
     document.getElementById("employeeRoleActions").addEventListener("click", (event) => {
@@ -4060,9 +4278,14 @@
       }
     });
 
+    let focusRefreshTimer = 0;
     window.addEventListener("focus", () => {
       populateEditorOptions();
-      renderCalendar();
+      clearTimeout(focusRefreshTimer);
+      focusRefreshTimer = window.setTimeout(() => {
+        const quickActionsOpen = document.getElementById("employeeStatusBackdrop").classList.contains("open");
+        if (!quickActionsOpen) renderCalendar();
+      }, 250);
     });
 
     populateEditorOptions();

@@ -870,7 +870,7 @@ html{min-height:100%;background:#eef2f6}
 body{
   min-height:100vh;
   margin:0;
-  padding:28px 18px 56px;
+  padding:12px 10px 32px;
   box-sizing:border-box;
   background:
     radial-gradient(circle at top left,rgba(14,165,233,.08),transparent 34rem),
@@ -879,7 +879,7 @@ body{
 #am-report{
   width:min(100%,780px);
   margin:0 auto;
-  padding:26px 28px 34px;
+  padding:14px 16px 22px;
   box-sizing:border-box;
   background:#fff;
   border:1px solid #d7dee8;
@@ -887,12 +887,52 @@ body{
   box-shadow:0 16px 42px rgba(15,23,42,.10);
   overflow-x:auto;
 }
-#am-report > h1{
-  margin:0 0 20px !important;
+.sheet-heading-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  min-height:30px;
+  margin:0 0 7px;
+}
+.sheet-heading-copy{
+  display:flex;
+  align-items:baseline;
+  gap:9px;
+  min-width:0;
+  white-space:nowrap;
+}
+.sheet-heading-actions{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:6px;
+  margin-left:auto;
+}
+.sheet-heading-row h1{
+  margin:0 !important;
   color:#132238 !important;
-  font:800 24px/1.15 Calibri,"Aptos Narrow",Arial,sans-serif !important;
+  font:800 22px/1 Calibri,"Aptos Narrow",Arial,sans-serif !important;
   letter-spacing:.02em;
   text-align:left;
+}
+.sheet-button.sheet-checklist-button{
+  min-width:92px;
+  min-height:30px;
+  margin-left:0;
+  padding:5px 12px;
+  border:2px solid #1e40af;
+  background:#1d4ed8;
+  color:#fff;
+  font-weight:900;
+  font-size:14px;
+  box-shadow:0 3px 8px rgba(30,64,175,.28);
+}
+.sheet-button.sheet-checklist-button:hover{
+  border-color:#1e3a8a;
+  background:#1e40af;
+  color:#fff;
+  box-shadow:0 4px 10px rgba(30,58,138,.34);
 }
 #am-report table{
   width:100% !important;
@@ -900,28 +940,34 @@ body{
   margin:0 auto;
 }
 .sheet-subtitle{
-  margin:-12px 0 18px;
+  margin:0;
+  overflow:hidden;
   color:#667085;
-  font:600 12px/1.4 Calibri,Arial,sans-serif;
+  font:600 10px/1.2 Calibri,Arial,sans-serif;
+  text-overflow:ellipsis;
+  white-space:nowrap;
 }
 .sheet-toolbar{
   display:flex;
   flex-direction:column;
-  gap:10px;
-  margin:0 0 12px;
+  gap:6px;
+  margin:0 0 8px;
 }
 .sheet-actions{
   display:flex;
   align-items:center;
-  gap:8px;
-  flex-wrap:wrap;
+  justify-content:flex-end;
+  gap:5px;
+  flex:0 0 auto;
+  flex-wrap:nowrap;
 }
 .sheet-format-bar{
   display:flex;
   align-items:center;
-  gap:6px;
-  flex-wrap:wrap;
-  padding:7px;
+  gap:4px;
+  flex-wrap:nowrap;
+  padding:4px 5px;
+  overflow-x:auto;
   border:1px solid #d0d8e5;
   border-radius:8px;
   background:#f7f9fc;
@@ -929,8 +975,9 @@ body{
 .sheet-tool-group{
   display:flex;
   align-items:center;
-  gap:4px;
-  flex-wrap:wrap;
+  gap:3px;
+  flex:0 0 auto;
+  flex-wrap:nowrap;
 }
 .sheet-tool-label{
   margin-right:2px;
@@ -941,27 +988,27 @@ body{
 }
 .sheet-tool-divider{
   width:1px;
-  height:24px;
-  margin:0 2px;
+  height:20px;
+  margin:0 1px;
   background:#d7dee8;
 }
 .sheet-button{
-  min-height:32px;
-  padding:6px 12px;
+  min-height:26px;
+  padding:4px 8px;
   border:1px solid #b8c4d5;
   border-radius:7px;
   background:#fff;
   color:#1d2939;
-  font:700 12px/1 Calibri,Arial,sans-serif;
+  font:700 11px/1 Calibri,Arial,sans-serif;
   cursor:pointer;
   box-shadow:0 1px 2px rgba(16,24,40,.06);
 }
 .sheet-button:hover{background:#f2f6fb;border-color:#7f96b3}
 .sheet-button:disabled{opacity:.42;cursor:not-allowed;background:#f8fafc}
 .sheet-format-button{
-  min-height:28px;
-  padding:5px 9px;
-  font-size:11px;
+  min-height:24px;
+  padding:3px 7px;
+  font-size:10px;
 }
 .sheet-format-button.active{
   border-color:#2878e5;
@@ -969,15 +1016,16 @@ body{
   color:#1456b8;
 }
 .sheet-save-status{
-  margin-left:auto;
+  margin-left:2px;
   color:#667085;
-  font:600 11px/1.2 Calibri,Arial,sans-serif;
+  font:600 9px/1.1 Calibri,Arial,sans-serif;
+  white-space:nowrap;
 }
 .sheet-formula-row{
   display:grid;
-  grid-template-columns:74px 34px minmax(0,1fr);
+  grid-template-columns:54px 26px minmax(0,1fr);
   align-items:stretch;
-  min-height:34px;
+  min-height:28px;
   border:1px solid #aeb9c9;
   border-radius:7px;
   overflow:hidden;
@@ -1005,7 +1053,7 @@ body{
   min-width:0;
   border:0;
   outline:0;
-  padding:7px 10px;
+  padding:5px 8px;
   color:#172033;
   background:#fff;
   font:500 12px/1.3 Consolas,"Courier New",monospace;
@@ -1116,6 +1164,16 @@ body{
   font:inherit;
   text-align:inherit;
   cursor:pointer;
+}
+.sheet-cell-select.sheet-inbound-archive-select{
+  font-weight:700;
+  color:#111827;
+  background-color:rgba(255,255,255,.22);
+}
+.sheet-cell-select.sheet-inbound-archive-select option{
+  color:#111827;
+  background:#fff;
+  font-weight:600;
 }
 .sheet-modal-backdrop{
   position:fixed;
@@ -1699,18 +1757,43 @@ tags will be replaced.-->
 
   table.classList.add("sheet-grid");
 
-  const subtitle = document.createElement("div");
-  subtitle.className = "sheet-subtitle";
-  subtitle.textContent = "Editable worksheet · AM SETTEGAST MASTER.xlsx";
-  if (title) title.after(subtitle);
+  const headingRow = document.createElement("div");
+  headingRow.className = "sheet-heading-row";
+  const headingCopy = document.createElement("div");
+  headingCopy.className = "sheet-heading-copy";
+  const headingActions = document.createElement("div");
+  headingActions.className = "sheet-heading-actions";
+  const auditsButton = document.createElement("button");
+  auditsButton.type = "button";
+  auditsButton.id = "amAuditsPopupButton";
+  auditsButton.className = "sheet-button sheet-checklist-button";
+  auditsButton.textContent = "Audits";
+  auditsButton.title = "Open Audits";
+  const checklistButton = document.createElement("button");
+  checklistButton.type = "button";
+  checklistButton.id = "amChecklistPopupButton";
+  checklistButton.className = "sheet-button sheet-checklist-button";
+  checklistButton.textContent = "Checklist";
+  checklistButton.title = "Open Checklist";
+  if (title) {
+    title.before(headingRow);
+    headingCopy.append(title);
+    headingActions.append(auditsButton, checklistButton);
+    headingRow.append(headingCopy, headingActions);
+  }
+  auditsButton.addEventListener("click", () => {
+    window.parent.postMessage({ type: "conglobal-open-audits-popup" }, "*");
+  });
+  checklistButton.addEventListener("click", () => {
+    window.parent.postMessage({ type: "conglobal-open-checklist-popup" }, "*");
+  });
 
   const toolbar = document.createElement("div");
   toolbar.className = "sheet-toolbar";
   toolbar.innerHTML = `
     <div class="sheet-actions">
       <button type="button" class="sheet-button" id="amResetSheet">Reset Original</button>
-      <button type="button" class="sheet-button" id="amPrintSheet">Print</button>
-      <span class="sheet-save-status" id="amSaveStatus">Autosaves on this device</span>
+      <span class="sheet-save-status" id="amSaveStatus"></span>
     </div>
     <div class="sheet-formula-row">
       <span class="sheet-name-box" id="amNameBox">A1</span>
@@ -1843,7 +1926,7 @@ tags will be replaced.-->
     saveStatus.textContent = message;
     clearTimeout(saveTimer);
     saveTimer = window.setTimeout(() => {
-      saveStatus.textContent = "Autosaves on this device";
+      saveStatus.textContent = "";
     }, 1800);
   };
 
@@ -1982,7 +2065,6 @@ tags will be replaced.-->
     announceSaved("Original workbook restored");
   });
 
-  document.getElementById("amPrintSheet").addEventListener("click", () => window.print());
 
   recalculate();
   focusCell(cellMap.get("A1"));
@@ -1997,6 +2079,9 @@ tags will be replaced.-->
   const DEFAULT_DROPDOWNS = Object.freeze({
     A21: ["No Concerns", "Late Arrival"]
   });
+  const INBOUND_ARCHIVE_STORAGE_KEY = "rampBlockingControl.v2";
+  const INBOUND_ARCHIVE_CELLS = Object.freeze(["B6", "B7", "B8"]);
+  const INBOUND_ARCHIVE_CELL_SET = new Set(INBOUND_ARCHIVE_CELLS);
   const formulas = Object.freeze({
     A2: "=NOW()",
     A9: "=SUM(A6:A8)",
@@ -2098,39 +2183,60 @@ tags will be replaced.-->
   });
   table.classList.add("sheet-grid");
 
-  const subtitle = document.createElement("div");
-  subtitle.className = "sheet-subtitle";
-  subtitle.textContent = "Editable worksheet \u00b7 AM SETTEGAST MASTER.xlsx";
-  if (title) title.after(subtitle);
+  const headingRow = document.createElement("div");
+  headingRow.className = "sheet-heading-row";
+  const headingCopy = document.createElement("div");
+  headingCopy.className = "sheet-heading-copy";
+  const headingActions = document.createElement("div");
+  headingActions.className = "sheet-heading-actions";
+  const auditsButton = document.createElement("button");
+  auditsButton.type = "button";
+  auditsButton.id = "amAuditsPopupButton";
+  auditsButton.className = "sheet-button sheet-checklist-button";
+  auditsButton.textContent = "Audits";
+  auditsButton.title = "Open Audits";
+  const checklistButton = document.createElement("button");
+  checklistButton.type = "button";
+  checklistButton.id = "amChecklistPopupButton";
+  checklistButton.className = "sheet-button sheet-checklist-button";
+  checklistButton.textContent = "Checklist";
+  checklistButton.title = "Open Checklist";
+  if (title) {
+    title.before(headingRow);
+    headingCopy.append(title);
+    headingActions.append(auditsButton, checklistButton);
+    headingRow.append(headingCopy, headingActions);
+  }
+  auditsButton.addEventListener("click", () => {
+    window.parent.postMessage({ type: "conglobal-open-audits-popup" }, "*");
+  });
+  checklistButton.addEventListener("click", () => {
+    window.parent.postMessage({ type: "conglobal-open-checklist-popup" }, "*");
+  });
 
   const toolbar = document.createElement("div");
   toolbar.className = "sheet-toolbar";
   toolbar.innerHTML = [
-    '<div class="sheet-actions">',
-      '<button type="button" class="sheet-button" id="amResetSheet">Reset Original</button>',
-      '<button type="button" class="sheet-button" id="amPrintSheet">Print</button>',
-      '<span class="sheet-save-status" id="amSaveStatus">Autosaves on this device</span>',
-    '</div>',
     '<div class="sheet-format-bar" aria-label="Cell tools">',
       '<div class="sheet-tool-group">',
         '<button type="button" class="sheet-button sheet-format-button" id="amCopyCells">Copy</button>',
         '<button type="button" class="sheet-button sheet-format-button" id="amMergeCells">Merge</button>',
-        '<button type="button" class="sheet-button sheet-format-button" id="amUnmergeCells">Unmerge</button>',
         '<button type="button" class="sheet-button sheet-format-button" id="amDropdownCells">Dropdown</button>',
       '</div>',
       '<span class="sheet-tool-divider" aria-hidden="true"></span>',
       '<div class="sheet-tool-group" aria-label="Horizontal alignment">',
         '<span class="sheet-tool-label">Horizontal</span>',
-        '<button type="button" class="sheet-button sheet-format-button" data-sheet-align="horizontal" data-align-value="left">Left</button>',
-        '<button type="button" class="sheet-button sheet-format-button" data-sheet-align="horizontal" data-align-value="center">Center</button>',
-        '<button type="button" class="sheet-button sheet-format-button" data-sheet-align="horizontal" data-align-value="right">Right</button>',
+        '<button type="button" class="sheet-button sheet-format-button" data-sheet-align="horizontal" title="Cycle horizontal alignment">Left</button>',
       '</div>',
       '<span class="sheet-tool-divider" aria-hidden="true"></span>',
       '<div class="sheet-tool-group" aria-label="Vertical alignment">',
         '<span class="sheet-tool-label">Vertical</span>',
-        '<button type="button" class="sheet-button sheet-format-button" data-sheet-align="vertical" data-align-value="top">Top</button>',
-        '<button type="button" class="sheet-button sheet-format-button" data-sheet-align="vertical" data-align-value="middle">Middle</button>',
-        '<button type="button" class="sheet-button sheet-format-button" data-sheet-align="vertical" data-align-value="bottom">Bottom</button>',
+        '<button type="button" class="sheet-button sheet-format-button" data-sheet-align="vertical" title="Cycle vertical alignment">Middle</button>',
+      '</div>',
+      '<span class="sheet-tool-divider" aria-hidden="true"></span>',
+      '<div class="sheet-tool-group sheet-reset-group">',
+        '<button type="button" class="sheet-button sheet-format-button" id="amResetSheet">Reset Original</button>',
+        '<span class="sheet-save-status" id="amSaveStatus"></span>',
       '</div>',
     '</div>',
     '<div class="sheet-formula-row">',
@@ -2175,7 +2281,6 @@ tags will be replaced.-->
   const saveStatus = document.getElementById("amSaveStatus");
   const copyButton = document.getElementById("amCopyCells");
   const mergeButton = document.getElementById("amMergeCells");
-  const unmergeButton = document.getElementById("amUnmergeCells");
   const dropdownButton = document.getElementById("amDropdownCells");
   const dropdownOptionsInput = document.getElementById("amDropdownOptions");
   const dropdownSummary = document.getElementById("amDropdownSummary");
@@ -2309,8 +2414,92 @@ tags will be replaced.-->
     return output;
   }
 
+  function inboundArchiveStores() {
+    const stores = [];
+    try {
+      if (window.parent && window.parent !== window && window.parent.localStorage) stores.push(window.parent.localStorage);
+    } catch (_) {}
+    try {
+      if (!stores.includes(window.localStorage)) stores.push(window.localStorage);
+    } catch (_) {}
+    return stores;
+  }
+
+  function parseInboundArchiveFeet(value) {
+    const match = String(value == null ? "" : value).replace(/,/g, "").match(/-?\d+(?:\.\d+)?/);
+    return match ? Math.max(0, Number(match[0]) || 0) : 0;
+  }
+
+  function inboundArchiveFeet(plan) {
+    const stated = parseInboundArchiveFeet(plan && plan.totalFt);
+    if (stated > 0) return stated;
+    return (Array.isArray(plan && plan.rows) ? plan.rows : []).reduce((sum, row) => {
+      return sum + parseInboundArchiveFeet(row && row.ft);
+    }, 0);
+  }
+
+  function readInboundArchiveOptions() {
+    let records = [];
+    for (const store of inboundArchiveStores()) {
+      try {
+        const parsed = JSON.parse(store.getItem(INBOUND_ARCHIVE_STORAGE_KEY) || "null");
+        if (parsed && Array.isArray(parsed.inboundArchive)) {
+          records = parsed.inboundArchive;
+          break;
+        }
+      } catch (_) {}
+    }
+
+    const seen = new Set();
+    return records
+      .slice()
+      .sort((left, right) => Date.parse(right && right.archivedAt || "") - Date.parse(left && left.archivedAt || ""))
+      .map(record => {
+        const plan = record && record.plan || {};
+        const name = cleanText(plan.train || "");
+        const footage = inboundArchiveFeet(plan);
+        return {
+          id: String(record && record.id || ""),
+          name,
+          footage,
+          label: name + " (" + footage.toLocaleString("en-US") + " ft)"
+        };
+      })
+      .filter(option => {
+        const key = option.name.toLocaleLowerCase();
+        if (!option.name || seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+  }
+
+  function populateInboundArchiveSelect(input, address, preferredValue) {
+    if (!input) return;
+    const currentValue = cleanText(preferredValue === undefined ? input.value : preferredValue);
+    const archiveOptions = readInboundArchiveOptions();
+    const datalist = input._archiveDatalist || document.getElementById(input.getAttribute("list") || "");
+    if (!datalist) return;
+    datalist.textContent = "";
+
+    archiveOptions.forEach(item => {
+      const option = document.createElement("option");
+      option.value = item.name;
+      option.label = item.footage.toLocaleString("en-US") + " ft";
+      option.textContent = item.label;
+      option.dataset.archiveId = item.id;
+      option.dataset.footage = String(item.footage);
+      datalist.appendChild(option);
+    });
+    input.value = currentValue;
+    input._archiveOptions = archiveOptions;
+    input.title = archiveOptions.length
+      ? "Type any text or select an archived inbound suggestion"
+      : "Type any inbound text; archived suggestions will appear after inbounds are archived";
+    input.dataset.archiveAddress = address;
+  }
+
   Object.keys(dropdownDefinitions).forEach(address => {
-    if (!cellMap.has(address) || formulas[address]) delete dropdownDefinitions[address];
+    if (!cellMap.has(address) || formulas[address] || INBOUND_ARCHIVE_CELL_SET.has(address)) delete dropdownDefinitions[address];
     else dropdownDefinitions[address] = sanitizeOptions(dropdownDefinitions[address]);
   });
   Object.keys(customAlignments).forEach(address => {
@@ -2322,6 +2511,8 @@ tags will be replaced.-->
   function readCell(address) {
     const cell = cellMap.get(address);
     if (!cell) return "";
+    const inboundInput = cell.querySelector(".sheet-inbound-archive-input");
+    if (inboundInput) return cleanText(inboundInput.value);
     const select = cell.querySelector("select");
     return select ? select.value : cleanText(cell.innerText || cell.textContent);
   }
@@ -2330,6 +2521,11 @@ tags will be replaced.-->
     const cell = cellMap.get(address);
     if (!cell) return false;
     const nextValue = String(value == null ? "" : value);
+    const inboundInput = cell.querySelector(".sheet-inbound-archive-input");
+    if (inboundInput) {
+      inboundInput.value = nextValue;
+      return true;
+    }
     const select = cell.querySelector("select");
     if (select) {
       const allowed = Array.from(select.options).some(option => option.value === nextValue);
@@ -2378,8 +2574,47 @@ tags will be replaced.-->
     cell.appendChild(select);
   }
 
+  function installInboundArchiveDropdown(address, preferredValue) {
+    const cell = cellMap.get(address);
+    if (!cell || !INBOUND_ARCHIVE_CELL_SET.has(address)) return;
+    const currentValue = preferredValue === undefined ? readCell(address) : String(preferredValue);
+    cell.removeAttribute("contenteditable");
+    cell.textContent = "";
+    const input = document.createElement("input");
+    const datalist = document.createElement("datalist");
+    const datalistId = "amInboundArchiveOptions" + address;
+    input.type = "text";
+    input.className = "sheet-cell-select sheet-inbound-archive-select sheet-inbound-archive-input";
+    input.setAttribute("aria-label", address + " inbound text with archived suggestions");
+    input.setAttribute("list", datalistId);
+    input.setAttribute("autocomplete", "off");
+    input.setAttribute("spellcheck", "false");
+    datalist.id = datalistId;
+    input._archiveDatalist = datalist;
+    populateInboundArchiveSelect(input, address, currentValue);
+    input.addEventListener("focus", () => {
+      if (!suppressFocusSelection) selectSingleCell(cell);
+      populateInboundArchiveSelect(input, address, input.value);
+    });
+    input.addEventListener("change", () => {
+      const chosen = (input._archiveOptions || []).find(option => option.name === cleanText(input.value));
+      if (chosen) {
+        const footageAddress = "A" + parseAddress(address).row;
+        writeCell(footageAddress, Number(chosen.footage || 0).toLocaleString("en-US"));
+      }
+      recalculate();
+      persist(chosen ? "Saved " + address + " from inbound archive" : "Saved custom inbound text in " + address);
+      updateFormulaBar();
+    });
+    cell.append(input, datalist);
+  }
+
   function renderCellEditor(address, preferredValue) {
     if (formulas[address]) return;
+    if (INBOUND_ARCHIVE_CELL_SET.has(address)) {
+      installInboundArchiveDropdown(address, preferredValue);
+      return;
+    }
     const options = dropdownDefinitions[address];
     if (options && options.length) installDropdown(address, options, preferredValue);
     else installPlainEditor(address, preferredValue);
@@ -2453,7 +2688,7 @@ tags will be replaced.-->
     saveStatus.textContent = message;
     clearTimeout(saveTimer);
     saveTimer = window.setTimeout(() => {
-      saveStatus.textContent = "Autosaves on this device";
+      saveStatus.textContent = "";
     }, 1800);
   }
 
@@ -2581,7 +2816,7 @@ tags will be replaced.-->
       formulaBar.value = formulas[address];
       formulaBar.readOnly = true;
       formulaBar.title = "Calculated from the original Excel formula";
-    } else if (dropdownDefinitions[address]) {
+    } else if (dropdownDefinitions[address] || INBOUND_ARCHIVE_CELL_SET.has(address)) {
       formulaBar.value = readCell(address);
       formulaBar.readOnly = true;
       formulaBar.title = "Use the dropdown in the selected cell";
@@ -2678,19 +2913,38 @@ tags will be replaced.-->
     persist((kind === "vertical" ? "Vertical" : "Horizontal") + " alignment saved");
   }
 
+  function cycleAlignment(kind, button) {
+    const values = kind === "vertical" ? ["top", "middle", "bottom"] : ["left", "center", "right"];
+    const currentIndex = values.indexOf(button.dataset.alignValue);
+    const nextValue = values[(currentIndex + 1) % values.length];
+    applyAlignment(kind, nextValue);
+  }
+
   function syncToolbarState() {
     const area = boundsArea(selectionBounds);
-    mergeButton.disabled = area < 2;
-    unmergeButton.disabled = !mergeRanges.some(merge => boundsIntersect(selectionBounds, mergeBounds(merge)));
-    dropdownButton.disabled = selectionAddresses({ visibleOnly: true, editableOnly: true }).length === 0;
+    const selectionHasMerge = mergeRanges.some(merge => boundsIntersect(selectionBounds, mergeBounds(merge)));
+    mergeButton.disabled = selectionHasMerge ? false : area < 2;
+    mergeButton.textContent = selectionHasMerge ? "Unmerge" : "Merge";
+    mergeButton.dataset.mergeAction = selectionHasMerge ? "unmerge" : "merge";
+    dropdownButton.disabled = editableDropdownTargets().length === 0;
     copyButton.disabled = area === 0;
     const activeAddress = selectedCell && selectedCell.dataset.cell;
     const activeAlignment = activeAddress ? customAlignments[activeAddress] || {} : {};
     toolbar.querySelectorAll("[data-sheet-align]").forEach(button => {
       const kind = button.dataset.sheetAlign;
       const key = kind === "vertical" ? "vertical" : "horizontal";
-      button.classList.toggle("active", activeAlignment[key] === button.dataset.alignValue);
+      const values = kind === "vertical" ? ["top", "middle", "bottom"] : ["left", "center", "right"];
+      const property = kind === "vertical" ? "verticalAlign" : "textAlign";
+      const fallback = kind === "vertical" ? "middle" : "left";
+      const computed = selectedCell ? getComputedStyle(selectedCell)[property] : "";
+      const currentValue = values.includes(activeAlignment[key])
+        ? activeAlignment[key]
+        : (values.includes(computed) ? computed : fallback);
+      button.dataset.alignValue = currentValue;
+      button.textContent = currentValue.charAt(0).toUpperCase() + currentValue.slice(1);
+      button.classList.toggle("active", Boolean(activeAlignment[key]));
       button.disabled = area === 0;
+      button.setAttribute("aria-label", `Current ${kind} alignment ${currentValue}; click to cycle`);
     });
   }
 
@@ -2907,7 +3161,8 @@ tags will be replaced.-->
   }
 
   function editableDropdownTargets() {
-    return selectionAddresses({ visibleOnly: true, editableOnly: true });
+    return selectionAddresses({ visibleOnly: true, editableOnly: true })
+      .filter(address => !INBOUND_ARCHIVE_CELL_SET.has(address));
   }
 
   function openDropdownDialog() {
@@ -3001,7 +3256,10 @@ tags will be replaced.-->
       cell.setAttribute("aria-label", address + " formula " + formulas[address]);
     } else {
       cell.classList.add("editable-cell");
-      renderCellEditor(address, originalValues[address]);
+      const initialValue = Object.prototype.hasOwnProperty.call(savedValues, address)
+        ? savedValues[address]
+        : originalValues[address];
+      renderCellEditor(address, initialValue);
     }
 
     cell.addEventListener("input", () => {
@@ -3013,7 +3271,7 @@ tags will be replaced.-->
 
     cell.addEventListener("pointerdown", event => {
       if (event.button !== 0) return;
-      if (event.target.closest("select")) {
+      if (event.target.closest("select, input.sheet-inbound-archive-input")) {
         if (event.shiftKey && selectionAnchorAddress) {
           selectionFocusAddress = address;
           setSelectionBounds(normalizeBounds(selectionAnchorAddress, address), address);
@@ -3103,12 +3361,14 @@ tags will be replaced.-->
   table.addEventListener("paste", handleGridPaste);
 
   toolbar.querySelectorAll("[data-sheet-align]").forEach(button => {
-    button.addEventListener("click", () => applyAlignment(button.dataset.sheetAlign, button.dataset.alignValue));
+    button.addEventListener("click", () => cycleAlignment(button.dataset.sheetAlign, button));
   });
   copyButton.addEventListener("click", copySelectedCells);
   gridWrap.addEventListener("copy", copySelectionFromKeyboard);
-  mergeButton.addEventListener("click", mergeSelection);
-  unmergeButton.addEventListener("click", unmergeSelection);
+  mergeButton.addEventListener("click", () => {
+    if (mergeButton.dataset.mergeAction === "unmerge") unmergeSelection();
+    else mergeSelection();
+  });
   dropdownButton.addEventListener("click", openDropdownDialog);
   document.getElementById("amCancelDropdown").addEventListener("click", closeDropdownDialog);
   document.getElementById("amApplyDropdown").addEventListener("click", applyDropdownDialog);
@@ -3126,7 +3386,7 @@ tags will be replaced.-->
   formulaBar.addEventListener("input", () => {
     if (!selectedCell || boundsArea(selectionBounds) !== 1) return;
     const address = selectedCell.dataset.cell;
-    if (formulas[address] || dropdownDefinitions[address]) return;
+    if (formulas[address] || dropdownDefinitions[address] || INBOUND_ARCHIVE_CELL_SET.has(address)) return;
     writeCell(address, formulaBar.value);
     recalculate();
     persist("Saved " + address);
@@ -3156,14 +3416,202 @@ tags will be replaced.-->
     announceSaved("Original workbook restored");
   });
 
-  document.getElementById("amPrintSheet").addEventListener("click", () => window.print());
   document.addEventListener("keydown", event => {
     if (event.key !== "Escape" || modal.hidden) return;
     closeDropdownDialog();
   });
 
+  function refreshInboundArchiveDropdowns() {
+    INBOUND_ARCHIVE_CELLS.forEach(address => {
+      const select = cellMap.get(address) && cellMap.get(address).querySelector(".sheet-inbound-archive-select");
+      if (select) populateInboundArchiveSelect(select, address, select.value);
+    });
+  }
+
+  window.addEventListener("focus", refreshInboundArchiveDropdowns);
+  window.addEventListener("storage", event => {
+    if (event.key === INBOUND_ARCHIVE_STORAGE_KEY) refreshInboundArchiveDropdowns();
+  });
+
   recalculate();
   focusCell(cellMap.get("A1"));
+})();
+</script>
+
+<style id="amColumnResizeStyles">
+  #am-report .sheet-column-header:not(.sheet-corner){position:sticky}
+  #am-report .sheet-column-resizer{
+    position:absolute;
+    top:0;
+    right:-5px;
+    z-index:12;
+    width:10px;
+    height:100%;
+    border:0;
+    padding:0;
+    background:transparent;
+    cursor:col-resize;
+    touch-action:none;
+  }
+  #am-report .sheet-column-resizer::after{
+    content:"";
+    position:absolute;
+    top:4px;
+    bottom:4px;
+    left:4px;
+    width:2px;
+    border-radius:2px;
+    background:#2f7ed8;
+    opacity:0;
+  }
+  #am-report .sheet-column-header:hover .sheet-column-resizer::after,
+  #am-report .sheet-column-resizer:focus-visible::after,
+  #am-report .sheet-column-resizer.is-dragging::after{opacity:1}
+  #am-report .sheet-column-resizer:focus-visible{outline:2px solid #2f7ed8;outline-offset:-2px}
+  #am-report .sheet-grid.is-resizing-columns,
+  #am-report .sheet-grid.is-resizing-columns *{cursor:col-resize !important;user-select:none !important}
+  @media print{#am-report .sheet-column-resizer,#amResetColumnWidths{display:none !important}}
+</style>
+<script>
+(() => {
+  "use strict";
+
+  const STORAGE_KEY = "settegast-am-report-column-widths-v2";
+  const MIN_WIDTH = 48;
+  const MAX_WIDTH = 640;
+  const DEFAULT_WIDTHS = Object.freeze([305, 309, 48]);
+  const table = document.querySelector("#am-report table.sheet-grid");
+  if (!table || table.dataset.columnResizeReady === "1") return;
+
+  const headers = Array.from(table.querySelectorAll("thead .sheet-column-header:not(.sheet-corner)"));
+  const columns = Array.from(table.querySelectorAll("col")).filter(col => !col.classList.contains("sheet-row-column"));
+  if (!headers.length || headers.length !== columns.length) return;
+  table.dataset.columnResizeReady = "1";
+
+  const clampWidth = value => Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, Math.round(Number(value) || MIN_WIDTH)));
+  const defaultWidths = headers.map((header, index) => clampWidth(DEFAULT_WIDTHS[index] || header.getBoundingClientRect().width));
+
+  function readWidths() {
+    return columns.map((column, index) => {
+      const inlineWidth = String(column.style.width || "").trim();
+      return /px$/i.test(inlineWidth)
+        ? clampWidth(parseFloat(inlineWidth))
+        : clampWidth(headers[index].getBoundingClientRect().width);
+    });
+  }
+
+  function applyWidths(widths) {
+    const normalized = widths.map(clampWidth);
+    columns.forEach((column, index) => {
+      column.style.width = normalized[index] + "px";
+      column.setAttribute("width", String(normalized[index]));
+    });
+    const rowColumn = table.querySelector("col.sheet-row-column");
+    const rowWidth = rowColumn ? clampWidth(rowColumn.getBoundingClientRect().width || 42) : 42;
+    const totalWidth = normalized.reduce((sum, width) => sum + width, rowWidth);
+    table.style.width = totalWidth + "px";
+    table.style.minWidth = totalWidth + "px";
+  }
+
+  function announce(message) {
+    const status = document.getElementById("amSaveStatus");
+    if (!status) return;
+    status.textContent = message;
+    window.clearTimeout(announce.timer);
+    announce.timer = window.setTimeout(() => { status.textContent = ""; }, 1800);
+  }
+
+  function saveWidths(widths, message) {
+    const normalized = widths.map(clampWidth);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
+    announce(message || "Column widths saved");
+  }
+
+  function restoreSavedWidths() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
+      if (Array.isArray(saved) && saved.length === columns.length && saved.every(Number.isFinite)) {
+        applyWidths(saved);
+      }
+    } catch (_) {
+      localStorage.removeItem(STORAGE_KEY);
+    }
+  }
+
+  let drag = null;
+  headers.forEach((header, index) => {
+    const label = header.textContent.trim() || String(index + 1);
+    const handle = document.createElement("button");
+    handle.type = "button";
+    handle.className = "sheet-column-resizer";
+    handle.setAttribute("aria-label", "Resize column " + label);
+    handle.title = "Drag to resize column " + label + ". Double-click to reset.";
+    header.appendChild(handle);
+
+    handle.addEventListener("pointerdown", event => {
+      if (event.button !== 0) return;
+      event.preventDefault();
+      event.stopPropagation();
+      const widths = readWidths();
+      applyWidths(widths);
+      drag = { index, startX:event.clientX, startWidth:widths[index], widths, handle };
+      handle.classList.add("is-dragging");
+      table.classList.add("is-resizing-columns");
+      handle.setPointerCapture(event.pointerId);
+    });
+
+    handle.addEventListener("dblclick", event => {
+      event.preventDefault();
+      event.stopPropagation();
+      const widths = readWidths();
+      widths[index] = defaultWidths[index];
+      applyWidths(widths);
+      saveWidths(widths, "Column " + label + " reset");
+    });
+
+    handle.addEventListener("keydown", event => {
+      if (event.key !== "ArrowLeft" && event.key !== "ArrowRight" && event.key !== "Home") return;
+      event.preventDefault();
+      const widths = readWidths();
+      widths[index] = event.key === "Home"
+        ? defaultWidths[index]
+        : clampWidth(widths[index] + (event.key === "ArrowRight" ? 8 : -8));
+      applyWidths(widths);
+      saveWidths(widths, "Column " + label + (event.key === "Home" ? " reset" : " resized"));
+    });
+  });
+
+  document.addEventListener("pointermove", event => {
+    if (!drag) return;
+    drag.widths[drag.index] = clampWidth(drag.startWidth + event.clientX - drag.startX);
+    applyWidths(drag.widths);
+  });
+
+  document.addEventListener("pointerup", () => {
+    if (!drag) return;
+    drag.handle.classList.remove("is-dragging");
+    table.classList.remove("is-resizing-columns");
+    saveWidths(drag.widths);
+    drag = null;
+  });
+
+  const resetGroup = document.querySelector("#am-report .sheet-reset-group");
+  if (resetGroup) {
+    const resetButton = document.createElement("button");
+    resetButton.type = "button";
+    resetButton.className = "sheet-button sheet-format-button";
+    resetButton.id = "amResetColumnWidths";
+    resetButton.textContent = "Reset Widths";
+    resetButton.addEventListener("click", () => {
+      localStorage.removeItem(STORAGE_KEY);
+      applyWidths(defaultWidths);
+      announce("Column widths reset");
+    });
+    const status = document.getElementById("amSaveStatus");
+    resetGroup.insertBefore(resetButton, status || null);
+  }
+
+  restoreSavedWidths();
 })();
 </script>
 </body>
