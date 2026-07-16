@@ -1,5 +1,6 @@
 -- Permanently remove legacy employee passwords and cached copies.
--- Run this migration in every Supabase project used by the workbook.
+-- Retained for older deployments. New deployments should run
+-- 20260715_unified_conglobal_project.sql in the single unified project instead.
 
 begin;
 

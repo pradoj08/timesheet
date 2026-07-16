@@ -3213,12 +3213,31 @@ textarea{
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script>
-const SUPABASE_URL = 'https://jznqyngrtmfkivddgxhv.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_vpxlAwOEjOFGTlsqZwv46g_QtqKozgy';
+const SUPABASE_URL = 'https://epthcamzzwegsdggrjgh.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_f5HYn7EM12Z7V2psO_njmQ_w89WOtm1';
+const CONGLOBAL_SUPABASE_PIN_KEY = 'conglobal-supabase-sync-pin';
+function readConglobalSupabasePin() {
+  try { return (localStorage.getItem(CONGLOBAL_SUPABASE_PIN_KEY) || '').trim(); }
+  catch (error) { return ''; }
+}
+function conglobalSupabaseFetch(input, init) {
+  var options = Object.assign({}, init || {});
+  var headers = new Headers(options.headers || {});
+  var pin = readConglobalSupabasePin();
+  if(pin) headers.set('x-conglobal-sync-pin', pin);
+  options.headers = headers;
+  return window.fetch(input, options);
+}
 var supabaseClient = null;
 try {
   if (window.supabase && typeof window.supabase.createClient === 'function') {
-    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    var initialPin = readConglobalSupabasePin();
+    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+      global: {
+        fetch: conglobalSupabaseFetch,
+        headers: initialPin ? { 'x-conglobal-sync-pin': initialPin } : {}
+      }
+    });
   } else {
     console.warn('Supabase library did not load. App will preview with local fallback.');
   }
@@ -6871,6 +6890,16 @@ async function loadEmployees(){
       return;
     }
 
+    if(!Array.isArray(data) || !data.length){
+      if(Array.isArray(employees) && employees.length && !rosterLooksBroken()){
+        console.warn('Unified Supabase employee table is empty; preserving and uploading the valid local roster.');
+        await saveEmployees();
+        return;
+      }
+      restoreActualEmployeeRoster('Unified Supabase employee table is empty');
+      return;
+    }
+
     employees = (data || []).map(function(row){
       return normalizeEmployeeRecord({
         id: row.id || row.employee_id || uid(),
@@ -7572,6 +7601,13 @@ async function loadEquipment(){
 
     if(error){
       console.warn('Supabase equipment load error (using local data):', error.message);
+      updateEquipmentStatusMeta();
+      return;
+    }
+
+    if((!Array.isArray(data) || !data.length) && equipment.length){
+      console.warn('Unified Supabase equipment table is empty; preserving and uploading local equipment.');
+      await saveEquipment();
       updateEquipmentStatusMeta();
       return;
     }

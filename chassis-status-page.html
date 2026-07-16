@@ -6501,6 +6501,7 @@ const $=id=>document.getElementById(id);
 
 const SUPABASE_URL="https://epthcamzzwegsdggrjgh.supabase.co";
 const SUPABASE_KEY="sb_publishable_f5HYn7EM12Z7V2psO_njmQ_w89WOtm1";
+const CONGLOBAL_SUPABASE_PIN_KEY="conglobal-supabase-sync-pin";
 const CLOUD_KEYS={current:"current_session",archives:"archive_list",recycle:"archive_recycle_bin",calendar:"yard_check_calendar",forecastRequestHistory:"forecast_request_history",forecastArchives:"forecast_archive_list"};
 let cloudReady=false, cloudLoading=false, cloudSaveTimer=null, cloudLastSavedAt=null;
 
@@ -6509,9 +6510,12 @@ function setCloudStatus(text,mode="warn"){
   el.textContent=text; el.classList.remove("ok","warn","err"); el.classList.add(mode);
 }
 function cloudHeaders(extra={}){
+  let pin="";
+  try{pin=(localStorage.getItem(CONGLOBAL_SUPABASE_PIN_KEY)||"").trim()}catch(error){}
   return {
     "apikey":SUPABASE_KEY,
     "Authorization":"Bearer "+SUPABASE_KEY,
+    ...(pin?{"x-conglobal-sync-pin":pin}:{}),
     "Content-Type":"application/json",
     "Prefer":"return=representation",
     ...extra
