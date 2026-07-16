@@ -3,6 +3,7 @@ const vm = require("vm");
 
 const workbookPath = "index.html";
 const pages = {
+  matrix: "matrix-page.html",
   amReport: "am-report-page.html",
   chassisStatus: "chassis-status-page.html",
   billing: "billing-page.html",
@@ -61,13 +62,13 @@ function buildAmReportWorkspace(sheetHtml) {
   *{box-sizing:border-box}
   html,body{min-height:100%;margin:0;background:#e9eef5;color:#132238;font-family:Calibri,"Aptos Narrow",Arial,sans-serif}
   body{padding:8px;overflow-x:hidden}
-  .am-three-day-workspace{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:start;gap:8px;width:100%;max-width:none;margin:0 auto}
+  .am-three-day-workspace{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:start;gap:0;width:100%;max-width:none;margin:0 auto}
   .am-day-panel{min-width:0;overflow:hidden;border:1px solid #a9b8cc;border-radius:12px;background:#fff;box-shadow:0 8px 24px rgba(15,23,42,.09)}
   .am-day-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:42px;padding:8px 12px;border-bottom:1px solid #cbd5e1;background:#132238;color:#fff}
   .am-day-heading strong{font-size:15px;font-weight:900;letter-spacing:.08em;text-transform:uppercase}
   .am-day-heading span{color:#dbeafe;font-size:13px;font-weight:800}
   .am-day-frame{display:block;width:100%;min-width:0;height:1200px;border:0;background:#eef2f6;overflow:hidden}
-  @media(max-width:900px){body{padding:4px}.am-three-day-workspace{gap:4px}.am-day-heading{padding:6px}.am-day-heading strong{font-size:11px}.am-day-heading span{font-size:10px}}
+  @media(max-width:900px){body{padding:4px}.am-three-day-workspace{gap:0}.am-day-heading{padding:6px}.am-day-heading strong{font-size:11px}.am-day-heading span{font-size:10px}}
 </style>
 </head>
 <body>
@@ -77,6 +78,16 @@ function buildAmReportWorkspace(sheetHtml) {
   const days = ${dayPayload};
   const workspace = document.querySelector(".am-three-day-workspace");
   const frames = [];
+  const clearFrameSelection = frame => {
+    try {
+      const reportDocument = frame.contentDocument;
+      if (!reportDocument) return;
+      reportDocument.querySelectorAll(".selected-cell, .range-selected").forEach(cell => {
+        cell.classList.remove("selected-cell", "range-selected");
+        cell.removeAttribute("aria-selected");
+      });
+    } catch (_) {}
+  };
   const formatDate = offset => {
     const date = new Date();
     date.setDate(date.getDate() + offset);
@@ -93,6 +104,14 @@ function buildAmReportWorkspace(sheetHtml) {
     frames.push(frame);
     workspace.appendChild(panel);
     frame.addEventListener("load", () => {
+      try {
+        const reportDocument = frame.contentDocument;
+        reportDocument.addEventListener("pointerdown", event => {
+          const target = event.target;
+          if (target && target.closest && target.closest(".sheet-grid td.sheet-cell, .sheet-editor-toolbar, .sheet-formula-row, .sheet-dropdown-modal")) return;
+          clearFrameSelection(frame);
+        });
+      } catch (_) {}
       const fit = () => {
         try {
           const documentHeight = Math.max(
@@ -114,9 +133,14 @@ function buildAmReportWorkspace(sheetHtml) {
     });
     frame.srcdoc = day.html;
   });
+  document.addEventListener("pointerdown", event => {
+    const target = event.target;
+    if (target && target.closest && target.closest(".am-day-frame")) return;
+    frames.forEach(clearFrameSelection);
+  });
   window.addEventListener("message", event => {
     if (!frames.some(frame => frame.contentWindow === event.source)) return;
-    if (!event.data || !["conglobal-open-audits-popup", "conglobal-open-checklist-popup"].includes(event.data.type)) return;
+    if (!event.data || !["conglobal-open-mass-export", "conglobal-open-audits-popup", "conglobal-open-checklist-popup"].includes(event.data.type)) return;
     window.parent.postMessage(event.data, "*");
   });
 })();

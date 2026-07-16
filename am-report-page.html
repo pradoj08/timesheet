@@ -934,6 +934,19 @@ body{
   color:#fff;
   box-shadow:0 4px 10px rgba(30,58,138,.34);
 }
+.sheet-button.sheet-mass-export-button{
+  min-width:112px;
+  border-color:#047857;
+  background:#059669;
+  color:#fff;
+  box-shadow:0 3px 8px rgba(5,150,105,.28);
+}
+.sheet-button.sheet-mass-export-button:hover{
+  border-color:#065f46;
+  background:#047857;
+  color:#fff;
+  box-shadow:0 4px 10px rgba(4,120,87,.34);
+}
 #am-report table{
   width:100% !important;
   max-width:100%;
@@ -1080,6 +1093,15 @@ body{
   outline:0;
   cursor:cell;
   transition:box-shadow .08s ease;
+}
+#am-report .sheet-grid td.editable-cell[contenteditable]:not(.merged-anchor-cell){
+  height:25px !important;
+  max-height:25px !important;
+  padding-top:0 !important;
+  padding-bottom:0 !important;
+  line-height:25px !important;
+  white-space:nowrap !important;
+  overflow:hidden !important;
 }
 #am-report .sheet-grid td.editable-cell:hover{
   box-shadow:inset 0 0 0 1px #60a5fa;
@@ -2240,7 +2262,7 @@ tags will be replaced.-->
 
 
   recalculate();
-  focusCell(cellMap.get("A1"));
+  
 })();
 </script>
 <script id="am-report-editor">
@@ -2297,11 +2319,11 @@ tags will be replaced.-->
     A48: "=SUM(A45:A47)",
     A55: "=SUM(A52:A54)",
     A62: '=SUM(A64+A66+A68) & " units next 72 hours"',
-    C64: "=DAY(TODAY())-1",
-    C66: "=DAY(TODAY())",
+    C64: "=C65+2",
+    C66: "=C65+2",
     C67: "=C65+1",
-    C68: "=DAY(TODAY())+1",
-    C69: "=C67+1",
+    C68: "=C65+3",
+    C69: "=C65+2",
     A72: "=WEATHER_TEXT()"
   });
 
@@ -2388,6 +2410,12 @@ tags will be replaced.-->
   headingCopy.className = "sheet-heading-copy";
   const headingActions = document.createElement("div");
   headingActions.className = "sheet-heading-actions";
+  const massExportButton = document.createElement("button");
+  massExportButton.type = "button";
+  massExportButton.id = "amMassExportButton";
+  massExportButton.className = "sheet-button sheet-checklist-button sheet-mass-export-button";
+  massExportButton.textContent = "Mass Export";
+  massExportButton.title = "Export or restore the complete workbook";
   const auditsButton = document.createElement("button");
   auditsButton.type = "button";
   auditsButton.id = "amAuditsPopupButton";
@@ -2403,10 +2431,13 @@ tags will be replaced.-->
   if (title) {
     title.before(headingRow);
     headingCopy.append(title);
-    if (REPORT_DAY_OFFSET === 0) headingActions.append(auditsButton, checklistButton);
+    if (REPORT_DAY_OFFSET === 0) headingActions.append(massExportButton, auditsButton, checklistButton);
     headingRow.append(headingCopy, headingActions);
   }
   if (REPORT_DAY_OFFSET === 0) {
+    massExportButton.addEventListener("click", () => {
+      window.parent.postMessage({ type: "conglobal-open-mass-export" }, "*");
+    });
     auditsButton.addEventListener("click", () => {
       window.parent.postMessage({ type: "conglobal-open-audits-popup" }, "*");
     });
@@ -2623,6 +2654,8 @@ tags will be replaced.-->
     }
   } catch (_) {}
 
+  let inboundSequenceDriverInitialized = Object.prototype.hasOwnProperty.call(savedValues, "C65");
+
   function sanitizeOptions(values) {
     const seen = new Set();
     const output = [];
@@ -2795,6 +2828,25 @@ tags will be replaced.-->
     cell.setAttribute("contenteditable", "plaintext-only");
     cell.setAttribute("spellcheck", "false");
     cell.setAttribute("aria-label", "Editable cell " + address);
+  }
+
+  function normalizePlainEditor(cell) {
+    if (!cell || !cell.hasAttribute("contenteditable")) return;
+    const containsLineMarkup = Boolean(cell.querySelector("br, div, p"));
+    const containsLineBreak = /[\r\n]/.test(cell.innerText || cell.textContent || "");
+    if (!containsLineMarkup && !containsLineBreak) return;
+    const normalized = String(cell.innerText || cell.textContent || "")
+      .replace(/[\r\n]+/g, " ")
+      .replace(/\s{2,}/g, " ");
+    cell.textContent = normalized;
+    if (document.activeElement !== cell) return;
+    const selection = window.getSelection && window.getSelection();
+    if (!selection) return;
+    const range = document.createRange();
+    range.selectNodeContents(cell);
+    range.collapse(false);
+    selection.removeAllRanges();
+    selection.addRange(range);
   }
 
   function installDropdown(address, options, preferredValue) {
@@ -3219,12 +3271,16 @@ tags will be replaced.-->
     };
 
     setFormulaResult("A2", dateText);
-    setFormulaResult("C64", shiftedDay(-1));
-    setFormulaResult("C65", shiftedDay(-3));
-    setFormulaResult("C66", shiftedDay(0));
-    setFormulaResult("C67", shiftedDay(-2));
-    setFormulaResult("C68", shiftedDay(1));
-    setFormulaResult("C69", shiftedDay(-1));
+    if (!inboundSequenceDriverInitialized) {
+      writeCell("C65", shiftedDay(-3));
+      inboundSequenceDriverInitialized = true;
+    }
+    const inboundSequenceBase = numeric("C65");
+    setFormulaResult("C64", formatNumber(inboundSequenceBase + 2));
+    setFormulaResult("C66", formatNumber(inboundSequenceBase + 2));
+    setFormulaResult("C67", formatNumber(inboundSequenceBase + 1));
+    setFormulaResult("C68", formatNumber(inboundSequenceBase + 3));
+    setFormulaResult("C69", formatNumber(inboundSequenceBase + 2));
     applyOutboundFootagePulls();
     applyTimesheetManpowerPull();
     setFormulaResult("A9", formatNumber(numeric("A6") + numeric("A7") + numeric("A8")));
@@ -3867,10 +3923,17 @@ tags will be replaced.-->
 
     cell.addEventListener("input", () => {
       if (formulas[address]) return;
+      normalizePlainEditor(cell);
       if (FORECAST_INBOUND_EDITABLE_CELL_SET.has(address)) forecastInboundManualOverrides.add(address);
       if (selectedCell === cell && boundsArea(selectionBounds) === 1) formulaBar.value = readCell(address);
       recalculate();
       persist("Saved " + address);
+    });
+
+    cell.addEventListener("beforeinput", event => {
+      if (!cell.hasAttribute("contenteditable")) return;
+      if (event.inputType !== "insertParagraph" && event.inputType !== "insertLineBreak") return;
+      event.preventDefault();
     });
 
     cell.addEventListener("pointerdown", event => {
@@ -4011,6 +4074,7 @@ tags will be replaced.-->
       renderCellEditor(address, value);
       writeCell(address, value);
     });
+    inboundSequenceDriverInitialized = false;
     recalculate();
     selectSingleCell(cellMap.get("A1"));
     announceSaved("Original workbook restored");
@@ -4045,7 +4109,7 @@ tags will be replaced.-->
   window.setInterval(recalculate, 60000);
 
   recalculate();
-  focusCell(cellMap.get("A1"));
+  
 })();
 </script>
 

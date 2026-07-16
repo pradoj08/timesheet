@@ -607,6 +607,36 @@
     gap: 6px;
     flex-wrap: wrap;
   }
+  .inbound-delete-undo {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 9px 10px;
+    border: 1px solid #f0bf4c;
+    border-radius: 7px;
+    background: #fff6d8;
+    color: #5f3b00;
+    box-shadow: 0 5px 14px rgba(69, 44, 0, .14);
+    font-size: 11px;
+    font-weight: 800;
+  }
+  .inbound-delete-undo strong { color: #172033; }
+  .inbound-delete-undo button {
+    flex: 0 0 auto;
+    min-height: 28px;
+    padding: 4px 10px;
+    border: 1px solid #9a6500;
+    border-radius: 5px;
+    background: #172033;
+    color: #fff;
+    font: inherit;
+    cursor: pointer;
+  }
+  .inbound-delete-undo button:hover { background: #29446d; }
   .inbound-body {
     display: grid;
     gap: 12px;
@@ -2121,7 +2151,7 @@
     .side-column .panel:first-child { grid-column: 1 / -1; }
   }
   @media (max-width: 720px) {
-    .topbar { position: static; align-items: flex-start; }
+    .topbar { position: sticky; align-items: flex-start; }
     .top-actions { display: none; }
     .brand { flex-wrap: wrap; }
     .brand-quick-actions { width: 100%; margin-left: 54px; }
@@ -3400,6 +3430,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       inboundPlannerPopupMigrated: true,
       inboundPlans: defaultInboundPlans(),
       inboundArchive: [],
+      lastDeletedInboundArchiveId: "",
       colorRules: DEFAULT_COLOR_RULES.map(rule => ({...rule})),
       gridTypography: normalizeGridTypography(),
       dwellOverrides: {},
@@ -4720,6 +4751,10 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     const ordered = state.inboundPlans.map((plan, index) => ({plan, index}))
       .sort((a,b) => inboundDaySort(a.plan.day) - inboundDaySort(b.plan.day) || a.index - b.index);
     const parts = [];
+    const deletedRecord = state.inboundArchive.find(item => item.id === state.lastDeletedInboundArchiveId);
+    if (deletedRecord) {
+      parts.push('<div class="inbound-delete-undo" role="status"><span><strong>' + escapeHtml(deletedRecord.plan.train || "Unnamed inbound") + '</strong> was deleted and saved in Inbound Archive.</span><button data-archive-restore="' + escapeAttr(deletedRecord.id) + '" type="button">Restore</button></div>');
+    }
     const primaryDays = ["TODAY", "TOMORROW", "DAY AFTER"];
     const extraDays = [...new Set(ordered.map(item => item.plan.day).filter(day => !primaryDays.includes(day)))];
     [...primaryDays, ...extraDays].forEach(day => {
@@ -4994,6 +5029,26 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     renderAll();
   }
 
+  function deleteInboundPlan(index) {
+    state.inboundPlans = normalizeInboundPlans(state.inboundPlans);
+    state.inboundArchive = normalizeInboundArchive(state.inboundArchive);
+    const planIndex = Number(index);
+    const plan = state.inboundPlans[planIndex];
+    if (!plan) return;
+    const archivedAt = new Date().toISOString();
+    let record = state.inboundArchive.find(item => item.id === plan.archiveId);
+    if (!record) {
+      record = {id:`archive-${Date.now()}-${Math.random().toString(36).slice(2,8)}`, archivedAt, plan:cloneInboundPlan(plan)};
+      state.inboundArchive.push(record);
+    } else {
+      record.archivedAt = archivedAt;
+      record.plan = cloneInboundPlan(plan);
+    }
+    state.lastDeletedInboundArchiveId = record.id;
+    state.inboundPlans.splice(planIndex, 1);
+    renderAll();
+  }
+
   function archiveFilterMatches(record) {
     if (inboundArchiveFilter === "all") return true;
     const arrival = inboundArrivalDate(record.plan.eta);
@@ -5145,12 +5200,14 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     if (activeIndex >= 0) state.inboundPlans[activeIndex] = restored;
     else state.inboundPlans.push(restored);
     state.inboundArchive.splice(index,1);
+    if (state.lastDeletedInboundArchiveId === id) state.lastDeletedInboundArchiveId = "";
     closeInboundArchivePreview();
     renderAll();
   }
 
   function deleteArchivedInbound(id) {
     state.inboundArchive = state.inboundArchive.filter(item => item.id !== id);
+    if (state.lastDeletedInboundArchiveId === id) state.lastDeletedInboundArchiveId = "";
     state.inboundPlans.forEach(plan => {
       if (plan.archiveId === id) { plan.archiveId = ""; plan.archivedAt = ""; }
     });
@@ -7011,8 +7068,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     }
     const deleteTrain = e.target.closest("[data-inbound-delete]");
     if (deleteTrain) {
-      state.inboundPlans.splice(Number(deleteTrain.dataset.inboundDelete), 1);
-      renderAll();
+      deleteInboundPlan(Number(deleteTrain.dataset.inboundDelete));
+      return;
     }
     const archiveTrain = e.target.closest("[data-inbound-archive]");
     if (archiveTrain) {

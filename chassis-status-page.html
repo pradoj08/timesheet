@@ -4795,22 +4795,19 @@ body.forecast-view .forecast-bottom-controls {
   line-height:1 !important;
 }
 #forecastInventoryImportBtn,
-#forecastMismatchImportBtn,
-#forecastAuthorizedImportBtn {
+#forecastMismatchImportBtn {
   background:rgba(16,185,129,.22) !important;
   border-color:rgba(52,211,153,.48) !important;
   color:#d1fae5 !important;
   box-shadow:0 8px 18px rgba(16,185,129,.12) !important;
 }
 #forecastInventoryImportBtn:hover,
-#forecastMismatchImportBtn:hover,
-#forecastAuthorizedImportBtn:hover {
+#forecastMismatchImportBtn:hover {
   border-color:rgba(167,243,208,.72) !important;
   filter:brightness(1.08);
 }
 #forecastInventoryClearBtn,
-#forecastMismatchClearBtn,
-#forecastAuthorizedClearBtn {
+#forecastMismatchClearBtn {
   background:rgba(225,29,72,.16) !important;
   border-color:rgba(251,113,133,.38) !important;
   color:#ffe4e6 !important;
@@ -5502,6 +5499,115 @@ body.forecast-view .forecast-bottom-controls {
 <!-- STYLED_HTML_EXCEL_EXPORT_RELIABLE: uses .xls HTML table so Excel preserves header color, centered values, red CE -->
 <!-- EXCEL_CE_EVENT_AGE_DAYS_YELLOW: CE rows highlight Event Age and Days Old yellow; header has background color -->
 <!-- CLIENT_SIDE_ADMIN_NOTE: credentials are not displayed in the UI; true protection requires server-side auth/RLS. -->
+<style id="forecast-hotbox-list-styles">
+#forecastHotboxListBtn{
+  display:inline-flex!important;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  background:rgba(217,119,6,.2)!important;
+  border-color:rgba(251,191,36,.55)!important;
+  color:#fef3c7!important;
+}
+#forecastHotboxListBtn:hover{border-color:#fde68a!important;filter:brightness(1.08)}
+#forecastHotboxListCount{
+  min-width:19px;
+  height:19px;
+  display:inline-grid;
+  place-items:center;
+  padding:0 5px;
+  border-radius:999px;
+  background:#fbbf24;
+  color:#2b1700;
+  font-size:10px;
+  font-weight:1000;
+}
+.forecast-hotbox-list-modal{
+  position:fixed;
+  inset:0;
+  z-index:2400;
+  display:none;
+  align-items:flex-start;
+  justify-content:center;
+  padding:56px 18px 24px;
+  background:rgba(2,6,23,.76);
+  backdrop-filter:blur(5px);
+}
+.forecast-hotbox-list-modal.open{display:flex}
+.forecast-hotbox-list-card{
+  width:min(900px,96vw);
+  max-height:calc(100vh - 82px);
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+  border:1px solid rgba(251,191,36,.5);
+  border-radius:12px;
+  background:#0b1326;
+  box-shadow:0 28px 80px rgba(0,0,0,.5),0 0 0 1px rgba(251,191,36,.1);
+}
+.forecast-hotbox-list-head{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:18px;
+  padding:18px 20px;
+  border-bottom:1px solid #273552;
+  background:linear-gradient(135deg,rgba(120,53,15,.5),rgba(15,23,42,.96));
+}
+.forecast-hotbox-list-head span{color:#fbbf24;font-size:10px;font-weight:1000;letter-spacing:.12em;text-transform:uppercase}
+.forecast-hotbox-list-head h3{margin:3px 0 2px;color:#fff;font-size:22px;letter-spacing:0}
+.forecast-hotbox-list-head p{margin:0;color:#aebbd2;font-size:12px;font-weight:700}
+.forecast-hotbox-list-head button{
+  min-width:66px;
+  height:34px;
+  border:1px solid #475569;
+  border-radius:7px;
+  background:#17233a;
+  color:#fff;
+  font-weight:900;
+}
+.forecast-hotbox-list-body{overflow:auto;padding:14px;display:grid;gap:12px}
+.forecast-hotbox-empty{
+  min-height:150px;
+  display:grid;
+  place-items:center;
+  border:1px dashed #334155;
+  border-radius:8px;
+  color:#94a3b8;
+  font-size:13px;
+}
+.forecast-hotbox-train-group{overflow:hidden;border:1px solid #2b3b59;border-radius:8px;background:#0f192d}
+.forecast-hotbox-train-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:11px 13px;
+  border-bottom:1px solid #2b3b59;
+  background:#15223a;
+}
+.forecast-hotbox-train-title{display:flex;align-items:center;gap:9px;min-width:0}
+.forecast-hotbox-train-title strong{color:#fff;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.forecast-hotbox-train-title span{color:#93c5fd;font-size:11px}
+.forecast-hotbox-train-count{padding:4px 8px;border-radius:999px;background:#fbbf24;color:#2b1700;font-size:10px;font-weight:1000;white-space:nowrap}
+.forecast-hotbox-table-wrap{width:100%;overflow:hidden}
+.forecast-hotbox-table{width:100%;border-collapse:collapse;table-layout:fixed}
+.forecast-hotbox-table th:nth-child(1){width:32%}
+.forecast-hotbox-table th:nth-child(2){width:24%}
+.forecast-hotbox-table th:nth-child(3){width:14%}
+.forecast-hotbox-table th:nth-child(4){width:30%}
+.forecast-hotbox-table th,.forecast-hotbox-table td{padding:7px 10px;border-bottom:1px solid #22304a;text-align:left;vertical-align:middle;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.forecast-hotbox-table th{background:#101a2d;color:#91a4c4;font-size:9px;letter-spacing:.08em;text-transform:uppercase}
+.forecast-hotbox-table td{color:#e5edf9;font-size:11px;font-weight:800;overflow-wrap:anywhere}
+.forecast-hotbox-table tbody tr:last-child td{border-bottom:0}
+.forecast-hotbox-unit{color:#fde68a!important;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:12px!important}
+.forecast-hotbox-consignee{color:#fbbf24!important}
+@media(max-width:680px){
+  .forecast-hotbox-list-modal{padding:44px 6px 8px}
+  .forecast-hotbox-list-head{padding:14px}
+  .forecast-hotbox-table th,.forecast-hotbox-table td{padding:6px 7px;font-size:9px}
+}
+</style>
 </head>
 <body class="forecast-view hide-forecast-differences app-initializing">
 <span id="cloudStatus" class="cloud-status-hidden" aria-hidden="true"></span>
@@ -5886,12 +5992,11 @@ body.forecast-view .forecast-bottom-controls {
         <button id="forecastTracklistImportBtn" type="button">Import Tracklist</button>
         <button id="forecastInventoryImportBtn" type="button">Import Chassis</button>
         <button id="forecastMismatchImportBtn" type="button">Import Mismatch</button>
-        <button id="forecastAuthorizedImportBtn" type="button">Import Authorized</button>
+        <button id="forecastHotboxListBtn" type="button" aria-haspopup="dialog">Hotbox List <span id="forecastHotboxListCount">0</span></button>
         <button id="forecastClearBtn" type="button">Clear Inbound</button>
         <button id="forecastInventoryClearBtn" type="button">Clear Inventory</button>
         <button id="forecastClearImportBtn" type="button">Clear Chassis</button>
         <button id="forecastMismatchClearBtn" type="button">Clear Mismatch</button>
-        <button id="forecastAuthorizedClearBtn" type="button">Clear Authorized</button>
         <input id="forecastFileInput" type="file" accept=".csv,.xlsx,.xls" multiple hidden>
         <input id="forecastInventoryFileInput" type="file" accept=".csv,.xlsx,.xls" multiple hidden>
         <input id="forecastMismatchFileInput" type="file" accept=".csv,.xlsx,.xls" multiple hidden>
@@ -6119,6 +6224,20 @@ body.forecast-view .forecast-bottom-controls {
         </div>
         <div id="forecastMismatchDetailsContent" class="forecast-mismatch-details-content"></div>
       </div>
+    </div>
+
+    <div id="forecastHotboxListModal" class="forecast-hotbox-list-modal" aria-hidden="true">
+      <section class="forecast-hotbox-list-card" role="dialog" aria-modal="true" aria-labelledby="forecastHotboxListTitle">
+        <header class="forecast-hotbox-list-head">
+          <div>
+            <span>Inbound exceptions</span>
+            <h3 id="forecastHotboxListTitle">Hotbox List</h3>
+            <p id="forecastHotboxListSummary">No hotboxes found in the current inbound forecast.</p>
+          </div>
+          <button id="forecastHotboxListCloseBtn" type="button" aria-label="Close Hotbox List">Close</button>
+        </header>
+        <div id="forecastHotboxListBody" class="forecast-hotbox-list-body"></div>
+      </section>
     </div>
 
     <div id="forecastAuthorizedPreviewModal" class="forecast-authorized-preview-modal" aria-hidden="true">
@@ -9387,6 +9506,7 @@ function downloadStyledExcelTable(rows, filename){
 
 
 </style>
+
 </body>
 </html>`;
 
@@ -11363,16 +11483,40 @@ function renderForecastMismatchPreview(){
       <table><colgroup><col class="preview-col-container"><col class="preview-col-chassis"><col class="preview-col-required"><col class="preview-col-chassis-pool"><col class="preview-col-size"><col class="preview-col-location"><col class="preview-col-reason"></colgroup><thead><tr><th data-sort-column="0">Container</th><th data-sort-column="1">Chassis</th><th data-sort-column="2">Required Pool</th><th data-sort-column="3">Chassis Pool</th><th data-sort-column="4" data-sort-type="number">Size</th><th data-sort-column="5">Location</th><th data-sort-column="6">Reason</th></tr></thead><tbody>${body}</tbody></table>
     </section>`;
   };
+  const flipAuthorizationTable=()=>{
+    const rows=Array.isArray(forecastAuthorizedRows)?forecastAuthorizedRows:[];
+    const valueOrDash=value=>String(value||"").trim()?escapeHtml(value):"&mdash;";
+    const body=rows.length?rows.map(row=>`<tr>
+      <td>${valueOrDash(row.equipmentId)}</td>
+      <td>${valueOrDash(row.chassisPool)}</td>
+      <td>${valueOrDash(row.matchedChassis)}</td>
+      <td>${valueOrDash(row.direction)}</td>
+      <td>${valueOrDash(row.length)}</td>
+      <td>${valueOrDash(row.authorizedAt)}</td>
+      <td>${valueOrDash(row.expiresAt)}</td>
+    </tr>`).join(""):`<tr><td colspan="7" class="forecast-mismatch-preview-empty">No flip authorization records imported.</td></tr>`;
+    return `<section class="forecast-mismatch-preview-section forecast-flip-authorization-section">
+      <div class="forecast-preview-section-head">
+        <span class="forecast-preview-section-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5 9.5 17 19 7.5"/></svg></span>
+        <div><h4>Flip Authorizations (${rows.length})</h4><p>Paid equipment authorizations available for flip matching.</p></div>
+        <button type="button" data-forecast-authorized-import>Import</button>
+      </div>
+      <table><colgroup><col class="preview-col-auth-equipment"><col class="preview-col-auth-pool"><col class="preview-col-auth-chassis"><col class="preview-col-auth-direction"><col class="preview-col-auth-length"><col class="preview-col-auth-date"><col class="preview-col-auth-expiry"></colgroup><thead><tr><th data-sort-column="0">Equipment</th><th data-sort-column="1">Chassis Pool</th><th data-sort-column="2">Matched Chassis</th><th data-sort-column="3">Direction</th><th data-sort-column="4" data-sort-type="number">Length</th><th data-sort-column="5">Authorized</th><th data-sort-column="6">Expires</th></tr></thead><tbody>${body}</tbody></table>
+    </section>`;
+  };
   sections.innerHTML=[
     table("Mismatches",preview.mismatched,"mismatch"),
     table("No Mates",preview.noMates,"No Mate"),
     preview.stacked.length?table("Stacked",preview.stacked,"stacked"):"",
-    excludedTable()
+    excludedTable(),
+    flipAuthorizationTable()
   ].join("");
   setupForecastPreviewSorting(sections);
   sections.querySelectorAll("[data-mismatch-preview-action]").forEach(btn=>{
     btn.onclick=()=>openForecastMismatchDetails(btn.closest(".forecast-mismatch-preview-section"));
   });
+  const authorizationImportBtn=sections.querySelector("[data-forecast-authorized-import]");
+  if(authorizationImportBtn)authorizationImportBtn.onclick=()=>$("forecastAuthorizedFileInput")?.click();
 }
 function setupForecastPreviewSorting(root){
   root?.querySelectorAll("th[data-sort-column]").forEach(header=>{
@@ -11493,10 +11637,11 @@ function clearForecastMismatchUnits(){
   forecastMismatchNoMateUnits=[];
   forecastMismatchExcludedUnits=[];
   forecastMismatchImportStats={unsupported:0,matching:0};
+  forecastAuthorizedRows=[];
   saveForecastState();
   renderForecastImportedUnits();
   if(document.body.classList.contains("forecast-excel-view-open"))renderForecastExcelView();
-  if(typeof showArchiveToast==="function")showArchiveToast("Stacked and mismatch units cleared.");
+  if(typeof showArchiveToast==="function")showArchiveToast("Mismatch and flip authorization data cleared.");
 }
 function resetForecastMismatchClearButton(){
   forecastMismatchClearArmed=false;
@@ -12598,7 +12743,11 @@ function renderForecastStatusCards(){
       <div class="forecast-status-cards-grid">
          ${dayGroups.map(g=>{
            const units=unitsForForecastGroup(g.train,g.day);
-          const hasImccomllcConsignee=units.some(unit=>String(unit?.consignee||"").trim().toUpperCase()==="**IMCCOMLLC");
+          const hotBoxCount=units.reduce((count,unit)=>{
+            const consignee=String(unit?.consignee||"").toUpperCase().replace(/[^A-Z0-9]/g,"");
+            return count+(consignee==="IMCCOMLLC"?1:0);
+          },0);
+          const hasImccomllcConsignee=hotBoxCount>0;
            const mix={};
           units.forEach(unit=>{
             if(isForecastTrailerUnit(unit)){
@@ -12721,6 +12870,7 @@ function renderForecastStatusCards(){
               <div class="forecast-compact-train-main">
                 <span class="forecast-train-name-line">
                   <button type="button" class="forecast-train-name forecast-train-edit-trigger" data-forecast-train-edit="${escapeHtml(g.train)}" data-forecast-edit-day="${escapeHtml(g.day)}" title="Click to edit inbound name">${escapeHtml(g.train)}</button>
+                  ${hotBoxCount?`<span class="forecast-hot-box-pill" title="${hotBoxCount} IMCCOMLLC hot box unit${hotBoxCount===1?"":"s"} on this inbound"><strong>${hotBoxCount}</strong> HOT BOX${hotBoxCount===1?"":"ES"}</span>`:""}
                   <span class="forecast-inline-train-editor" hidden>
                     <input type="text" value="${escapeHtml(g.train)}" data-forecast-train-edit-input="${escapeHtml(g.train)}" data-forecast-edit-day="${escapeHtml(g.day)}" aria-label="Edit inbound name">
                     <button type="button" data-forecast-train-edit-save="${escapeHtml(g.train)}" data-forecast-edit-day="${escapeHtml(g.day)}">Save</button>
@@ -14727,9 +14877,7 @@ async function init(){
   const forecastMismatchPreviewModal=$("forecastMismatchPreviewModal"); if(forecastMismatchPreviewModal)forecastMismatchPreviewModal.addEventListener("click",e=>{if(e.target===forecastMismatchPreviewModal)closeForecastMismatchPreview()});
   const forecastMismatchDetailsCloseBtn=$("forecastMismatchDetailsCloseBtn"); if(forecastMismatchDetailsCloseBtn)forecastMismatchDetailsCloseBtn.onclick=closeForecastMismatchDetails;
   const forecastMismatchDetailsModal=$("forecastMismatchDetailsModal"); if(forecastMismatchDetailsModal)forecastMismatchDetailsModal.addEventListener("click",e=>{if(e.target===forecastMismatchDetailsModal)closeForecastMismatchDetails()});
-  const forecastAuthorizedImportBtn=$("forecastAuthorizedImportBtn"); if(forecastAuthorizedImportBtn)forecastAuthorizedImportBtn.onclick=()=>$("forecastAuthorizedFileInput")?.click();
   const forecastAuthorizedFileInput=$("forecastAuthorizedFileInput"); if(forecastAuthorizedFileInput)forecastAuthorizedFileInput.onchange=e=>{if(e.target.files?.length)importForecastAuthorizedFiles(e.target.files);e.target.value=""};
-  const forecastAuthorizedClearBtn=$("forecastAuthorizedClearBtn"); if(forecastAuthorizedClearBtn)forecastAuthorizedClearBtn.onclick=clearForecastAuthorizedRows;
   const forecastAuthorizedPreviewCloseBtn=$("forecastAuthorizedPreviewCloseBtn"); if(forecastAuthorizedPreviewCloseBtn)forecastAuthorizedPreviewCloseBtn.onclick=closeForecastAuthorizedPreview;
   const forecastAuthorizedPreviewCancelBtn=$("forecastAuthorizedPreviewCancelBtn"); if(forecastAuthorizedPreviewCancelBtn)forecastAuthorizedPreviewCancelBtn.onclick=closeForecastAuthorizedPreview;
   const forecastAuthorizedPreviewConfirmBtn=$("forecastAuthorizedPreviewConfirmBtn"); if(forecastAuthorizedPreviewConfirmBtn)forecastAuthorizedPreviewConfirmBtn.onclick=confirmForecastAuthorizedImport;
@@ -17152,6 +17300,18 @@ window.addEventListener("DOMContentLoaded",()=>{
 .forecast-mismatch-excluded-section th{background:rgba(88,28,135,.62);color:#f3e8ff}
 .forecast-mismatch-excluded-section thead tr{background:rgba(88,28,135,.62);box-shadow:-18px 0 rgba(88,28,135,.62),18px 0 rgba(88,28,135,.62)}
 .forecast-mismatch-excluded-section .forecast-preview-section-head button{border-color:rgba(168,85,247,.5)}
+.forecast-flip-authorization-section{border-color:rgba(52,211,153,.72)}
+.forecast-flip-authorization-section .forecast-preview-section-head{background:linear-gradient(90deg,rgba(6,95,70,.44),rgba(2,44,34,.14))}
+.forecast-flip-authorization-section .forecast-preview-section-icon{color:#34d399}
+.forecast-flip-authorization-section th{background:rgba(6,95,70,.72);color:#d1fae5}
+.forecast-flip-authorization-section thead tr{background:rgba(6,95,70,.72);box-shadow:-18px 0 rgba(6,95,70,.72),18px 0 rgba(6,95,70,.72)}
+.forecast-flip-authorization-section .forecast-preview-section-head button{
+  border:1px solid rgba(52,211,153,.68);
+  background:rgba(5,150,105,.34);
+  color:#d1fae5;
+  box-shadow:0 5px 14px rgba(5,150,105,.18);
+}
+.forecast-flip-authorization-section .forecast-preview-section-head button:hover{background:rgba(5,150,105,.54);color:#fff}
 .forecast-mismatch-preview-section table{
   width:100%;
   margin:0;
@@ -17220,6 +17380,13 @@ window.addEventListener("DOMContentLoaded",()=>{
 .forecast-mismatch-excluded-section .preview-col-size{width:7%}
 .forecast-mismatch-excluded-section .preview-col-location{width:10%}
 .forecast-mismatch-excluded-section .preview-col-reason{width:23%}
+.forecast-flip-authorization-section .preview-col-auth-equipment{width:17%}
+.forecast-flip-authorization-section .preview-col-auth-pool{width:14%}
+.forecast-flip-authorization-section .preview-col-auth-chassis{width:16%}
+.forecast-flip-authorization-section .preview-col-auth-direction{width:11%}
+.forecast-flip-authorization-section .preview-col-auth-length{width:8%}
+.forecast-flip-authorization-section .preview-col-auth-date{width:17%}
+.forecast-flip-authorization-section .preview-col-auth-expiry{width:17%}
 .forecast-mismatch-preview-section th{
   position:sticky;
   top:0;
@@ -17297,6 +17464,14 @@ window.addEventListener("DOMContentLoaded",()=>{
 }
 .forecast-mismatch-preview-section.preview-stacked thead tr{
   box-shadow:-18px 0 #92400e,18px 0 #92400e!important;
+}
+.forecast-mismatch-preview-section.forecast-flip-authorization-section thead tr,
+.forecast-mismatch-preview-section.forecast-flip-authorization-section thead th{
+  background:#065f46!important;
+  color:#d1fae5!important;
+}
+.forecast-mismatch-preview-section.forecast-flip-authorization-section thead tr{
+  box-shadow:-18px 0 #065f46,18px 0 #065f46!important;
 }
 .forecast-mismatch-preview-empty{padding:18px;color:#94a3b8;text-align:center}
 .forecast-mismatch-details-modal{
@@ -24962,7 +25137,34 @@ body.forecast-view.forecast-print-clean-view #forecastModal .forecast-page > .he
   border-top: 2px solid #111827 !important;
 }
 
-/* Flag every inbound containing consignee **IMCCOMLLC. */
+/* Flag every inbound containing consignee IMCCOMLLC and show its hot-box count. */
+#forecastStatusCards .forecast-hot-box-pill{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:5px;
+  width:max-content;
+  min-height:24px;
+  padding:4px 9px;
+  border:1px solid #fde68a;
+  border-radius:999px;
+  background:linear-gradient(180deg,#fbbf24,#d97706);
+  color:#2b1700;
+  font-size:10px;
+  font-weight:1000;
+  line-height:1;
+  letter-spacing:.035em;
+  white-space:nowrap;
+  text-shadow:none!important;
+  box-shadow:0 0 0 1px rgba(251,191,36,.32),0 0 14px rgba(251,191,36,.48);
+}
+#forecastStatusCards .forecast-hot-box-pill strong{
+  font-size:13px;
+  line-height:1;
+}
+#forecastStatusCards .forecast-train-name-line:has(.forecast-inline-train-editor:not([hidden])) .forecast-hot-box-pill{
+  display:none;
+}
 @keyframes forecastImccomllcGoldGlow {
   from {
     filter: drop-shadow(0 0 3px rgba(251, 191, 36, .48));
@@ -24999,5 +25201,128 @@ body.forecast-view.forecast-print-clean-view #forecastModal .forecast-page > .he
   }
 }
 </style>
+<script id="forecast-hotbox-list-script">(function forecastHotboxListFeature() {
+  const button = document.getElementById("forecastHotboxListBtn");
+  const count = document.getElementById("forecastHotboxListCount");
+  const modal = document.getElementById("forecastHotboxListModal");
+  const closeButton = document.getElementById("forecastHotboxListCloseBtn");
+  const summary = document.getElementById("forecastHotboxListSummary");
+  const body = document.getElementById("forecastHotboxListBody");
+  if (!button || !count || !modal || !closeButton || !summary || !body) return;
+
+  const escapeValue = value => String(value ?? "").replace(/[&<>"']/g, character => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  })[character]);
+  const isHotbox = unit => String(unit?.consignee || "").toUpperCase().replace(/[^A-Z0-9]/g, "") === "IMCCOMLLC";
+  const visibleUnits = () => {
+    try {
+      if (typeof getVisibleForecastUnits === "function") return getVisibleForecastUnits();
+      if (typeof forecastImportedUnits !== "undefined" && Array.isArray(forecastImportedUnits)) return forecastImportedUnits;
+    } catch (_) {}
+    return [];
+  };
+  const trainName = unit => {
+    try { if (typeof getForecastTrainGroupName === "function") return getForecastTrainGroupName(unit); } catch (_) {}
+    return String(unit?.trainId || "No Train Listed").trim() || "No Train Listed";
+  };
+  const arrivalDay = unit => {
+    try { if (typeof getForecastUnitDay === "function") return getForecastUnitDay(unit); } catch (_) {}
+    return String(unit?.etaDay || "No ETA Day").trim() || "No ETA Day";
+  };
+  const arrivalLabel = day => {
+    let label = String(day || "No ETA Day");
+    try { if (typeof getForecastEtaDayDetail === "function") label = getForecastEtaDayDetail(day); } catch (_) {}
+    return label;
+  };
+  const hotboxes = () => visibleUnits().filter(isHotbox);
+
+  function updateButtonCount() {
+    const total = hotboxes().length;
+    count.textContent = total;
+    button.title = total ? `${total} hotbox unit${total === 1 ? "" : "s"} in the visible inbound forecast` : "No hotbox units in the visible inbound forecast";
+  }
+
+  function renderHotboxes() {
+    const units = hotboxes();
+    count.textContent = units.length;
+    summary.textContent = units.length
+      ? `${units.length} hotbox unit${units.length === 1 ? "" : "s"} across the current inbound forecast.`
+      : "No hotboxes found in the current inbound forecast.";
+    if (!units.length) {
+      body.innerHTML = '<div class="forecast-hotbox-empty">No IMCCOMLLC hotbox units are currently listed.</div>';
+      return;
+    }
+
+    const groups = new Map();
+    units.forEach(unit => {
+      const train = trainName(unit);
+      const day = arrivalDay(unit);
+      const key = `${day}||${train}`;
+      if (!groups.has(key)) groups.set(key, { train, day, units: [] });
+      groups.get(key).units.push(unit);
+    });
+    const ordered = [...groups.values()].sort((a, b) => {
+      const dayOrder = Number(a.day) - Number(b.day);
+      if (Number.isFinite(dayOrder) && dayOrder !== 0) return dayOrder;
+      return a.train.localeCompare(b.train, undefined, { numeric: true, sensitivity: "base" });
+    });
+
+    body.innerHTML = ordered.map(group => {
+      const rows = group.units
+        .sort((a, b) => String(a.unitId || "").localeCompare(String(b.unitId || ""), undefined, { numeric: true, sensitivity: "base" }))
+        .map(unit => `<tr>
+          <td class="forecast-hotbox-unit">${escapeValue(unit.unitId || "Unknown unit")}</td>
+          <td>${escapeValue(unit.carType || "-")}</td>
+          <td>${escapeValue(unit.size || "-")}</td>
+          <td class="forecast-hotbox-consignee">${escapeValue(unit.consignee || "IMCCOMLLC")}</td>
+        </tr>`).join("");
+      return `<section class="forecast-hotbox-train-group">
+        <header class="forecast-hotbox-train-head">
+          <div class="forecast-hotbox-train-title"><strong>${escapeValue(group.train)}</strong><span>${escapeValue(arrivalLabel(group.day, group.units))}</span></div>
+          <span class="forecast-hotbox-train-count">${group.units.length} hotbox${group.units.length === 1 ? "" : "es"}</span>
+        </header>
+        <div class="forecast-hotbox-table-wrap"><table class="forecast-hotbox-table">
+          <thead><tr><th>Equipment ID</th><th>Car Type</th><th>Size</th><th>Consignee</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table></div>
+      </section>`;
+    }).join("");
+  }
+
+  function positionHotboxList() {
+    let frameTop = 0;
+    let viewportHeight = window.innerHeight;
+    try {
+      frameTop = window.frameElement?.getBoundingClientRect().top || 0;
+      viewportHeight = window.parent?.innerHeight || viewportHeight;
+    } catch (_) {}
+    const visibleTop = Math.max(12, -frameTop + 52);
+    const maxTop = Math.max(12, document.documentElement.scrollHeight - Math.min(520, viewportHeight - 80));
+    modal.style.paddingTop = Math.min(visibleTop, maxTop) + "px";
+  }
+  function openHotboxList() {
+    renderHotboxes();
+    positionHotboxList();
+    modal.classList.add("open");
+    modal.setAttribute("aria-hidden", "false");
+    closeButton.focus();
+  }
+  function closeHotboxList() {
+    modal.classList.remove("open");
+    modal.setAttribute("aria-hidden", "true");
+    button.focus();
+  }
+
+  button.addEventListener("click", openHotboxList);
+  closeButton.addEventListener("click", closeHotboxList);
+  modal.addEventListener("click", event => { if (event.target === modal) closeHotboxList(); });
+  document.addEventListener("keydown", event => { if (event.key === "Escape" && modal.classList.contains("open")) closeHotboxList(); });
+  const statusCards = document.getElementById("forecastStatusCards");
+  if (statusCards) new MutationObserver(updateButtonCount).observe(statusCards, { childList: true, subtree: true });
+  window.addEventListener("storage", updateButtonCount);
+  window.addEventListener("resize", () => { if (modal.classList.contains("open")) positionHotboxList(); });
+  try { window.parent?.addEventListener("scroll", () => { if (modal.classList.contains("open")) positionHotboxList(); }, { passive: true }); } catch (_) {}
+  updateButtonCount();
+})();</script>
 </body>
 </html>
