@@ -11,6 +11,7 @@ const sourcePath = path.resolve(sourceArgument);
 const workbookPath = path.resolve("index.html");
 const pageFiles = {
   matrix: "matrix-page.html",
+  matrixWide: "matrix-wide-page.html",
   amReport: "am-report-page.html",
   chassisStatus: "chassis-status-page.html",
   billing: "billing-page.html",
