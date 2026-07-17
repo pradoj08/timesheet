@@ -947,6 +947,122 @@ body{
   color:#fff;
   box-shadow:0 4px 10px rgba(4,120,87,.34);
 }
+.sheet-button.sheet-today-roster-button{
+  min-width:118px;
+  border-color:#7c3aed;
+  background:#6d28d9;
+  color:#fff;
+  box-shadow:0 3px 8px rgba(109,40,217,.28);
+}
+.sheet-button.sheet-today-roster-button:hover{
+  border-color:#5b21b6;
+  background:#5b21b6;
+  color:#fff;
+  box-shadow:0 4px 10px rgba(91,33,182,.34);
+}
+.am-today-roster-popup{
+  position:fixed;
+  top:58px;
+  left:50%;
+  z-index:1250;
+  width:min(410px,calc(100vw - 20px));
+  max-height:calc(100vh - 72px);
+  overflow:hidden;
+  border:2px solid #263446;
+  background:#f7f8fa;
+  color:#101827;
+  box-shadow:0 22px 58px rgba(15,23,42,.38);
+  transform:translateX(-50%);
+  user-select:none;
+}
+.am-today-roster-popup[hidden]{display:none !important}
+.am-today-roster-popup.dragging{opacity:.95}
+.am-today-roster-titlebar{
+  position:relative;
+  display:flex;
+  min-height:29px;
+  align-items:center;
+  justify-content:center;
+  background:#101c31;
+  color:#fff;
+  cursor:move;
+  font:900 11px/1 "Aptos Narrow","Arial Narrow",Arial,sans-serif;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+.am-today-roster-close{
+  position:absolute;
+  top:2px;
+  right:3px;
+  width:24px;
+  height:23px;
+  padding:0;
+  border:0;
+  background:transparent;
+  color:#fff;
+  cursor:pointer;
+  font-size:18px;
+  font-weight:950;
+  line-height:1;
+}
+.am-today-roster-card{max-height:calc(100vh - 105px);overflow:auto}
+.am-today-roster-date{
+  display:grid;
+  grid-template-columns:1fr auto 1fr;
+  min-height:42px;
+  align-items:center;
+  padding:3px 7px;
+  border-bottom:2px solid #253246;
+  background:#f5f7fa;
+  font:950 18px/1 "Aptos Narrow","Arial Narrow",Arial,sans-serif;
+}
+.am-today-roster-day{justify-self:start;font-size:16px}
+.am-today-roster-today{justify-self:center;color:#53617a;font-size:11px;letter-spacing:.1em}
+.am-today-roster-number{justify-self:end;font-size:24px}
+.am-today-roster-columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+.am-today-roster-shift:first-child{border-right:1px solid #aab4c2}
+.am-today-roster-shift-head{
+  display:flex;
+  min-height:24px;
+  align-items:center;
+  padding:3px 7px;
+  background:#263449;
+  color:#fff;
+  font:950 12px/1 "Aptos Narrow","Arial Narrow",Arial,sans-serif;
+  letter-spacing:.04em;
+}
+.am-today-roster-rows{min-height:24px}
+.am-today-roster-row{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  min-height:25px;
+  align-items:center;
+  gap:5px;
+  padding:3px 6px;
+  border-bottom:1px solid #cbd3de;
+  background:#fff;
+  font:800 13px/1.05 "Aptos Narrow","Arial Narrow",Arial,sans-serif;
+}
+.am-today-roster-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.am-today-roster-statuses{display:inline-flex;align-items:center;gap:3px;white-space:nowrap}
+.am-today-roster-status{font-size:10px;font-weight:950}
+.am-today-roster-crane{color:#9a5b00}
+.am-today-roster-row.is-present{background:#d6f7df;color:#126430}
+.am-today-roster-row.is-crane{background:#fff0be;color:#8a5100}
+.am-today-roster-row.is-flip{background:#d6f7df;color:#11743c}
+.am-today-roster-row.is-vacation{background:#f1e6ff;color:#6d28d9}
+.am-today-roster-row.is-sick{background:#ffe0e4;color:#b42336}
+.am-today-roster-row.is-off{background:#dfe6ee;color:#34445c}
+.am-today-roster-row.is-unknown{background:#e8edf3;color:#425168}
+.am-today-roster-footer{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  background:#ffe1e5;
+  color:#b10e2d;
+  font:950 14px/1 "Aptos Narrow","Arial Narrow",Arial,sans-serif;
+}
+.am-today-roster-total{display:flex;min-height:25px;align-items:center;padding:4px 7px}
+.am-today-roster-total:first-child{border-right:1px solid #d7aeb5}
 #am-report table{
   width:100% !important;
   max-width:100%;
@@ -1124,6 +1240,47 @@ body{
   background:#1677ff;
   border:1px solid #fff;
 }
+#am-report .sheet-grid td.editable-cell[contenteditable]{
+  caret-color:transparent;
+}
+#am-report .sheet-grid td.editable-cell[contenteditable].cell-editing{
+  caret-color:auto;
+}
+#am-report .sheet-cell-context-menu{
+  position:fixed;
+  z-index:1100;
+  min-width:154px;
+  box-sizing:border-box;
+  padding:5px;
+  border:1px solid #94a3b8;
+  border-radius:8px;
+  background:#fff;
+  box-shadow:0 12px 28px rgba(15,23,42,.24);
+  font-family:Calibri,Arial,sans-serif;
+}
+#am-report .sheet-cell-context-menu[hidden]{display:none !important}
+#am-report .sheet-cell-context-menu button{
+  width:100%;
+  padding:7px 10px;
+  border:0;
+  border-radius:5px;
+  background:transparent;
+  color:#172033;
+  font:700 13px/1.2 Calibri,Arial,sans-serif;
+  text-align:left;
+  cursor:pointer;
+}
+#am-report .sheet-cell-context-menu button:hover,
+#am-report .sheet-cell-context-menu button:focus-visible{
+  background:#e8f1ff;
+  color:#0b57d0;
+  outline:0;
+}
+#am-report .sheet-cell-context-menu button:disabled{
+  color:#94a3b8;
+  cursor:not-allowed;
+  background:transparent;
+}
 #am-report .sheet-grid td.formula-cell{
   cursor:default;
 }
@@ -1199,7 +1356,7 @@ body{
 #am-report .sheet-grid td.arrival-warning-flag{
   background:#dc2626 !important;
   color:#fff !important;
-  font-size:9px !important;
+  font-size:14px !important;
   font-weight:900 !important;
   letter-spacing:.03em;
   text-align:center !important;
@@ -1848,7 +2005,7 @@ tags will be replaced.-->
     A2: "=NOW()",
     A9: "=SUM(A6:A8)",
     A15: "=SUM(A12:A14)",
-    C19: '=IF(ABS(A20-A19)<=TIME(3,0,0),"ALERT","")',
+    C19: '=IF(ABS(A20-A19)<=TIME(2,0,0),"ALERT","")',
     A20: '=IF(WEEKDAY(TODAY(),1)<=3,"17:00 PM","11:00 AM")',
     A25: '=C25 & " total"',
     A26: '=C26 & " scheduled"',
@@ -2270,6 +2427,7 @@ tags will be replaced.-->
   "use strict";
 
   const BASE_STORAGE_KEY = "settegast-am-report-v1";
+  const SHARED_FORMAT_STORAGE_KEY = "settegast-am-report-format-v1";
   const columns = ["A", "B", "C"];
   const DEFAULT_DROPDOWNS = Object.freeze({
     A21: ["No Concerns", "Late Arrival"]
@@ -2312,7 +2470,7 @@ tags will be replaced.-->
     A2: "=NOW()",
     A9: "=SUM(A6:A8)",
     A15: "=SUM(A12:A14)",
-    C19: '=IF(ABS(A20-A19)<=TIME(3,0,0),"ALERT","")',
+    C19: '=IF(ABS(A20-A19)<=TIME(2,0,0),"ALERT","")',
     A20: '=IF(WEEKDAY(TODAY(),1)<=3,"17:00 PM","11:00 AM")',
     A25: '=C25 & " total"',
     A26: '=C26 & " scheduled"',
@@ -2424,6 +2582,14 @@ tags will be replaced.-->
   massExportButton.className = "sheet-button sheet-checklist-button sheet-mass-export-button";
   massExportButton.textContent = "Mass Export";
   massExportButton.title = "Export or restore the complete workbook";
+  const todayRosterButton = document.createElement("button");
+  todayRosterButton.type = "button";
+  todayRosterButton.id = "amTodayRosterButton";
+  todayRosterButton.className = "sheet-button sheet-checklist-button sheet-today-roster-button";
+  todayRosterButton.textContent = "Today's Roster";
+  todayRosterButton.title = "Open the current-day roster";
+  todayRosterButton.setAttribute("aria-haspopup", "dialog");
+  todayRosterButton.setAttribute("aria-expanded", "false");
   const auditsButton = document.createElement("button");
   auditsButton.type = "button";
   auditsButton.id = "amAuditsPopupButton";
@@ -2439,12 +2605,31 @@ tags will be replaced.-->
   if (title) {
     title.before(headingRow);
     headingCopy.append(title);
-    if (REPORT_DAY_OFFSET === 0) headingActions.append(massExportButton, auditsButton, checklistButton);
+    if (REPORT_DAY_OFFSET === 0) headingActions.append(massExportButton, todayRosterButton, auditsButton, checklistButton);
     headingRow.append(headingCopy, headingActions);
   }
+
+  const todayRosterPopup = document.createElement("section");
+  todayRosterPopup.className = "am-today-roster-popup";
+  todayRosterPopup.id = "amTodayRosterPopup";
+  todayRosterPopup.hidden = true;
+  todayRosterPopup.setAttribute("role", "dialog");
+  todayRosterPopup.setAttribute("aria-label", "Current day roster");
+  todayRosterPopup.innerHTML = [
+    '<div class="am-today-roster-titlebar" id="amTodayRosterHandle">',
+      '<span>Current Day Roster</span>',
+      '<button class="am-today-roster-close" id="amTodayRosterClose" type="button" aria-label="Close today\'s roster">&times;</button>',
+    '</div>',
+    '<div class="am-today-roster-card" id="amTodayRosterCard"></div>'
+  ].join("");
+  if (REPORT_DAY_OFFSET === 0) report.appendChild(todayRosterPopup);
+
   if (REPORT_DAY_OFFSET === 0) {
     massExportButton.addEventListener("click", () => {
       window.parent.postMessage({ type: "conglobal-open-mass-export" }, "*");
+    });
+    todayRosterButton.addEventListener("click", () => {
+      window.parent.postMessage({ type: "conglobal-open-todays-roster" }, "*");
     });
     auditsButton.addEventListener("click", () => {
       window.parent.postMessage({ type: "conglobal-open-audits-popup" }, "*");
@@ -2494,8 +2679,16 @@ tags will be replaced.-->
 
   const help = document.createElement("div");
   help.className = "sheet-help";
-  help.textContent = "Drag or Shift-click to select a range. Copy and paste tab-separated cells, merge or unmerge selections, align cells, and add dropdown options. Formula cells recalculate automatically.";
+  help.textContent = "Drag or Shift-click to select a range, then right-click the highlighted cells to merge them. Copy and paste tab-separated cells, align cells, and add dropdown options. Formula cells recalculate automatically.";
   gridWrap.after(help);
+
+  const cellContextMenu = document.createElement("div");
+  cellContextMenu.className = "sheet-cell-context-menu";
+  cellContextMenu.id = "amCellContextMenu";
+  cellContextMenu.hidden = true;
+  cellContextMenu.setAttribute("role", "menu");
+  cellContextMenu.innerHTML = '<button type="button" id="amContextMergeCells" role="menuitem">Merge cells</button>';
+  report.appendChild(cellContextMenu);
 
   const modal = document.createElement("div");
   modal.className = "sheet-modal-backdrop";
@@ -2522,6 +2715,7 @@ tags will be replaced.-->
   const copyButton = document.getElementById("amCopyCells");
   const mergeButton = document.getElementById("amMergeCells");
   const dropdownButton = document.getElementById("amDropdownCells");
+  const contextMergeButton = document.getElementById("amContextMergeCells");
   const dropdownOptionsInput = document.getElementById("amDropdownOptions");
   const dropdownSummary = document.getElementById("amDropdownSummary");
   const dropdownError = document.getElementById("amDropdownError");
@@ -2543,6 +2737,8 @@ tags will be replaced.-->
   let inboundCustomTypeSelections = { B6:false, B7:false };
   let inboundCustomTypeStateLoaded = false;
   let forecastInboundManualOverrides = new Set();
+  let sharedFormatSignature = "";
+  let cellEditModeAddress = "";
 
   function cloneDropdownMap(source) {
     const next = {};
@@ -2698,6 +2894,18 @@ tags will be replaced.-->
     }
   } catch (_) {}
 
+  const initialSharedFormatState = readSharedFormatState();
+  if (initialSharedFormatState) {
+    mergeRanges = initialSharedFormatState.merges;
+    customAlignments = initialSharedFormatState.alignments;
+    dropdownDefinitions = initialSharedFormatState.dropdowns;
+    sharedFormatSignature = JSON.stringify(initialSharedFormatState);
+  } else if (REPORT_DAY_OFFSET === 0) {
+    const initialFormatPayload = sharedFormatPayload();
+    sharedFormatSignature = JSON.stringify(initialFormatPayload);
+    try { localStorage.setItem(SHARED_FORMAT_STORAGE_KEY, sharedFormatSignature); } catch (_) {}
+  }
+
   let inboundSequenceDriverInitialized = Object.prototype.hasOwnProperty.call(savedValues, "C65");
 
   function sanitizeOptions(values) {
@@ -2711,6 +2919,82 @@ tags will be replaced.-->
       output.push(option);
     });
     return output;
+  }
+
+  function normalizeSharedFormatState(state) {
+    if (!state || typeof state !== "object" || Array.isArray(state)) return null;
+    const alignments = state.alignments && typeof state.alignments === "object" && !Array.isArray(state.alignments)
+      ? JSON.parse(JSON.stringify(state.alignments))
+      : {};
+    const dropdowns = state.dropdowns && typeof state.dropdowns === "object" && !Array.isArray(state.dropdowns)
+      ? cloneDropdownMap(state.dropdowns)
+      : cloneDropdownMap(DEFAULT_DROPDOWNS);
+    return {
+      version:1,
+      merges:normalizeMergeList(state.merges),
+      alignments,
+      dropdowns
+    };
+  }
+
+  function readSharedFormatState() {
+    try {
+      return normalizeSharedFormatState(JSON.parse(localStorage.getItem(SHARED_FORMAT_STORAGE_KEY) || "null"));
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function sharedFormatPayload() {
+    return {
+      version:1,
+      merges:normalizeMergeList(mergeRanges),
+      alignments:JSON.parse(JSON.stringify(customAlignments || {})),
+      dropdowns:cloneDropdownMap(dropdownDefinitions)
+    };
+  }
+
+  function publishSharedFormatState() {
+    const payload = sharedFormatPayload();
+    sharedFormatSignature = JSON.stringify(payload);
+    try { localStorage.setItem(SHARED_FORMAT_STORAGE_KEY, sharedFormatSignature); } catch (_) {}
+    try {
+      window.parent.postMessage({
+        type:"conglobal-am-report-format-updated",
+        format:payload,
+        sourceDate:storageDateKey
+      }, "*");
+    } catch (_) {}
+  }
+
+  function applySharedFormatState(state, message) {
+    const normalized = normalizeSharedFormatState(state);
+    if (!normalized) return;
+    const signature = JSON.stringify(normalized);
+    if (signature === sharedFormatSignature) return;
+    sharedFormatSignature = signature;
+    const currentValues = {};
+    cellMap.forEach((cell, address) => {
+      if (!formulas[address]) currentValues[address] = readCell(address);
+    });
+    mergeRanges = normalized.merges;
+    customAlignments = normalized.alignments;
+    dropdownDefinitions = normalized.dropdowns;
+    Object.keys(dropdownDefinitions).forEach(address => {
+      if (!cellMap.has(address) || formulas[address] || INBOUND_ARCHIVE_CELL_SET.has(address)) delete dropdownDefinitions[address];
+      else dropdownDefinitions[address] = sanitizeOptions(dropdownDefinitions[address]);
+    });
+    Object.keys(customAlignments).forEach(address => {
+      if (!cellMap.has(address) || !customAlignments[address] || typeof customAlignments[address] !== "object") delete customAlignments[address];
+    });
+    cellMap.forEach((cell, address) => {
+      if (!formulas[address]) renderCellEditor(address, currentValues[address]);
+    });
+    applyStoredAlignments();
+    applyMerges();
+    if (selectionBounds) setSelectionBounds(selectionBounds, selectedCell && selectedCell.dataset.cell);
+    recalculate();
+    if (message) announceSaved(message);
   }
 
   function inboundArchiveStores() {
@@ -2870,6 +3154,7 @@ tags will be replaced.-->
     const currentValue = preferredValue === undefined ? readCell(address) : String(preferredValue);
     cell.textContent = currentValue;
     cell.setAttribute("contenteditable", "plaintext-only");
+    cell.classList.remove("cell-editing");
     cell.setAttribute("spellcheck", "false");
     cell.setAttribute("aria-label", "Editable cell " + address);
   }
@@ -2909,7 +3194,14 @@ tags will be replaced.-->
       option.textContent = value;
       select.appendChild(option);
     });
-    select.value = cleanOptions.includes(currentValue) ? currentValue : cleanOptions[0];
+    if (currentValue && !cleanOptions.includes(currentValue)) {
+      const preservedOption = document.createElement("option");
+      preservedOption.value = currentValue;
+      preservedOption.textContent = currentValue;
+      preservedOption.dataset.preservedValue = "true";
+      select.insertBefore(preservedOption, select.firstChild);
+    }
+    select.value = currentValue || cleanOptions[0];
     select.addEventListener("focus", () => {
       if (!suppressFocusSelection) selectSingleCell(cell);
     });
@@ -3255,23 +3547,37 @@ tags will be replaced.-->
   function parseArrivalDate(value, reportDate) {
     const text = cleanText(value);
     if (!text) return null;
+    const normalizeClock = (hourValue, minuteValue, meridiemValue) => {
+      let hours = Number(hourValue);
+      const minutes = Number(minuteValue || 0);
+      const meridiem = String(meridiemValue || "").toUpperCase();
+      if (!Number.isFinite(hours) || !Number.isFinite(minutes) || minutes > 59 || hours > 23) return null;
+      if (meridiem && hours <= 12) {
+        if (hours < 1) return null;
+        if (hours === 12) hours = 0;
+        if (meridiem === "PM") hours += 12;
+      }
+      return { hours, minutes };
+    };
+    const dateTimeMatch = text.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{2,4})(?:[\s,T]+(\d{1,2})(?::(\d{2}))?\s*(AM|PM)?)?$/i);
+    if (dateTimeMatch) {
+      const year = Number(dateTimeMatch[3].length === 2 ? "20" + dateTimeMatch[3] : dateTimeMatch[3]);
+      const month = Number(dateTimeMatch[1]) - 1;
+      const day = Number(dateTimeMatch[2]);
+      const clock = normalizeClock(dateTimeMatch[4] || 0, dateTimeMatch[5] || 0, dateTimeMatch[6]);
+      if (!clock || month < 0 || month > 11 || day < 1 || day > 31) return null;
+      const parsed = new Date(year, month, day, clock.hours, clock.minutes, 0, 0);
+      if (parsed.getFullYear() !== year || parsed.getMonth() !== month || parsed.getDate() !== day) return null;
+      return parsed;
+    }
     const direct = new Date(text);
     if (!Number.isNaN(direct.getTime())) return direct;
     const timeMatch = text.match(/^(\d{1,2})(?::(\d{2}))?\s*(AM|PM)?$/i);
     if (!timeMatch) return null;
-    let hours = Number(timeMatch[1]);
-    const minutes = Number(timeMatch[2] || 0);
-    const meridiem = String(timeMatch[3] || "").toUpperCase();
-    if (minutes > 59 || hours > 23) return null;
-    if (meridiem) {
-      if (hours < 1) return null;
-      if (hours <= 12) {
-        if (hours === 12) hours = 0;
-        if (meridiem === "PM") hours += 12;
-      }
-    }
+    const clock = normalizeClock(timeMatch[1], timeMatch[2], timeMatch[3]);
+    if (!clock) return null;
     const arrival = new Date(reportDate);
-    arrival.setHours(hours, minutes, 0, 0);
+    arrival.setHours(clock.hours, clock.minutes, 0, 0);
     return arrival;
   }
 
@@ -3279,19 +3585,21 @@ tags will be replaced.-->
     const cell = cellMap.get("C19");
     if (!cell) return;
     const arrival = parseArrivalDate(readCell("A19"), reportDate);
-    const commitment = parseArrivalDate(readCell("A20"), reportDate);
+    // A commitment entered as a time only belongs to the arrival's calendar
+    // date. Anchoring it to the report panel date breaks saved/rotated reports.
+    const commitment = parseArrivalDate(readCell("A20"), arrival || reportDate);
     const gapMs = arrival && commitment
       ? Math.abs(commitment.getTime() - arrival.getTime())
       : Number.POSITIVE_INFINITY;
-    const active = gapMs <= 3 * 60 * 60 * 1000;
+    const active = gapMs <= 2 * 60 * 60 * 1000;
     cell.classList.toggle("arrival-warning-flag", active);
-    cell.textContent = active ? "ALERT" : "";
+    cell.textContent = active ? "\u26A0" : "";
     if (!active) {
       cell.title = !arrival
         ? "Enter a valid estimated arrival time in A19"
         : !commitment
           ? "Enter a valid commitment time in A20"
-          : "Estimated arrival is more than 3 hours from commitment";
+          : "Estimated arrival is more than 2 hours from commitment";
       return;
     }
     const totalMinutes = Math.max(0, Math.round(gapMs / 60000));
@@ -3457,9 +3765,10 @@ tags will be replaced.-->
   function setSelectionBounds(bounds, activeAddress) {
     const expanded = expandBoundsForMerges(bounds);
     if (!expanded) return;
+    cellEditModeAddress = "";
     selectionBounds = expanded;
     cellMap.forEach(cell => {
-      cell.classList.remove("range-selected", "selected-cell");
+      cell.classList.remove("range-selected", "selected-cell", "cell-editing");
       cell.removeAttribute("aria-selected");
     });
     addressesInBounds(expanded).forEach(address => {
@@ -3562,6 +3871,7 @@ tags will be replaced.-->
     applyMerges();
     selectSingleCell(cellMap.get(merge.start));
     persist("Cells merged");
+    publishSharedFormatState();
   }
 
   function unmergeSelection() {
@@ -3575,6 +3885,7 @@ tags will be replaced.-->
     selectionFocusAddress = addressAt(previousBounds.maxColumn, previousBounds.maxRow);
     setSelectionBounds(previousBounds, selectionAnchorAddress);
     persist("Cells unmerged");
+    publishSharedFormatState();
   }
 
   function applyStoredAlignments() {
@@ -3605,6 +3916,7 @@ tags will be replaced.-->
     });
     syncToolbarState();
     persist((kind === "vertical" ? "Vertical" : "Horizontal") + " alignment saved");
+    publishSharedFormatState();
   }
 
   function cycleAlignment(kind, button) {
@@ -3620,6 +3932,9 @@ tags will be replaced.-->
     mergeButton.disabled = selectionHasMerge ? false : area < 2;
     mergeButton.textContent = selectionHasMerge ? "Unmerge" : "Merge";
     mergeButton.dataset.mergeAction = selectionHasMerge ? "unmerge" : "merge";
+    contextMergeButton.disabled = selectionHasMerge ? false : area < 2;
+    contextMergeButton.textContent = selectionHasMerge ? "Unmerge cells" : "Merge cells";
+    contextMergeButton.dataset.mergeAction = selectionHasMerge ? "unmerge" : "merge";
     dropdownButton.disabled = editableDropdownTargets().length === 0;
     copyButton.disabled = area === 0;
     const activeAddress = selectedCell && selectedCell.dataset.cell;
@@ -3640,6 +3955,24 @@ tags will be replaced.-->
       button.disabled = area === 0;
       button.setAttribute("aria-label", `Current ${kind} alignment ${currentValue}; click to cycle`);
     });
+  }
+
+  function closeCellContextMenu() {
+    cellContextMenu.hidden = true;
+  }
+
+  function openCellContextMenu(event, cell) {
+    if (!cell.classList.contains("range-selected")) selectSingleCell(cell);
+    syncToolbarState();
+    cellContextMenu.hidden = false;
+    const margin = 8;
+    const menuWidth = cellContextMenu.offsetWidth;
+    const menuHeight = cellContextMenu.offsetHeight;
+    const left = Math.max(margin, Math.min(event.clientX, window.innerWidth - menuWidth - margin));
+    const top = Math.max(margin, Math.min(event.clientY, window.innerHeight - menuHeight - margin));
+    cellContextMenu.style.left = left + "px";
+    cellContextMenu.style.top = top + "px";
+    if (!contextMergeButton.disabled) contextMergeButton.focus({ preventScroll:true });
   }
 
   function selectionMatrix() {
@@ -3668,6 +4001,264 @@ tags will be replaced.-->
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;");
   }
+
+  const AM_TODAY_ROSTER_DEFAULT = Object.freeze({
+    first: [
+      ["Branford Alton", "Mon, Tues"], ["Castruita Armando", "Wed, Thurs"],
+      ["Frazer Dacoyea", "Mon, Tues"], ["Citizen Dante", "Thurs, Fri"],
+      ["Towler Demetrius", "Thurs, Fri"], ["Stewart Dexter", "Sat, Sun"],
+      ["Gardner Dorrean", "Tues, Wed"], ["Thomas Henry", "Sat, Sun"],
+      ["Brown James", "Thurs, Fri"], ["Herrera Jose", "Sat, Sun"],
+      ["Player Keyston", "Mon, Sun"], ["Hickman Makia", "Mon, Sun"],
+      ["Dever Mikey", "Tues, Wed"], ["Wanza Myles", "Mon, Tues"],
+      ["Romero Nelson", "Tues, Wed"], ["McDaniel Charles", "Fri, Sat"],
+      ["Nava Ramon", "Sat, Sun"], ["Tran Tyler", "Thurs, Fri"]
+    ],
+    second: [
+      ["Carruthers Timothy", "Mon, Sun"], ["Caceres Virula Victor", "Mon, Tues"],
+      ["Keme Aweri Jr.", "Mon, Tues"], ["Hosey Kevin", "Mon, Tues"],
+      ["Brown Brandy", "Wed, Thurs"], ["Mejia Aaron", "Thurs, Fri"],
+      ["Bookman Derrell", "Thurs, Fri"], ["Hopkins Alexander", "Mon, Sun"],
+      ["Tingle Jason", "Sat, Sun"], ["Contreras Marco", "Sat, Sun"],
+      ["Benavides Robert", "Wed, Sun"], ["Urtado Ernest", "Tues, Wed"],
+      ["Johnson Messiah", "Tues, Thurs"], ["Gilder Rufus II", "Tues, Wed"],
+      ["Echendu Chimenierm", "Wed, Thurs"], ["Delgado Jose", "Fri, Sat"]
+    ]
+  });
+  const AM_TODAY_ROSTER_DEFAULT_CRANE = new Set([
+    "Stewart Dexter", "Thomas Henry", "Brown James", "Player Keyston", "Hickman Makia",
+    "Hosey Kevin", "Tingle Jason", "Benavides Robert", "Delgado Jose"
+  ].map(amTodayRosterNameKey));
+  const AM_TODAY_ROSTER_SNAPSHOT_KEY = "conglobal-current-day-roster-snapshot-v1";
+  const AM_TODAY_ROSTER_LIVE_KEYS = new Set([
+    AM_TODAY_ROSTER_SNAPSHOT_KEY,
+    "conglobal-roster-state-v1",
+    "conglobal-roster-additions-v1",
+    "conglobal-dayforce-punches-v1",
+    "conglobal-time-off-calendar-v1",
+    "conglobal-timesheet-notes-v1",
+    "settegast-staff-role-preferences-v1"
+  ]);
+
+  function amTodayRosterReadJson(key, fallback) {
+    try {
+      const value = JSON.parse(localStorage.getItem(key) || "null");
+      return value == null ? fallback : value;
+    } catch (_) {
+      return fallback;
+    }
+  }
+
+  function amTodayRosterNameKey(name) {
+    const suffixes = new Set(["jr", "sr", "ii", "iii", "iv"]);
+    return String(name || "").trim().toLowerCase().replace(/[,.]/g, " ")
+      .replace(/\bcontrerras\b/g, "contreras").replace(/\s+/g, " ").split(" ")
+      .filter(part => part && !suffixes.has(part)).sort().join(" ");
+  }
+
+  function amTodayRosterDateKey(date) {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2,"0")}-${String(date.getDate()).padStart(2,"0")}`;
+  }
+
+  function amTodayRosterDateMatches(value, today) {
+    const text = String(value || "").trim();
+    if (!text) return true;
+    const match = text.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+    const date = match
+      ? new Date(Number(match[3].length === 2 ? `20${match[3]}` : match[3]), Number(match[1]) - 1, Number(match[2]))
+      : new Date(text);
+    return !Number.isNaN(date.getTime()) && amTodayRosterDateKey(date) === amTodayRosterDateKey(today);
+  }
+
+  function amTodayRosterEmployees() {
+    const roster = Object.fromEntries(Object.entries(AM_TODAY_ROSTER_DEFAULT).map(([shift, rows]) => [
+      shift, rows.map(([name, offDays]) => ({ name, offDays, days:null }))
+    ]));
+    const saved = amTodayRosterReadJson("conglobal-roster-state-v1", null);
+    if (saved && typeof saved === "object") {
+      ["first", "second"].forEach(shift => {
+        if (!Array.isArray(saved[shift])) return;
+        roster[shift] = saved[shift].filter(employee => employee && employee.name).map(employee => ({
+          name:String(employee.name),
+          offDays:"",
+          days:Array.isArray(employee.days) ? employee.days.slice(0, 7) : null
+        }));
+      });
+    }
+    const seen = new Set([...roster.first, ...roster.second].map(employee => amTodayRosterNameKey(employee.name)));
+    const additions = amTodayRosterReadJson("conglobal-roster-additions-v1", []);
+    if (Array.isArray(additions)) additions.forEach(employee => {
+      if (!employee || !employee.name || !["first", "second"].includes(employee.shift)) return;
+      const key = amTodayRosterNameKey(employee.name);
+      if (!key || seen.has(key)) return;
+      roster[employee.shift].push({
+        name:String(employee.name),
+        offDays:"",
+        days:Array.isArray(employee.days) ? employee.days.slice(0, 7) : null
+      });
+      seen.add(key);
+    });
+    return roster;
+  }
+
+  function amTodayRosterIsOff(employee, today) {
+    const mondayIndex = (today.getDay() + 6) % 7;
+    if (Array.isArray(employee.days)) return String(employee.days[mondayIndex] || "W").toUpperCase() === "O";
+    const day = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"][today.getDay()];
+    const aliases = {
+      sun:"sun", sunday:"sun", mon:"mon", monday:"mon", tue:"tue", tues:"tue", tuesday:"tue",
+      wed:"wed", wednesday:"wed", thu:"thu", thur:"thu", thurs:"thu", thursday:"thu",
+      fri:"fri", friday:"fri", sat:"sat", saturday:"sat"
+    };
+    return String(employee.offDays || "").split(",").some(value => aliases[value.trim().toLowerCase()] === day);
+  }
+
+  function amTodayRosterStatus(employee, today, punchMap, timeOffMap, noteMap, roleMap) {
+    const key = amTodayRosterNameKey(employee.name);
+    const punch = punchMap.get(key) || null;
+    const timeOff = timeOffMap.get(key) || null;
+    const roles = Array.isArray(roleMap[key]) ? roleMap[key].map(role => String(role).toLowerCase()) : [];
+    const text = [
+      timeOff && timeOff.code, timeOff && timeOff.reason, timeOff && timeOff.location,
+      punch && punch.note, punch && punch.reason, noteMap[key]
+    ].filter(Boolean).join(" ");
+    if (/\bvac(?:ation)?\b/i.test(text)) return { label:"V", className:"is-vacation", off:true };
+    if (/\bsic(?:k)?\b/i.test(text)) return { label:"S", className:"is-sick", off:true };
+    if (/floating holiday|\bflo\b/i.test(text)) return { label:"FL", className:"is-vacation", off:true };
+    if (/called off|\bco\b/i.test(text)) return { label:"CO", className:"is-sick", off:true };
+    const offDay = amTodayRosterIsOff(employee, today);
+    const hasPunch = Boolean(punch && (punch.start || punch.end));
+    if (offDay && !hasPunch) return { label:"O", className:"is-off", off:true };
+    if (/flip/i.test(text) || roles.includes("flip")) return { label:"FL", className:"is-flip", off:false };
+    if (/crane/i.test(text) || roles.includes("crane") || AM_TODAY_ROSTER_DEFAULT_CRANE.has(key)) return { label:"C", className:"is-crane", off:false };
+    if (hasPunch) return { label:"✓", className:"is-present", off:false };
+    if (/unknown|missing|no show/i.test(text)) return { label:"??", className:"is-unknown", off:false };
+    return { label:"", className:"", off:false };
+  }
+
+  function amTodayRosterRowHtml(row) {
+    const flags = [];
+    if (row.flag) flags.push('<span class="am-today-roster-status">(' + escapeHtml(row.flag) + ')</span>');
+    if (row.crane) flags.push('<span class="am-today-roster-status am-today-roster-crane">(C)</span>');
+    return '<div class="am-today-roster-row ' + escapeHtml(row.className || "") + '">' +
+      '<span class="am-today-roster-name" title="' + escapeHtml(row.name || "") + '">' + escapeHtml(row.name || "") + '</span>' +
+      '<span class="am-today-roster-statuses">' + flags.join("") + '</span></div>';
+  }
+
+  function renderAmTodayRosterSnapshot(host, today) {
+    const snapshot = amTodayRosterReadJson(AM_TODAY_ROSTER_SNAPSHOT_KEY, null);
+    if (!snapshot || snapshot.date !== amTodayRosterDateKey(today) || !snapshot.shifts) return false;
+    const shiftHtml = [["first", "DAY"], ["second", "NIGHT"]].map(([shift, label]) => {
+      const rows = Array.isArray(snapshot.shifts[shift]) ? snapshot.shifts[shift] : [];
+      return '<section class="am-today-roster-shift"><div class="am-today-roster-shift-head">' + label + '</div>' +
+        '<div class="am-today-roster-rows">' +
+        (rows.map(amTodayRosterRowHtml).join("") || '<div class="am-today-roster-row is-unknown"><span class="am-today-roster-name">No roster entries</span></div>') +
+        '</div></section>';
+    }).join("");
+    const totals = snapshot.totals || {};
+    renderAmTodayRosterFrame(host, today, shiftHtml, totals.first || "0", totals.second || "0");
+    return true;
+  }
+
+  function renderAmTodayRosterFrame(host, today, shiftHtml, firstTotal, secondTotal) {
+    host.innerHTML = '<div class="am-today-roster-date">' +
+      '<span class="am-today-roster-day">' + today.toLocaleDateString(undefined, { weekday:"short" }).toUpperCase() + '</span>' +
+      '<span class="am-today-roster-today">TODAY</span>' +
+      '<span class="am-today-roster-number">' + today.getDate() + '</span></div>' +
+      '<div class="am-today-roster-columns">' + shiftHtml + '</div>' +
+      '<div class="am-today-roster-footer"><div class="am-today-roster-total">' + escapeHtml(firstTotal) + '</div>' +
+      '<div class="am-today-roster-total">' + escapeHtml(secondTotal) + '</div></div>';
+  }
+
+  function renderAmTodayRoster() {
+    const host = document.getElementById("amTodayRosterCard");
+    if (!host) return;
+    const today = new Date();
+    if (renderAmTodayRosterSnapshot(host, today)) return;
+    const roster = amTodayRosterEmployees();
+    const punchMap = new Map();
+    const punches = amTodayRosterReadJson("conglobal-dayforce-punches-v1", []);
+    if (Array.isArray(punches)) punches.forEach(punch => {
+      const key = amTodayRosterNameKey(punch && punch.name);
+      if (key && amTodayRosterDateMatches(punch.date, today)) punchMap.set(key, punch);
+    });
+    const timeOffMap = new Map();
+    const calendar = amTodayRosterReadJson("conglobal-time-off-calendar-v1", {});
+    const timeOffRows = calendar && Array.isArray(calendar[amTodayRosterDateKey(today)]) ? calendar[amTodayRosterDateKey(today)] : [];
+    timeOffRows.forEach(entry => {
+      const key = amTodayRosterNameKey(entry && entry.name);
+      if (key) timeOffMap.set(key, entry);
+    });
+    const noteMap = amTodayRosterReadJson("conglobal-timesheet-notes-v1", {});
+    const roleMap = amTodayRosterReadJson("settegast-staff-role-preferences-v1", {});
+    const totals = {};
+    const shiftHtml = [["first", "DAY"], ["second", "NIGHT"]].map(([shift, label]) => {
+      const rows = roster[shift].map((employee, order) => ({
+        employee,
+        order,
+        status:amTodayRosterStatus(employee, today, punchMap, timeOffMap, noteMap, roleMap)
+      }));
+      const scheduled = rows.filter(row => !amTodayRosterIsOff(row.employee, today)).length;
+      const extra = rows.filter(row => amTodayRosterIsOff(row.employee, today) && punchMap.has(amTodayRosterNameKey(row.employee.name))).length;
+      totals[shift] = extra ? `${scheduled}+${extra}` : String(scheduled);
+      rows.sort((left, right) => Number(left.status.off) - Number(right.status.off) || left.order - right.order);
+      const rowHtml = rows.map(row => amTodayRosterRowHtml({
+        name:row.employee.name,
+        flag:row.status.label,
+        className:row.status.className
+      })).join("");
+      return '<section class="am-today-roster-shift"><div class="am-today-roster-shift-head">' + label + '</div>' +
+        '<div class="am-today-roster-rows">' + (rowHtml || '<div class="am-today-roster-row is-unknown"><span class="am-today-roster-name">No roster entries</span></div>') + '</div></section>';
+    }).join("");
+    renderAmTodayRosterFrame(host, today, shiftHtml, totals.first, totals.second);
+  }
+
+  function openAmTodayRoster() {
+    renderAmTodayRoster();
+    todayRosterPopup.hidden = false;
+    todayRosterButton.setAttribute("aria-expanded", "true");
+  }
+
+  function closeAmTodayRoster() {
+    todayRosterPopup.hidden = true;
+    todayRosterButton.setAttribute("aria-expanded", "false");
+  }
+
+  function initAmTodayRosterPopup() {
+    const handle = document.getElementById("amTodayRosterHandle");
+    if (!handle || handle.dataset.dragReady) return;
+    handle.dataset.dragReady = "1";
+    let drag = null;
+    handle.addEventListener("pointerdown", event => {
+      if (event.target.closest("button")) return;
+      const rect = todayRosterPopup.getBoundingClientRect();
+      todayRosterPopup.style.left = rect.left + "px";
+      todayRosterPopup.style.top = rect.top + "px";
+      todayRosterPopup.style.transform = "none";
+      drag = { x:event.clientX - rect.left, y:event.clientY - rect.top };
+      todayRosterPopup.classList.add("dragging");
+      handle.setPointerCapture(event.pointerId);
+    });
+    handle.addEventListener("pointermove", event => {
+      if (!drag) return;
+      const left = Math.max(4, Math.min(window.innerWidth - todayRosterPopup.offsetWidth - 4, event.clientX - drag.x));
+      const top = Math.max(4, Math.min(window.innerHeight - 34, event.clientY - drag.y));
+      todayRosterPopup.style.left = left + "px";
+      todayRosterPopup.style.top = top + "px";
+    });
+    const endDrag = event => {
+      if (!drag) return;
+      drag = null;
+      todayRosterPopup.classList.remove("dragging");
+      try { handle.releasePointerCapture(event.pointerId); } catch (_) {}
+    };
+    handle.addEventListener("pointerup", endDrag);
+    handle.addEventListener("pointercancel", endDrag);
+  }
+
+  window.addEventListener("storage", event => {
+    if (REPORT_DAY_OFFSET === 0 && !todayRosterPopup.hidden && AM_TODAY_ROSTER_LIVE_KEYS.has(event.key)) renderAmTodayRoster();
+  });
 
   function clipboardCellStyle(cell) {
     const style = window.getComputedStyle(cell);
@@ -3903,6 +4494,7 @@ tags will be replaced.-->
     });
     recalculate();
     persist("Dropdown options saved");
+    publishSharedFormatState();
     closeDropdownDialog();
   }
 
@@ -3917,6 +4509,7 @@ tags will be replaced.-->
     });
     recalculate();
     persist(removed ? "Dropdown removed" : "No dropdowns to remove");
+    if (removed) publishSharedFormatState();
     closeDropdownDialog();
   }
 
@@ -3932,6 +4525,30 @@ tags will be replaced.-->
     const select = visibleCell.querySelector("select");
     if (select) select.focus();
     else visibleCell.focus();
+  }
+
+  function placeCaretAtCellEnd(cell) {
+    if (!cell || !cell.hasAttribute("contenteditable")) return;
+    const selection = window.getSelection && window.getSelection();
+    if (!selection) return;
+    const range = document.createRange();
+    range.selectNodeContents(cell);
+    range.collapse(false);
+    selection.removeAllRanges();
+    selection.addRange(range);
+  }
+
+  function replaceSelectedCellFromTyping(cell, address, value) {
+    if (!cell || !cell.hasAttribute("contenteditable") || formulas[address]) return false;
+    cell.textContent = String(value || "");
+    cellEditModeAddress = address;
+    cell.focus({ preventScroll:true });
+    placeCaretAtCellEnd(cell);
+    if (FORECAST_INBOUND_EDITABLE_CELL_SET.has(address)) forecastInboundManualOverrides.add(address);
+    formulaBar.value = readCell(address);
+    recalculate();
+    persist("Saved " + address);
+    return true;
   }
 
   function nextVisibleCell(fromAddress, direction, mode) {
@@ -3982,6 +4599,8 @@ tags will be replaced.-->
 
     cell.addEventListener("pointerdown", event => {
       if (event.button !== 0) return;
+      cellEditModeAddress = "";
+      cell.classList.remove("cell-editing");
       if (event.target.closest("select, input.sheet-outbound-footage-toggle, input.sheet-manpower-timesheet-toggle, input.sheet-inbound-custom-toggle")) {
         if (event.shiftKey && selectionAnchorAddress) {
           selectionFocusAddress = address;
@@ -4021,7 +4640,37 @@ tags will be replaced.-->
       }
     });
 
+    cell.addEventListener("dblclick", event => {
+      if (!cell.hasAttribute("contenteditable") || event.target.closest("select, input")) return;
+      cellEditModeAddress = address;
+      cell.classList.add("cell-editing");
+    });
+
     cell.addEventListener("keydown", event => {
+      const singleCellSelected = selectedCell === cell && boundsArea(selectionBounds) === 1;
+      const typeToReplace = singleCellSelected
+        && cell.hasAttribute("contenteditable")
+        && cellEditModeAddress !== address
+        && event.key.length === 1
+        && !event.ctrlKey && !event.metaKey && !event.altKey;
+      if (typeToReplace) {
+        event.preventDefault();
+        event.stopPropagation();
+        replaceSelectedCellFromTyping(cell, address, event.key);
+        return;
+      }
+      if (singleCellSelected && cell.hasAttribute("contenteditable") && cellEditModeAddress !== address && (event.key === "Backspace" || event.key === "Delete")) {
+        event.preventDefault();
+        replaceSelectedCellFromTyping(cell, address, "");
+        return;
+      }
+      if (singleCellSelected && cell.hasAttribute("contenteditable") && event.key === "F2") {
+        event.preventDefault();
+        cellEditModeAddress = address;
+        cell.classList.add("cell-editing");
+        placeCaretAtCellEnd(cell);
+        return;
+      }
       const arrowMoves = {
         ArrowLeft: [-1, 0],
         ArrowRight: [1, 0],
@@ -4066,10 +4715,32 @@ tags will be replaced.-->
   });
   copyButton.addEventListener("click", copySelectedCells);
   gridWrap.addEventListener("copy", copySelectionFromKeyboard);
+  gridWrap.addEventListener("contextmenu", event => {
+    const cell = event.target instanceof Element ? event.target.closest("td.sheet-cell") : null;
+    if (!cell || !gridWrap.contains(cell)) return;
+    event.preventDefault();
+    openCellContextMenu(event, cell);
+  });
   mergeButton.addEventListener("click", () => {
     if (mergeButton.dataset.mergeAction === "unmerge") unmergeSelection();
     else mergeSelection();
   });
+  contextMergeButton.addEventListener("click", () => {
+    const action = contextMergeButton.dataset.mergeAction;
+    closeCellContextMenu();
+    if (action === "unmerge") unmergeSelection();
+    else mergeSelection();
+  });
+  document.addEventListener("pointerdown", event => {
+    if (!cellContextMenu.hidden && !cellContextMenu.contains(event.target)) closeCellContextMenu();
+  });
+  document.addEventListener("keydown", event => {
+    if (event.key !== "Escape") return;
+    closeCellContextMenu();
+    if (REPORT_DAY_OFFSET === 0 && !todayRosterPopup.hidden) closeAmTodayRoster();
+  });
+  window.addEventListener("blur", closeCellContextMenu);
+  window.addEventListener("scroll", closeCellContextMenu, true);
   dropdownButton.addEventListener("click", openDropdownDialog);
   document.getElementById("amCancelDropdown").addEventListener("click", closeDropdownDialog);
   document.getElementById("amApplyDropdown").addEventListener("click", applyDropdownDialog);
@@ -4121,6 +4792,7 @@ tags will be replaced.-->
     inboundSequenceDriverInitialized = false;
     recalculate();
     selectSingleCell(cellMap.get("A1"));
+    publishSharedFormatState();
     announceSaved("Original workbook restored");
   });
 
@@ -4141,6 +4813,10 @@ tags will be replaced.-->
     recalculate();
   });
   window.addEventListener("storage", event => {
+    if (event.key === SHARED_FORMAT_STORAGE_KEY) {
+      applySharedFormatState(readSharedFormatState(), "Formatting synced");
+      return;
+    }
     if (event.key === INBOUND_ARCHIVE_STORAGE_KEY) {
       refreshInboundArchiveDropdowns();
       recalculate();
@@ -4149,9 +4825,14 @@ tags will be replaced.-->
     if (event.key === CHASSIS_FORECAST_STORAGE_KEY) recalculate();
     if (event.key === THREE_DAY_MANPOWER_SUMMARY_STORAGE_KEY) recalculate();
   });
+  window.addEventListener("message", event => {
+    if (!event.data || event.data.type !== "conglobal-am-report-format-updated") return;
+    applySharedFormatState(event.data.format, "Formatting synced");
+  });
 
   window.setInterval(recalculate, 60000);
 
+  if (REPORT_DAY_OFFSET === 0) publishSharedFormatState();
   recalculate();
   
 })();
@@ -4196,6 +4877,7 @@ tags will be replaced.-->
   "use strict";
 
   const STORAGE_KEY = "settegast-am-report-column-widths-v2";
+  const WIDTH_MESSAGE_TYPE = "conglobal-am-report-column-widths-updated";
   const MIN_WIDTH = 48;
   const MAX_WIDTH = 640;
   const DEFAULT_WIDTHS = Object.freeze([305, 309, 48]);
@@ -4209,6 +4891,7 @@ tags will be replaced.-->
 
   const clampWidth = value => Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, Math.round(Number(value) || MIN_WIDTH)));
   const defaultWidths = headers.map((header, index) => clampWidth(DEFAULT_WIDTHS[index] || header.getBoundingClientRect().width));
+  let sharedWidthSignature = "";
 
   function readWidths() {
     return columns.map((column, index) => {
@@ -4259,7 +4942,9 @@ tags will be replaced.-->
 
   function saveWidths(widths, message) {
     const normalized = widths.map(clampWidth);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
+    sharedWidthSignature = JSON.stringify(normalized);
+    localStorage.setItem(STORAGE_KEY, sharedWidthSignature);
+    try { window.parent.postMessage({ type:WIDTH_MESSAGE_TYPE, widths:normalized }, "*"); } catch (_) {}
     announce(message || "Column widths saved");
   }
 
@@ -4269,6 +4954,7 @@ tags will be replaced.-->
       const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
       if (Array.isArray(saved) && saved.length === columns.length && saved.every(Number.isFinite)) {
         applyWidths(saved);
+        sharedWidthSignature = JSON.stringify(saved.map(clampWidth));
         restored = true;
       }
     } catch (_) {
@@ -4342,15 +5028,36 @@ tags will be replaced.-->
     resetButton.id = "amResetColumnWidths";
     resetButton.textContent = "Reset Widths";
     resetButton.addEventListener("click", () => {
-      localStorage.removeItem(STORAGE_KEY);
       applyWidths(defaultWidths);
-      announce("Column widths reset");
+      saveWidths(defaultWidths, "Column widths reset");
     });
     const status = document.getElementById("amSaveStatus");
     resetGroup.insertBefore(resetButton, status || null);
   }
 
   restoreSavedWidths();
+  window.addEventListener("message", event => {
+    if (!event.data || event.data.type !== WIDTH_MESSAGE_TYPE || !Array.isArray(event.data.widths)) return;
+    const normalized = event.data.widths.map(clampWidth);
+    const signature = JSON.stringify(normalized);
+    if (signature === sharedWidthSignature) return;
+    sharedWidthSignature = signature;
+    applyWidths(normalized);
+    announce("Column widths synced");
+  });
+  window.addEventListener("storage", event => {
+    if (event.key !== STORAGE_KEY || !event.newValue) return;
+    try {
+      const widths = JSON.parse(event.newValue);
+      if (!Array.isArray(widths) || widths.length !== columns.length || !widths.every(Number.isFinite)) return;
+      const normalized = widths.map(clampWidth);
+      const signature = JSON.stringify(normalized);
+      if (signature === sharedWidthSignature) return;
+      sharedWidthSignature = signature;
+      applyWidths(normalized);
+      announce("Column widths synced");
+    } catch (_) {}
+  });
   if (typeof ResizeObserver === "function") {
     const gridWrap = table.closest(".sheet-grid-wrap");
     if (gridWrap) {

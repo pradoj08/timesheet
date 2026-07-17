@@ -80,16 +80,310 @@ function buildAmReportWorkspace(sheetHtml) {
   .am-day-heading strong{font-size:15px;font-weight:900;letter-spacing:.08em;text-transform:uppercase}
   .am-day-heading span{color:#dbeafe;font-size:13px;font-weight:800}
   .am-day-frame{display:block;width:100%;min-width:0;height:900px;border:0;background:#eef2f6;overflow:hidden}
-  @media(max-width:900px){body{padding:4px}.am-three-day-workspace{gap:0}.am-day-heading{padding:6px}.am-day-heading strong{font-size:11px}.am-day-heading span{font-size:10px}}
+  .am-roster-float{position:fixed;z-index:1000;top:76px;left:50%;width:min(470px,calc(100vw - 24px));max-height:calc(100vh - 92px);transform:translateX(-50%);overflow:hidden;border:2px solid #22344d;border-radius:8px;background:#f8fafc;box-shadow:0 20px 55px rgba(15,23,42,.38)}
+  .am-roster-float[hidden]{display:none!important}
+  .am-roster-float.dragging{opacity:.96;user-select:none}
+  .am-roster-titlebar{display:flex;align-items:center;justify-content:space-between;min-height:36px;padding:5px 7px 5px 12px;background:#0f1b31;color:#fff;cursor:move;touch-action:none}
+  .am-roster-titlebar strong{font-size:13px;font-weight:900;letter-spacing:.06em;text-transform:uppercase}
+  .am-roster-close{width:27px;height:26px;border:1px solid #64748b;border-radius:4px;background:#16263d;color:#fff;font-size:19px;font-weight:900;line-height:1;cursor:pointer}
+  .am-roster-date{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;padding:7px 10px;border-bottom:2px solid #263950;background:#eef2f7;color:#14213a;font-weight:900}
+  .am-roster-date strong{font-size:18px;text-transform:uppercase}.am-roster-date em{justify-self:center;color:#52617a;font-size:11px;font-style:normal;letter-spacing:.09em;text-transform:uppercase}.am-roster-date b{justify-self:end;font-size:24px}
+  .am-roster-body{max-height:calc(100vh - 155px);overflow:auto;padding:0}
+  .am-roster-columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0}
+  .am-roster-shift{min-width:0;overflow:hidden;background:#fff}.am-roster-shift:first-child{border-right:1px solid #9aa9bc}
+  .am-roster-shift-head{display:flex;align-items:center;min-height:27px;padding:5px 8px;background:#263950;color:#fff;font-size:12px;font-weight:900;letter-spacing:.05em;text-transform:uppercase}
+  .am-roster-person{display:grid;grid-template-columns:minmax(0,1fr) auto;width:100%;min-height:28px;align-items:center;gap:5px;padding:4px 7px;border:0;border-bottom:1px solid #cbd5e1;background:#fff;color:#172033;text-align:left;cursor:pointer}
+  .am-roster-person:hover,.am-roster-person:focus-visible{position:relative;z-index:1;outline:2px solid #2563eb;outline-offset:-2px}
+  .am-roster-person.is-off{background:#dfe7f0;color:#4b5c74}.am-roster-person.is-present{background:#d6f7df;color:#126430}.am-roster-person.is-warning{background:#fff0be;color:#8a5100}.am-roster-person.is-sick{background:#ffe0e4;color:#b42336}.am-roster-person.is-vacation{background:#f1e6ff;color:#6d28d9}
+  .am-roster-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:850}.am-roster-flags{display:inline-flex;align-items:center;gap:3px;font-size:9px;font-weight:950;white-space:nowrap}.am-roster-unassigned{color:#dc2626}
+  .am-roster-total{display:flex;align-items:center;justify-content:space-between;min-height:28px;padding:5px 8px;border-top:1px solid #263950;background:#ffe1e5;color:#b10e2d;font-size:13px;font-weight:950}
+  .am-roster-save-note{padding:6px 8px;background:#f8fafc;color:#52617a;font-size:10px;font-weight:700;text-align:center}
+  .am-quick-actions{position:fixed;z-index:1010;width:min(390px,calc(100vw - 16px));overflow:hidden;border:1px solid #9aa9bc;border-radius:5px;background:#f8fafc;box-shadow:0 16px 40px rgba(15,23,42,.38)}.am-quick-actions[hidden]{display:none!important}
+  .am-quick-titlebar{display:flex;align-items:center;justify-content:space-between;min-height:34px;padding:5px 7px 5px 10px;background:#0f1b31;color:#fff}.am-quick-titlebar strong{font-size:12px;font-weight:900}.am-quick-close{width:25px;height:24px;padding:0;border:1px solid #64748b;border-radius:3px;background:#16263d;color:#fff;font-size:18px;font-weight:900;line-height:1;cursor:pointer}
+  .am-quick-name{padding:8px 10px 6px;background:#fff;color:#172033;font-size:13px;font-weight:900}.am-quick-columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;padding:0 7px 7px}.am-quick-column{overflow:hidden;border:1px solid #c4cfdd;border-radius:4px;background:#f8fafc}.am-quick-column h3{display:flex;align-items:center;justify-content:space-between;margin:0;padding:6px 7px;background:#edf2f7;color:#425168;font-size:10px;font-weight:950;letter-spacing:.05em;text-transform:uppercase}.am-quick-column h3 span{font-size:8px;color:#718096}
+  .am-quick-action{display:flex;width:100%;min-height:29px;align-items:center;justify-content:space-between;padding:5px 8px;border:0;border-top:1px solid #cbd5e1;background:#fff;color:#172033;font:900 12px/1.1 Calibri,Arial,sans-serif;text-align:left;cursor:pointer}.am-quick-action span{font-size:9px}.am-quick-action:hover:not(:disabled),.am-quick-action:focus-visible:not(:disabled){outline:2px solid #2563eb;outline-offset:-2px}.am-quick-action.active{box-shadow:inset 0 0 0 2px #d69e00}.am-quick-action:disabled{background:#f1f5f9;color:#9aa5b5;cursor:not-allowed}
+  .am-quick-action.here,.am-quick-action.flipline{background:#d6f7df;color:#126430}.am-quick-action.sic,.am-quick-action.calledoff,.am-quick-action.ncns{background:#ffe0e4;color:#b42336}.am-quick-action.vac{background:#f1e6ff;color:#6d28d9}.am-quick-action.out,.am-quick-action.unknown{background:#dfe7f0;color:#34445c}.am-quick-action.bnsf{background:#ffe5ea;color:#b42336}.am-quick-action.hostler,.am-quick-action.traineehostler{background:#fff2c6;color:#8a5100}.am-quick-action.groundman,.am-quick-action.traineegroundman{background:#ffead5;color:#9a3412}.am-quick-action.flipoperator{background:#eee5ff;color:#6d28d9}.am-quick-action.crane1,.am-quick-action.crane2{background:#dbeafe;color:#1d4ed8}.am-quick-action.clear{background:#f8fafc;color:#52617a}
+  .am-quick-message{min-height:24px;padding:5px 8px;border-top:1px solid #cbd5e1;background:#fff;color:#52617a;font-size:10px;font-weight:700}
+  @media(max-width:900px){body{padding:4px}.am-three-day-workspace{gap:0}.am-day-heading{padding:6px}.am-day-heading strong{font-size:11px}.am-day-heading span{font-size:10px}.am-roster-float{top:50px}.am-roster-body{max-height:calc(100vh - 128px)}}
 </style>
 </head>
 <body>
 <main class="am-three-day-workspace" aria-label="Yesterday, today, and tomorrow AM Reports"></main>
+<section class="am-roster-float" id="amRosterFloat" role="dialog" aria-modal="false" aria-labelledby="amRosterTitle" hidden>
+  <div class="am-roster-titlebar" id="amRosterHandle"><strong id="amRosterTitle">Current Day Roster</strong><button class="am-roster-close" id="amRosterClose" type="button" aria-label="Close roster">&times;</button></div>
+  <div class="am-roster-date"><strong id="amRosterWeekday"></strong><em>Today</em><b id="amRosterDayNumber"></b></div>
+  <div class="am-roster-body"><div class="am-roster-columns" id="amRosterColumns"></div><div class="am-roster-save-note" id="amRosterNote">Changes save immediately and are shared with Timesheet.</div></div>
+</section>
+<section class="am-quick-actions" id="amQuickActions" role="dialog" aria-modal="false" aria-labelledby="amQuickTitle" hidden>
+  <div class="am-quick-titlebar"><strong id="amQuickTitle">Quick Actions</strong><button class="am-quick-close" id="amQuickClose" type="button" aria-label="Close quick actions">&times;</button></div>
+  <div class="am-quick-name" id="amQuickName"></div>
+  <div class="am-quick-columns"><section class="am-quick-column"><h3>Status <span>Selected day</span></h3><div id="amQuickStatuses"></div></section><section class="am-quick-column"><h3>Today's role <span id="amQuickRoleShift"></span></h3><div id="amQuickRoles"></div></section></div>
+  <div class="am-quick-message" id="amQuickMessage"></div>
+</section>
 <script>
 (() => {
   const days = ${dayPayload};
   const workspace = document.querySelector(".am-three-day-workspace");
   const frames = [];
+  const rosterFloat = document.getElementById("amRosterFloat");
+  const rosterColumns = document.getElementById("amRosterColumns");
+  const rosterNote = document.getElementById("amRosterNote");
+  const rosterDefaults = {
+    first:["Branford Alton","Castruita Armando","Frazer Dacoyea","Citizen Dante","Towler Demetrius","Stewart Dexter","Gardner Dorrean","Thomas Henry","Brown James","Herrera Jose","Player Keyston","Hickman Makia","Dever Mikey","Wanza Myles","Romero Nelson","McDaniel Charles","Nava Ramon","Tran Tyler"],
+    second:["Carruthers Timothy","Caceres Virula Victor","Keme Aweri Jr.","Hosey Kevin","Brown Brandy","Mejia Aaron","Bookman Derrell","Hopkins Alexander","Tingle Jason","Contreras Marco","Benavides Robert","Urtado Ernest","Johnson Messiah","Gilder Rufus II","Echendu Chimenierm","Delgado Jose"]
+  };
+  const statusOptions = [["here","Here","✓"],["flipline","Flip Line","FL"],["sic","Sick","S"],["vac","Vacation","V"],["calledoff","Called Off","CO"],["out","Out","O"],["ncns","NCNS","NC"],["bnsf","BNSF","BN"],["unknown","Unknown","??"],["clear","Clear Selection","—"]];
+  const roleOptions = [["hostler","Hostler","H"],["groundman","Groundman","G"],["traineehostler","Trainee Hostler","TH"],["traineegroundman","Trainee Groundman","TG"],["flipoperator","Flip Operator","FO"],["crane1","Crane 1","C1"],["crane2","Crane 2","C2"],["clear","Clear Role","—"]];
+  const readJson = (key, fallback) => {
+    try { const value = JSON.parse(localStorage.getItem(key) || "null"); return value == null ? fallback : value; }
+    catch (_) { return fallback; }
+  };
+  const dateKey = date => date.getFullYear() + "-" + String(date.getMonth() + 1).padStart(2,"0") + "-" + String(date.getDate()).padStart(2,"0");
+  const normalizeName = name => String(name || "").toLowerCase().replace(/[^a-z0-9]+/g," ").replace(/\\bbranford atton\\b/g,"branford alton").trim();
+  const escapeHtml = value => String(value == null ? "" : value).replace(/[&<>"']/g, character => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[character]);
+  const rosterEmployees = () => {
+    const result = { first:rosterDefaults.first.map(name => ({name:name,days:null})), second:rosterDefaults.second.map(name => ({name:name,days:null})) };
+    const saved = readJson("conglobal-roster-state-v1", null);
+    ["first","second"].forEach(shift => {
+      if (saved && Array.isArray(saved[shift]) && saved[shift].length) result[shift] = saved[shift].filter(item => item && item.name).map(item => ({ name:String(item.name), days:Array.isArray(item.days) ? item.days.slice(0,7) : null }));
+    });
+    const seen = new Set(result.first.concat(result.second).map(item => normalizeName(item.name)));
+    const additions = readJson("conglobal-roster-additions-v1", []);
+    if (Array.isArray(additions)) additions.forEach(item => {
+      if (!item || !item.name || !result[item.shift]) return;
+      const key = normalizeName(item.name);
+      if (!key || seen.has(key)) return;
+      result[item.shift].push({ name:String(item.name), days:Array.isArray(item.days) ? item.days.slice(0,7) : null });
+      seen.add(key);
+    });
+    return result;
+  };
+  const isScheduled = (employee, today) => {
+    if (!Array.isArray(employee.days)) return true;
+    const mondayIndex = (today.getDay() + 6) % 7;
+    return String(employee.days[mondayIndex] || "W").toUpperCase() !== "O";
+  };
+  const explicitStatus = (name, today) => {
+    const key = normalizeName(name);
+    const day = dateKey(today);
+    const timeOff = readJson("conglobal-time-off-calendar-v1", {});
+    const absence = Array.isArray(timeOff[day]) ? timeOff[day].find(item => normalizeName(item && item.name) === key) : null;
+    if (absence) return String(absence.code || "").toUpperCase() === "SIC" ? "sic" : "vac";
+    const statuses = readJson("conglobal-time-off-day-status-v1", {});
+    if (statuses[day] && statuses[day][key]) return statuses[day][key];
+    const punches = readJson("conglobal-dayforce-punches-v1", []);
+    if (Array.isArray(punches) && punches.some(punch => normalizeName(punch && punch.name) === key && (!punch.date || String(punch.date).slice(0,10) === day) && (punch.start || punch.end))) return "here";
+    const bank = readJson("conglobal-time-off-employee-bank-v1", {});
+    return statusOptions.some(option => option[0] === bank[key]) ? bank[key] : "";
+  };
+  const assignedRole = (name, shift, today) => {
+    const state = readJson("conglobal-three-day-yard-crew-v1", {});
+    const assignments = state[dateKey(today)] && state[dateKey(today)][shift];
+    if (!assignments || typeof assignments !== "object") return "";
+    const match = Object.entries(assignments).find(entry => normalizeName(entry[0]) === normalizeName(name));
+    return match && roleOptions.some(option => option[0] === match[1]) ? match[1] : "";
+  };
+  const statusClass = (status, scheduled) => {
+    if (["sic","vac","calledoff","out","ncns"].includes(status) || (!status && !scheduled)) return "is-off";
+    if (["here","flipline","bnsf"].includes(status)) return "is-present";
+    if (status === "unknown") return "is-warning";
+    return "";
+  };
+  const saveStatus = (name, status, today) => {
+    const day = dateKey(today);
+    const key = normalizeName(name);
+    const calendar = readJson("conglobal-time-off-calendar-v1", {});
+    const entries = Array.isArray(calendar[day]) ? calendar[day] : [];
+    calendar[day] = entries.filter(item => normalizeName(item && item.name) !== key);
+    if (status === "vac" || status === "sic") calendar[day].push({ date:day, name:name, code:status.toUpperCase(), reason:status === "sic" ? "Sick" : "Vacation", location:"", sheet:"AM Report" });
+    if (!calendar[day].length) delete calendar[day];
+    localStorage.setItem("conglobal-time-off-calendar-v1", JSON.stringify(calendar));
+    const statuses = readJson("conglobal-time-off-day-status-v1", {});
+    if (!statuses[day] || typeof statuses[day] !== "object") statuses[day] = {};
+    if (!status || status === "vac" || status === "sic") delete statuses[day][key]; else statuses[day][key] = status;
+    if (!Object.keys(statuses[day]).length) delete statuses[day];
+    localStorage.setItem("conglobal-time-off-day-status-v1", JSON.stringify(statuses));
+    localStorage.removeItem("conglobal-current-day-roster-snapshot-v1");
+  };
+  const saveRole = (name, role, shift, today) => {
+    const day = dateKey(today);
+    const state = readJson("conglobal-three-day-yard-crew-v1", {});
+    if (!state[day] || typeof state[day] !== "object") state[day] = {};
+    if (!state[day][shift] || typeof state[day][shift] !== "object") state[day][shift] = {};
+    const assignments = state[day][shift];
+    Object.keys(assignments).forEach(assignedName => {
+      if (normalizeName(assignedName) === normalizeName(name) || ((role === "crane1" || role === "crane2") && assignments[assignedName] === role)) delete assignments[assignedName];
+    });
+    if (role) assignments[name] = role;
+    localStorage.setItem("conglobal-three-day-yard-crew-v1", JSON.stringify(state));
+    localStorage.removeItem("conglobal-current-day-roster-snapshot-v1");
+  };
+  const quickActions = document.getElementById("amQuickActions");
+  const quickStatuses = document.getElementById("amQuickStatuses");
+  const quickRoles = document.getElementById("amQuickRoles");
+  let quickEmployee = null;
+  let quickStatusChosen = false;
+  let quickRoleChosen = false;
+  const actionHtml = (options, kind) => options.map(option => '<button class="am-quick-action ' + option[0] + '" type="button" data-quick-' + kind + '="' + option[0] + '"><b>' + option[1] + '</b><span>(' + option[2] + ')</span></button>').join("");
+  quickStatuses.innerHTML = actionHtml(statusOptions.filter(option => option[0] !== "flipline"),"status");
+  quickRoles.innerHTML = actionHtml(roleOptions,"role");
+  const employeeRecord = (name, shift) => rosterEmployees()[shift].find(employee => normalizeName(employee.name) === normalizeName(name)) || { name:name, days:null };
+  const workingToday = (employee, status, today) => {
+    if (["sic","vac","calledoff","out","ncns"].includes(status)) return false;
+    if (["here","flipline","bnsf"].includes(status)) return true;
+    return isScheduled(employee,today);
+  };
+  const rosterStatusCode = status => {
+    const option = statusOptions.find(item => item[0] === status);
+    return option && option[0] !== "clear" ? option[2] : "";
+  };
+  const rosterRoleCode = role => {
+    const option = roleOptions.find(item => item[0] === role);
+    if (!option || option[0] === "clear") return "";
+    return {crane1:"C",crane2:"C",groundman:"G",traineegroundman:"TG",hostler:"H",traineehostler:"TH",flipoperator:"FL"}[role] || option[2];
+  };
+  const renderRoster = () => {
+    const today = new Date();
+    const roster = rosterEmployees();
+    document.getElementById("amRosterWeekday").textContent = today.toLocaleDateString(undefined,{weekday:"short"});
+    document.getElementById("amRosterDayNumber").textContent = String(today.getDate());
+    rosterColumns.innerHTML = ["first","second"].map(shift => {
+      const label = shift === "first" ? "Day" : "Night";
+      let total = 0;
+      const rows = roster[shift].map((employee,index) => {
+        const status = explicitStatus(employee.name,today);
+        const role = assignedRole(employee.name,shift,today);
+        const works = workingToday(employee,status,today);
+        if (works) total += 1;
+        return { employee:employee, status:status, role:role, works:works, index:index };
+      }).sort((left,right) => Number(right.works) - Number(left.works) || left.index - right.index).map(item => {
+        const safeName = escapeHtml(item.employee.name);
+        const statusCode = rosterStatusCode(item.status) || (item.works ? "✓" : "O");
+        const roleCode = rosterRoleCode(item.role);
+        const className = item.status === "sic" ? "is-sick" : item.status === "vac" ? "is-vacation" : statusClass(item.status,isScheduled(item.employee,today));
+        const unassigned = item.works && !roleCode ? '<span class="am-roster-unassigned" title="Role not assigned">⚑</span>' : "";
+        return '<button class="am-roster-person ' + className + '" type="button" data-roster-name="' + safeName + '" data-roster-shift="' + shift + '"><span class="am-roster-name" title="' + safeName + '">' + safeName + '</span><span class="am-roster-flags"><span>(' + statusCode + ')</span>' + (roleCode ? '<span>(' + roleCode + ')</span>' : unassigned) + '</span></button>';
+      }).join("");
+      return '<section class="am-roster-shift"><div class="am-roster-shift-head">' + label + '</div>' + rows + '<div class="am-roster-total"><span>Total</span><span>' + total + '</span></div></section>';
+    }).join("");
+  };
+  const syncQuickActions = () => {
+    if (!quickEmployee) return;
+    const today = new Date();
+    const employee = employeeRecord(quickEmployee.name,quickEmployee.shift);
+    const status = explicitStatus(quickEmployee.name,today);
+    const role = assignedRole(quickEmployee.name,quickEmployee.shift,today);
+    const working = workingToday(employee,status,today);
+    document.getElementById("amQuickName").textContent = quickEmployee.name + " - " + today.toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric",year:"numeric"});
+    document.getElementById("amQuickRoleShift").textContent = working ? (quickEmployee.shift === "first" ? "Day shift" : "Night shift") : "Not working";
+    quickStatuses.querySelectorAll("[data-quick-status]").forEach(button => {
+      const active = button.dataset.quickStatus === status || (!status && button.dataset.quickStatus === "clear");
+      button.classList.toggle("active",active);
+      button.setAttribute("aria-pressed",String(active));
+    });
+    quickRoles.querySelectorAll("[data-quick-role]").forEach(button => {
+      const active = button.dataset.quickRole === role || (!role && button.dataset.quickRole === "clear");
+      button.classList.toggle("active",active);
+      button.setAttribute("aria-pressed",String(active));
+      button.disabled = !working;
+    });
+    document.getElementById("amQuickMessage").textContent = working
+      ? "Choose one status and one role. This closes after both are selected."
+      : "Choose a status. Role assignment is unavailable until this employee is working; use X when finished.";
+  };
+  const closeQuickActions = () => { quickActions.hidden = true; quickEmployee = null; };
+  const positionQuickActions = anchor => {
+    const rect = anchor.getBoundingClientRect();
+    const width = quickActions.offsetWidth || 390;
+    const height = quickActions.offsetHeight || 410;
+    let left = rect.right + 6;
+    if (left + width > window.innerWidth - 6) left = rect.left - width - 6;
+    left = Math.max(6,Math.min(left,window.innerWidth - width - 6));
+    const top = Math.max(6,Math.min(rect.top,window.innerHeight - height - 6));
+    quickActions.style.left = Math.round(left) + "px";
+    quickActions.style.top = Math.round(top) + "px";
+  };
+  const openQuickActions = (name,shift,anchor) => {
+    quickEmployee = { name:name, shift:shift };
+    quickStatusChosen = false;
+    quickRoleChosen = false;
+    quickActions.hidden = false;
+    syncQuickActions();
+    positionQuickActions(anchor);
+  };
+  const finishQuickAction = message => {
+    rosterNote.textContent = message + " Changes are shared with Timesheet.";
+    renderRoster();
+    syncQuickActions();
+    if (quickStatusChosen && quickRoleChosen) closeQuickActions();
+  };
+  const openRoster = () => { renderRoster(); rosterFloat.hidden = false; };
+  const closeRoster = () => { closeQuickActions(); rosterFloat.hidden = true; };
+  rosterColumns.addEventListener("click", event => {
+    const person = event.target.closest("[data-roster-name]");
+    if (person) openQuickActions(person.dataset.rosterName,person.dataset.rosterShift,person);
+  });
+  quickStatuses.addEventListener("click", event => {
+    const action = event.target.closest("[data-quick-status]");
+    if (!action || !quickEmployee) return;
+    const today = new Date();
+    const current = explicitStatus(quickEmployee.name,today);
+    const selected = action.dataset.quickStatus;
+    const next = selected === "clear" || selected === current ? "" : selected;
+    saveStatus(quickEmployee.name,next,today);
+    const employee = employeeRecord(quickEmployee.name,quickEmployee.shift);
+    if (!workingToday(employee,next,today)) saveRole(quickEmployee.name,"",quickEmployee.shift,today);
+    quickStatusChosen = true;
+    finishQuickAction(quickEmployee.name + " attendance saved.");
+  });
+  quickRoles.addEventListener("click", event => {
+    const action = event.target.closest("[data-quick-role]");
+    if (!action || action.disabled || !quickEmployee) return;
+    const today = new Date();
+    const current = assignedRole(quickEmployee.name,quickEmployee.shift,today);
+    const selected = action.dataset.quickRole;
+    const next = selected === "clear" || selected === current ? "" : selected;
+    saveRole(quickEmployee.name,next,quickEmployee.shift,today);
+    quickRoleChosen = true;
+    finishQuickAction(quickEmployee.name + " role saved.");
+  });
+  document.getElementById("amQuickClose").addEventListener("click",closeQuickActions);
+  document.getElementById("amRosterClose").addEventListener("click",closeRoster);
+  document.addEventListener("keydown", event => {
+    if (event.key !== "Escape") return;
+    if (!quickActions.hidden) closeQuickActions(); else if (!rosterFloat.hidden) closeRoster();
+  });
+  window.addEventListener("storage", event => {
+    if (["conglobal-roster-state-v1","conglobal-roster-additions-v1","conglobal-time-off-calendar-v1","conglobal-time-off-day-status-v1","conglobal-time-off-employee-bank-v1","conglobal-dayforce-punches-v1","conglobal-three-day-yard-crew-v1"].includes(event.key)) {
+      if (!rosterFloat.hidden) renderRoster();
+      if (!quickActions.hidden) syncQuickActions();
+    }
+  });
+  (() => {
+    const handle = document.getElementById("amRosterHandle");
+    let drag = null;
+    handle.addEventListener("pointerdown", event => {
+      if (event.target.closest("button")) return;
+      closeQuickActions();
+      const rect = rosterFloat.getBoundingClientRect();
+      rosterFloat.style.left = rect.left + "px";
+      rosterFloat.style.top = rect.top + "px";
+      rosterFloat.style.transform = "none";
+      drag = { x:event.clientX - rect.left, y:event.clientY - rect.top };
+      rosterFloat.classList.add("dragging");
+      handle.setPointerCapture(event.pointerId);
+    });
+    handle.addEventListener("pointermove", event => {
+      if (!drag) return;
+      const left = Math.max(4,Math.min(window.innerWidth - rosterFloat.offsetWidth - 4,event.clientX - drag.x));
+      const top = Math.max(4,Math.min(window.innerHeight - 38,event.clientY - drag.y));
+      rosterFloat.style.left = left + "px";
+      rosterFloat.style.top = top + "px";
+    });
+    const end = event => { if (!drag) return; drag = null; rosterFloat.classList.remove("dragging"); try { handle.releasePointerCapture(event.pointerId); } catch (_) {} };
+    handle.addEventListener("pointerup",end);
+    handle.addEventListener("pointercancel",end);
+  })();
   const clearFrameSelection = frame => {
     try {
       const reportDocument = frame.contentDocument;
@@ -158,6 +452,16 @@ function buildAmReportWorkspace(sheetHtml) {
   });
   window.addEventListener("message", event => {
     if (!frames.some(frame => frame.contentWindow === event.source)) return;
+    if (event.data && event.data.type === "conglobal-open-todays-roster") {
+      if (rosterFloat.hidden) openRoster(); else closeRoster();
+      return;
+    }
+    if (event.data && ["conglobal-am-report-format-updated", "conglobal-am-report-column-widths-updated"].includes(event.data.type)) {
+      frames.forEach(frame => {
+        if (frame.contentWindow !== event.source) frame.contentWindow.postMessage(event.data, "*");
+      });
+      return;
+    }
     if (!event.data || !["conglobal-open-mass-export", "conglobal-open-audits-popup", "conglobal-open-checklist-popup"].includes(event.data.type)) return;
     window.parent.postMessage(event.data, "*");
   });
