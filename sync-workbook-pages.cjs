@@ -5,6 +5,7 @@ const workbookPath = "index.html";
 const pages = {
   matrix: "matrix-page.html",
   matrixWide: "matrix-wide-page.html",
+  superBash: "super-bash-page.html",
   lphTracker: "lph-tracker-page.html",
   amReport: "am-report-page.html",
   chassisStatus: "chassis-status-page.html",
@@ -167,6 +168,9 @@ function validatePageScripts(pageId, html) {
   let index = 0;
   for (const match of scripts) {
     if (/type\s*=\s*["']application\/json["']/i.test(match[1])) continue;
+    // Bundled pages can contain native ES modules. vm.Script validates classic
+    // scripts only, so leave module parsing to the browser that executes them.
+    if (/type\s*=\s*["']module["']/i.test(match[1])) continue;
     index += 1;
     new vm.Script(match[2], { filename: `${pageId}-inline-${index}.js` });
   }
