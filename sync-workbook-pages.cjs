@@ -39,6 +39,15 @@ function inlineYardCrewSprites(html) {
   }, html);
 }
 
+function configureSuperBashPage(html) {
+  // The upstream single-file build still loads its large runtime media from
+  // /assets. Root-relative paths resolve to the drive root under file://, so
+  // point them at the asset package carried beside this workbook instead.
+  return html
+    .replaceAll("/assets/", "assets/super-bash/")
+    .replaceAll("./favicon.svg", "assets/super-bash/favicon.svg");
+}
+
 function configureAmReportSheet(html, offset, label) {
   const config = `<script>window.AM_REPORT_DAY_OFFSET=${offset};window.AM_REPORT_DAY_LABEL=${JSON.stringify(label)};</script>`;
   return html.replace(/<head\b[^>]*>/i, match => match + "\n" + config);
@@ -195,6 +204,7 @@ let output = fs.readFileSync(workbookPath, "utf8");
 
 for (const [pageId, sourcePath] of Object.entries(pages)) {
   let pageHtml = stripPageSwitcher(fs.readFileSync(sourcePath, "utf8"));
+  if (pageId === "superBash") pageHtml = configureSuperBashPage(pageHtml);
   if (pageId === "timeOff") pageHtml = inlineYardCrewSprites(pageHtml);
   if (pageId === "amReport") {
     validatePageScripts("amReportSheet", pageHtml);
