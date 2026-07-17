@@ -5600,12 +5600,21 @@ body.forecast-view .forecast-bottom-controls {
 .forecast-hotbox-table th{background:#101a2d;color:#91a4c4;font-size:9px;letter-spacing:.08em;text-transform:uppercase}
 .forecast-hotbox-table td{color:#e5edf9;font-size:11px;font-weight:800;overflow-wrap:anywhere}
 .forecast-hotbox-table tbody tr:last-child td{border-bottom:0}
-.forecast-hotbox-unit{color:#fde68a!important;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:12px!important}
+.forecast-hotbox-unit{
+  color:#fff3a6!important;
+  font-family:Consolas,"Courier New",ui-monospace,monospace;
+  font-size:16px!important;
+  font-weight:1000!important;
+  line-height:1.25;
+  letter-spacing:.025em;
+  text-shadow:0 0 10px rgba(251,191,36,.18);
+}
 .forecast-hotbox-consignee{color:#fbbf24!important}
 @media(max-width:680px){
   .forecast-hotbox-list-modal{padding:44px 6px 8px}
   .forecast-hotbox-list-head{padding:14px}
   .forecast-hotbox-table th,.forecast-hotbox-table td{padding:6px 7px;font-size:9px}
+  .forecast-hotbox-unit{font-size:13px!important}
 }
 </style>
 </head>
@@ -12211,7 +12220,8 @@ function updateForecastDayFilterOptions(){
       if(forecastSelectedDays.has(day))forecastSelectedDays.delete(day);
       else forecastSelectedDays.add(day);
       if(forecastSelectedDays.size===0)forecastSelectedDays=new Set();
-      renderForecastImportedUnits();
+      applyForecastDaySelectionFeedback(days);
+      scheduleForecastVisibilityRefresh();
     };
   });
 
@@ -12220,9 +12230,29 @@ function updateForecastDayFilterOptions(){
     allBtn.textContent=selected==="all" ? "All Days" : "Show All Days";
     allBtn.onclick=()=>{
       forecastSelectedDays=new Set();
-      renderForecastImportedUnits();
+      applyForecastDaySelectionFeedback(days);
+      scheduleForecastVisibilityRefresh();
     };
   }
+}
+function applyForecastDaySelectionFeedback(daysInput){
+  const days=Array.isArray(daysInput)?daysInput:getForecastAvailableDays();
+  const selected=getForecastSelectedDayFilter();
+  const selectedSet=selected==="all" ? new Set(days) : new Set(selected);
+  const slicer=$("forecastDaySlicer");
+  slicer?.querySelectorAll("[data-forecast-day-chip]").forEach(chip=>{
+    chip.classList.toggle("active",selectedSet.has(chip.dataset.forecastDayChip));
+    chip.setAttribute("aria-pressed",String(selectedSet.has(chip.dataset.forecastDayChip)));
+  });
+  const allBtn=$("forecastSelectAllDaysBtn");
+  if(allBtn)allBtn.textContent=selected==="all"?"All Days":"Show All Days";
+
+  // Hide deselected day sections in the current DOM immediately. The deferred
+  // rebuild then recalculates totals, shortages, tables, and request counts.
+  const statusCards=$("forecastStatusCards");
+  statusCards?.querySelectorAll("[data-forecast-drop-day]").forEach(section=>{
+    section.style.display=selectedSet.has(section.dataset.forecastDropDay)?"":"none";
+  });
 }
 function isForecastUnitVisibleByDay(unit){
   const selected=getForecastSelectedDayFilter();
@@ -12244,14 +12274,31 @@ function isForecastUnitHiddenByTrainDay(unit){
 function getVisibleForecastUnits(){
   return forecastImportedUnits.filter(unit=>isForecastUnitVisibleByDay(unit) && !isForecastUnitHiddenByTrainDay(unit));
 }
-function hideForecastTrainDay(train,day){
+let forecastVisibilityRefreshSequence=0;
+function scheduleForecastVisibilityRefresh(){
+  const sequence=++forecastVisibilityRefreshSequence;
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    if(sequence!==forecastVisibilityRefreshSequence)return;
+    renderForecastImportedUnits({visibilityOnly:true});
+    const persist=()=>saveForecastState();
+    if(typeof requestIdleCallback==="function")requestIdleCallback(persist,{timeout:750});
+    else setTimeout(persist,0);
+  }));
+}
+function hideForecastTrainDay(train,day,sourceCard){
   if(!forecastHiddenTrainDays || !(forecastHiddenTrainDays instanceof Set))forecastHiddenTrainDays=new Set();
   forecastHiddenTrainDays.add(getForecastTrainDayKey(train,day));
-  renderForecastHiddenTrainDays();
-  requestAnimationFrame(()=>requestAnimationFrame(()=>{
-    renderForecastImportedUnits();
-    setTimeout(saveForecastState,0);
-  }));
+
+  // Give immediate feedback before the larger forecast tables are rebuilt.
+  // The old path left the card visible while thousands of unit rows were
+  // regrouped and saved, which made the hide button feel unresponsive.
+  const card=sourceCard && sourceCard.nodeType===1 ? sourceCard : null;
+  if(card){
+    card.setAttribute("aria-hidden","true");
+    card.style.display="none";
+  }
+
+  scheduleForecastVisibilityRefresh();
 }
 function restoreForecastTrainDay(key){
   if(forecastHiddenTrainDays && forecastHiddenTrainDays instanceof Set)forecastHiddenTrainDays.delete(key);
@@ -12631,12 +12678,20 @@ function unitsForForecastGroup(train,day){
 
 
 
-function renderForecastStatusCards(){
+function renderForecastStatusCards(visibleUnitsInput){
   const box=$("forecastStatusCards");
   const pill=$("forecastStatusCardPill");
   if(!box)return;
 
-  const groups=buildForecastTrainSummary();
+  const statusVisibleUnits=Array.isArray(visibleUnitsInput) ? visibleUnitsInput : getVisibleForecastUnits();
+  const groups=buildForecastTrainSummaryForUnits(statusVisibleUnits);
+  const statusUnitsByGroup=new Map();
+  statusVisibleUnits.forEach(unit=>{
+    const key=getForecastTrainDayKey(getForecastTrainGroupName(unit),getForecastUnitDay(unit));
+    if(!statusUnitsByGroup.has(key))statusUnitsByGroup.set(key,[]);
+    statusUnitsByGroup.get(key).push(unit);
+  });
+  const statusUnitsForGroup=(train,day)=>statusUnitsByGroup.get(getForecastTrainDayKey(train,day))||[];
   const selectedText=getForecastSelectedDayText();
   const inboundNameCounts=groups.reduce((counts,group)=>{
     const key=String(group.train||"").trim().toUpperCase();
@@ -12729,7 +12784,7 @@ function renderForecastStatusCards(){
 
   box.innerHTML=dayKeys.map(day=>{
     const dayGroups=byDay[day];
-    const dayUnitTotal=dayGroups.reduce((total,group)=>total+unitsForForecastGroup(group.train,group.day).length,0);
+    const dayUnitTotal=dayGroups.reduce((total,group)=>total+statusUnitsForGroup(group.train,group.day).length,0);
     return `<section class="forecast-day-section" data-forecast-drop-day="${escapeHtml(day)}">
       <div class="forecast-day-divider">
         <div>
@@ -12742,7 +12797,7 @@ function renderForecastStatusCards(){
       </div>
       <div class="forecast-status-cards-grid">
          ${dayGroups.map(g=>{
-           const units=unitsForForecastGroup(g.train,g.day);
+           const units=statusUnitsForGroup(g.train,g.day);
           const hotBoxCount=units.reduce((count,unit)=>{
             const consignee=String(unit?.consignee||"").toUpperCase().replace(/[^A-Z0-9]/g,"");
             return count+(consignee==="IMCCOMLLC"?1:0);
@@ -12977,7 +13032,7 @@ function renderForecastStatusCards(){
     btn.onclick=event=>{
       event.preventDefault();
       event.stopPropagation();
-      hideForecastTrainDay(btn.dataset.forecastTrainEditHide,btn.dataset.forecastEditDay);
+      hideForecastTrainDay(btn.dataset.forecastTrainEditHide,btn.dataset.forecastEditDay,btn.closest(".forecast-train-card"));
     };
   });
   box.querySelectorAll("[data-forecast-train-edit-input]").forEach(input=>{
@@ -14698,15 +14753,18 @@ function renderForecastChassisRequestBoard(){
 
 
 
-function renderForecastImportedUnits(){
+function renderForecastImportedUnits(options){
   const body=$("forecastImportRows");
   const summary=$("forecastImportSummary");
   if(!body)return;
+  const visibilityOnly=!!(options && options.visibilityOnly);
 
-  updateForecastDayFilterOptions();
+  if(!visibilityOnly)updateForecastDayFilterOptions();
   renderForecastHiddenTrainDays();
-  renderForecastPoolResolver();
-  renderForecastOnHandChassis();
+  if(!visibilityOnly){
+    renderForecastPoolResolver();
+    renderForecastOnHandChassis();
+  }
 
   const visibleUnits=getVisibleForecastUnits().sort(compareForecastUnitsByArrival);
   const total=visibleUnits.length;
@@ -14754,7 +14812,7 @@ if($("forecastNeedsSizeRule"))$("forecastNeedsSizeRule").textContent=needsSize;
   }
 
   renderForecastTrainSummary();
-  renderForecastStatusCards();
+  renderForecastStatusCards(visibleUnits);
   renderForecastChassisRequestBoard();
 
   body.innerHTML=visibleUnits.length ? visibleUnits.map(r=>`
@@ -17473,6 +17531,28 @@ window.addEventListener("DOMContentLoaded",()=>{
 .forecast-mismatch-preview-section.forecast-flip-authorization-section thead tr{
   box-shadow:-18px 0 #065f46,18px 0 #065f46!important;
 }
+.forecast-mismatch-preview-section.forecast-flip-authorization-section table{
+  display:block!important;
+  max-height:min(34dvh,300px)!important;
+  overflow-x:hidden!important;
+  overflow-y:scroll!important;
+  overscroll-behavior:contain;
+  scrollbar-gutter:stable;
+  scrollbar-width:auto;
+  scrollbar-color:#34d399 rgba(15,23,42,.72);
+}
+.forecast-mismatch-preview-section.forecast-flip-authorization-section table::-webkit-scrollbar{width:12px}
+.forecast-mismatch-preview-section.forecast-flip-authorization-section table::-webkit-scrollbar-track{background:rgba(15,23,42,.72)}
+.forecast-mismatch-preview-section.forecast-flip-authorization-section table::-webkit-scrollbar-thumb{
+  border:2px solid rgba(15,23,42,.72);
+  border-radius:999px;
+  background:#34d399;
+}
+.forecast-mismatch-preview-section.forecast-flip-authorization-section th{
+  position:sticky!important;
+  top:0;
+  z-index:3;
+}
 .forecast-mismatch-preview-empty{padding:18px;color:#94a3b8;text-align:center}
 .forecast-mismatch-details-modal{
   position:fixed;
@@ -17760,9 +17840,27 @@ window.addEventListener("DOMContentLoaded",()=>{
 .forecast-authorized-preview-actions button{border-radius:999px;padding:9px 14px;font-weight:1000}
 .forecast-authorized-preview-head button,
 #forecastAuthorizedPreviewCancelBtn{border:1px solid rgba(251,113,133,.42);background:rgba(127,29,29,.25);color:#ffe4e6}
-.forecast-authorized-preview-table-wrap{overflow:auto;padding:12px 20px}
+.forecast-authorized-preview-table-wrap{
+  flex:1 1 auto;
+  min-height:0;
+  max-height:min(58dvh,560px);
+  overflow-x:auto;
+  overflow-y:scroll;
+  overscroll-behavior:contain;
+  scrollbar-gutter:stable;
+  scrollbar-width:auto;
+  scrollbar-color:#34d399 rgba(15,23,42,.72);
+  padding:12px 20px;
+}
+.forecast-authorized-preview-table-wrap::-webkit-scrollbar{width:12px;height:12px}
+.forecast-authorized-preview-table-wrap::-webkit-scrollbar-track{background:rgba(15,23,42,.72)}
+.forecast-authorized-preview-table-wrap::-webkit-scrollbar-thumb{
+  border:2px solid rgba(15,23,42,.72);
+  border-radius:999px;
+  background:#34d399;
+}
 .forecast-authorized-preview-table-wrap table{width:100%;border-collapse:collapse}
-.forecast-authorized-preview-table-wrap th{padding:8px;background:#065f46;color:#d1fae5;text-align:center;font-size:10px;text-transform:uppercase}
+.forecast-authorized-preview-table-wrap th{position:sticky;top:0;z-index:2;padding:8px;background:#065f46;color:#d1fae5;text-align:center;font-size:10px;text-transform:uppercase}
 .forecast-authorized-preview-table-wrap td{padding:8px;border-bottom:1px solid rgba(148,163,184,.14);color:#f8fafc;text-align:center;font-size:11px;font-weight:800}
 .forecast-authorized-preview-actions{display:flex;justify-content:flex-end;gap:10px;padding:12px 20px 16px;border-top:1px solid rgba(148,163,184,.18)}
 #forecastAuthorizedPreviewConfirmBtn{border:1px solid rgba(52,211,153,.5);background:rgba(5,150,105,.32);color:#d1fae5}

@@ -2269,7 +2269,7 @@ tags will be replaced.-->
 (() => {
   "use strict";
 
-  const STORAGE_KEY = "settegast-am-report-v1";
+  const BASE_STORAGE_KEY = "settegast-am-report-v1";
   const columns = ["A", "B", "C"];
   const DEFAULT_DROPDOWNS = Object.freeze({
     A21: ["No Concerns", "Late Arrival"]
@@ -2281,13 +2281,21 @@ tags will be replaced.-->
   const TODAY_ZPBHO_SUMMARY_STORAGE_KEY = "conglobal-am-report-zpbho-summary-v1";
   const REPORT_DAY_OFFSET = Number.isFinite(Number(window.AM_REPORT_DAY_OFFSET)) ? Number(window.AM_REPORT_DAY_OFFSET) : 0;
   const DAY_OFFSET = REPORT_DAY_OFFSET;
+  const storageDate = new Date();
+  storageDate.setHours(0, 0, 0, 0);
+  storageDate.setDate(storageDate.getDate() + REPORT_DAY_OFFSET);
+  const storageDateKey = [
+    storageDate.getFullYear(),
+    String(storageDate.getMonth() + 1).padStart(2, "0"),
+    String(storageDate.getDate()).padStart(2, "0")
+  ].join("-");
+  const STORAGE_KEY = BASE_STORAGE_KEY + "." + storageDateKey;
   const REPORT_DAY_TONE_CLASS = REPORT_DAY_OFFSET < 0
     ? "report-day-previous"
     : REPORT_DAY_OFFSET > 0
       ? "report-day-next"
       : "report-day-current";
   const SHADED_CELL_BACKGROUNDS = new Set(["rgb(231, 230, 230)", "rgb(232, 232, 232)"]);
-  const BASE_STORAGE_KEY = STORAGE_KEY;
   const MANPOWER_TIMESHEET_TOGGLE_CELL_SET = new Set(REPORT_DAY_OFFSET === 0 ? ["C24"] : []);
   const INBOUND_ARCHIVE_CELLS = Object.freeze(["B6", "B7"]);
   const INBOUND_ARCHIVE_CELL_SET = new Set(INBOUND_ARCHIVE_CELLS);
@@ -2621,6 +2629,42 @@ tags will be replaced.-->
     });
     return accepted;
   }
+
+  function initializeDatedReportStorage() {
+    if (REPORT_DAY_OFFSET !== 0) return;
+    try {
+      // Preserve the last single-report save as today's report, then retire the
+      // shared key so yesterday/today/tomorrow can never overwrite each other.
+      const legacyState = localStorage.getItem(BASE_STORAGE_KEY);
+      if (legacyState != null) {
+        localStorage.setItem(STORAGE_KEY, legacyState);
+      }
+      localStorage.removeItem(BASE_STORAGE_KEY);
+
+      // Keep only the three dates visible in this workspace. Absolute date keys
+      // make tomorrow become today and today become yesterday automatically.
+      const retainedKeys = new Set([-1, 0, 1].map(offset => {
+        const date = new Date();
+        date.setHours(0, 0, 0, 0);
+        date.setDate(date.getDate() + offset);
+        return BASE_STORAGE_KEY + "." + [
+          date.getFullYear(),
+          String(date.getMonth() + 1).padStart(2, "0"),
+          String(date.getDate()).padStart(2, "0")
+        ].join("-");
+      }));
+      const datedPrefix = BASE_STORAGE_KEY + ".";
+      const datedKeyPattern = /^settegast-am-report-v1\.\d{4}-\d{2}-\d{2}$/;
+      const existingKeys = Array.from({ length:localStorage.length }, (_, index) => localStorage.key(index));
+      existingKeys.forEach(key => {
+        if (key && key.startsWith(datedPrefix) && datedKeyPattern.test(key) && !retainedKeys.has(key)) {
+          localStorage.removeItem(key);
+        }
+      });
+    } catch (_) {}
+  }
+
+  initializeDatedReportStorage();
 
   try {
     const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");

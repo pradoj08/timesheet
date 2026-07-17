@@ -69,7 +69,7 @@ function buildAmReportWorkspace(sheetHtml) {
   .am-day-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:42px;padding:8px 12px;border-bottom:1px solid #cbd5e1;background:#132238;color:#fff}
   .am-day-heading strong{font-size:15px;font-weight:900;letter-spacing:.08em;text-transform:uppercase}
   .am-day-heading span{color:#dbeafe;font-size:13px;font-weight:800}
-  .am-day-frame{display:block;width:100%;min-width:0;height:1200px;border:0;background:#eef2f6;overflow:hidden}
+  .am-day-frame{display:block;width:100%;min-width:0;height:900px;border:0;background:#eef2f6;overflow:hidden}
   @media(max-width:900px){body{padding:4px}.am-three-day-workspace{gap:0}.am-day-heading{padding:6px}.am-day-heading strong{font-size:11px}.am-day-heading span{font-size:10px}}
 </style>
 </head>
@@ -116,11 +116,17 @@ function buildAmReportWorkspace(sheetHtml) {
       } catch (_) {}
       const fit = () => {
         try {
-          const documentHeight = Math.max(
-            frame.contentDocument.documentElement.scrollHeight,
-            frame.contentDocument.body.scrollHeight
-          );
-          frame.style.height = Math.max(900, documentHeight + 4) + "px";
+          const reportDocument = frame.contentDocument;
+          const reportRoot = reportDocument.getElementById("am-report");
+          const bodyStyle = reportDocument.defaultView.getComputedStyle(reportDocument.body);
+          const paddingBottom = parseFloat(bodyStyle.paddingBottom) || 0;
+          const contentHeight = reportRoot
+            ? reportRoot.offsetTop + reportRoot.offsetHeight + paddingBottom
+            : reportDocument.body.scrollHeight;
+          const nextHeight = Math.max(1, Math.ceil(contentHeight + 2));
+          if (Math.abs((parseFloat(frame.style.height) || 0) - nextHeight) > 1) {
+            frame.style.height = nextHeight + "px";
+          }
         } catch (_) {}
       };
       fit();
@@ -145,6 +151,11 @@ function buildAmReportWorkspace(sheetHtml) {
     if (!event.data || !["conglobal-open-mass-export", "conglobal-open-audits-popup", "conglobal-open-checklist-popup"].includes(event.data.type)) return;
     window.parent.postMessage(event.data, "*");
   });
+  // Rebuild all three dated frames just after local midnight. Their absolute
+  // date keys rotate tomorrow -> today -> yesterday without copying state.
+  const nextMidnight = new Date();
+  nextMidnight.setHours(24, 0, 2, 0);
+  window.setTimeout(() => window.location.reload(), Math.max(1000, nextMidnight.getTime() - Date.now()));
 })();
 </script>
 </body>
