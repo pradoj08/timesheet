@@ -942,6 +942,86 @@
       padding: 0 6px 6px;
     }
 
+    .employee-quick-times {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 7px;
+      padding: 0 6px 6px;
+    }
+
+    .employee-quick-time-card {
+      min-width: 0;
+      overflow: hidden;
+      border: 1px solid #cbd5e1;
+      border-radius: 5px;
+      background: #fff;
+    }
+
+    .employee-quick-time-card h3 {
+      margin: 0;
+      padding: 6px 7px;
+      background: #263950;
+      color: #fff;
+      font-size: 9px;
+      font-weight: 950;
+      letter-spacing: .06em;
+      text-align: center;
+      text-transform: uppercase;
+    }
+
+    .employee-quick-time-row {
+      display: grid;
+      grid-template-columns: minmax(44px, 1fr) minmax(70px, 1.35fr) minmax(44px, 1fr);
+      align-items: center;
+      gap: 4px;
+      padding: 5px;
+    }
+
+    .employee-quick-time-row + .employee-quick-time-row { padding-top: 0; }
+
+    .employee-quick-time-value {
+      width: 100%;
+      min-width: 0;
+      height: 29px;
+      border: 1px solid #8fa1b8;
+      border-radius: 4px;
+      background: #f8fafc;
+      color: #14213a;
+      font-size: 12px;
+      font-weight: 900;
+      text-align: center;
+    }
+
+    .employee-quick-time-step {
+      height: 27px;
+      min-width: 0;
+      padding: 0 3px;
+      border: 1px solid #94a3b8;
+      border-radius: 4px;
+      background: #eaf0f7;
+      color: #22344d;
+      font-size: 9px;
+      font-weight: 950;
+      cursor: pointer;
+    }
+
+    .employee-quick-time-step:hover,
+    .employee-quick-time-step:focus-visible {
+      border-color: #2563eb;
+      background: #dbeafe;
+      outline: 2px solid #2563eb;
+      outline-offset: -2px;
+    }
+
+    .employee-quick-time-hint {
+      color: #64748b;
+      font-size: 8px;
+      font-weight: 900;
+      line-height: 1.05;
+      text-align: center;
+      text-transform: uppercase;
+    }
+
     .employee-quick-column {
       min-width: 0;
       overflow: hidden;
@@ -2292,6 +2372,34 @@
           </div>
         </section>
       </div>
+      <div class="employee-quick-times" aria-label="Employee clock times">
+        <section class="employee-quick-time-card">
+          <h3>Clocked In</h3>
+          <div class="employee-quick-time-row">
+            <button class="employee-quick-time-step" type="button" data-employee-quick-time="start" data-time-delta="-60">&#8722;1 hr</button>
+            <input class="employee-quick-time-value" id="employeeQuickClockIn" type="time" step="600" value="03:00" aria-label="Clocked in time" />
+            <button class="employee-quick-time-step" type="button" data-employee-quick-time="start" data-time-delta="60">+1 hr</button>
+          </div>
+          <div class="employee-quick-time-row">
+            <button class="employee-quick-time-step" type="button" data-employee-quick-time="start" data-time-delta="-10">&#8722;10m</button>
+            <span class="employee-quick-time-hint">10-minute<br />steps</span>
+            <button class="employee-quick-time-step" type="button" data-employee-quick-time="start" data-time-delta="10">+10m</button>
+          </div>
+        </section>
+        <section class="employee-quick-time-card">
+          <h3>Clocking Out</h3>
+          <div class="employee-quick-time-row">
+            <button class="employee-quick-time-step" type="button" data-employee-quick-time="end" data-time-delta="-60">&#8722;1 hr</button>
+            <input class="employee-quick-time-value" id="employeeQuickClockOut" type="time" step="600" value="15:00" aria-label="Clocking out time" />
+            <button class="employee-quick-time-step" type="button" data-employee-quick-time="end" data-time-delta="60">+1 hr</button>
+          </div>
+          <div class="employee-quick-time-row">
+            <button class="employee-quick-time-step" type="button" data-employee-quick-time="end" data-time-delta="-10">&#8722;10m</button>
+            <span class="employee-quick-time-hint">10-minute<br />steps</span>
+            <button class="employee-quick-time-step" type="button" data-employee-quick-time="end" data-time-delta="10">+10m</button>
+          </div>
+        </section>
+      </div>
       <div class="employee-bank-status" id="employeeStatusMessage" aria-live="polite"></div>
     </div>
   </section>
@@ -2319,6 +2427,7 @@
     const employeeBankStorageKey = "conglobal-time-off-employee-bank-v1";
     const employeeDayStatusStorageKey = "conglobal-time-off-day-status-v1";
     const employeeDayAdditionsStorageKey = "conglobal-time-off-day-additions-v1";
+    const employeePunchStorageKey = "conglobal-dayforce-punches-v1";
     const yardCrewStorageKey = "conglobal-three-day-yard-crew-v1";
     const threeDayManpowerSummaryStorageKey = "conglobal-three-day-manpower-summary-v1";
     const yardCrewRoleLabels = {
@@ -2501,6 +2610,90 @@
         day: "numeric",
         year: "numeric"
       });
+    }
+
+    function employeePunchDateKey(value) {
+      const text = String(value || "").trim();
+      const iso = text.match(/^(\d{4}-\d{2}-\d{2})/);
+      if (iso) return iso[1];
+      const parsed = new Date(text);
+      return Number.isNaN(parsed.getTime()) ? "" : isoDate(parsed);
+    }
+
+    function employeeQuickTimeMinutes(value, fallback) {
+      const text = String(value || "").trim();
+      const match = text.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+      if (!match) return fallback;
+      let hours = Number(match[1]);
+      const minutes = Number(match[2]);
+      const meridiem = String(match[3] || "").toUpperCase();
+      if (!Number.isFinite(hours) || !Number.isFinite(minutes) || minutes > 59 || hours > 23) return fallback;
+      if (meridiem) {
+        if (hours < 1 || hours > 12) return fallback;
+        if (hours === 12) hours = 0;
+        if (meridiem === "PM") hours += 12;
+      }
+      return hours * 60 + minutes;
+    }
+
+    function employeeQuickInputTime(minutes) {
+      const normalized = ((Number(minutes) || 0) % 1440 + 1440) % 1440;
+      return `${String(Math.floor(normalized / 60)).padStart(2, "0")}:${String(normalized % 60).padStart(2, "0")}`;
+    }
+
+    function employeeQuickPunchTime(minutes) {
+      const normalized = ((Number(minutes) || 0) % 1440 + 1440) % 1440;
+      const hour24 = Math.floor(normalized / 60);
+      const minute = normalized % 60;
+      return `${hour24 % 12 || 12}:${String(minute).padStart(2, "0")} ${hour24 >= 12 ? "PM" : "AM"}`;
+    }
+
+    function readEmployeePunches() {
+      try {
+        const punches = JSON.parse(localStorage.getItem(employeePunchStorageKey) || "[]");
+        return Array.isArray(punches) ? punches : [];
+      } catch (error) {
+        return [];
+      }
+    }
+
+    function matchingEmployeePunchIndex(punches, name, dateKey) {
+      const todayKey = isoDate(today);
+      return punches.findIndex((punch) => {
+        if (normalizeName(punch?.name) !== normalizeName(name)) return false;
+        return punch?.date ? employeePunchDateKey(punch.date) === dateKey : dateKey === todayKey;
+      });
+    }
+
+    function syncEmployeeQuickTimes() {
+      const clockIn = document.getElementById("employeeQuickClockIn");
+      const clockOut = document.getElementById("employeeQuickClockOut");
+      if (!clockIn || !clockOut || !selectedStatusName || !selectedStatusDate) return;
+      const punches = readEmployeePunches();
+      const index = matchingEmployeePunchIndex(punches, selectedStatusName, selectedStatusDate);
+      const punch = index >= 0 ? punches[index] : null;
+      clockIn.value = employeeQuickInputTime(employeeQuickTimeMinutes(punch?.start, 180));
+      clockOut.value = employeeQuickInputTime(employeeQuickTimeMinutes(punch?.end, 900));
+    }
+
+    function saveEmployeeQuickTimes() {
+      const clockIn = document.getElementById("employeeQuickClockIn");
+      const clockOut = document.getElementById("employeeQuickClockOut");
+      if (!clockIn || !clockOut || !selectedStatusName || !selectedStatusDate) return;
+      const punches = readEmployeePunches();
+      const index = matchingEmployeePunchIndex(punches, selectedStatusName, selectedStatusDate);
+      const next = index >= 0
+        ? { ...punches[index] }
+        : { source: "timesheet-3-day", name: selectedStatusName, date: selectedStatusDate, lunch: "" };
+      next.name = selectedStatusName;
+      next.date = selectedStatusDate;
+      next.start = employeeQuickPunchTime(employeeQuickTimeMinutes(clockIn.value, 180));
+      next.end = employeeQuickPunchTime(employeeQuickTimeMinutes(clockOut.value, 900));
+      if (index >= 0) punches[index] = next;
+      else punches.push(next);
+      localStorage.setItem(employeePunchStorageKey, JSON.stringify(punches));
+      localStorage.removeItem("conglobal-current-day-roster-snapshot-v1");
+      document.getElementById("employeeStatusMessage").textContent = `${selectedStatusName} clock times saved for ${friendlyDate(selectedStatusDate)}.`;
     }
 
     function readTimeOff() {
@@ -2945,7 +3138,7 @@
       const rect = anchor.getBoundingClientRect();
       const gap = 5;
       const width = dialog.offsetWidth || 382;
-      const height = dialog.offsetHeight || 310;
+      const height = dialog.offsetHeight || 470;
       let left = rect.right + gap;
       if (left + width > window.innerWidth - 6) left = rect.left - width - gap;
       left = Math.max(6, Math.min(left, window.innerWidth - width - 6));
@@ -2998,9 +3191,10 @@
       document.getElementById("employeeRoleShiftLabel").textContent = roleShift === "first"
         ? "Day shift"
         : roleShift === "second" ? "Night shift" : "Not working";
+      syncEmployeeQuickTimes();
       document.getElementById("employeeStatusMessage").textContent = roleShift
-        ? "Choose one status and one role. This closes after both are selected."
-        : "Choose a status. Role assignment is unavailable; use X when finished.";
+        ? "Choose status and role, then adjust the 3:00 AM - 3:00 PM clock times as needed."
+        : "Choose a status. Clock times default to 3:00 AM - 3:00 PM and can still be adjusted.";
       const backdrop = document.getElementById("employeeStatusBackdrop");
       backdrop.classList.add("open");
       backdrop.setAttribute("aria-hidden", "false");
@@ -4149,6 +4343,17 @@
       renderCalendar();
       finishEmployeeQuickAction(`${selectedStatusName} updated to ${roleLabel}.`);
     });
+    document.getElementById("employeeStatusBackdrop").addEventListener("click", (event) => {
+      const button = event.target.closest("[data-employee-quick-time][data-time-delta]");
+      if (!button || !selectedStatusName || !selectedStatusDate) return;
+      const input = document.getElementById(button.dataset.employeeQuickTime === "end" ? "employeeQuickClockOut" : "employeeQuickClockIn");
+      const fallback = button.dataset.employeeQuickTime === "end" ? 900 : 180;
+      input.value = employeeQuickInputTime(employeeQuickTimeMinutes(input.value, fallback) + Number(button.dataset.timeDelta || 0));
+      saveEmployeeQuickTimes();
+    });
+    ["employeeQuickClockIn", "employeeQuickClockOut"].forEach((id) => {
+      document.getElementById(id).addEventListener("change", saveEmployeeQuickTimes);
+    });
     document.getElementById("dailyEmployeeList").addEventListener("change", (event) => {
       const select = event.target.closest("[data-daily-status-name]");
       if (!select || !selectedDateKey) return;
@@ -4286,9 +4491,10 @@
     });
 
     window.addEventListener("storage", (event) => {
-      if ([timeOffStorageKey, rosterStorageKey, rosterAdditionsKey, employeeBankStorageKey, employeeDayStatusStorageKey, employeeDayAdditionsStorageKey].includes(event.key)) {
+      if ([timeOffStorageKey, rosterStorageKey, rosterAdditionsKey, employeeBankStorageKey, employeeDayStatusStorageKey, employeeDayAdditionsStorageKey, employeePunchStorageKey].includes(event.key)) {
         populateEditorOptions();
         renderCalendar();
+        if (event.key === employeePunchStorageKey && document.getElementById("employeeStatusBackdrop").classList.contains("open")) syncEmployeeQuickTimes();
       }
     });
 

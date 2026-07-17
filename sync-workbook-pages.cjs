@@ -103,6 +103,7 @@ function buildAmReportWorkspace(sheetHtml) {
   .am-quick-name{padding:8px 10px 6px;background:#fff;color:#172033;font-size:13px;font-weight:900}.am-quick-columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;padding:0 7px 7px}.am-quick-column{overflow:hidden;border:1px solid #c4cfdd;border-radius:4px;background:#f8fafc}.am-quick-column h3{display:flex;align-items:center;justify-content:space-between;margin:0;padding:6px 7px;background:#edf2f7;color:#425168;font-size:10px;font-weight:950;letter-spacing:.05em;text-transform:uppercase}.am-quick-column h3 span{font-size:8px;color:#718096}
   .am-quick-action{display:flex;width:100%;min-height:29px;align-items:center;justify-content:space-between;padding:5px 8px;border:0;border-top:1px solid #cbd5e1;background:#fff;color:#172033;font:900 12px/1.1 Calibri,Arial,sans-serif;text-align:left;cursor:pointer}.am-quick-action span{font-size:9px}.am-quick-action:hover:not(:disabled),.am-quick-action:focus-visible:not(:disabled){outline:2px solid #2563eb;outline-offset:-2px}.am-quick-action.active{box-shadow:inset 0 0 0 2px #d69e00}.am-quick-action:disabled{background:#f1f5f9;color:#9aa5b5;cursor:not-allowed}
   .am-quick-action.here,.am-quick-action.flipline{background:#d6f7df;color:#126430}.am-quick-action.sic,.am-quick-action.calledoff,.am-quick-action.ncns{background:#ffe0e4;color:#b42336}.am-quick-action.vac{background:#f1e6ff;color:#6d28d9}.am-quick-action.out,.am-quick-action.unknown{background:#dfe7f0;color:#34445c}.am-quick-action.bnsf{background:#ffe5ea;color:#b42336}.am-quick-action.hostler,.am-quick-action.traineehostler{background:#fff2c6;color:#8a5100}.am-quick-action.groundman,.am-quick-action.traineegroundman{background:#ffead5;color:#9a3412}.am-quick-action.flipoperator{background:#eee5ff;color:#6d28d9}.am-quick-action.crane1,.am-quick-action.crane2{background:#dbeafe;color:#1d4ed8}.am-quick-action.clear{background:#f8fafc;color:#52617a}
+  .am-quick-times{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;padding:0 7px 7px}.am-quick-time-card{overflow:hidden;border:1px solid #c4cfdd;border-radius:4px;background:#fff}.am-quick-time-card h3{margin:0;padding:6px 7px;background:#263950;color:#fff;font-size:10px;font-weight:950;letter-spacing:.06em;text-align:center;text-transform:uppercase}.am-quick-time-row{display:grid;grid-template-columns:minmax(46px,1fr) minmax(74px,1.35fr) minmax(46px,1fr);align-items:center;gap:4px;padding:5px}.am-quick-time-row+.am-quick-time-row{padding-top:0}.am-quick-time-value{width:100%;height:30px;min-width:0;border:1px solid #8fa1b8;border-radius:4px;background:#f8fafc;color:#14213a;font-size:13px;font-weight:900;text-align:center}.am-quick-time-step{height:28px;min-width:0;padding:0 4px;border:1px solid #94a3b8;border-radius:4px;background:#eaf0f7;color:#22344d;font-size:10px;font-weight:950;cursor:pointer}.am-quick-time-step:hover,.am-quick-time-step:focus-visible{border-color:#2563eb;background:#dbeafe;outline:2px solid #2563eb;outline-offset:-2px}.am-quick-time-hint{color:#64748b;font-size:8px;font-weight:900;line-height:1.05;text-align:center;text-transform:uppercase}
   .am-quick-message{min-height:24px;padding:5px 8px;border-top:1px solid #cbd5e1;background:#fff;color:#52617a;font-size:10px;font-weight:700}
   @media(max-width:900px){body{padding:4px}.am-three-day-workspace{gap:0}.am-day-heading{padding:6px}.am-day-heading strong{font-size:11px}.am-day-heading span{font-size:10px}.am-roster-float{top:50px}.am-roster-body{max-height:calc(100vh - 128px)}}
 </style>
@@ -118,6 +119,10 @@ function buildAmReportWorkspace(sheetHtml) {
   <div class="am-quick-titlebar"><strong id="amQuickTitle">Quick Actions</strong><button class="am-quick-close" id="amQuickClose" type="button" aria-label="Close quick actions">&times;</button></div>
   <div class="am-quick-name" id="amQuickName"></div>
   <div class="am-quick-columns"><section class="am-quick-column"><h3>Status <span>Selected day</span></h3><div id="amQuickStatuses"></div></section><section class="am-quick-column"><h3>Today's role <span id="amQuickRoleShift"></span></h3><div id="amQuickRoles"></div></section></div>
+  <div class="am-quick-times" aria-label="Employee clock times">
+    <section class="am-quick-time-card"><h3>Clocked in</h3><div class="am-quick-time-row"><button class="am-quick-time-step" type="button" data-quick-time="start" data-time-delta="-60">&#8722;1 hr</button><input class="am-quick-time-value" id="amQuickClockIn" type="time" step="600" value="03:00"><button class="am-quick-time-step" type="button" data-quick-time="start" data-time-delta="60">+1 hr</button></div><div class="am-quick-time-row"><button class="am-quick-time-step" type="button" data-quick-time="start" data-time-delta="-10">&#8722;10m</button><span class="am-quick-time-hint">10-minute<br>steps</span><button class="am-quick-time-step" type="button" data-quick-time="start" data-time-delta="10">+10m</button></div></section>
+    <section class="am-quick-time-card"><h3>Clocking out</h3><div class="am-quick-time-row"><button class="am-quick-time-step" type="button" data-quick-time="end" data-time-delta="-60">&#8722;1 hr</button><input class="am-quick-time-value" id="amQuickClockOut" type="time" step="600" value="15:00"><button class="am-quick-time-step" type="button" data-quick-time="end" data-time-delta="60">+1 hr</button></div><div class="am-quick-time-row"><button class="am-quick-time-step" type="button" data-quick-time="end" data-time-delta="-10">&#8722;10m</button><span class="am-quick-time-hint">10-minute<br>steps</span><button class="am-quick-time-step" type="button" data-quick-time="end" data-time-delta="10">+10m</button></div></section>
+  </div>
   <div class="am-quick-message" id="amQuickMessage"></div>
 </section>
 <script>
@@ -221,6 +226,8 @@ function buildAmReportWorkspace(sheetHtml) {
   const quickActions = document.getElementById("amQuickActions");
   const quickStatuses = document.getElementById("amQuickStatuses");
   const quickRoles = document.getElementById("amQuickRoles");
+  const quickClockIn = document.getElementById("amQuickClockIn");
+  const quickClockOut = document.getElementById("amQuickClockOut");
   let quickEmployee = null;
   let quickStatusChosen = false;
   let quickRoleChosen = false;
@@ -232,6 +239,69 @@ function buildAmReportWorkspace(sheetHtml) {
     if (["sic","vac","calledoff","out","ncns"].includes(status)) return false;
     if (["here","flipline","bnsf"].includes(status)) return true;
     return isScheduled(employee,today);
+  };
+  const punchDateKey = value => {
+    const text = String(value || "").trim();
+    const iso = text.match(/^(\\d{4}-\\d{2}-\\d{2})/);
+    if (iso) return iso[1];
+    const parsed = new Date(text);
+    return Number.isNaN(parsed.getTime()) ? "" : dateKey(parsed);
+  };
+  const timeValueMinutes = (value, fallback) => {
+    const text = String(value || "").trim();
+    const match = text.match(/(\\d{1,2}):(\\d{2})\\s*(AM|PM)?/i);
+    if (!match) return fallback;
+    let hours = Number(match[1]);
+    const minutes = Number(match[2]);
+    const meridiem = String(match[3] || "").toUpperCase();
+    if (!Number.isFinite(hours) || !Number.isFinite(minutes) || minutes > 59 || hours > 23) return fallback;
+    if (meridiem) {
+      if (hours < 1 || hours > 12) return fallback;
+      if (hours === 12) hours = 0;
+      if (meridiem === "PM") hours += 12;
+    }
+    return hours * 60 + minutes;
+  };
+  const minutesToInputTime = minutes => {
+    const normalized = ((Number(minutes) || 0) % 1440 + 1440) % 1440;
+    return String(Math.floor(normalized / 60)).padStart(2,"0") + ":" + String(normalized % 60).padStart(2,"0");
+  };
+  const minutesToPunchTime = minutes => {
+    const normalized = ((Number(minutes) || 0) % 1440 + 1440) % 1440;
+    const hour24 = Math.floor(normalized / 60);
+    const minute = normalized % 60;
+    const hour12 = hour24 % 12 || 12;
+    return hour12 + ":" + String(minute).padStart(2,"0") + " " + (hour24 >= 12 ? "PM" : "AM");
+  };
+  const currentPunch = (name, today) => {
+    const punches = readJson("conglobal-dayforce-punches-v1", []);
+    if (!Array.isArray(punches)) return null;
+    const day = dateKey(today);
+    return punches.find(punch => normalizeName(punch && punch.name) === normalizeName(name) && (!punch.date || punchDateKey(punch.date) === day)) || null;
+  };
+  const syncQuickTimes = () => {
+    if (!quickEmployee) return;
+    const punch = currentPunch(quickEmployee.name,new Date());
+    quickClockIn.value = minutesToInputTime(timeValueMinutes(punch && punch.start,180));
+    quickClockOut.value = minutesToInputTime(timeValueMinutes(punch && punch.end,900));
+  };
+  const saveQuickTimes = () => {
+    if (!quickEmployee) return;
+    const today = new Date();
+    const day = dateKey(today);
+    let punches = readJson("conglobal-dayforce-punches-v1", []);
+    if (!Array.isArray(punches)) punches = [];
+    const index = punches.findIndex(punch => normalizeName(punch && punch.name) === normalizeName(quickEmployee.name) && (!punch.date || punchDateKey(punch.date) === day));
+    const next = index >= 0 ? Object.assign({},punches[index]) : { source:"am-report", name:quickEmployee.name, date:day, lunch:"" };
+    next.name = quickEmployee.name;
+    next.date = day;
+    next.start = minutesToPunchTime(timeValueMinutes(quickClockIn.value,180));
+    next.end = minutesToPunchTime(timeValueMinutes(quickClockOut.value,900));
+    if (index >= 0) punches[index] = next; else punches.push(next);
+    localStorage.setItem("conglobal-dayforce-punches-v1",JSON.stringify(punches));
+    localStorage.removeItem("conglobal-current-day-roster-snapshot-v1");
+    rosterNote.textContent = quickEmployee.name + " clock times saved. Changes are shared with Timesheet.";
+    renderRoster();
   };
   const rosterStatusCode = status => {
     const option = statusOptions.find(item => item[0] === status);
@@ -287,15 +357,16 @@ function buildAmReportWorkspace(sheetHtml) {
       button.setAttribute("aria-pressed",String(active));
       button.disabled = !working;
     });
+    syncQuickTimes();
     document.getElementById("amQuickMessage").textContent = working
-      ? "Choose one status and one role. This closes after both are selected."
-      : "Choose a status. Role assignment is unavailable until this employee is working; use X when finished.";
+      ? "Choose status and role, then adjust clock times as needed. Hour buttons change 1 hour; minute buttons change 10 minutes."
+      : "Choose a status. Clock times default to 3:00 AM - 3:00 PM and can still be adjusted.";
   };
   const closeQuickActions = () => { quickActions.hidden = true; quickEmployee = null; };
   const positionQuickActions = anchor => {
     const rect = anchor.getBoundingClientRect();
     const width = quickActions.offsetWidth || 390;
-    const height = quickActions.offsetHeight || 410;
+    const height = quickActions.offsetHeight || 545;
     let left = rect.right + 6;
     if (left + width > window.innerWidth - 6) left = rect.left - width - 6;
     left = Math.max(6,Math.min(left,window.innerWidth - width - 6));
@@ -347,6 +418,15 @@ function buildAmReportWorkspace(sheetHtml) {
     quickRoleChosen = true;
     finishQuickAction(quickEmployee.name + " role saved.");
   });
+  quickActions.addEventListener("click", event => {
+    const button = event.target.closest("[data-quick-time][data-time-delta]");
+    if (!button || !quickEmployee) return;
+    const input = button.dataset.quickTime === "end" ? quickClockOut : quickClockIn;
+    const fallback = button.dataset.quickTime === "end" ? 900 : 180;
+    input.value = minutesToInputTime(timeValueMinutes(input.value,fallback) + Number(button.dataset.timeDelta || 0));
+    saveQuickTimes();
+  });
+  [quickClockIn,quickClockOut].forEach(input => input.addEventListener("change",saveQuickTimes));
   document.getElementById("amQuickClose").addEventListener("click",closeQuickActions);
   document.getElementById("amRosterClose").addEventListener("click",closeRoster);
   document.addEventListener("keydown", event => {

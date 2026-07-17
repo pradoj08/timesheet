@@ -1735,6 +1735,22 @@
       background: #1b1812;
       color: #fff;
     }
+    .marker-mode-button[data-marker-mode="inboundBlocking"] {
+      background: #fef2f2;
+      color: #b91c1c;
+    }
+    .marker-mode-button[data-marker-mode="inboundBlocking"].active {
+      background: #dc2626;
+      color: #fff;
+    }
+    .marker-mode-button[data-marker-mode="upsFocus"] {
+      background: #f5f3ff;
+      color: #6d28d9;
+    }
+    .marker-mode-button[data-marker-mode="upsFocus"].active {
+      background: #7c3aed;
+      color: #fff;
+    }
     .timeline-marker-range {
       position: absolute;
       z-index: 46;
@@ -1754,9 +1770,17 @@
       border-color: rgba(30, 64, 175, .48);
       background: repeating-linear-gradient(-45deg, rgba(30, 64, 175, .16) 0 4px, rgba(219, 234, 254, .1) 4px 8px);
     }
+    .timeline-marker-range.inbound-blocking {
+      border-color: rgba(220, 38, 38, .68);
+      background: repeating-linear-gradient(-45deg, rgba(220, 38, 38, .24) 0 4px, rgba(254, 226, 226, .14) 4px 8px);
+    }
     .timeline-marker-range.crane-repair {
       border-color: rgba(185, 28, 28, .55);
       background: repeating-linear-gradient(-45deg, rgba(220, 38, 38, .16) 0 4px, rgba(254, 226, 226, .1) 4px 8px);
+    }
+    .timeline-marker-range.ups-focus {
+      border-color: rgba(124, 58, 237, .62);
+      background: repeating-linear-gradient(-45deg, rgba(124, 58, 237, .22) 0 4px, rgba(237, 233, 254, .12) 4px 8px);
     }
     .timeline-marker-range.shift-end {
       border-color: rgba(109, 40, 217, .5);
@@ -1785,6 +1809,8 @@
       pointer-events: none;
     }
     .timeline-marker-range.crane-repair > span { background: #991b1b; }
+    .timeline-marker-range.inbound-blocking > span { background: #dc2626; }
+    .timeline-marker-range.ups-focus > span { background: #7c3aed; }
     .timeline-marker-range.shift-change > span { background: #1e3a8a; }
     .timeline-marker-range.shift-end > span { background: #5b21b6; }
     .timeline-marker-resize {
@@ -2339,7 +2365,9 @@
     const dateStorageKey = "conglobal-performance-date-v1";
     const lunchStorageKey = "conglobal-performance-lunch-v1";
     const shiftChangeStorageKey = "conglobal-performance-shift-change-v1";
+    const inboundBlockingStorageKey = "conglobal-performance-inbound-blocking-v1";
     const craneRepairStorageKey = "conglobal-performance-crane-repair-v1";
+    const upsFocusStorageKey = "conglobal-performance-ups-focus-v1";
     const shiftEndStorageKey = "conglobal-performance-shift-end-v1";
     const liftPointNotesKey = "conglobal-performance-lift-point-notes-v1";
     const rosterDayLabels = ["Mon", "Tues", "Wed", "Thurs", "Fri", "Sat", "Sun"];
@@ -2452,10 +2480,12 @@
     const markerStorageKeys = {
       lunch: lunchStorageKey,
       shiftChange: shiftChangeStorageKey,
+      inboundBlocking: inboundBlockingStorageKey,
       craneRepair: craneRepairStorageKey,
+      upsFocus: upsFocusStorageKey,
       shiftEnd: shiftEndStorageKey
     };
-    const markerDefaults = { lunch: 1, shiftChange: 1, craneRepair: .5, shiftEnd: 1 };
+    const markerDefaults = { lunch: 1, shiftChange: 1, inboundBlocking: 1, craneRepair: .5, upsFocus: 1, shiftEnd: 1 };
     function markerSlotFromPeriod(period) {
       const normalized = normalizeLunchPeriod(period);
       return normalized == null ? null : Math.round((((normalized - 3) + 24) % 24) * 2);
@@ -2528,10 +2558,10 @@
       writeMarkerRanges(dateValue, mode, ranges);
     }
     function markerModeLabel(mode) {
-      return mode === "shiftChange" ? "Shift Change" : mode === "craneRepair" ? "Crane Repair" : mode === "shiftEnd" ? "Shift End" : "Lunch";
+      return mode === "shiftChange" ? "Shift Change" : mode === "inboundBlocking" ? "Inbound Blocking" : mode === "craneRepair" ? "Crane Repair" : mode === "upsFocus" ? "UPS Focus" : mode === "shiftEnd" ? "Shift End" : "Lunch";
     }
     function markerModeClass(mode) {
-      return mode === "shiftChange" ? "shift-change" : mode === "craneRepair" ? "crane-repair" : mode === "shiftEnd" ? "shift-end" : "lunch";
+      return mode === "shiftChange" ? "shift-change" : mode === "inboundBlocking" ? "inbound-blocking" : mode === "craneRepair" ? "crane-repair" : mode === "upsFocus" ? "ups-focus" : mode === "shiftEnd" ? "shift-end" : "lunch";
     }
     function activeMarkerType(button) {
       if (!button) return "";
@@ -2542,12 +2572,12 @@
       return "";
     }
     function markerModeControlsHtml() {
-      return '<span class="timeline-marker-controls" aria-label="Timeline marker mode">' + ["lunch", "shiftChange", "craneRepair", "shiftEnd"].map(function(mode) {
+      return '<span class="timeline-marker-controls" aria-label="Timeline marker mode">' + ["lunch", "shiftChange", "inboundBlocking", "craneRepair", "upsFocus", "shiftEnd"].map(function(mode) {
         return '<button type="button" class="marker-mode-button ' + (timelineMarkerMode === mode ? "active" : "") + '" data-marker-mode="' + mode + '">' + markerModeLabel(mode) + '</button>';
       }).join("") + '</span>';
     }
     function timelineMarkerRangesHtml(dateValue) {
-      return ["lunch", "shiftChange", "craneRepair", "shiftEnd"].map(function(mode) {
+      return ["lunch", "shiftChange", "inboundBlocking", "craneRepair", "upsFocus", "shiftEnd"].map(function(mode) {
         return readMarkerRanges(dateValue, mode).map(function(range, index) {
           const startSlot = markerSlotFromPeriod(range.start);
           const durationSlots = Math.round(range.duration * 2);

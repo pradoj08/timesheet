@@ -1387,7 +1387,7 @@ body{
   display:none !important;
 }
 .sheet-row-column{
-  width:28px !important;
+  width:0 !important;
 }
 #am-report .sheet-column-header,
 #am-report .sheet-row-header{
@@ -1419,6 +1419,38 @@ body{
 #am-report .sheet-corner{
   left:0;
   z-index:10;
+}
+#am-report .sheet-grid thead{
+  height:0 !important;
+  max-height:0 !important;
+  overflow:hidden !important;
+}
+#am-report .sheet-column-header{
+  height:0 !important;
+  min-height:0 !important;
+  max-height:0 !important;
+  padding:0 !important;
+  border:0 !important;
+  font-size:0 !important;
+  line-height:0 !important;
+  color:transparent !important;
+  background:transparent !important;
+  overflow:hidden !important;
+}
+#am-report .sheet-row-header{
+  width:0 !important;
+  min-width:0 !important;
+  max-width:0 !important;
+  padding:0 !important;
+  border:0 !important;
+  font-size:0 !important;
+  line-height:0 !important;
+  color:transparent !important;
+  background:transparent !important;
+  overflow:hidden !important;
+}
+#am-report .sheet-column-resizer{
+  display:none !important;
 }
 .sheet-cell-select{
   width:100%;
@@ -4538,6 +4570,31 @@ tags will be replaced.-->
     selection.addRange(range);
   }
 
+  function placeCaretAtCellPoint(cell, clientX, clientY) {
+    if (!cell || !cell.hasAttribute("contenteditable")) return;
+    cell.focus({ preventScroll:true });
+    const selection = window.getSelection && window.getSelection();
+    if (!selection) return;
+    let range = null;
+    if (typeof document.caretPositionFromPoint === "function") {
+      const position = document.caretPositionFromPoint(clientX, clientY);
+      if (position && (position.offsetNode === cell || cell.contains(position.offsetNode))) {
+        range = document.createRange();
+        range.setStart(position.offsetNode, position.offset);
+      }
+    } else if (typeof document.caretRangeFromPoint === "function") {
+      const candidate = document.caretRangeFromPoint(clientX, clientY);
+      if (candidate && (candidate.startContainer === cell || cell.contains(candidate.startContainer))) range = candidate;
+    }
+    if (!range) {
+      placeCaretAtCellEnd(cell);
+      return;
+    }
+    range.collapse(true);
+    selection.removeAllRanges();
+    selection.addRange(range);
+  }
+
   function replaceSelectedCellFromTyping(cell, address, value) {
     if (!cell || !cell.hasAttribute("contenteditable") || formulas[address]) return false;
     cell.textContent = String(value || "");
@@ -4642,8 +4699,11 @@ tags will be replaced.-->
 
     cell.addEventListener("dblclick", event => {
       if (!cell.hasAttribute("contenteditable") || event.target.closest("select, input")) return;
+      event.preventDefault();
+      event.stopPropagation();
       cellEditModeAddress = address;
       cell.classList.add("cell-editing");
+      placeCaretAtCellPoint(cell, event.clientX, event.clientY);
     });
 
     cell.addEventListener("keydown", event => {
@@ -4906,7 +4966,7 @@ tags will be replaced.-->
     let normalized = widths.map(clampWidth);
     const gridWrap = table.closest(".sheet-grid-wrap");
     const rowColumn = table.querySelector("col.sheet-row-column");
-    const rowWidth = Math.max(28, Math.round(rowColumn?.getBoundingClientRect().width || 28));
+    const rowWidth = Math.max(0, Math.round(rowColumn?.getBoundingClientRect().width || 0));
     const availableWidth = Math.max(0, Math.floor((gridWrap?.clientWidth || 0) - rowWidth - 2));
     const requestedWidth = normalized.reduce((sum, width) => sum + width, 0);
     if (availableWidth >= MIN_WIDTH * normalized.length && requestedWidth > 0) {
