@@ -4147,7 +4147,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   function publishLiveSnapshot() {
     if (!computed || !Array.isArray(computed.groups)) return;
     const tracks = {};
-    TRACKS.filter(track => track !== 803).forEach(track => {
+    TRACKS.forEach(track => {
       const blocks = computed.groups
         .filter(group => Number(group.track) === track && Number(group.footage) > 0)
         .map(group => ({

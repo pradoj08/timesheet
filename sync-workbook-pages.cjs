@@ -5,6 +5,7 @@ const workbookPath = "index.html";
 const pages = {
   matrix: "matrix-page.html",
   matrixWide: "matrix-wide-page.html",
+  lphTracker: "lph-tracker-page.html",
   amReport: "am-report-page.html",
   chassisStatus: "chassis-status-page.html",
   billing: "billing-page.html",
