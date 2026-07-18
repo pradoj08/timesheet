@@ -101,7 +101,7 @@
   }
   .icon-button { display: grid; width: 32px; height: 32px; flex: 0 0 auto; place-items: center; padding: 0; font-size: 17px; }
   .icon-button:hover, .toolbar-button:hover, .view-button:hover { border-color: var(--accent); background: var(--accent-soft); }
-  .sidebar-actions { display: grid; grid-template-columns: 1fr 40px; gap: 7px; padding: 10px; }
+  .sidebar-actions { display: grid; grid-template-columns: 1fr 76px 40px; gap: 7px; padding: 10px; }
   .primary-button {
     min-height: 36px;
     padding: 7px 11px;
@@ -124,6 +124,48 @@
     color: var(--text);
   }
   .search-wrap input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+  .folder-list-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 2px 12px 5px;
+    color: var(--muted);
+    font-size: 10px;
+    font-weight: 850;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+  .folder-list {
+    max-height: 185px;
+    overflow: auto;
+    padding: 0 7px 8px;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .folder-row {
+    display: grid;
+    grid-template-columns: minmax(0,1fr) 25px 25px;
+    align-items: center;
+    gap: 2px;
+    min-height: 32px;
+    border-radius: 5px;
+  }
+  .folder-row:hover { background: var(--panel-2); }
+  .folder-select, .folder-action { min-width: 0; border: 0; background: transparent; color: var(--muted); cursor: pointer; }
+  .folder-select {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    height: 31px;
+    padding: 5px 7px;
+    border-radius: 5px;
+    text-align: left;
+  }
+  .folder-select.active { background: var(--accent-soft); color: var(--text); }
+  .folder-select strong { overflow: hidden; flex: 1 1 auto; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+  .folder-select span { color: var(--faint); font-size: 9px; }
+  .folder-action { display: grid; width: 25px; height: 25px; place-items: center; border-radius: 5px; font-size: 12px; }
+  .folder-action:hover { background: var(--accent-soft); color: var(--accent-2); }
+  .folder-action.delete:hover { background: rgba(239,107,115,.12); color: var(--danger); }
   .note-list-head {
     display: flex;
     align-items: center;
@@ -206,6 +248,17 @@
   .view-button.active { background: var(--accent); color: #fff; }
   .toolbar-button { min-height: 34px; padding: 6px 10px; font-size: 11px; }
   .toolbar-button.danger:hover { border-color: var(--danger); background: rgba(239,107,115,.12); color: var(--danger); }
+  .note-folder-select {
+    max-width: 170px;
+    min-height: 34px;
+    padding: 5px 27px 5px 9px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: var(--panel-2);
+    color: var(--text);
+    font-size: 11px;
+    font-weight: 750;
+  }
   .editor-shell { display: grid; min-width: 0; min-height: 0; flex: 1 1 auto; grid-template-columns: 1fr 1fr; }
   .editor-shell.edit-only { grid-template-columns: 1fr; }
   .editor-shell.preview-only { grid-template-columns: 1fr; }
@@ -245,6 +298,17 @@
   .markdown-preview h2 { padding-bottom: .2em; border-bottom: 1px solid var(--line-soft); font-size: 1.55em; }
   .markdown-preview h3 { font-size: 1.23em; }
   .markdown-preview p { margin: .75em 0; }
+  .markdown-preview .note-image-wrap { display: block; margin: 1em 0; }
+  .markdown-preview .note-image {
+    display: block;
+    max-width: 100%;
+    max-height: 680px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--panel-2);
+    box-shadow: 0 8px 24px var(--shadow);
+  }
+  .markdown-preview .note-image-caption { display: block; margin-top: 5px; color: var(--muted); font-size: 10px; }
   .markdown-preview a, .wikilink { color: var(--accent-2); text-decoration: none; cursor: pointer; }
   .markdown-preview a:hover, .wikilink:hover { text-decoration: underline; }
   .markdown-preview code { padding: .12em .32em; border-radius: 4px; background: var(--panel-3); color: #d8c8ff; font-family: Consolas, monospace; }
@@ -294,6 +358,7 @@
     .sidebar-toggle { display: grid; }
     .save-status { display: none; }
     .view-button { padding-inline: 7px; }
+    .note-folder-select { max-width: 120px; }
     .editor-shell { grid-template-columns: 1fr; }
     .editor-shell .preview-pane { display: none; }
     .editor-shell.preview-only .preview-pane { display: block; }
@@ -311,10 +376,13 @@
     </header>
     <div class="sidebar-actions">
       <button class="primary-button" id="newNoteButton" type="button">＋ New note</button>
+      <button class="toolbar-button" id="newFolderButton" type="button">+ Folder</button>
       <button class="icon-button" id="duplicateButton" type="button" title="Duplicate current note" aria-label="Duplicate current note">⧉</button>
     </div>
     <label class="search-wrap"><input id="noteSearch" type="search" autocomplete="off" placeholder="Search notes"></label>
-    <div class="note-list-head"><span>Notes</span><span id="noteCount">0</span></div>
+    <div class="folder-list-head"><span>Folders</span><span id="folderCount">0</span></div>
+    <nav class="folder-list" id="folderList" aria-label="Note folders"></nav>
+    <div class="note-list-head"><span id="noteListLabel">Notes</span><span id="noteCount">0</span></div>
     <nav class="note-list" id="noteList" aria-label="Saved notes"></nav>
     <footer class="sidebar-foot">
       <button class="toolbar-button" id="importButton" type="button">Import</button>
@@ -328,6 +396,7 @@
       <button class="icon-button sidebar-toggle" id="sidebarToggle" type="button" aria-label="Open notes sidebar">☰</button>
       <input class="note-title" id="noteTitle" autocomplete="off" aria-label="Note title" value="Untitled">
       <span class="save-status saved" id="saveStatus">Saved locally</span>
+      <select class="note-folder-select" id="noteFolderSelect" aria-label="Move note to folder" title="Move note to folder"></select>
       <div class="view-switch" aria-label="Editor view">
         <button class="view-button" type="button" data-view="edit">Edit</button>
         <button class="view-button active" type="button" data-view="split">Split</button>
@@ -355,6 +424,8 @@
   const bodyInput = document.getElementById("noteBody");
   const preview = document.getElementById("notePreview");
   const noteList = document.getElementById("noteList");
+  const folderList = document.getElementById("folderList");
+  const noteFolderSelect = document.getElementById("noteFolderSelect");
   const searchInput = document.getElementById("noteSearch");
   const saveStatus = document.getElementById("saveStatus");
   const editorShell = document.getElementById("editorShell");
@@ -365,28 +436,56 @@
 
   const nowIso = () => new Date().toISOString();
   const uid = () => "note-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2,8);
+  const folderUid = () => "folder-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2,8);
+  const assetUid = () => "asset-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2,8);
   const defaultNote = () => ({
     id: uid(),
     title: "Welcome to Obsidian Notes",
-    body: "# Welcome to your CONGLOBAL vault\n\nThis notes page works offline inside the all-in-one workbook. Your notes autosave on this device.\n\n## Quick start\n\n- Create notes with **New note**.\n- Use Markdown for headings, lists, links, and code.\n- Link to another note with `[[Note title]]`.\n- Export one note as Markdown or back up the full vault as JSON.\n- Import `.md`, `.txt`, or a previously exported vault.\n\n> Tip: Press **Ctrl+N** for a new note and **Ctrl+S** to save immediately.\n\n- [ ] Add the first operations note\n- [x] Open the new notes workspace",
+    body: "# Welcome to your CONGLOBAL vault\n\nThis notes page works offline inside the all-in-one workbook. Your notes autosave on this device.\n\n## Quick start\n\n- Create notes with **New note**.\n- Organize notes with folders and move the active note from the folder selector.\n- Paste a copied image directly into the editor with **Ctrl+V**.\n- Use Markdown for headings, lists, links, and code.\n- Link to another note with `[[Note title]]`.\n- Export one note as Markdown or back up the full vault as JSON.\n- Import `.md`, `.txt`, or a previously exported vault.\n\n> Tip: Press **Ctrl+N** for a new note and **Ctrl+S** to save immediately.\n\n- [ ] Add the first operations note\n- [x] Open the new notes workspace",
+    folderId: "",
     createdAt: nowIso(),
     updatedAt: nowIso()
   });
-  const freshState = () => { const note = defaultNote(); return { version:1, activeId:note.id, notes:[note] }; };
+  const freshState = () => { const note = defaultNote(); return { version:2, activeId:note.id, activeFolderId:"all", folders:[], assets:{}, notes:[note] }; };
   const normalizeNote = note => ({
     id: String(note && note.id || uid()),
     title: String(note && note.title || "Untitled"),
     body: String(note && note.body || ""),
+    folderId: String(note && note.folderId || ""),
     createdAt: String(note && note.createdAt || nowIso()),
     updatedAt: String(note && note.updatedAt || nowIso())
   });
+  const normalizeFolder = folder => ({
+    id: String(folder && folder.id || folderUid()),
+    name: String(folder && folder.name || "New folder").trim().slice(0,80) || "New folder",
+    createdAt: String(folder && folder.createdAt || nowIso())
+  });
+  const normalizeAsset = asset => {
+    if (!asset || typeof asset !== "object" || !String(asset.data || "").startsWith("data:image/")) return null;
+    return {
+      id: String(asset.id || assetUid()),
+      name: String(asset.name || "Pasted image").slice(0,120),
+      type: String(asset.type || "image/png"),
+      data: String(asset.data),
+      createdAt: String(asset.createdAt || nowIso())
+    };
+  };
   const loadState = () => {
     try {
       const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
       if (!saved || !Array.isArray(saved.notes) || !saved.notes.length) return freshState();
       const notes = saved.notes.map(normalizeNote);
+      const folders = Array.isArray(saved.folders) ? saved.folders.map(normalizeFolder) : [];
+      const folderIds = new Set(folders.map(folder => folder.id));
+      notes.forEach(note => { if (note.folderId && !folderIds.has(note.folderId)) note.folderId = ""; });
+      const assets = {};
+      Object.values(saved.assets && typeof saved.assets === "object" ? saved.assets : {}).forEach(value => {
+        const asset = normalizeAsset(value);
+        if (asset) assets[asset.id] = asset;
+      });
       const activeId = notes.some(note => note.id === saved.activeId) ? saved.activeId : notes[0].id;
-      return { version:1, activeId, notes };
+      const activeFolderId = saved.activeFolderId === "all" || saved.activeFolderId === "unfiled" || folderIds.has(saved.activeFolderId) ? saved.activeFolderId : "all";
+      return { version:2, activeId, activeFolderId, folders, assets, notes };
     } catch (_) { return freshState(); }
   };
   let state = loadState();
@@ -412,9 +511,17 @@
   };
   const save = (label = "Saved locally") => {
     clearTimeout(saveTimer);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    saveStatus.textContent = label;
-    saveStatus.className = "save-status saved";
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      saveStatus.textContent = label;
+      saveStatus.className = "save-status saved";
+      return true;
+    } catch (error) {
+      saveStatus.textContent = "Storage full";
+      saveStatus.className = "save-status saving";
+      announce("The pasted image is too large for local storage. Export the vault, then remove older images.");
+      return false;
+    }
   };
   const queueSave = () => {
     clearTimeout(saveTimer);
@@ -423,8 +530,16 @@
     saveTimer = setTimeout(() => save(), 280);
   };
 
+  function renderAssetImage(alt, reference) {
+    const id = String(reference || "").replace(/^asset:/, "");
+    const asset = state.assets && state.assets[id];
+    if (!asset) return '<span class="empty-preview">[Missing image: ' + escapeHtml(alt || "Pasted image") + ']</span>';
+    const caption = String(alt || asset.name || "Pasted image");
+    return '<span class="note-image-wrap"><img class="note-image" src="' + escapeHtml(asset.data) + '" alt="' + escapeHtml(caption) + '"><span class="note-image-caption">' + escapeHtml(caption) + '</span></span>';
+  }
   function inlineMarkdown(value) {
     let text = escapeHtml(value);
+    text = text.replace(/!\[([^\]]*)\]\((asset:[^)]+)\)/g,(_,alt,reference) => renderAssetImage(alt,reference));
     text = text.replace(/`([^`]+)`/g,"<code>$1</code>");
     text = text.replace(/\[\[([^\]]+)\]\]/g,(_,name) => '<button class="wikilink" type="button" data-wikilink="' + encodeURIComponent(name.trim()) + '">' + escapeHtml(name.trim()) + '</button>');
     text = text.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,'<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
@@ -449,6 +564,8 @@
         continue;
       }
       if (inCode) { code.push(line); continue; }
+      const assetImage = line.match(/^\s*!\[([^\]]*)\]\((asset:[^)]+)\)\s*$/);
+      if (assetImage) { closeList(); out.push(renderAssetImage(assetImage[1],assetImage[2])); continue; }
       const heading = line.match(/^(#{1,3})\s+(.+)$/);
       if (heading) { closeList(); const level = heading[1].length; out.push("<h" + level + ">" + inlineMarkdown(heading[2]) + "</h" + level + ">"); continue; }
       if (/^\s*([-*_])\1\1+\s*$/.test(line)) { closeList(); out.push("<hr>"); continue; }
@@ -475,16 +592,46 @@
     document.getElementById("characterCount").textContent = content.length + (content.length === 1 ? " character" : " characters");
   }
   function renderPreview() { preview.innerHTML = renderMarkdown(bodyInput.value); updateCounts(); }
+  function folderName(id) {
+    if (id === "all") return "All notes";
+    if (id === "unfiled" || !id) return "Unfiled";
+    const folder = state.folders.find(item => item.id === id);
+    return folder ? folder.name : "Unfiled";
+  }
+  function noteMatchesFolder(note, folderId = state.activeFolderId) {
+    if (folderId === "all") return true;
+    if (folderId === "unfiled") return !note.folderId;
+    return note.folderId === folderId;
+  }
+  function renderFolders() {
+    const countFor = id => state.notes.filter(note => noteMatchesFolder(note,id)).length;
+    const fixed = [
+      { id:"all", name:"All notes", icon:"◆" },
+      { id:"unfiled", name:"Unfiled", icon:"◇" }
+    ];
+    const fixedHtml = fixed.map(folder => '<div class="folder-row"><button class="folder-select' + (state.activeFolderId === folder.id ? " active" : "") + '" type="button" data-folder-id="' + folder.id + '"><b>' + folder.icon + '</b><strong>' + escapeHtml(folder.name) + '</strong><span>' + countFor(folder.id) + '</span></button><i></i><i></i></div>').join("");
+    const customHtml = state.folders.slice().sort((a,b) => a.name.localeCompare(b.name)).map(folder => '<div class="folder-row"><button class="folder-select' + (state.activeFolderId === folder.id ? " active" : "") + '" type="button" data-folder-id="' + escapeHtml(folder.id) + '"><b>◇</b><strong>' + escapeHtml(folder.name) + '</strong><span>' + countFor(folder.id) + '</span></button><button class="folder-action" type="button" data-rename-folder="' + escapeHtml(folder.id) + '" title="Rename folder" aria-label="Rename ' + escapeHtml(folder.name) + '">✎</button><button class="folder-action delete" type="button" data-delete-folder="' + escapeHtml(folder.id) + '" title="Delete folder" aria-label="Delete ' + escapeHtml(folder.name) + '">×</button></div>').join("");
+    folderList.innerHTML = fixedHtml + customHtml;
+    document.getElementById("folderCount").textContent = state.folders.length;
+  }
+  function renderFolderSelect() {
+    const note = activeNote();
+    const options = ['<option value="">Unfiled</option>'].concat(state.folders.slice().sort((a,b) => a.name.localeCompare(b.name)).map(folder => '<option value="' + escapeHtml(folder.id) + '">' + escapeHtml(folder.name) + '</option>'));
+    noteFolderSelect.innerHTML = options.join("");
+    noteFolderSelect.value = note && state.folders.some(folder => folder.id === note.folderId) ? note.folderId : "";
+  }
   function renderList() {
     const query = searchInput.value.trim().toLowerCase();
-    const filtered = state.notes
+    const inFolder = state.notes.filter(note => noteMatchesFolder(note));
+    const filtered = inFolder
       .filter(note => !query || note.title.toLowerCase().includes(query) || note.body.toLowerCase().includes(query))
       .slice()
       .sort((a,b) => String(b.updatedAt).localeCompare(String(a.updatedAt)));
-    document.getElementById("noteCount").textContent = query ? filtered.length + "/" + state.notes.length : state.notes.length;
+    document.getElementById("noteListLabel").textContent = folderName(state.activeFolderId);
+    document.getElementById("noteCount").textContent = query ? filtered.length + "/" + inFolder.length : inFolder.length;
     if (!filtered.length) { noteList.innerHTML = '<div class="empty-list">No notes match this search.</div>'; return; }
     noteList.innerHTML = filtered.map(note => {
-      const plain = note.body.replace(/[#*`>\[\]]/g," ").replace(/\s+/g," ").trim();
+      const plain = note.body.replace(/!\[[^\]]*\]\(asset:[^)]+\)/g,"[Image]").replace(/[#*`>\[\]]/g," ").replace(/\s+/g," ").trim();
       return '<button class="note-item' + (note.id === state.activeId ? " active" : "") + '" type="button" data-note-id="' + escapeHtml(note.id) + '"><span class="note-item-icon">◇</span><span class="note-item-copy"><span class="note-item-title">' + escapeHtml(note.title || "Untitled") + '</span><span class="note-item-preview">' + escapeHtml(plain || "Empty note") + "</span></span></button>";
     }).join("");
   }
@@ -494,6 +641,8 @@
     titleInput.value = note.title;
     bodyInput.value = note.body;
     renderPreview();
+    renderFolders();
+    renderFolderSelect();
     renderList();
   }
   function syncInputs() {
@@ -506,8 +655,10 @@
     renderList();
     queueSave();
   }
-  function createNote(title = "Untitled", body = "") {
-    const note = { id:uid(), title, body, createdAt:nowIso(), updatedAt:nowIso() };
+  function createNote(title = "Untitled", body = "", folderId) {
+    const requestedFolder = folderId == null ? state.activeFolderId : folderId;
+    const targetFolder = state.folders.some(folder => folder.id === requestedFolder) ? requestedFolder : "";
+    const note = { id:uid(), title, body, folderId:targetFolder, createdAt:nowIso(), updatedAt:nowIso() };
     state.notes.push(note);
     state.activeId = note.id;
     searchInput.value = "";
@@ -517,6 +668,14 @@
     titleInput.select();
     document.body.classList.remove("sidebar-open");
     return note;
+  }
+  function selectFolder(id) {
+    if (id !== "all" && id !== "unfiled" && !state.folders.some(folder => folder.id === id)) return;
+    state.activeFolderId = id;
+    searchInput.value = "";
+    renderFolders();
+    renderList();
+    save();
   }
   function selectNote(id) {
     if (!state.notes.some(note => note.id === id)) return;
@@ -532,11 +691,121 @@
     localStorage.setItem(VIEW_KEY, normalized);
     if (normalized !== "edit") renderPreview();
   }
+  function pruneUnusedAssets() {
+    const used = new Set();
+    state.notes.forEach(note => {
+      String(note.body || "").replace(/asset:([A-Za-z0-9_-]+)/g,(_,id) => { used.add(id); return _; });
+    });
+    Object.keys(state.assets || {}).forEach(id => { if (!used.has(id)) delete state.assets[id]; });
+  }
+  function markdownForExport(note) {
+    return String(note && note.body || "").replace(/\(asset:([A-Za-z0-9_-]+)\)/g,(_,id) => {
+      const asset = state.assets && state.assets[id];
+      return asset ? "(" + asset.data + ")" : "(missing-image)";
+    });
+  }
+  function fileAsDataUrl(file) {
+    return new Promise((resolve,reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ""));
+      reader.onerror = () => reject(new Error("Could not read the pasted image."));
+      reader.readAsDataURL(file);
+    });
+  }
+  function loadImage(data) {
+    return new Promise((resolve,reject) => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.onerror = () => reject(new Error("Could not process the pasted image."));
+      image.src = data;
+    });
+  }
+  async function pastedImageAsset(file) {
+    const original = await fileAsDataUrl(file);
+    let data = original;
+    let type = file.type || "image/png";
+    try {
+      const image = await loadImage(original);
+      const longest = Math.max(image.naturalWidth || 0,image.naturalHeight || 0);
+      if (original.length > 900000 || longest > 1600) {
+        const scale = longest > 1600 ? 1600 / longest : 1;
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.max(1,Math.round(image.naturalWidth * scale));
+        canvas.height = Math.max(1,Math.round(image.naturalHeight * scale));
+        const context = canvas.getContext("2d");
+        context.drawImage(image,0,0,canvas.width,canvas.height);
+        const reduced = canvas.toDataURL("image/webp",.84);
+        if (reduced && reduced.length < original.length) { data = reduced; type = "image/webp"; }
+      }
+    } catch (_) {}
+    if (data.length > 3600000) throw new Error("This image is too large to store in the local notes vault.");
+    const id = assetUid();
+    return { id, name:String(file.name || "Pasted image").slice(0,120), type, data, createdAt:nowIso() };
+  }
+  async function pasteImages(event) {
+    const items = Array.from(event.clipboardData && event.clipboardData.items || []);
+    const files = items.filter(item => String(item.type || "").startsWith("image/")).map(item => item.getAsFile()).filter(Boolean);
+    if (!files.length) return;
+    event.preventDefault();
+    const previousBody = bodyInput.value;
+    const start = bodyInput.selectionStart == null ? previousBody.length : bodyInput.selectionStart;
+    const end = bodyInput.selectionEnd == null ? start : bodyInput.selectionEnd;
+    const addedIds = [];
+    try {
+      const markdown = [];
+      for (const file of files) {
+        const asset = await pastedImageAsset(file);
+        state.assets[asset.id] = asset;
+        addedIds.push(asset.id);
+        markdown.push("![" + (asset.name || "Pasted image").replace(/[\[\]]/g,"") + "](asset:" + asset.id + ")");
+      }
+      const before = previousBody.slice(0,start);
+      const after = previousBody.slice(end);
+      const insertion = (before && !before.endsWith("\n") ? "\n\n" : "") + markdown.join("\n\n") + (after && !after.startsWith("\n") ? "\n\n" : "");
+      bodyInput.value = before + insertion + after;
+      const caret = before.length + insertion.length;
+      bodyInput.setSelectionRange(caret,caret);
+      syncInputs();
+      if (!save(files.length === 1 ? "Image pasted" : files.length + " images pasted")) throw new Error("The notes vault is out of local storage space.");
+      announce(files.length === 1 ? "Image added to note" : files.length + " images added to note");
+    } catch (error) {
+      addedIds.forEach(id => { delete state.assets[id]; });
+      bodyInput.value = previousBody;
+      syncInputs();
+      save();
+      alert(error && error.message ? error.message : "Could not paste this image.");
+    }
+  }
 
   titleInput.addEventListener("input", syncInputs);
   bodyInput.addEventListener("input", syncInputs);
+  bodyInput.addEventListener("paste", pasteImages);
   searchInput.addEventListener("input", renderList);
   noteList.addEventListener("click", event => { const button = event.target.closest("[data-note-id]"); if (button) selectNote(button.dataset.noteId); });
+  folderList.addEventListener("click", event => {
+    const rename = event.target.closest("[data-rename-folder]");
+    const remove = event.target.closest("[data-delete-folder]");
+    const select = event.target.closest("[data-folder-id]");
+    if (rename) {
+      const folder = state.folders.find(item => item.id === rename.dataset.renameFolder);
+      if (!folder) return;
+      const name = prompt("Rename folder",folder.name);
+      if (name && name.trim()) { folder.name = name.trim().slice(0,80); renderFolders(); renderFolderSelect(); renderList(); save(); }
+      return;
+    }
+    if (remove) {
+      const folder = state.folders.find(item => item.id === remove.dataset.deleteFolder);
+      if (!folder || !confirm('Delete folder "' + folder.name + '"? Notes inside it will move to Unfiled.')) return;
+      state.notes.forEach(note => { if (note.folderId === folder.id) note.folderId = ""; });
+      state.folders = state.folders.filter(item => item.id !== folder.id);
+      if (state.activeFolderId === folder.id) state.activeFolderId = "unfiled";
+      showActiveNote();
+      save();
+      announce("Folder deleted; notes moved to Unfiled");
+      return;
+    }
+    if (select) selectFolder(select.dataset.folderId);
+  });
   preview.addEventListener("click", event => {
     const link = event.target.closest("[data-wikilink]");
     if (!link) return;
@@ -545,11 +814,33 @@
     if (match) selectNote(match.id); else createNote(requested || "Untitled", "# " + (requested || "Untitled") + "\n");
   });
   document.getElementById("newNoteButton").addEventListener("click", () => createNote());
-  document.getElementById("duplicateButton").addEventListener("click", () => { const note = activeNote(); if (note) createNote(note.title + " copy", note.body); });
+  document.getElementById("newFolderButton").addEventListener("click", () => {
+    const name = prompt("Folder name","New folder");
+    if (!name || !name.trim()) return;
+    const folder = { id:folderUid(), name:name.trim().slice(0,80), createdAt:nowIso() };
+    state.folders.push(folder);
+    state.activeFolderId = folder.id;
+    renderFolders();
+    renderFolderSelect();
+    renderList();
+    save();
+    announce("Folder created");
+  });
+  noteFolderSelect.addEventListener("change", () => {
+    const note = activeNote();
+    if (!note) return;
+    note.folderId = state.folders.some(folder => folder.id === noteFolderSelect.value) ? noteFolderSelect.value : "";
+    note.updatedAt = nowIso();
+    renderFolders();
+    renderList();
+    save("Moved to " + folderName(note.folderId));
+  });
+  document.getElementById("duplicateButton").addEventListener("click", () => { const note = activeNote(); if (note) createNote(note.title + " copy", note.body, note.folderId); });
   document.getElementById("deleteButton").addEventListener("click", () => {
     const note = activeNote();
     if (!note || !confirm('Delete "' + note.title + '"?')) return;
     state.notes = state.notes.filter(item => item.id !== note.id);
+    pruneUnusedAssets();
     if (!state.notes.length) { const replacement = defaultNote(); replacement.title = "Untitled"; replacement.body = ""; state.notes.push(replacement); }
     state.activeId = state.notes.slice().sort((a,b) => String(b.updatedAt).localeCompare(String(a.updatedAt)))[0].id;
     showActiveNote();
@@ -565,7 +856,7 @@
   });
   document.getElementById("sidebarToggle").addEventListener("click", () => document.body.classList.toggle("sidebar-open"));
   document.getElementById("importButton").addEventListener("click", () => fileInput.click());
-  document.getElementById("exportNoteButton").addEventListener("click", () => { const note = activeNote(); if (note) download(cleanFilename(note.title) + ".md", note.body, "text/markdown;charset=utf-8"); });
+  document.getElementById("exportNoteButton").addEventListener("click", () => { const note = activeNote(); if (note) download(cleanFilename(note.title) + ".md", markdownForExport(note), "text/markdown;charset=utf-8"); });
   document.getElementById("exportVaultButton").addEventListener("click", () => {
     save();
     const stamp = new Date().toISOString().slice(0,10);
@@ -580,12 +871,34 @@
       if (file.name.toLowerCase().endsWith(".json")) {
         const imported = JSON.parse(text);
         if (!imported || !Array.isArray(imported.notes)) throw new Error("This JSON file is not an Obsidian Notes vault backup.");
-        const incoming = imported.notes.map(normalizeNote).map(note => ({...note,id:uid(),updatedAt:nowIso()}));
+        const folderMap = {};
+        const incomingFolders = (Array.isArray(imported.folders) ? imported.folders : []).map(normalizeFolder).map(folder => {
+          const oldId = folder.id;
+          const copy = {...folder,id:folderUid(),createdAt:nowIso()};
+          folderMap[oldId] = copy.id;
+          return copy;
+        });
+        const assetMap = {};
+        Object.values(imported.assets && typeof imported.assets === "object" ? imported.assets : {}).forEach(value => {
+          const asset = normalizeAsset(value);
+          if (!asset) return;
+          const oldId = asset.id;
+          asset.id = assetUid();
+          asset.createdAt = nowIso();
+          assetMap[oldId] = asset.id;
+          state.assets[asset.id] = asset;
+        });
+        const incoming = imported.notes.map(normalizeNote).map(note => {
+          const body = note.body.replace(/asset:([A-Za-z0-9_-]+)/g,(match,id) => assetMap[id] ? "asset:" + assetMap[id] : match);
+          return {...note,id:uid(),folderId:folderMap[note.folderId] || "",body,updatedAt:nowIso()};
+        });
+        state.folders.push(...incomingFolders);
         state.notes.push(...incoming);
         state.activeId = incoming[0] ? incoming[0].id : state.activeId;
+        state.activeFolderId = "all";
         showActiveNote();
         save();
-        announce("Imported " + incoming.length + " notes");
+        announce("Imported " + incoming.length + " notes with folders and images");
       } else {
         const title = file.name.replace(/\.(md|markdown|txt)$/i,"") || "Imported note";
         createNote(title, text);

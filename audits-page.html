@@ -9062,6 +9062,7 @@ var ROSTER_AUDIT_KEY = 'eit_audit_roster_v3';
 var ROSTER_TRAIN_KEY = 'eit_train_roster_v3';
 var ROSTER_SUPABASE_TABLES = { audits: 'audit_roster_lists', trainings: 'training_roster_lists' };
 var rosterFilters = { audits: { shift: 'all', working: false }, trainings: { shift: 'all', working: false } };
+var monthlyTrainingDefaultFilterApplied = false;
 // Establish the training landing view before any async roster sync can render it.
 window.monthlyTrainingViewMode = 'course-board';
 var rosterLastUpdated = { audits: null, trainings: null };
@@ -9690,6 +9691,10 @@ async function resetRosterData(){
 }
 
 async function initAuditsPage(){
+  if(!monthlyTrainingDefaultFilterApplied){
+    rosterFilters.trainings = { shift: 'all', shifts: [], working: false };
+    monthlyTrainingDefaultFilterApplied = true;
+  }
   if(!rosterFilters.audits) rosterFilters.audits = { shift: 'all', working: false };
   if(!rosterFilters.trainings) rosterFilters.trainings = { shift: 'all', working: false };
   await renderRosterPanels();
@@ -15105,12 +15110,12 @@ document.addEventListener('input',function(e){
     var workingButton = '';
     var displayControls = type === 'trainings' ? timesheetDisplayControls() : '';
     var viewLabel = window.monthlyTrainingViewMode === 'matrix' ? 'Matrix' : (window.monthlyTrainingViewMode === 'board' ? 'Board View' : (window.monthlyTrainingViewMode === 'course-board' ? 'Course Board' : 'Timesheet'));
-    var dataMenu = '<div class="training-toolbar-menu-wrap"><button class="roster-filter-btn training-toolbar-menu-toggle" type="button">'+icon('upload')+'<span>Data</span><span aria-hidden="true">&#9662;</span></button><div class="training-toolbar-menu"><button class="training-toolbar-choice training-csv-toggle" onclick="openMonthlyTrainingCsvPicker()" type="button">'+icon('upload')+'<span>Import CSV</span></button><button class="training-toolbar-choice export-trainings-toggle" onclick="exportMonthlyTrainingBackup()" type="button">'+icon('download')+'<span>Export</span></button></div></div>';
+    var dataMenu = '<button class="roster-filter-btn training-csv-toggle" onclick="openMonthlyTrainingCsvPicker()" type="button">'+icon('upload')+'<span>Import</span></button>';
     var visibilityMenu = '<div class="training-toolbar-menu-wrap"><button class="roster-filter-btn training-toolbar-menu-toggle" type="button">'+icon('eye')+'<span>Visibility</span><span aria-hidden="true">&#9662;</span></button><div class="training-toolbar-menu"><button class="training-toolbar-choice hide-ojt-toggle'+(window.monthlyTrainingHideOjt?' active':'')+'" onclick="toggleMonthlyTrainingHideOjt()" type="button">'+icon('eye')+'<span>'+(window.monthlyTrainingHideOjt?'Show OJT':'Hide OJT')+'</span></button><button class="training-toolbar-choice hide-completed-toggle'+(window.monthlyTrainingHideCompleted?' active':'')+'" onclick="toggleMonthlyTrainingHideCompleted()" type="button">'+icon('eye')+'<span>'+(window.monthlyTrainingHideCompleted?'Show Completed':'Hide Completed')+'</span></button><button class="training-toolbar-choice hide-checked-courses-toggle'+(window.monthlyTrainingHideCheckedCourses?' active':'')+'" onclick="toggleMonthlyTrainingHideCheckedCourses()" type="button">'+icon('eye')+'<span>'+(window.monthlyTrainingHideCheckedCourses?'Show Checked Courses':'Hide Checked Courses')+'</span></button></div></div>';
     var viewMenu = '<div class="training-toolbar-menu-wrap"><button class="roster-filter-btn training-toolbar-menu-toggle'+(window.monthlyTrainingViewMode === 'timesheet' ? ' active' : '')+'" type="button">'+icon('sheet')+'<span>View: '+viewLabel+'</span><span aria-hidden="true">&#9662;</span></button><div class="training-toolbar-menu"><button class="training-toolbar-choice timesheet-toggle'+(window.monthlyTrainingViewMode === 'timesheet'?' active':'')+'" onclick="toggleMonthlyTrainingTimesheet()" type="button">'+icon('sheet')+'<span>Timesheet</span></button><button class="training-toolbar-choice matrix-toggle'+(window.monthlyTrainingViewMode === 'matrix'?' active':'')+'" onclick="toggleMonthlyTrainingMatrix()" type="button">'+icon('sheet')+'<span>Matrix</span></button><button class="training-toolbar-choice course-board-toggle'+(window.monthlyTrainingViewMode === 'course-board'?' active':'')+'" onclick="toggleMonthlyTrainingCourseBoard()" type="button">'+icon('board')+'<span>Course Board</span></button><button class="training-toolbar-choice kanban-toggle'+(window.monthlyTrainingViewMode === 'board'?' active':'')+'" onclick="toggleMonthlyTrainingKanban()" type="button">'+icon('board')+'<span>Board View</span></button></div></div>';
     var qrButtons = '<button class="roster-filter-btn monthly-qr-replace-toggle'+(window.monthlyTrainingQrReplaceMode?' active':'')+'" onclick="toggleMonthlyTrainingQrReplacement()" type="button">'+icon('qr')+'<span>'+(window.monthlyTrainingQrReplaceMode?'Show Gate/MM':'QR Mode')+'</span></button><button class="roster-filter-btn monthly-qr-upload-toggle" onclick="uploadMonthlyTrainingQrCodes()" type="button">'+icon('upload')+'<span>Upload QR</span></button>';
     var kanbanButton = type === 'trainings'
-      ? '<span class="roster-filter-spacer"></span>'+shiftButtons+'<button class="roster-filter-btn print-timesheet-toggle" onclick="printMonthlyTimesheet()" type="button">'+icon('print')+'<span>Print</span></button>'+dataMenu+'<button class="roster-filter-btn edit-courses-toggle" onclick="openCourseManagerModal()" type="button">'+icon('edit')+'<span>Edit Courses</span></button>'+qrButtons+'<button class="roster-filter-btn training-clear-toggle'+(window.monthlyTrainingClearConfirm?' active':'')+'" onclick="clearAllMonthlyTrainings()" type="button">'+icon('clear')+'<span>'+(window.monthlyTrainingClearConfirm?'Confirm Clear':'Clear All')+'</span></button>'+visibilityMenu+viewMenu
+      ? '<span class="roster-filter-spacer"></span>'+shiftButtons+dataMenu+'<button class="roster-filter-btn edit-courses-toggle" onclick="openCourseManagerModal()" type="button">'+icon('edit')+'<span>Edit</span></button>'+qrButtons+'<button class="roster-filter-btn training-clear-toggle'+(window.monthlyTrainingClearConfirm?' active':'')+'" onclick="clearAllMonthlyTrainings()" type="button">'+icon('clear')+'<span>'+(window.monthlyTrainingClearConfirm?'Confirm Clear':'Clear All')+'</span></button>'+visibilityMenu+viewMenu
       : '';
     return (type === 'trainings' ? '' : shiftButtons) + displayControls + workingButton + kanbanButton;
   };
@@ -16329,6 +16334,27 @@ document.addEventListener('input',function(e){
       padding-left:18px !important;
       padding-right:18px !important;
     }
+  }
+</style>
+<style id="monthly-training-toolbar-single-line-final">
+  #page-audits #train-filter-row{
+    flex-wrap:nowrap !important;
+    gap:10px !important;
+  }
+  #page-audits #train-filter-row .roster-filter-spacer{
+    display:none !important;
+  }
+  #page-audits #train-filter-row > .roster-filter-btn,
+  #page-audits #train-filter-row > .training-filter-menu-wrap{
+    flex:0 0 auto !important;
+    min-width:0 !important;
+  }
+  #page-audits #train-filter-row .roster-filter-btn,
+  #page-audits #train-filter-row .training-toolbar-menu-toggle{
+    min-width:0 !important;
+    padding-left:14px !important;
+    padding-right:14px !important;
+    white-space:nowrap !important;
   }
 </style>
 </body>

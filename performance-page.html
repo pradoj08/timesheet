@@ -753,6 +753,95 @@
       text-align: left;
     }
     .timeline-tooltip.open { display: block; }
+    .timeline-note-popup {
+      position: fixed;
+      top: 86px;
+      right: 22px;
+      z-index: 100;
+      width: min(360px, calc(100vw - 28px));
+      overflow: hidden;
+      border: 1px solid #26364b;
+      border-radius: 10px;
+      background: #f8fafc;
+      box-shadow: 0 22px 60px rgba(15, 23, 42, .3);
+    }
+    .timeline-note-popup[hidden] { display: none; }
+    .timeline-note-popup-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 12px;
+      background: #111827;
+      color: #fff;
+    }
+    .timeline-note-popup-head strong {
+      font-size: 13px;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+    .timeline-note-close {
+      width: 28px;
+      height: 28px;
+      border: 1px solid #64748b;
+      border-radius: 6px;
+      background: #1e293b;
+      color: #fff;
+      font-size: 17px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+    .timeline-note-popup-body {
+      display: grid;
+      gap: 10px;
+      padding: 13px;
+    }
+    .timeline-note-field {
+      display: grid;
+      gap: 5px;
+      color: #334155;
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+    }
+    .timeline-note-field input,
+    .timeline-note-field select,
+    .timeline-note-field textarea {
+      width: 100%;
+      border: 1px solid #cbd5e1;
+      border-radius: 7px;
+      background: #fff;
+      color: #111827;
+      font: 700 14px/1.35 Arial, Helvetica, sans-serif;
+      outline: none;
+    }
+    .timeline-note-field input,
+    .timeline-note-field select { min-height: 38px; padding: 6px 9px; }
+    .timeline-note-field textarea {
+      min-height: 88px;
+      padding: 9px 10px;
+      resize: vertical;
+    }
+    .timeline-note-field input:focus,
+    .timeline-note-field select:focus,
+    .timeline-note-field textarea:focus {
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, .14);
+    }
+    .timeline-note-popup-help {
+      color: #64748b;
+      font-size: 11px;
+      font-weight: 700;
+      line-height: 1.35;
+    }
+    .timeline-note-popup-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+    .timeline-note-delete { margin-right: auto; }
     .tip-title {
       color: #c7d2fe;
       font-size: 11px;
@@ -1751,6 +1840,73 @@
       background: #7c3aed;
       color: #fff;
     }
+    .marker-mode-button.add-note-button {
+      border-left: 1px solid #ddd3bf;
+      border-radius: 0 999px 999px 0;
+      margin-left: 2px;
+      padding-left: 10px;
+      color: #0f4c81;
+    }
+    .marker-mode-button.add-note-button:hover,
+    .marker-mode-button.add-note-button:focus-visible {
+      background: #dbeafe;
+      color: #1d4ed8;
+      outline: none;
+    }
+    .timeline-user-note {
+      position: absolute;
+      z-index: 52;
+      left: var(--note-left);
+      top: var(--note-top);
+      max-width: 150px;
+      transform: translate(-50%, -100%);
+      padding: 5px 8px;
+      border: 1px solid #1d4ed8;
+      border-radius: 9px;
+      background: #eff6ff;
+      color: #172554;
+      box-shadow: 0 5px 14px rgba(30, 64, 175, .2);
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 10px;
+      font-weight: 800;
+      line-height: 1.2;
+      text-align: left;
+      cursor: pointer;
+    }
+    .timeline-user-note::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 100%;
+      height: 9px;
+      border-left: 2px solid #2563eb;
+      transform: translateX(-50%);
+    }
+    .timeline-user-note.edge-left { transform: translate(0, -100%); }
+    .timeline-user-note.edge-left::after { left: 8px; }
+    .timeline-user-note.edge-right { transform: translate(-100%, -100%); }
+    .timeline-user-note.edge-right::after { left: calc(100% - 8px); }
+    .timeline-user-note.below { transform: translate(-50%, 0); }
+    .timeline-user-note.below::after {
+      top: auto;
+      bottom: 100%;
+    }
+    .timeline-user-note.below.edge-left { transform: translate(0, 0); }
+    .timeline-user-note.below.edge-right { transform: translate(-100%, 0); }
+    .timeline-user-note time {
+      display: block;
+      margin-bottom: 2px;
+      color: #1d4ed8;
+      font-family: "IBM Plex Mono", Consolas, monospace;
+      font-size: 9px;
+      letter-spacing: .04em;
+    }
+    .timeline-user-note span {
+      display: -webkit-box;
+      overflow: hidden;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+    }
     .timeline-marker-range {
       position: absolute;
       z-index: 46;
@@ -2320,6 +2476,31 @@
     </section>
   </main>
   <div class="timeline-tooltip" id="timelineTooltip" role="tooltip"></div>
+  <section class="timeline-note-popup" id="timelineNotePopup" role="dialog" aria-labelledby="timelineNotePopupTitle" hidden>
+    <div class="timeline-note-popup-head">
+      <strong id="timelineNotePopupTitle">Add Note</strong>
+      <button class="timeline-note-close" id="closeTimelineNote" type="button" aria-label="Close note popup">&times;</button>
+    </div>
+    <div class="timeline-note-popup-body">
+      <label class="timeline-note-field">Timestamp
+        <input id="timelineNoteTime" type="time" step="60" />
+      </label>
+      <label class="timeline-note-field">Bubble position
+        <select id="timelineNotePosition">
+          <option value="above">Above the line</option>
+          <option value="below">Below the line</option>
+        </select>
+      </label>
+      <label class="timeline-note-field">Note
+        <textarea id="timelineNoteText" maxlength="180" placeholder="Type a timeline note..."></textarea>
+      </label>
+      <div class="timeline-note-popup-help" id="timelineNoteHelp">The bubble updates above the lifts line as you type.</div>
+      <div class="timeline-note-popup-actions">
+        <button class="btn danger timeline-note-delete" id="deleteTimelineNote" type="button">Delete</button>
+        <button class="btn primary" id="doneTimelineNote" type="button">Done</button>
+      </div>
+    </div>
+  </section>
   <div class="modal-backdrop" id="liftImportModal" role="dialog" aria-modal="true" aria-labelledby="liftImportTitle">
     <div class="import-modal">
       <div class="import-modal-head">
@@ -2370,6 +2551,7 @@
     const upsFocusStorageKey = "conglobal-performance-ups-focus-v1";
     const shiftEndStorageKey = "conglobal-performance-shift-end-v1";
     const liftPointNotesKey = "conglobal-performance-lift-point-notes-v1";
+    const timelineNotesStorageKey = "conglobal-performance-timeline-notes-v1";
     const rosterDayLabels = ["Mon", "Tues", "Wed", "Thurs", "Fri", "Sat", "Sun"];
     const hourKeys = Array.from({ length: 24 }, function(_, index) { return index; });
     const timelineHourKeys = Array.from({ length: 24 }, function(_, index) { return (index + 3) % 24; });
@@ -2454,6 +2636,7 @@
     let lunchDragState = null;
     let suppressTimelineClick = false;
     let timelineMarkerMode = "lunch";
+    let timelineNoteDraft = null;
 
     function esc(value) {
       return String(value == null ? "" : value).replace(/[&<>"']/g, function(char) {
@@ -2583,7 +2766,7 @@
     function markerModeControlsHtml() {
       return '<span class="timeline-marker-controls" aria-label="Timeline marker mode">' + ["lunch", "shiftChange", "inboundBlocking", "craneRepair", "upsFocus", "shiftEnd"].map(function(mode) {
         return '<button type="button" class="marker-mode-button ' + (timelineMarkerMode === mode ? "active" : "") + '" data-marker-mode="' + mode + '">' + markerModeLabel(mode) + '</button>';
-      }).join("") + '</span>';
+      }).join("") + '<button type="button" class="marker-mode-button add-note-button" data-add-timeline-note>Add Note</button></span>';
     }
     function timelineMarkerRangesHtml(dateValue) {
       return ["lunch", "shiftChange", "inboundBlocking", "craneRepair", "upsFocus", "shiftEnd"].map(function(mode) {
@@ -2614,6 +2797,68 @@
       if (Object.keys(notes).length) saved[key] = notes;
       else delete saved[key];
       localStorage.setItem(liftPointNotesKey, JSON.stringify(saved));
+    }
+    function normalizeTimelineNote(note) {
+      if (!note || typeof note !== "object") return null;
+      const time = /^([01]\d|2[0-3]):[0-5]\d$/.test(String(note.time || "")) ? String(note.time) : "03:00";
+      const text = String(note.text || "").trim().slice(0, 180);
+      const position = note.position === "below" ? "below" : "above";
+      if (!text) return null;
+      return { id: String(note.id || ""), time: time, text: text, position: position };
+    }
+    function readTimelineNotes(dateValue) {
+      const saved = readJson(timelineNotesStorageKey, {});
+      const values = saved && Array.isArray(saved[lunchDateKey(dateValue)]) ? saved[lunchDateKey(dateValue)] : [];
+      return values.map(normalizeTimelineNote).filter(Boolean).sort(function(a, b) { return a.time.localeCompare(b.time); });
+    }
+    function writeTimelineNote(dateValue, note) {
+      const saved = readJson(timelineNotesStorageKey, {});
+      const key = lunchDateKey(dateValue);
+      const values = saved && Array.isArray(saved[key]) ? saved[key].map(normalizeTimelineNote).filter(Boolean) : [];
+      const id = String(note && note.id || "");
+      const index = values.findIndex(function(value) { return value.id === id; });
+      const clean = normalizeTimelineNote(note);
+      if (clean) {
+        if (index >= 0) values[index] = clean;
+        else values.push(clean);
+      } else if (index >= 0) values.splice(index, 1);
+      if (values.length) saved[key] = values;
+      else delete saved[key];
+      localStorage.setItem(timelineNotesStorageKey, JSON.stringify(saved));
+    }
+    function removeTimelineNote(dateValue, id) {
+      const saved = readJson(timelineNotesStorageKey, {});
+      const key = lunchDateKey(dateValue);
+      const values = saved && Array.isArray(saved[key]) ? saved[key].map(normalizeTimelineNote).filter(Boolean).filter(function(note) { return note.id !== String(id || ""); }) : [];
+      if (values.length) saved[key] = values;
+      else delete saved[key];
+      localStorage.setItem(timelineNotesStorageKey, JSON.stringify(saved));
+    }
+    function timelineNoteId() {
+      if (window.crypto && typeof window.crypto.randomUUID === "function") return window.crypto.randomUUID();
+      return "note-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8);
+    }
+    function currentTimelineNoteTime() {
+      const now = new Date();
+      return String(now.getHours()).padStart(2, "0") + ":" + String(now.getMinutes()).padStart(2, "0");
+    }
+    function timelineNotePosition(time) {
+      const parts = String(time || "03:00").split(":");
+      const minutes = Math.max(0, Math.min(1439, (Number(parts[0]) || 0) * 60 + (Number(parts[1]) || 0)));
+      const shiftedMinutes = (minutes - 180 + 1440) % 1440;
+      return { fraction: shiftedMinutes / 1440, index: Math.max(0, Math.min(23, Math.floor(shiftedMinutes / 60))) };
+    }
+    function timelineNotesHtml(dateValue, liftPoints) {
+      return readTimelineNotes(dateValue).map(function(note) {
+        const position = timelineNotePosition(note.time);
+        const left = (position.fraction * 100).toFixed(4) + "%";
+        const point = liftPoints[position.index];
+        const below = note.position === "below";
+        const top = (below ? (point ? point.y : 248) + 14 : Math.max(72, (point ? point.y : 248) - 14)).toFixed(1) + "px";
+        const edgeClass = position.fraction < .06 ? " edge-left" : position.fraction > .94 ? " edge-right" : "";
+        const displayTime = note.time.replace(":", "");
+        return '<button type="button" class="timeline-user-note' + (below ? ' below' : '') + edgeClass + '" data-timeline-note-id="' + esc(note.id) + '" style="--note-left:' + left + ';--note-top:' + top + '" title="Edit timeline note"><time>' + esc(displayTime) + '</time><span>' + esc(note.text) + '</span></button>';
+      }).join("");
     }
     function localDateValue(date) {
       const d = date || new Date();
@@ -4042,7 +4287,7 @@
         const title = "Timeline marker between " + displayHour(bucket.hour) + " and " + displayHour(buckets[index + 1].hour);
         return '<button type="button" class="timeline-gap-button lunch-gap-button" data-lunch-position="' + position + '" data-marker-position="' + position + '" style="--marker-x:' + x + '" aria-label="' + esc(title) + '" title="' + esc(title) + '"></button>';
       }).join("");
-      document.getElementById("timeline").innerHTML = svg + guideLabels + '<div class="timeline-grid" style="--timeline-hours:' + buckets.length + '">' + columns + gapTargets + timelineMarkerRangesHtml(model.dateValue) + '</div>';
+      document.getElementById("timeline").innerHTML = svg + guideLabels + '<div class="timeline-grid" style="--timeline-hours:' + buckets.length + '">' + columns + gapTargets + timelineMarkerRangesHtml(model.dateValue) + timelineNotesHtml(model.dateValue, liftPoints) + '</div>';
       document.getElementById("timelineMeta").innerHTML = markerModeControlsHtml() + '<span class="timeline-legend-item"><span class="legend-dot" style="--legend:oklch(0.45 0.11 152)"></span>On target</span><span class="timeline-legend-item"><span class="legend-dot" style="--legend:oklch(0.55 0.12 75)"></span>Close</span><span class="timeline-legend-item"><span class="legend-dot" style="--legend:oklch(0.48 0.14 27)"></span>Below</span>';
       renderTypeLegend();
     }
@@ -4230,6 +4475,48 @@
       tooltip.classList.remove("open");
       tooltip.innerHTML = "";
     }
+    const timelineNotePopup = document.getElementById("timelineNotePopup");
+    const timelineNoteTime = document.getElementById("timelineNoteTime");
+    const timelineNotePositionSelect = document.getElementById("timelineNotePosition");
+    const timelineNoteText = document.getElementById("timelineNoteText");
+    const timelineNoteHelp = document.getElementById("timelineNoteHelp");
+    const timelineNoteDelete = document.getElementById("deleteTimelineNote");
+    function updateTimelineNoteHelp() {
+      const position = timelineNotePositionSelect.value === "below" ? "below" : "above";
+      timelineNoteHelp.textContent = "The bubble updates " + position + " the lifts line as you type.";
+    }
+    function openTimelineNote(note) {
+      const existing = note && note.id ? note : null;
+      timelineNoteDraft = existing ? { id: existing.id, time: existing.time, text: existing.text, position: existing.position === "below" ? "below" : "above" } : { id: timelineNoteId(), time: currentTimelineNoteTime(), text: "", position: "above" };
+      document.getElementById("timelineNotePopupTitle").textContent = existing ? "Edit Note" : "Add Note";
+      timelineNoteTime.value = timelineNoteDraft.time;
+      timelineNotePositionSelect.value = timelineNoteDraft.position;
+      timelineNoteText.value = timelineNoteDraft.text;
+      updateTimelineNoteHelp();
+      timelineNoteDelete.hidden = !existing;
+      timelineNotePopup.hidden = false;
+      window.setTimeout(function() { timelineNoteText.focus({ preventScroll: true }); }, 0);
+    }
+    function closeTimelineNote() {
+      timelineNotePopup.hidden = true;
+      timelineNoteDraft = null;
+    }
+    function saveTimelineNoteDraft() {
+      if (!timelineNoteDraft || !lastModel) return;
+      timelineNoteDraft.time = timelineNoteTime.value || "03:00";
+      timelineNoteDraft.position = timelineNotePositionSelect.value === "below" ? "below" : "above";
+      timelineNoteDraft.text = timelineNoteText.value.slice(0, 180);
+      writeTimelineNote(lastModel.dateValue, timelineNoteDraft);
+      timelineNoteDelete.hidden = !String(timelineNoteDraft.text || "").trim();
+      renderTimeline(lastModel);
+    }
+    function deleteActiveTimelineNote() {
+      if (timelineNoteDraft && lastModel) {
+        removeTimelineNote(lastModel.dateValue, timelineNoteDraft.id);
+        renderTimeline(lastModel);
+      }
+      closeTimelineNote();
+    }
     function timelineSlotFromPoint(clientX) {
       const grid = timelineElement.querySelector(".timeline-grid");
       if (!grid) return 0;
@@ -4251,6 +4538,17 @@
       selectedHour = null;
       render();
     }
+    function suppressNextTimelineClick() {
+      suppressTimelineClick = true;
+      window.setTimeout(function() { suppressTimelineClick = false; }, 350);
+    }
+    function activateTimelineMarkerTarget(target) {
+      if (!lastModel || !target) return false;
+      const period = Number(target.dataset.lunchPosition);
+      if (!Number.isFinite(period)) return false;
+      toggleTimelineMarkerPeriod(lastModel.dateValue, timelineMarkerMode, period);
+      return true;
+    }
     function finishLunchDrag(event, canceled) {
       const state = lunchDragState;
       if (!state) return;
@@ -4260,10 +4558,13 @@
         try { state.overlay.releasePointerCapture(state.pointerId); } catch (error) {}
       }
       lunchDragState = null;
-      if (!canceled && state.moved && lastModel) {
-        updateTimelineMarkerRange(lastModel.dateValue, state.markerType, state.rangeIndex, state.previewStart, state.previewDuration);
-        suppressTimelineClick = true;
-        window.setTimeout(function() { suppressTimelineClick = false; }, 350);
+      if (!canceled && lastModel) {
+        if (state.moved) {
+          updateTimelineMarkerRange(lastModel.dateValue, state.markerType, state.rangeIndex, state.previewStart, state.previewDuration);
+        } else {
+          cycleTimelineMarkerRange(lastModel.dateValue, state.markerType, state.rangeIndex);
+        }
+        suppressNextTimelineClick();
         refreshLunchTimeline();
         event.preventDefault();
       }
@@ -4320,8 +4621,17 @@
       event.preventDefault();
     });
     timelineElement.addEventListener("pointerup", function(event) {
-      if (!lunchDragState || event.pointerId !== lunchDragState.pointerId) return;
-      finishLunchDrag(event, false);
+      if (lunchDragState && event.pointerId === lunchDragState.pointerId) {
+        finishLunchDrag(event, false);
+        return;
+      }
+      const markerTarget = event.target.closest("button[data-lunch-position]");
+      if (!markerTarget || event.target.closest(".chart-point.lifts")) return;
+      if (activateTimelineMarkerTarget(markerTarget)) {
+        suppressNextTimelineClick();
+        refreshLunchTimeline();
+        event.preventDefault();
+      }
     });
     timelineElement.addEventListener("pointercancel", function(event) {
       if (!lunchDragState || event.pointerId !== lunchDragState.pointerId) return;
@@ -4350,11 +4660,19 @@
     });
     timelineElement.addEventListener("focusout", hideTimelineTooltip);
     timelineElement.addEventListener("click", function(event) {
+      const timelineNoteButton = event.target.closest("button[data-timeline-note-id]");
       const liftPoint = event.target.closest(".chart-point.lifts");
       const hourButton = event.target.closest("button[data-hour]");
       const lunchButton = event.target.closest("button[data-lunch-position]");
       const markerRange = event.target.closest(".timeline-marker-range");
       const markerModeButton = event.target.closest("button[data-marker-mode]");
+      if (timelineNoteButton && lastModel) {
+        const note = readTimelineNotes(lastModel.dateValue).find(function(value) { return value.id === timelineNoteButton.dataset.timelineNoteId; });
+        if (note) openTimelineNote(note);
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
       if (markerModeButton) {
         timelineMarkerMode = markerStorageKeys[markerModeButton.dataset.markerMode] ? markerModeButton.dataset.markerMode : "lunch";
         if (lastModel) renderTimeline(lastModel);
@@ -4389,12 +4707,16 @@
         return;
       }
       if (lastModel && lunchButton) {
-        toggleTimelineMarkerPeriod(lastModel.dateValue, timelineMarkerMode, Number(lunchButton.dataset.lunchPosition));
-        refreshLunchTimeline();
+        if (activateTimelineMarkerTarget(lunchButton)) refreshLunchTimeline();
         return;
       }
     });
     document.addEventListener("click", function(event) {
+      const addNoteButton = event.target.closest("button[data-add-timeline-note]");
+      if (addNoteButton) {
+        openTimelineNote();
+        return;
+      }
       const markerModeButton = event.target.closest("button[data-marker-mode]");
       if (markerModeButton) {
         timelineMarkerMode = markerStorageKeys[markerModeButton.dataset.markerMode] ? markerModeButton.dataset.markerMode : "lunch";
@@ -4405,6 +4727,19 @@
       if (selectedHour == null) return;
       selectedHour = null;
       if (lastModel) renderTimeline(lastModel);
+    });
+    timelineNoteTime.addEventListener("input", saveTimelineNoteDraft);
+    timelineNoteTime.addEventListener("change", saveTimelineNoteDraft);
+    timelineNotePositionSelect.addEventListener("change", function() {
+      updateTimelineNoteHelp();
+      saveTimelineNoteDraft();
+    });
+    timelineNoteText.addEventListener("input", saveTimelineNoteDraft);
+    document.getElementById("closeTimelineNote").addEventListener("click", closeTimelineNote);
+    document.getElementById("doneTimelineNote").addEventListener("click", closeTimelineNote);
+    timelineNoteDelete.addEventListener("click", deleteActiveTimelineNote);
+    document.addEventListener("keydown", function(event) {
+      if (event.key === "Escape" && !timelineNotePopup.hidden) closeTimelineNote();
     });
     const performanceDateBox = document.getElementById("performanceDateBox");
     const performanceDateButton = document.getElementById("performanceDateButton");
