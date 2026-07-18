@@ -2359,9 +2359,9 @@ body:not(.print-mode) > .topbar .hidden-current-time-input{display:block !import
 <div class="ctrl-group">
 <div class="ctrl-header">
 <span class="ctrl-name" style="color:var(--amber);font-weight:700;">IHOSA <span style="font-size:9px;color:var(--text3);font-weight:400;">· 1700 DL</span></span>
-<span class="ctrl-val ctrl-val-amber" id="v-iu">110</span>
+<span class="ctrl-val ctrl-val-amber" id="v-iu">120</span>
 </div>
-<input class="slider-amber" id="ihosa-units" max="200" min="0" step="5" type="range" value="110"/>
+<input class="slider-amber" id="ihosa-units" max="200" min="0" step="5" type="range" value="120"/>
 </div>
 <div class="ctrl-group" style="margin-bottom:0;">
 <div class="ctrl-header">
@@ -2421,23 +2421,23 @@ body:not(.print-mode) > .topbar .hidden-current-time-input{display:block !import
 <div class="sb-card sb-card-delays" data-input-menu-title="Delays &amp; Interruptions">
 <div class="section-label">Delays &amp; Interruptions</div>
 <div class="ctrl-group">
-<div class="ctrl-header"><span class="ctrl-name">Shift change @ 1500</span><span class="ctrl-val" id="v-sc">0.0h</span></div>
-<input id="shift-change" max="60" min="0" step="5" type="range" value="0"/>
+<div class="ctrl-header"><span class="ctrl-name">Shift change @ 1500</span><span class="ctrl-val" id="v-sc">0.5h</span></div>
+<input id="shift-change" max="60" min="0" step="5" type="range" value="30"/>
 <div class="note">Crew handoff at 1500</div>
 </div>
 <div class="ctrl-group">
-<div class="ctrl-header"><span class="ctrl-name">Shift change @ 0300</span><span class="ctrl-val" id="v-sc-0300">0.0h</span></div>
-<input id="shift-change-0300" max="60" min="0" step="5" type="range" value="0"/>
+<div class="ctrl-header"><span class="ctrl-name">Shift change @ 0300</span><span class="ctrl-val" id="v-sc-0300">0.5h</span></div>
+<input id="shift-change-0300" max="60" min="0" step="5" type="range" value="30"/>
 <div class="note">Mandatory overnight crew turnover at 0300</div>
 </div>
 <div class="ctrl-group">
-<div class="ctrl-header"><span class="ctrl-name">UPS units dropped during delay</span><span class="ctrl-val" id="v-ups-count">0 units</span></div>
-<input id="ups-count" max="80" min="0" step="1" type="range" value="0"/>
+<div class="ctrl-header"><span class="ctrl-name">UPS units dropped during delay</span><span class="ctrl-val" id="v-ups-count">10 units</span></div>
+<input id="ups-count" max="80" min="0" step="1" type="range" value="10"/>
 <div class="note" id="ups-count-note">These UPS units count as credited lifts during the UPS window.</div>
 </div>
 <div class="ctrl-group">
-<div class="ctrl-header"><span class="ctrl-name">UPS drop window / delay (fires on ZPBHO arrival)</span><span class="ctrl-val" id="v-ups">0.0h</span></div>
-<input id="ups-break" max="60" min="0" step="5" type="range" value="0"/>
+<div class="ctrl-header"><span class="ctrl-name">UPS drop window / delay (fires on ZPBHO arrival)</span><span class="ctrl-val" id="v-ups">0.5h</span></div>
+<input id="ups-break" max="60" min="0" step="5" type="range" value="30"/>
 <div class="note" id="ups-break-note">Time is still blocked, but the UPS units above are credited as lifts.</div>
 </div>
 <div class="ctrl-group">
@@ -2445,8 +2445,8 @@ body:not(.print-mode) > .topbar .hidden-current-time-input{display:block !import
 <input id="lunch-break" max="60" min="0" step="5" type="range" value="60"/>
 </div>
 <div class="ctrl-group">
-<div class="ctrl-header"><span class="ctrl-name">Lunch — night shift @ 2100</span><span class="ctrl-val" id="v-lunch2">0.0h</span></div>
-<input id="lunch-break2" max="60" min="0" step="5" type="range" value="0"/>
+<div class="ctrl-header"><span class="ctrl-name">Lunch — night shift @ 2100</span><span class="ctrl-val" id="v-lunch2">1.0h</span></div>
+<input id="lunch-break2" max="60" min="0" step="5" type="range" value="60"/>
 </div>
 <div class="ctrl-group">
 <div class="ctrl-header">
@@ -8213,6 +8213,7 @@ if(false && !skipPrestigeXP)(function(){
 
 document.getElementById('tavg-body').innerHTML=html + html2;
 renderTavgDrivers();
+rampiqScheduleLiveSettingsSave();
 
 }
 
@@ -8338,16 +8339,16 @@ function resetLeftInputs(){
   setControlValue('s1-end','15:00');
   setControlValue('s2-start','15:00');
   setControlValue('s2-end','03:00');
-  setControlValue('ihosa-units','110');
+  setControlValue('ihosa-units','120');
   setControlValue('mhoas-units','120');
   setControlValue('rate','20');
   setControlValue('cars-on-hand','0');
-  setControlValue('shift-change','0');
-  setControlValue('shift-change-0300','0');
-  setControlValue('ups-count','0');
-  setControlValue('ups-break','0');
+  setControlValue('shift-change','30');
+  setControlValue('shift-change-0300','30');
+  setControlValue('ups-count','10');
+  setControlValue('ups-break','30');
   setControlValue('lunch-break','60');
-  setControlValue('lunch-break2','0');
+  setControlValue('lunch-break2','60');
   setControlValue('crew1','10');
   setControlValue('swing-hours','0');
   setControlValue('crew2','10');
@@ -8465,6 +8466,7 @@ function setFontSize(size){
   var screens = document.querySelectorAll('.main-content, .screen');
   screens.forEach(function(el){ el.style.zoom = scale.toFixed(3); });
   document.getElementById('font-size-slider').title = 'Zoom: ' + Math.round(scale*100) + '%';
+  if(typeof rampiqScheduleLiveSettingsSave==='function')rampiqScheduleLiveSettingsSave();
 }
 
 /* ═══════════════ HANDOFF REPORT ═══════════════ */
@@ -8896,10 +8898,30 @@ function copyHandoff(){
 // Client-side REST sync. LocalStorage remains the instant/offline cache; Supabase becomes the shared/global store.
 var RAMPIQ_SUPABASE = {
   enabled: true,
-  restUrl: 'https://jznqyngrtmfkivddgxhv.supabase.co/rest/v1',
-  anonKey: 'sb_publishable_vpxlAwOEjOFGTlsqZwv46g_QtqKozgy',
+  restUrl: 'https://epthcamzzwegsdggrjgh.supabase.co/rest/v1',
+  anonKey: 'sb_publishable_f5HYn7EM12Z7V2psO_njmQ_w89WOtm1',
   terminalId: 'settegast'
 };
+
+var RAMPIQ_SYNC_PIN_KEY = 'conglobal-supabase-sync-pin';
+var RAMPIQ_LIVE_SETTINGS_CACHE_KEY = 'settegast_lph_live_settings_v1';
+var rampiqLiveSettingsReady = false;
+var rampiqLiveSettingsApplying = false;
+var rampiqLiveSettingsSaveTimer = 0;
+var rampiqLiveSettingsRefreshTimer = 0;
+
+function rampiqSharedSyncPin(){
+  var pin='';
+  try{ pin=(localStorage.getItem(RAMPIQ_SYNC_PIN_KEY)||'').trim(); }catch(e){}
+  if(!pin){
+    try{
+      if(window.parent&&window.parent!==window&&window.parent.localStorage){
+        pin=(window.parent.localStorage.getItem(RAMPIQ_SYNC_PIN_KEY)||'').trim();
+      }
+    }catch(e){}
+  }
+  return pin;
+}
 
 function rampiqSupabaseHeaders(extra){
   var h = {
@@ -8907,6 +8929,8 @@ function rampiqSupabaseHeaders(extra){
     'Authorization': 'Bearer ' + RAMPIQ_SUPABASE.anonKey,
     'Content-Type': 'application/json'
   };
+  var pin=rampiqSharedSyncPin();
+  if(pin) h['x-conglobal-sync-pin']=pin;
   if(extra){ Object.keys(extra).forEach(function(k){ h[k]=extra[k]; }); }
   return h;
 }
@@ -8926,7 +8950,168 @@ function rampiqSyncBadge(text, status){
   }catch(e){ /* badge is cosmetic — never let it break a save */ }
 }
 function rampiqRemoteEnabled(){
-  return !!(RAMPIQ_SUPABASE && RAMPIQ_SUPABASE.enabled && RAMPIQ_SUPABASE.restUrl && RAMPIQ_SUPABASE.anonKey);
+  return !!(RAMPIQ_SUPABASE && RAMPIQ_SUPABASE.enabled && RAMPIQ_SUPABASE.restUrl && RAMPIQ_SUPABASE.anonKey && rampiqSharedSyncPin());
+}
+
+function rampiqReadLiveSettingsCache(){
+  try{
+    var parsed=JSON.parse(localStorage.getItem(RAMPIQ_LIVE_SETTINGS_CACHE_KEY)||'null');
+    return parsed&&parsed.payload&&typeof parsed.payload==='object'?parsed:null;
+  }catch(e){ return null; }
+}
+
+function rampiqWriteLiveSettingsCache(value){
+  try{ localStorage.setItem(RAMPIQ_LIVE_SETTINGS_CACHE_KEY,JSON.stringify(value)); }
+  catch(e){ console.warn('localStorage write failed (LPH live settings):',e); }
+}
+
+async function rampiqLoadLiveSettingsRemote(){
+  if(!rampiqRemoteEnabled()) return null;
+  var q='select=terminal_id,payload,client_updated_at,updated_at&terminal_id=eq.'+
+    encodeURIComponent(RAMPIQ_SUPABASE.terminalId)+'&limit=1';
+  var res=await fetch(rampiqApiUrl('lph_live_settings',q),{headers:rampiqSupabaseHeaders()});
+  if(!res.ok){
+    var detail='';
+    try{detail=await res.text();}catch(e){}
+    throw new Error('Supabase LPH settings load failed: '+res.status+(detail?' '+detail:''));
+  }
+  var rows=await res.json();
+  return rows&&rows[0]?rows[0]:null;
+}
+
+function rampiqApplyLiveSettings(payload){
+  if(!payload||typeof payload!=='object') return;
+  rampiqLiveSettingsApplying=true;
+  try{ applyProfile(payload,{preserveProfileSelection:true}); }
+  finally{ rampiqLiveSettingsApplying=false; }
+}
+
+async function rampiqSaveLiveSettingsNow(force){
+  if(!force&&!rampiqLiveSettingsReady) return null;
+  var cache=rampiqReadLiveSettingsCache();
+  if(!cache||!cache.payload){
+    var createdAt=new Date().toISOString();
+    cache={payload:collectCurrentSettings('Live Settings',false),clientUpdatedAt:createdAt,dirty:true};
+    rampiqWriteLiveSettingsCache(cache);
+  }
+  if(!rampiqRemoteEnabled()){
+    rampiqSyncBadge('LOCAL CACHE','error');
+    return null;
+  }
+  var snapshotTime=cache.clientUpdatedAt||new Date().toISOString();
+  var row={
+    terminal_id:RAMPIQ_SUPABASE.terminalId,
+    payload:cache.payload,
+    client_updated_at:snapshotTime
+  };
+  var res=await fetch(rampiqApiUrl('lph_live_settings','on_conflict=terminal_id'),{
+    method:'POST',
+    headers:rampiqSupabaseHeaders({'Prefer':'resolution=merge-duplicates,return=representation'}),
+    body:JSON.stringify(row)
+  });
+  if(!res.ok){
+    var detail='';
+    try{detail=await res.text();}catch(e){}
+    throw new Error('Supabase LPH settings save failed: '+res.status+(detail?' '+detail:''));
+  }
+  var rows=await res.json();
+  var saved=rows&&rows[0]?rows[0]:row;
+  var latest=rampiqReadLiveSettingsCache();
+  if(latest&&latest.clientUpdatedAt===snapshotTime){
+    latest.dirty=false;
+    latest.remoteUpdatedAt=saved.updated_at||new Date().toISOString();
+    rampiqWriteLiveSettingsCache(latest);
+  }else if(latest&&latest.dirty){
+    clearTimeout(rampiqLiveSettingsSaveTimer);
+    rampiqLiveSettingsSaveTimer=setTimeout(function(){
+      rampiqSaveLiveSettingsNow(false).catch(rampiqHandleLiveSettingsError);
+    },250);
+  }
+  rampiqSyncBadge('SUPABASE SAVED','ok');
+  return saved;
+}
+
+function rampiqHandleLiveSettingsError(error){
+  console.warn(error);
+  rampiqSyncBadge('LOCAL CACHE','error');
+  rampiqShowSyncCallout(
+    'LPH cloud sync unavailable',
+    'Inputs remain saved on this device. Run 20260718_lph_live_settings.sql and verify the shared Cloud Setup PIN.',
+    'error'
+  );
+}
+
+function rampiqScheduleLiveSettingsSave(){
+  if(!rampiqLiveSettingsReady||rampiqLiveSettingsApplying) return;
+  var changedAt=new Date().toISOString();
+  rampiqWriteLiveSettingsCache({
+    payload:collectCurrentSettings('Live Settings',false),
+    clientUpdatedAt:changedAt,
+    dirty:true,
+    remoteUpdatedAt:(rampiqReadLiveSettingsCache()||{}).remoteUpdatedAt||null
+  });
+  rampiqSyncBadge(rampiqRemoteEnabled()?'SYNC PENDING':'LOCAL CACHE',rampiqRemoteEnabled()?'syncing':'error');
+  clearTimeout(rampiqLiveSettingsSaveTimer);
+  rampiqLiveSettingsSaveTimer=setTimeout(function(){
+    rampiqSaveLiveSettingsNow(false).catch(rampiqHandleLiveSettingsError);
+  },700);
+}
+
+async function rampiqRefreshLiveSettingsFromSupabase(){
+  if(!rampiqLiveSettingsReady||!rampiqRemoteEnabled()) return;
+  var cache=rampiqReadLiveSettingsCache();
+  if(cache&&cache.dirty) return;
+  var active=document.activeElement;
+  if(active&&/^(INPUT|SELECT|TEXTAREA)$/.test(active.tagName)) return;
+  var remote=await rampiqLoadLiveSettingsRemote();
+  if(!remote||!remote.payload) return;
+  var remoteStamp=remote.updated_at||remote.client_updated_at||'';
+  if(!cache||remoteStamp!==cache.remoteUpdatedAt){
+    rampiqWriteLiveSettingsCache({
+      payload:remote.payload,
+      clientUpdatedAt:remote.client_updated_at||remoteStamp,
+      remoteUpdatedAt:remoteStamp,
+      dirty:false
+    });
+    rampiqApplyLiveSettings(remote.payload);
+    rampiqSyncBadge('SUPABASE UPDATED','ok');
+  }
+}
+
+async function rampiqInitLiveSettings(){
+  if(rampiqLiveSettingsReady) return;
+  var local=rampiqReadLiveSettingsCache();
+  try{
+    var remote=await rampiqLoadLiveSettingsRemote();
+    if(local&&local.dirty){
+      rampiqApplyLiveSettings(local.payload);
+      rampiqLiveSettingsReady=true;
+      await rampiqSaveLiveSettingsNow(true);
+    }else if(remote&&remote.payload){
+      var remoteStamp=remote.updated_at||remote.client_updated_at||new Date().toISOString();
+      rampiqWriteLiveSettingsCache({
+        payload:remote.payload,
+        clientUpdatedAt:remote.client_updated_at||remoteStamp,
+        remoteUpdatedAt:remoteStamp,
+        dirty:false
+      });
+      rampiqApplyLiveSettings(remote.payload);
+      rampiqLiveSettingsReady=true;
+      rampiqSyncBadge('SUPABASE LOADED','ok');
+    }else{
+      if(local&&local.payload) rampiqApplyLiveSettings(local.payload);
+      rampiqLiveSettingsReady=true;
+      rampiqScheduleLiveSettingsSave();
+    }
+  }catch(error){
+    if(local&&local.payload) rampiqApplyLiveSettings(local.payload);
+    rampiqLiveSettingsReady=true;
+    rampiqHandleLiveSettingsError(error);
+  }
+  clearInterval(rampiqLiveSettingsRefreshTimer);
+  rampiqLiveSettingsRefreshTimer=setInterval(function(){
+    rampiqRefreshLiveSettingsFromSupabase().catch(rampiqHandleLiveSettingsError);
+  },20000);
 }
 function rampiqShowSyncCallout(title, message, type){
   try{
@@ -9005,6 +9190,14 @@ async function rampiqManualSave(){
   var sel = document.getElementById('profile-select');
   if(sel && _activeProfileId) sel.value = _activeProfileId;
 
+  var manualLiveChangedAt=new Date().toISOString();
+  rampiqWriteLiveSettingsCache({
+    payload:collectCurrentSettings('Live Settings',false),
+    clientUpdatedAt:manualLiveChangedAt,
+    dirty:true,
+    remoteUpdatedAt:(rampiqReadLiveSettingsCache()||{}).remoteUpdatedAt||null
+  });
+
   if(!rampiqRemoteEnabled()){
     rampiqSyncBadge('LOCAL CACHE', 'error');
     rampiqShowSyncCallout('Saved locally only', 'Supabase is not configured/enabled. Your inputs were saved to this browser cache.', 'error');
@@ -9013,9 +9206,13 @@ async function rampiqManualSave(){
   }
 
   try{
+    // The single live-settings row is the refresh/cross-device source of truth.
+    // Profiles remain available as named presets, but no longer have to act as
+    // an implicit persistence mechanism for the current controls.
+    await rampiqSaveLiveSettingsNow(true);
     await rampiqSaveProfilesRemote(arr);
     rampiqSyncBadge('SUPABASE SAVED', 'ok');
-    rampiqShowSyncCallout('Saved to Supabase', 'Current inputs are synced globally and will reload after refresh.', 'ok');
+    rampiqShowSyncCallout('Saved to Supabase', 'Current inputs are synced globally and will reload on this or another device.', 'ok');
     rampiqSetManualSaveButton('✓ SAVED', false);
     setTimeout(function(){ rampiqSetManualSaveButton(btnReset, false); rampiqSyncBadge('SUPABASE ONLINE', 'ok'); }, 1800);
   }catch(e){
@@ -9196,6 +9393,7 @@ function normalizeLegacyTrainArrivals(p){
 function collectCurrentSettings(name, isDefault){
   function gv(id){ var el=document.getElementById(id); return el?parseFloat(el.value)||0:0; }
   function gs(id){ var el=document.getElementById(id); return el?el.value:''; }
+  function gc(id){ var el=document.getElementById(id); return !!(el&&el.checked); }
   var trains={};
   ['zlbho1','zpbho','zlbho2'].forEach(function(key){
     var a=document.getElementById(key+'-arr');
@@ -9215,12 +9413,16 @@ function collectCurrentSettings(name, isDefault){
     lunchBreak:gv('lunch-break'), lunchBreak2:gv('lunch-break2'),
     carsOnHand:gv('cars-on-hand'), flips:gv('flips'), prelifts:gv('prelifts'),
     carryOverLifts:gv('carryover-lifts'), carryOverType:gs('carryover-type'),
+    useRosterShiftTimes:gc('use-roster-shift-times'),
+    useTodayInbounds:gc('use-today-inbounds'),
+    fontSize:gv('font-size-slider')||13,
     trainCount:trainCount, trainNames:Object.assign({},trainNames),
     trains:trains, unexpectedDelayMins:unexpectedDelayMins
   };
 }
 
-function applyProfile(p){
+function applyProfile(p,options){
+  options=options||{};
   p = normalizeLegacyTrainArrivals(p);
   function set(id,val){ var el=document.getElementById(id); if(el) el.value=val; }
   set('s1-start',p.s1Start); set('s1-end',p.s1End);
@@ -9267,16 +9469,48 @@ function applyProfile(p){
     });
   }
   unexpectedDelayMins=p.unexpectedDelayMins||0;
-  _activeProfileId=p.id;
-  updateProfileLoadedBar(p);
+  if(!options.preserveProfileSelection){
+    _activeProfileId=p.id;
+    updateProfileLoadedBar(p);
+  }
   if(p._option3ArrivalMigrated){
     var arr = loadProfilesDB();
     var idx = arr.findIndex(function(x){ return String(x.id) === String(p.id); });
     if(idx >= 0){ arr[idx] = p; saveProfilesDB(arr); renderProfileDropdown(); }
   }
+  var fontSizeSlider=document.getElementById('font-size-slider');
+  if(fontSizeSlider&&Number.isFinite(Number(p.fontSize))){
+    fontSizeSlider.value=String(p.fontSize);
+    setFontSize(p.fontSize);
+  }
+
+  // Restore source-link toggles from the live payload without allowing stale
+  // device-local manual caches to overwrite the Supabase values just applied.
+  var todayInboundToggle=document.getElementById('use-today-inbounds');
+  var useToday=Object.prototype.hasOwnProperty.call(p,'useTodayInbounds')
+    ?!!p.useTodayInbounds:!!(todayInboundToggle&&todayInboundToggle.checked);
+  if(todayInboundToggle)todayInboundToggle.checked=useToday;
+  try{localStorage.setItem(LPH_USE_TODAY_INBOUNDS_KEY,useToday?'true':'false');}catch(e){}
+  if(useToday){
+    lphApplyTodayInbounds(false);
+  }else{
+    var trainCard=document.querySelector('.sb-card-trains');
+    if(trainCard)trainCard.classList.remove('auto-inbounds-active');
+    lphSetAutoInboundControlsDisabled(false);
+    lphCaptureManualInboundState();
+  }
+
   var rosterTimesToggle=document.getElementById('use-roster-shift-times');
-  if(rosterTimesToggle&&rosterTimesToggle.checked)lphApplyRosterScheduledShiftTimes(false);
-  else lphSaveManualShiftTimes();
+  var useRoster=Object.prototype.hasOwnProperty.call(p,'useRosterShiftTimes')
+    ?!!p.useRosterShiftTimes:!!(rosterTimesToggle&&rosterTimesToggle.checked);
+  if(rosterTimesToggle)rosterTimesToggle.checked=useRoster;
+  try{localStorage.setItem(LPH_USE_ROSTER_TIMES_KEY,useRoster?'true':'false');}catch(e){}
+  if(useRoster)lphApplyRosterScheduledShiftTimes(false);
+  else{
+    lphSetShiftTimeInputsDisabled(false);
+    if(rosterTimesToggle)rosterTimesToggle.title='Use scheduled shift times from the Current Day Roster';
+    lphSaveManualShiftTimes();
+  }
   simulate();
 }
 
@@ -9450,7 +9684,10 @@ function toggleAutoload(){
   renderProfileDropdown();
 }
 
-// Auto-load default profile on startup, then refresh from Supabase when available.
+// Load the legacy local default once for backward compatibility. The durable
+// live-settings row loads immediately afterward and is authoritative across
+// refreshes/devices. Remote named profiles are refreshed without auto-applying
+// them over newer live inputs.
 (function initProfiles(){
   renderProfileDropdown();
   var autoId=getAutoloadId();
@@ -9461,7 +9698,8 @@ function toggleAutoload(){
     // Slight delay so the rest of the app initializes first
     setTimeout(function(){ applyProfile(p); },80);
   }
-  rampiqRefreshProfilesFromSupabase(!p);
+  rampiqRefreshProfilesFromSupabase(false);
+  setTimeout(function(){ rampiqInitLiveSettings(); },160);
 })();
 
 // ── END PROFILE SYSTEM ──────────────────────────────────────────────

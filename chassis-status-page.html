@@ -6687,8 +6687,8 @@ async function cloudSchemaStatus(){
     headers:{"Content-Type":"application/json"},
     body:"{}"
   });
-  if(!status||status.compatible!==true||Number(status.schema_version)<2){
-    throw new Error("Supabase schema is outdated. Run 20260717_supabase_compatibility.sql.");
+  if(!status||status.compatible!==true||Number(status.schema_version)<3){
+    throw new Error("Supabase schema is outdated. Run 20260718_lph_live_settings.sql.");
   }
   return status;
 }

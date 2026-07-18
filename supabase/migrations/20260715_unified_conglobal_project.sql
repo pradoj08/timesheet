@@ -14,7 +14,7 @@ create table if not exists public.conglobal_app_config (
   id boolean primary key default true check (id),
   pin_hash text not null,
   enabled boolean not null default true,
-  schema_version integer not null default 2,
+  schema_version integer not null default 3,
   updated_at timestamptz not null default now()
 );
 
@@ -30,6 +30,30 @@ create table if not exists public.conglobal_workbook_state (
 create table if not exists public.chassis_reconciliation_state (
   state_key text primary key,
   state_value jsonb not null default '{}'::jsonb,
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.lph_live_settings (
+  terminal_id text primary key,
+  payload jsonb not null default '{}'::jsonb,
+  client_updated_at timestamptz,
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.rampiq_profiles (
+  id text primary key,
+  terminal_id text not null,
+  name text not null default 'Unnamed profile',
+  is_default boolean not null default false,
+  payload jsonb not null default '{}'::jsonb,
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.rampiq_reports (
+  id text primary key,
+  terminal_id text not null,
+  saved_at timestamptz not null default now(),
+  payload jsonb not null default '{}'::jsonb,
   updated_at timestamptz not null default now()
 );
 
@@ -126,9 +150,21 @@ create table if not exists public.employee_audit_log (
 alter table public.conglobal_workbook_state add column if not exists state jsonb not null default '{}'::jsonb;
 alter table public.conglobal_workbook_state add column if not exists client_updated_at timestamptz;
 alter table public.conglobal_workbook_state add column if not exists updated_at timestamptz not null default now();
-alter table public.conglobal_app_config add column if not exists schema_version integer not null default 2;
+alter table public.conglobal_app_config add column if not exists schema_version integer not null default 3;
 alter table public.chassis_reconciliation_state add column if not exists state_value jsonb not null default '{}'::jsonb;
 alter table public.chassis_reconciliation_state add column if not exists updated_at timestamptz not null default now();
+alter table public.lph_live_settings add column if not exists payload jsonb not null default '{}'::jsonb;
+alter table public.lph_live_settings add column if not exists client_updated_at timestamptz;
+alter table public.lph_live_settings add column if not exists updated_at timestamptz not null default now();
+alter table public.rampiq_profiles add column if not exists terminal_id text not null default 'settegast';
+alter table public.rampiq_profiles add column if not exists name text not null default 'Unnamed profile';
+alter table public.rampiq_profiles add column if not exists is_default boolean not null default false;
+alter table public.rampiq_profiles add column if not exists payload jsonb not null default '{}'::jsonb;
+alter table public.rampiq_profiles add column if not exists updated_at timestamptz not null default now();
+alter table public.rampiq_reports add column if not exists terminal_id text not null default 'settegast';
+alter table public.rampiq_reports add column if not exists saved_at timestamptz not null default now();
+alter table public.rampiq_reports add column if not exists payload jsonb not null default '{}'::jsonb;
+alter table public.rampiq_reports add column if not exists updated_at timestamptz not null default now();
 
 alter table public.employees add column if not exists employee_id text;
 alter table public.employees add column if not exists first_name text not null default '';
@@ -163,6 +199,16 @@ create unique index if not exists conglobal_workbook_state_identity_idx
   on public.conglobal_workbook_state (project_id, state_key);
 create unique index if not exists chassis_reconciliation_state_key_idx
   on public.chassis_reconciliation_state (state_key);
+create unique index if not exists lph_live_settings_terminal_idx
+  on public.lph_live_settings (terminal_id);
+create unique index if not exists rampiq_profiles_id_idx
+  on public.rampiq_profiles (id);
+create index if not exists rampiq_profiles_terminal_updated_idx
+  on public.rampiq_profiles (terminal_id, updated_at desc);
+create unique index if not exists rampiq_reports_id_idx
+  on public.rampiq_reports (id);
+create index if not exists rampiq_reports_terminal_saved_idx
+  on public.rampiq_reports (terminal_id, saved_at desc);
 create unique index if not exists employees_id_idx on public.employees (id);
 create unique index if not exists equipment_id_idx on public.equipment (id);
 create unique index if not exists activity_log_id_idx on public.activity_log (id);
@@ -197,7 +243,8 @@ declare
 begin
   foreach table_name in array array[
     'chassis_reconciliation_state', 'employees', 'equipment',
-    'audit_roster_lists', 'training_roster_lists', 'ppe_compliance_state'
+    'audit_roster_lists', 'training_roster_lists', 'ppe_compliance_state',
+    'lph_live_settings', 'rampiq_profiles', 'rampiq_reports'
   ]
   loop
     trigger_name := table_name || '_touch_updated_at';
@@ -254,7 +301,13 @@ begin
   end if;
   return jsonb_build_object(
     'compatible', true,
-    'schema_version', 2,
+    'schema_version', coalesce((
+      select config.schema_version
+      from public.conglobal_app_config config
+      where config.id
+      limit 1
+    ), 3),
+    'lph_live_settings', true,
     'project', 'unified-conglobal',
     'checked_at', now()
   );
@@ -339,7 +392,10 @@ begin
     'audit_roster_lists',
     'training_roster_lists',
     'ppe_compliance_state',
-    'employee_audit_log'
+    'employee_audit_log',
+    'lph_live_settings',
+    'rampiq_profiles',
+    'rampiq_reports'
   ]
   loop
     execute format('alter table public.%I enable row level security', table_name);
@@ -479,11 +535,11 @@ declare
   app_pin_hash text := '$2a$12$JA1tL6fGNQ0kj.gfJTMrg.lv.pJ0vnWgWjqfVy/wIcFuOMIUouMku';
 begin
   insert into public.conglobal_app_config (id, pin_hash, enabled, schema_version, updated_at)
-  values (true, app_pin_hash, true, 2, now())
+  values (true, app_pin_hash, true, 3, now())
   on conflict (id) do update
   set pin_hash = excluded.pin_hash,
       enabled = true,
-      schema_version = 2,
+      schema_version = greatest(public.conglobal_app_config.schema_version, excluded.schema_version),
       updated_at = now();
 end
 $$;

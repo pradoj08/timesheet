@@ -93,7 +93,12 @@ begin
   end if;
   return jsonb_build_object(
     'compatible', true,
-    'schema_version', 2,
+    'schema_version', coalesce((
+      select config.schema_version
+      from public.conglobal_app_config config
+      where config.id
+      limit 1
+    ), 2),
     'project', 'unified-conglobal',
     'checked_at', now()
   );
@@ -163,7 +168,7 @@ revoke all on function public.replace_conglobal_equipment(jsonb) from public;
 grant execute on function public.replace_conglobal_equipment(jsonb) to anon, authenticated;
 
 update public.conglobal_app_config
-set schema_version = 2,
+set schema_version = greatest(schema_version, 2),
     updated_at = now()
 where id;
 

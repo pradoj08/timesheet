@@ -3251,12 +3251,12 @@ async function verifyConglobalSupabaseSchema(){
   if(!supabaseClient || !readConglobalSupabasePin()) return false;
   var result = await supabaseClient.rpc('conglobal_schema_status');
   if(result.error){
-    console.warn('Supabase compatibility check failed. Run 20260717_supabase_compatibility.sql.', result.error);
+    console.warn('Supabase compatibility check failed. Run 20260718_lph_live_settings.sql.', result.error);
     return false;
   }
   var status = result.data || {};
-  if(status.compatible !== true || Number(status.schema_version) < 2){
-    console.warn('Supabase schema version is outdated. Run 20260717_supabase_compatibility.sql.');
+  if(status.compatible !== true || Number(status.schema_version) < 3){
+    console.warn('Supabase schema version is outdated. Run 20260718_lph_live_settings.sql.');
     return false;
   }
   return true;
