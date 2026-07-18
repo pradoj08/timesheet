@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Obsidian Notes</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #18181b;
+    --panel: #202024;
+    --panel-2: #27272c;
+    --panel-3: #303036;
+    --line: #3b3b43;
+    --line-soft: #313139;
+    --text: #e8e8ea;
+    --muted: #a8a8b2;
+    --faint: #777783;
+    --accent: #8b6cef;
+    --accent-2: #a78bfa;
+    --accent-soft: rgba(139,108,239,.18);
+    --danger: #ef6b73;
+    --success: #58c98b;
+    --shadow: rgba(0,0,0,.34);
+  }
+  body.light-theme {
+    color-scheme: light;
+    --bg: #f3f1f7;
+    --panel: #ffffff;
+    --panel-2: #f7f5fa;
+    --panel-3: #ece8f3;
+    --line: #d8d1e3;
+    --line-soft: #e6e0ec;
+    --text: #292631;
+    --muted: #66606f;
+    --faint: #8f8898;
+    --accent: #6f4bd8;
+    --accent-2: #7c5ce0;
+    --accent-soft: rgba(111,75,216,.12);
+    --danger: #c93f4b;
+    --success: #187a48;
+    --shadow: rgba(42,31,62,.15);
+  }
+  * { box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: Inter, "Segoe UI", Arial, sans-serif;
+    font-size: 14px;
+  }
+  button, input, textarea { font: inherit; }
+  button { color: inherit; }
+  .notes-app {
+    display: grid;
+    grid-template-columns: 282px minmax(0,1fr);
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+  }
+  .sidebar {
+    display: flex;
+    min-width: 0;
+    min-height: 0;
+    flex-direction: column;
+    border-right: 1px solid var(--line);
+    background: var(--panel);
+  }
+  .vault-head {
+    display: flex;
+    min-height: 52px;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 11px;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .vault-mark {
+    display: grid;
+    width: 33px;
+    height: 33px;
+    flex: 0 0 auto;
+    place-items: center;
+    border: 1px solid rgba(167,139,250,.62);
+    border-radius: 9px;
+    background: linear-gradient(145deg,#9f7aea,#5d3cc2);
+    color: #fff;
+    font-size: 19px;
+    font-weight: 950;
+    box-shadow: 0 6px 18px rgba(91,55,190,.32);
+  }
+  .vault-title { min-width: 0; }
+  .vault-title strong, .vault-title span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .vault-title strong { font-size: 14px; font-weight: 850; }
+  .vault-title span { margin-top: 2px; color: var(--muted); font-size: 10px; letter-spacing: .05em; text-transform: uppercase; }
+  .icon-button, .toolbar-button, .primary-button, .view-button {
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: var(--panel-2);
+    cursor: pointer;
+    font-weight: 750;
+  }
+  .icon-button { display: grid; width: 32px; height: 32px; flex: 0 0 auto; place-items: center; padding: 0; font-size: 17px; }
+  .icon-button:hover, .toolbar-button:hover, .view-button:hover { border-color: var(--accent); background: var(--accent-soft); }
+  .sidebar-actions { display: grid; grid-template-columns: 1fr 40px; gap: 7px; padding: 10px; }
+  .primary-button {
+    min-height: 36px;
+    padding: 7px 11px;
+    border-color: #7657d5;
+    background: linear-gradient(180deg,#8669e6,#6c4fc8);
+    color: #fff;
+    box-shadow: 0 5px 14px rgba(74,44,160,.25);
+  }
+  .primary-button:hover { filter: brightness(1.08); }
+  .search-wrap { position: relative; padding: 0 10px 10px; }
+  .search-wrap::before { content: "⌕"; position: absolute; left: 21px; top: 7px; z-index: 1; color: var(--muted); font-size: 17px; pointer-events: none; }
+  .search-wrap input {
+    width: 100%;
+    height: 34px;
+    padding: 6px 10px 6px 34px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    outline: 0;
+    background: var(--panel-2);
+    color: var(--text);
+  }
+  .search-wrap input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+  .note-list-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 5px 12px 7px;
+    color: var(--muted);
+    font-size: 10px;
+    font-weight: 850;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+  .note-list {
+    min-height: 0;
+    flex: 1 1 auto;
+    overflow: auto;
+    padding: 0 7px 12px;
+  }
+  .note-item {
+    display: grid;
+    grid-template-columns: 22px minmax(0,1fr);
+    width: 100%;
+    min-height: 46px;
+    align-items: start;
+    gap: 5px;
+    margin: 1px 0;
+    padding: 7px 8px;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text);
+    text-align: left;
+    cursor: pointer;
+  }
+  .note-item:hover { background: var(--panel-2); }
+  .note-item.active { border-color: rgba(139,108,239,.48); background: var(--accent-soft); }
+  .note-item-icon { color: var(--accent-2); font-size: 15px; line-height: 1.4; }
+  .note-item-copy { min-width: 0; }
+  .note-item-title, .note-item-preview { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .note-item-title { font-size: 13px; font-weight: 760; }
+  .note-item-preview { margin-top: 4px; color: var(--faint); font-size: 10px; }
+  .empty-list { padding: 22px 14px; color: var(--muted); line-height: 1.5; text-align: center; }
+  .sidebar-foot {
+    display: grid;
+    grid-template-columns: repeat(3,1fr);
+    gap: 5px;
+    padding: 8px;
+    border-top: 1px solid var(--line-soft);
+  }
+  .sidebar-foot button { min-width: 0; height: 31px; padding: 4px; font-size: 10px; }
+  .workspace { display: flex; min-width: 0; min-height: 0; flex-direction: column; background: var(--bg); }
+  .topbar {
+    display: flex;
+    min-height: 52px;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 12px;
+    border-bottom: 1px solid var(--line);
+    background: var(--panel);
+  }
+  .sidebar-toggle { display: none; }
+  .note-title {
+    min-width: 110px;
+    flex: 1 1 auto;
+    height: 36px;
+    padding: 5px 8px;
+    border: 1px solid transparent;
+    border-radius: 5px;
+    outline: 0;
+    background: transparent;
+    color: var(--text);
+    font-size: 17px;
+    font-weight: 800;
+  }
+  .note-title:hover, .note-title:focus { border-color: var(--line); background: var(--panel-2); }
+  .save-status { flex: 0 0 auto; min-width: 76px; color: var(--muted); font-size: 10px; font-weight: 750; text-align: right; }
+  .save-status.saving { color: #e7b557; }
+  .save-status.saved { color: var(--success); }
+  .view-switch { display: flex; flex: 0 0 auto; gap: 2px; padding: 2px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel-2); }
+  .view-button { min-height: 29px; padding: 5px 10px; border: 0; background: transparent; color: var(--muted); font-size: 11px; }
+  .view-button.active { background: var(--accent); color: #fff; }
+  .toolbar-button { min-height: 34px; padding: 6px 10px; font-size: 11px; }
+  .toolbar-button.danger:hover { border-color: var(--danger); background: rgba(239,107,115,.12); color: var(--danger); }
+  .editor-shell { display: grid; min-width: 0; min-height: 0; flex: 1 1 auto; grid-template-columns: 1fr 1fr; }
+  .editor-shell.edit-only { grid-template-columns: 1fr; }
+  .editor-shell.preview-only { grid-template-columns: 1fr; }
+  .editor-shell.edit-only .preview-pane, .editor-shell.preview-only .editor-pane { display: none; }
+  .editor-pane, .preview-pane { min-width: 0; min-height: 0; overflow: auto; }
+  .editor-pane { position: relative; border-right: 1px solid var(--line); background: var(--bg); }
+  .editor-shell.edit-only .editor-pane { border-right: 0; }
+  #noteBody {
+    display: block;
+    width: min(920px,100%);
+    height: 100%;
+    min-height: 100%;
+    margin: 0 auto;
+    padding: 34px 44px 80px;
+    resize: none;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: var(--text);
+    caret-color: var(--accent-2);
+    font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+    font-size: 15px;
+    line-height: 1.72;
+    tab-size: 2;
+  }
+  .preview-pane { background: var(--bg); }
+  .markdown-preview {
+    width: min(920px,100%);
+    min-height: 100%;
+    margin: 0 auto;
+    padding: 32px 44px 80px;
+    font-size: 15px;
+    line-height: 1.65;
+  }
+  .markdown-preview h1, .markdown-preview h2, .markdown-preview h3 { margin: 1.2em 0 .45em; line-height: 1.25; }
+  .markdown-preview h1 { padding-bottom: .28em; border-bottom: 1px solid var(--line); font-size: 2em; }
+  .markdown-preview h2 { padding-bottom: .2em; border-bottom: 1px solid var(--line-soft); font-size: 1.55em; }
+  .markdown-preview h3 { font-size: 1.23em; }
+  .markdown-preview p { margin: .75em 0; }
+  .markdown-preview a, .wikilink { color: var(--accent-2); text-decoration: none; cursor: pointer; }
+  .markdown-preview a:hover, .wikilink:hover { text-decoration: underline; }
+  .markdown-preview code { padding: .12em .32em; border-radius: 4px; background: var(--panel-3); color: #d8c8ff; font-family: Consolas, monospace; }
+  .markdown-preview pre { overflow: auto; padding: 13px 15px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel-2); }
+  .markdown-preview pre code { padding: 0; background: transparent; }
+  .markdown-preview blockquote { margin: 1em 0; padding: .2em 1em; border-left: 4px solid var(--accent); color: var(--muted); background: var(--accent-soft); }
+  .markdown-preview ul, .markdown-preview ol { padding-left: 1.7em; }
+  .markdown-preview hr { border: 0; border-top: 1px solid var(--line); }
+  .markdown-preview .task { list-style: none; margin-left: -1.2em; }
+  .markdown-preview .task::before { content: "□"; display: inline-block; width: 1.3em; color: var(--accent-2); }
+  .markdown-preview .task.done { color: var(--faint); text-decoration: line-through; }
+  .markdown-preview .task.done::before { content: "☑"; color: var(--success); }
+  .empty-preview { color: var(--muted); font-style: italic; }
+  .statusbar {
+    display: flex;
+    min-height: 26px;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 14px;
+    padding: 4px 11px;
+    border-top: 1px solid var(--line);
+    background: var(--panel);
+    color: var(--muted);
+    font-size: 10px;
+  }
+  .hidden-input { display: none; }
+  .toast {
+    position: fixed;
+    z-index: 100;
+    right: 18px;
+    bottom: 38px;
+    max-width: min(360px,calc(100vw - 36px));
+    padding: 10px 13px;
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    background: var(--panel-2);
+    color: var(--text);
+    box-shadow: 0 12px 34px var(--shadow);
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .toast[hidden] { display: none; }
+  @media (max-width: 820px) {
+    .notes-app { grid-template-columns: 1fr; }
+    .sidebar { position: fixed; z-index: 30; inset: 0 auto 0 0; width: min(310px,88vw); box-shadow: 14px 0 40px var(--shadow); transform: translateX(-105%); transition: transform .18s ease; }
+    body.sidebar-open .sidebar { transform: translateX(0); }
+    .sidebar-toggle { display: grid; }
+    .save-status { display: none; }
+    .view-button { padding-inline: 7px; }
+    .editor-shell { grid-template-columns: 1fr; }
+    .editor-shell .preview-pane { display: none; }
+    .editor-shell.preview-only .preview-pane { display: block; }
+    #noteBody, .markdown-preview { padding: 25px 22px 70px; }
+  }
+</style>
+</head>
+<body>
+<main class="notes-app">
+  <aside class="sidebar" aria-label="Notes sidebar">
+    <header class="vault-head">
+      <div class="vault-mark" aria-hidden="true">◆</div>
+      <div class="vault-title"><strong>CONGLOBAL Vault</strong><span>Obsidian notes</span></div>
+      <button class="icon-button" id="themeButton" type="button" title="Toggle theme" aria-label="Toggle light and dark theme">☼</button>
+    </header>
+    <div class="sidebar-actions">
+      <button class="primary-button" id="newNoteButton" type="button">＋ New note</button>
+      <button class="icon-button" id="duplicateButton" type="button" title="Duplicate current note" aria-label="Duplicate current note">⧉</button>
+    </div>
+    <label class="search-wrap"><input id="noteSearch" type="search" autocomplete="off" placeholder="Search notes"></label>
+    <div class="note-list-head"><span>Notes</span><span id="noteCount">0</span></div>
+    <nav class="note-list" id="noteList" aria-label="Saved notes"></nav>
+    <footer class="sidebar-foot">
+      <button class="toolbar-button" id="importButton" type="button">Import</button>
+      <button class="toolbar-button" id="exportNoteButton" type="button">Note .md</button>
+      <button class="toolbar-button" id="exportVaultButton" type="button">Vault</button>
+    </footer>
+  </aside>
+
+  <section class="workspace">
+    <header class="topbar">
+      <button class="icon-button sidebar-toggle" id="sidebarToggle" type="button" aria-label="Open notes sidebar">☰</button>
+      <input class="note-title" id="noteTitle" autocomplete="off" aria-label="Note title" value="Untitled">
+      <span class="save-status saved" id="saveStatus">Saved locally</span>
+      <div class="view-switch" aria-label="Editor view">
+        <button class="view-button" type="button" data-view="edit">Edit</button>
+        <button class="view-button active" type="button" data-view="split">Split</button>
+        <button class="view-button" type="button" data-view="preview">Read</button>
+      </div>
+      <button class="toolbar-button danger" id="deleteButton" type="button">Delete</button>
+    </header>
+    <div class="editor-shell" id="editorShell">
+      <section class="editor-pane" aria-label="Markdown editor"><textarea id="noteBody" spellcheck="true" aria-label="Note contents"></textarea></section>
+      <section class="preview-pane" aria-label="Rendered note"><article class="markdown-preview" id="notePreview"></article></section>
+    </div>
+    <footer class="statusbar"><span id="wordCount">0 words</span><span id="characterCount">0 characters</span><span>Autosaved on this device</span></footer>
+  </section>
+</main>
+<input class="hidden-input" id="fileInput" type="file" accept=".md,.markdown,.txt,.json,application/json,text/markdown,text/plain">
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+(() => {
+  "use strict";
+  const STORAGE_KEY = "conglobal-obsidian-vault-v1";
+  const THEME_KEY = "conglobal-obsidian-theme-v1";
+  const VIEW_KEY = "conglobal-obsidian-view-v1";
+  const titleInput = document.getElementById("noteTitle");
+  const bodyInput = document.getElementById("noteBody");
+  const preview = document.getElementById("notePreview");
+  const noteList = document.getElementById("noteList");
+  const searchInput = document.getElementById("noteSearch");
+  const saveStatus = document.getElementById("saveStatus");
+  const editorShell = document.getElementById("editorShell");
+  const fileInput = document.getElementById("fileInput");
+  const toast = document.getElementById("toast");
+  let saveTimer = 0;
+  let toastTimer = 0;
+
+  const nowIso = () => new Date().toISOString();
+  const uid = () => "note-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2,8);
+  const defaultNote = () => ({
+    id: uid(),
+    title: "Welcome to Obsidian Notes",
+    body: "# Welcome to your CONGLOBAL vault\n\nThis notes page works offline inside the all-in-one workbook. Your notes autosave on this device.\n\n## Quick start\n\n- Create notes with **New note**.\n- Use Markdown for headings, lists, links, and code.\n- Link to another note with `[[Note title]]`.\n- Export one note as Markdown or back up the full vault as JSON.\n- Import `.md`, `.txt`, or a previously exported vault.\n\n> Tip: Press **Ctrl+N** for a new note and **Ctrl+S** to save immediately.\n\n- [ ] Add the first operations note\n- [x] Open the new notes workspace",
+    createdAt: nowIso(),
+    updatedAt: nowIso()
+  });
+  const freshState = () => { const note = defaultNote(); return { version:1, activeId:note.id, notes:[note] }; };
+  const normalizeNote = note => ({
+    id: String(note && note.id || uid()),
+    title: String(note && note.title || "Untitled"),
+    body: String(note && note.body || ""),
+    createdAt: String(note && note.createdAt || nowIso()),
+    updatedAt: String(note && note.updatedAt || nowIso())
+  });
+  const loadState = () => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
+      if (!saved || !Array.isArray(saved.notes) || !saved.notes.length) return freshState();
+      const notes = saved.notes.map(normalizeNote);
+      const activeId = notes.some(note => note.id === saved.activeId) ? saved.activeId : notes[0].id;
+      return { version:1, activeId, notes };
+    } catch (_) { return freshState(); }
+  };
+  let state = loadState();
+
+  const escapeHtml = value => String(value == null ? "" : value).replace(/[&<>"']/g, character => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[character]);
+  const activeNote = () => state.notes.find(note => note.id === state.activeId) || state.notes[0];
+  const cleanFilename = value => String(value || "note").replace(/[\\/:*?"<>|]+/g,"-").replace(/\s+/g," ").trim().slice(0,90) || "note";
+  const download = (name, content, type) => {
+    const url = URL.createObjectURL(new Blob([content], { type:type || "text/plain;charset=utf-8" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = name;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+  const announce = message => {
+    clearTimeout(toastTimer);
+    toast.textContent = message;
+    toast.hidden = false;
+    toastTimer = setTimeout(() => { toast.hidden = true; }, 2600);
+  };
+  const save = (label = "Saved locally") => {
+    clearTimeout(saveTimer);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    saveStatus.textContent = label;
+    saveStatus.className = "save-status saved";
+  };
+  const queueSave = () => {
+    clearTimeout(saveTimer);
+    saveStatus.textContent = "Saving…";
+    saveStatus.className = "save-status saving";
+    saveTimer = setTimeout(() => save(), 280);
+  };
+
+  function inlineMarkdown(value) {
+    let text = escapeHtml(value);
+    text = text.replace(/`([^`]+)`/g,"<code>$1</code>");
+    text = text.replace(/\[\[([^\]]+)\]\]/g,(_,name) => '<button class="wikilink" type="button" data-wikilink="' + encodeURIComponent(name.trim()) + '">' + escapeHtml(name.trim()) + '</button>');
+    text = text.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,'<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+    text = text.replace(/\*\*([^*]+)\*\*/g,"<strong>$1</strong>");
+    text = text.replace(/__([^_]+)__/g,"<strong>$1</strong>");
+    text = text.replace(/(^|[^*])\*([^*]+)\*/g,"$1<em>$2</em>");
+    text = text.replace(/~~([^~]+)~~/g,"<del>$1</del>");
+    return text;
+  }
+  function renderMarkdown(source) {
+    const lines = String(source || "").replace(/\r\n?/g,"\n").split("\n");
+    const out = [];
+    let inCode = false;
+    let code = [];
+    let listType = "";
+    const closeList = () => { if (listType) { out.push("</" + listType + ">"); listType = ""; } };
+    for (const line of lines) {
+      if (/^```/.test(line)) {
+        closeList();
+        if (inCode) { out.push("<pre><code>" + escapeHtml(code.join("\n")) + "</code></pre>"); code = []; inCode = false; }
+        else inCode = true;
+        continue;
+      }
+      if (inCode) { code.push(line); continue; }
+      const heading = line.match(/^(#{1,3})\s+(.+)$/);
+      if (heading) { closeList(); const level = heading[1].length; out.push("<h" + level + ">" + inlineMarkdown(heading[2]) + "</h" + level + ">"); continue; }
+      if (/^\s*([-*_])\1\1+\s*$/.test(line)) { closeList(); out.push("<hr>"); continue; }
+      const quote = line.match(/^>\s?(.*)$/);
+      if (quote) { closeList(); out.push("<blockquote>" + inlineMarkdown(quote[1]) + "</blockquote>"); continue; }
+      const task = line.match(/^\s*[-*]\s+\[([ xX])\]\s+(.*)$/);
+      if (task) { if (listType !== "ul") { closeList(); listType = "ul"; out.push("<ul>"); } out.push('<li class="task' + (task[1].toLowerCase() === "x" ? " done" : "") + '">' + inlineMarkdown(task[2]) + "</li>"); continue; }
+      const unordered = line.match(/^\s*[-*+]\s+(.+)$/);
+      if (unordered) { if (listType !== "ul") { closeList(); listType = "ul"; out.push("<ul>"); } out.push("<li>" + inlineMarkdown(unordered[1]) + "</li>"); continue; }
+      const ordered = line.match(/^\s*\d+[.)]\s+(.+)$/);
+      if (ordered) { if (listType !== "ol") { closeList(); listType = "ol"; out.push("<ol>"); } out.push("<li>" + inlineMarkdown(ordered[1]) + "</li>"); continue; }
+      closeList();
+      if (!line.trim()) out.push(""); else out.push("<p>" + inlineMarkdown(line) + "</p>");
+    }
+    closeList();
+    if (inCode) out.push("<pre><code>" + escapeHtml(code.join("\n")) + "</code></pre>");
+    return out.join("\n") || '<p class="empty-preview">Start writing to preview this note.</p>';
+  }
+
+  function updateCounts() {
+    const content = bodyInput.value;
+    const words = content.trim() ? content.trim().split(/\s+/).length : 0;
+    document.getElementById("wordCount").textContent = words + (words === 1 ? " word" : " words");
+    document.getElementById("characterCount").textContent = content.length + (content.length === 1 ? " character" : " characters");
+  }
+  function renderPreview() { preview.innerHTML = renderMarkdown(bodyInput.value); updateCounts(); }
+  function renderList() {
+    const query = searchInput.value.trim().toLowerCase();
+    const filtered = state.notes
+      .filter(note => !query || note.title.toLowerCase().includes(query) || note.body.toLowerCase().includes(query))
+      .slice()
+      .sort((a,b) => String(b.updatedAt).localeCompare(String(a.updatedAt)));
+    document.getElementById("noteCount").textContent = query ? filtered.length + "/" + state.notes.length : state.notes.length;
+    if (!filtered.length) { noteList.innerHTML = '<div class="empty-list">No notes match this search.</div>'; return; }
+    noteList.innerHTML = filtered.map(note => {
+      const plain = note.body.replace(/[#*`>\[\]]/g," ").replace(/\s+/g," ").trim();
+      return '<button class="note-item' + (note.id === state.activeId ? " active" : "") + '" type="button" data-note-id="' + escapeHtml(note.id) + '"><span class="note-item-icon">◇</span><span class="note-item-copy"><span class="note-item-title">' + escapeHtml(note.title || "Untitled") + '</span><span class="note-item-preview">' + escapeHtml(plain || "Empty note") + "</span></span></button>";
+    }).join("");
+  }
+  function showActiveNote() {
+    const note = activeNote();
+    if (!note) return;
+    titleInput.value = note.title;
+    bodyInput.value = note.body;
+    renderPreview();
+    renderList();
+  }
+  function syncInputs() {
+    const note = activeNote();
+    if (!note) return;
+    note.title = titleInput.value.trimStart() || "Untitled";
+    note.body = bodyInput.value;
+    note.updatedAt = nowIso();
+    renderPreview();
+    renderList();
+    queueSave();
+  }
+  function createNote(title = "Untitled", body = "") {
+    const note = { id:uid(), title, body, createdAt:nowIso(), updatedAt:nowIso() };
+    state.notes.push(note);
+    state.activeId = note.id;
+    searchInput.value = "";
+    showActiveNote();
+    save();
+    titleInput.focus();
+    titleInput.select();
+    document.body.classList.remove("sidebar-open");
+    return note;
+  }
+  function selectNote(id) {
+    if (!state.notes.some(note => note.id === id)) return;
+    state.activeId = id;
+    showActiveNote();
+    save();
+    document.body.classList.remove("sidebar-open");
+  }
+  function setView(view) {
+    const normalized = ["edit","split","preview"].includes(view) ? view : "split";
+    editorShell.className = "editor-shell" + (normalized === "edit" ? " edit-only" : normalized === "preview" ? " preview-only" : "");
+    document.querySelectorAll("[data-view]").forEach(button => button.classList.toggle("active", button.dataset.view === normalized));
+    localStorage.setItem(VIEW_KEY, normalized);
+    if (normalized !== "edit") renderPreview();
+  }
+
+  titleInput.addEventListener("input", syncInputs);
+  bodyInput.addEventListener("input", syncInputs);
+  searchInput.addEventListener("input", renderList);
+  noteList.addEventListener("click", event => { const button = event.target.closest("[data-note-id]"); if (button) selectNote(button.dataset.noteId); });
+  preview.addEventListener("click", event => {
+    const link = event.target.closest("[data-wikilink]");
+    if (!link) return;
+    const requested = decodeURIComponent(link.dataset.wikilink || "").trim();
+    const match = state.notes.find(note => note.title.toLowerCase() === requested.toLowerCase());
+    if (match) selectNote(match.id); else createNote(requested || "Untitled", "# " + (requested || "Untitled") + "\n");
+  });
+  document.getElementById("newNoteButton").addEventListener("click", () => createNote());
+  document.getElementById("duplicateButton").addEventListener("click", () => { const note = activeNote(); if (note) createNote(note.title + " copy", note.body); });
+  document.getElementById("deleteButton").addEventListener("click", () => {
+    const note = activeNote();
+    if (!note || !confirm('Delete "' + note.title + '"?')) return;
+    state.notes = state.notes.filter(item => item.id !== note.id);
+    if (!state.notes.length) { const replacement = defaultNote(); replacement.title = "Untitled"; replacement.body = ""; state.notes.push(replacement); }
+    state.activeId = state.notes.slice().sort((a,b) => String(b.updatedAt).localeCompare(String(a.updatedAt)))[0].id;
+    showActiveNote();
+    save();
+    announce("Note deleted");
+  });
+  document.querySelector(".view-switch").addEventListener("click", event => { const button = event.target.closest("[data-view]"); if (button) setView(button.dataset.view); });
+  document.getElementById("themeButton").addEventListener("click", () => {
+    document.body.classList.toggle("light-theme");
+    const mode = document.body.classList.contains("light-theme") ? "light" : "dark";
+    localStorage.setItem(THEME_KEY, mode);
+    document.getElementById("themeButton").textContent = mode === "light" ? "◐" : "☼";
+  });
+  document.getElementById("sidebarToggle").addEventListener("click", () => document.body.classList.toggle("sidebar-open"));
+  document.getElementById("importButton").addEventListener("click", () => fileInput.click());
+  document.getElementById("exportNoteButton").addEventListener("click", () => { const note = activeNote(); if (note) download(cleanFilename(note.title) + ".md", note.body, "text/markdown;charset=utf-8"); });
+  document.getElementById("exportVaultButton").addEventListener("click", () => {
+    save();
+    const stamp = new Date().toISOString().slice(0,10);
+    download("conglobal-obsidian-vault-" + stamp + ".json", JSON.stringify({ app:"CONGLOBAL Obsidian Notes", exportedAt:nowIso(), ...state }, null, 2), "application/json;charset=utf-8");
+  });
+  fileInput.addEventListener("change", async () => {
+    const file = fileInput.files && fileInput.files[0];
+    fileInput.value = "";
+    if (!file) return;
+    try {
+      const text = await file.text();
+      if (file.name.toLowerCase().endsWith(".json")) {
+        const imported = JSON.parse(text);
+        if (!imported || !Array.isArray(imported.notes)) throw new Error("This JSON file is not an Obsidian Notes vault backup.");
+        const incoming = imported.notes.map(normalizeNote).map(note => ({...note,id:uid(),updatedAt:nowIso()}));
+        state.notes.push(...incoming);
+        state.activeId = incoming[0] ? incoming[0].id : state.activeId;
+        showActiveNote();
+        save();
+        announce("Imported " + incoming.length + " notes");
+      } else {
+        const title = file.name.replace(/\.(md|markdown|txt)$/i,"") || "Imported note";
+        createNote(title, text);
+        announce("Imported " + file.name);
+      }
+    } catch (error) { alert(error && error.message ? error.message : "Could not import this file."); }
+  });
+  document.addEventListener("keydown", event => {
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "s") { event.preventDefault(); save(); announce("Vault saved"); }
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "n") { event.preventDefault(); createNote(); }
+    if (event.key === "Escape") document.body.classList.remove("sidebar-open");
+  });
+  window.addEventListener("storage", event => {
+    if (event.key !== STORAGE_KEY || document.activeElement === bodyInput || document.activeElement === titleInput) return;
+    state = loadState();
+    showActiveNote();
+  });
+  window.addEventListener("beforeunload", () => save());
+
+  const initialTheme = localStorage.getItem(THEME_KEY) || "dark";
+  document.body.classList.toggle("light-theme", initialTheme === "light");
+  document.getElementById("themeButton").textContent = initialTheme === "light" ? "◐" : "☼";
+  setView(localStorage.getItem(VIEW_KEY) || "split");
+  showActiveNote();
+  save();
+})();
+</script>
+</body>
+</html>

@@ -2488,17 +2488,6 @@ body:not(.print-mode) > .topbar .hidden-current-time-input{display:block !import
 <div class="note">Day shift · each flip = 1 lift</div>
 </div>
 </div>
-<!-- FIELD NOTES — above profiles -->
-<div class="sb-card input-menu-group input-menu-compact" data-input-menu-title="Field Notes">
-<div class="sb-cap" id="field-notes-cap" onclick="toggleFieldNotes()" style="cursor:pointer;user-select:none;justify-content:space-between;">
-<span>📝 FIELD NOTES</span>
-<span id="field-notes-chevron" style="font-size:10px;color:var(--text3);">▼</span>
-</div>
-<div class="sb-section" id="field-notes-section">
-<textarea id="field-notes-input" onblur="this.style.borderColor='var(--border2)'" onfocus="this.style.borderColor='var(--amber)'" oninput="simulate()" placeholder="Add shift notes, observations, or anything to include in the handoff report..." style="width:100%;box-sizing:border-box;min-height:90px;resize:vertical;background:var(--surface);border:1px solid var(--border2);border-radius:7px;color:var(--text);font-family:var(--font);font-size:11.5px;line-height:1.6;padding:9px 10px;outline:none;transition:border-color 0.15s;"></textarea>
-<div class="note" style="margin-top:4px;">Included verbatim in handoff report frontline section.</div>
-</div>
-</div>
 <!-- PROFILES — bottom of sidebar, collapsible -->
 <div class="sb-card input-menu-group input-menu-compact" data-input-menu-title="Profiles">
 <div class="sb-cap profile-sb-cap" id="profiles-sb-cap" onclick="toggleProfilePanel()" style="cursor:pointer;user-select:none;justify-content:space-between;">
@@ -8309,7 +8298,7 @@ function updateStaticControlLabels(){
 }
 
 function resetLeftInputs(){
-  // Reset the left-side simulation controls only. Field notes and saved profiles are preserved.
+  // Reset the left-side simulation controls only. Saved profiles are preserved.
   resetReportScore();
   trainCount=2;
   unexpectedDelayMins=0;
@@ -8513,10 +8502,6 @@ function collectState(){
   // Pull LPMH grid text for plain-text clipboard
   state.lpmhText = (document.getElementById('lpmh-grid')||{innerText:''}).innerText.trim().replace(/\n+/g,' | ');
 
-  // Field notes
-  var fn = document.getElementById('field-notes-input');
-  state.fieldNotes = fn ? fn.value.trim() : '';
-
   // Pivot times and per-train metrics from last simulation
   state.ihosaPivot  = m.ihosaPivot  || null;
   state.mhoasPivot  = m.mhoasPivot  || null;
@@ -8638,11 +8623,6 @@ function generateHandoffReport(state){
       var parts    = [dropStr, idealStr, wAvgStr].filter(Boolean).join(' · ');
       crewItems.push('<strong>'+t.name+'</strong> — '+Math.round(t.units)+' units · '+parts+'.');
     });
-  }
-
-  // Field notes passthrough
-  if(state.fieldNotes){
-    crewItems.push('<strong>Field notes:</strong> '+state.fieldNotes);
   }
 
   if(!crewItems.length) crewItems.push('Operations are running clean. Maintain current pace and sequence.');
@@ -9273,14 +9253,6 @@ function applyProfile(p){
   if(rosterTimesToggle&&rosterTimesToggle.checked)lphApplyRosterScheduledShiftTimes(false);
   else lphSaveManualShiftTimes();
   simulate();
-}
-
-function toggleFieldNotes(){
-  var sec=document.getElementById('field-notes-section');
-  var chev=document.getElementById('field-notes-chevron');
-  var open=sec.style.display!=='none';
-  sec.style.display=open?'none':'block';
-  if(chev)chev.innerHTML=open?'&#x25BC;':'&#x25B2;';
 }
 
 function toggleProfilePanel(){

@@ -2485,7 +2485,7 @@
       upsFocus: upsFocusStorageKey,
       shiftEnd: shiftEndStorageKey
     };
-    const markerDefaults = { lunch: 1, shiftChange: 1, inboundBlocking: 1, craneRepair: .5, upsFocus: 1, shiftEnd: 1 };
+    const markerDefaults = { lunch: .5, shiftChange: .5, inboundBlocking: .5, craneRepair: .5, upsFocus: .5, shiftEnd: .5 };
     function markerSlotFromPeriod(period) {
       const normalized = normalizeLunchPeriod(period);
       return normalized == null ? null : Math.round((((normalized - 3) + 24) % 24) * 2);
@@ -2539,8 +2539,17 @@
     function toggleTimelineMarkerPeriod(dateValue, mode, period) {
       const ranges = readMarkerRanges(dateValue, mode);
       const existing = markerRangeAt(dateValue, mode, period);
-      if (existing >= 0) ranges.splice(existing, 1);
-      else ranges.push({ start: normalizeLunchPeriod(period), duration: markerDefaults[mode] || 1 });
+      if (existing >= 0) {
+        if (Number(ranges[existing].duration) < 1) ranges[existing].duration = 1;
+        else ranges.splice(existing, 1);
+      } else ranges.push({ start: normalizeLunchPeriod(period), duration: markerDefaults[mode] || .5 });
+      writeMarkerRanges(dateValue, mode, ranges);
+    }
+    function cycleTimelineMarkerRange(dateValue, mode, index) {
+      const ranges = readMarkerRanges(dateValue, mode);
+      if (!ranges[index]) return;
+      if (Number(ranges[index].duration) < 1) ranges[index].duration = 1;
+      else ranges.splice(index, 1);
       writeMarkerRanges(dateValue, mode, ranges);
     }
     function updateTimelineMarkerRange(dateValue, mode, index, startSlot, durationSlots) {
@@ -2584,7 +2593,7 @@
           const left = (startSlot / 48 * 100).toFixed(4) + "%";
           const width = (durationSlots / 48 * 100).toFixed(4) + "%";
           const durationText = range.duration < 1 ? "30 min" : (range.duration % 1 ? range.duration.toFixed(1) : range.duration.toFixed(0)) + " hr";
-          return '<div class="timeline-marker-range ' + markerModeClass(mode) + '" data-marker-range="' + index + '" data-marker-type="' + mode + '" data-start-slot="' + startSlot + '" data-duration-slots="' + durationSlots + '" style="--range-left:' + left + ';--range-width:' + width + '" title="Drag to move. Drag an edge to resize. Click to remove."><span>' + markerModeLabel(mode) + ' - ' + durationText + '</span><i class="timeline-marker-resize start" data-resize="start"></i><i class="timeline-marker-resize end" data-resize="end"></i></div>';
+          return '<div class="timeline-marker-range ' + markerModeClass(mode) + '" data-marker-range="' + index + '" data-marker-type="' + mode + '" data-start-slot="' + startSlot + '" data-duration-slots="' + durationSlots + '" style="--range-left:' + left + ';--range-width:' + width + '" title="Click: 30 min to 1 hr to remove. Drag to move or resize."><span>' + markerModeLabel(mode) + ' - ' + durationText + '</span><i class="timeline-marker-resize start" data-resize="start"></i><i class="timeline-marker-resize end" data-resize="end"></i></div>';
         }).join("");
       }).join("");
     }
@@ -4357,7 +4366,7 @@
           return;
         }
         if (lastModel) {
-          removeTimelineMarkerRange(lastModel.dateValue, markerRange.dataset.markerType, Number(markerRange.dataset.markerRange));
+          cycleTimelineMarkerRange(lastModel.dateValue, markerRange.dataset.markerType, Number(markerRange.dataset.markerRange));
           refreshLunchTimeline();
         }
         return;

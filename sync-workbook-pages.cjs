@@ -3,6 +3,7 @@ const vm = require("vm");
 
 const workbookPath = "index.html";
 const pages = {
+  obsidian: "obsidian-page.html",
   matrix: "matrix-page.html",
   matrixWide: "matrix-wide-page.html",
   lphTracker: "lph-tracker-page.html",
