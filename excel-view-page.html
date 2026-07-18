@@ -394,6 +394,11 @@
   }
   .split-view-popup[hidden] { display: none; }
   .split-view-popup.dragging { opacity: .95; }
+  #toggleSplitView {
+    position: relative;
+    z-index: 3;
+    pointer-events: auto;
+  }
   .split-view-titlebar {
     position: relative;
     min-height: 30px;
@@ -540,7 +545,7 @@
     pointer-events: none;
     transition: opacity .16s ease;
   }
-  .excel-input-menu-overlay.open { opacity: 1; }
+  .excel-input-menu-overlay.open { opacity: 1; pointer-events: auto; }
   .excel-input-menu-shell {
     position: absolute;
     top: 72px;
@@ -552,11 +557,12 @@
     border-radius: 14px;
     background: #12121b;
     box-shadow: 0 28px 90px rgba(0,0,0,.58);
-    pointer-events: auto;
+    visibility: hidden;
+    pointer-events: none;
     transform: translateY(8px) scale(.99);
     transition: transform .18s ease, box-shadow .18s ease;
   }
-  .excel-input-menu-overlay.open .excel-input-menu-shell { transform: translateY(0) scale(1); }
+  .excel-input-menu-overlay.open .excel-input-menu-shell { visibility: visible; pointer-events: auto; transform: translateY(0) scale(1); }
   .excel-input-menu-overlay.dragging .excel-input-menu-shell {
     transition: none;
     box-shadow: 0 20px 64px rgba(0,0,0,.5), 0 0 0 2px rgba(245,158,11,.35);
@@ -1236,20 +1242,60 @@
     font-weight: 750;
   }
   @media (max-width: 680px) { .color-rule-row { grid-template-columns: 1fr; } .color-picker-grid { grid-template-columns: repeat(10, 20px); } .color-rule-remove { width: 100%; } }
-  .dashboard-panel { min-width: 0; }
+  .dashboard-panel { min-width: 0; overflow: visible; }
   .dashboard-controls {
     display: flex; align-items: center; gap: 8px; flex-wrap: nowrap; justify-content: flex-end; min-width: 0;
   }
+  .view-picker { position: relative; width: 242px; min-width: 242px; }
   .view-select {
     width: 242px;
     min-width: 242px;
+    min-height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 6px 10px 6px 12px;
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    color: var(--ink);
     font-size: 12px;
     font-weight: 800;
     background: white;
     text-align: left;
-    text-align-last: left;
+    cursor: pointer;
   }
-  .view-select option { text-align: left; }
+  .view-select:hover, .view-select[aria-expanded="true"] { border-color: #7890ad; box-shadow: 0 0 0 2px rgba(49,94,141,.12); }
+  .view-select-arrow { color: #334155; font-size: 13px; line-height: 1; transition: transform .14s ease; }
+  .view-select[aria-expanded="true"] .view-select-arrow { transform: rotate(180deg); }
+  .view-select-menu {
+    position: absolute;
+    top: calc(100% + 5px);
+    left: 0;
+    z-index: 80;
+    width: 100%;
+    display: none;
+    padding: 5px;
+    border: 1px solid #94a3b8;
+    border-radius: 8px;
+    background: #fff;
+    box-shadow: 0 14px 30px rgba(15,23,42,.24);
+  }
+  .view-picker.open .view-select-menu { display: grid; gap: 3px; }
+  .view-select-option {
+    width: 100%;
+    min-height: 32px;
+    padding: 7px 9px;
+    border: 0;
+    border-radius: 5px;
+    background: transparent;
+    color: var(--ink);
+    font-size: 11px;
+    font-weight: 800;
+    text-align: left;
+    cursor: pointer;
+  }
+  .view-select-option:hover, .view-select-option[aria-selected="true"] { background: #e8f0fa; color: #173d67; }
   .track-id-toggle {
     min-height: 34px; padding: 0 10px; border: 1px solid var(--line); border-radius: 7px;
     background: white; color: #40516a; display: inline-flex; align-items: center; gap: 7px;
@@ -1263,7 +1309,7 @@
     font-size: 9px; font-weight: 850; letter-spacing: .05em; text-transform: uppercase;
   }
   .live-dot { width: 6px; height: 6px; border-radius: 50%; background: #2d9b50; box-shadow: 0 0 0 4px rgba(45,155,80,.12); }
-  .grid-wrap { overflow-x: auto; }
+  .grid-wrap { overflow-x: auto; overflow-y: hidden; border-radius: 0 0 10px 10px; }
   .yard-grid {
     display: grid;
     grid-template-columns: 72px 76px repeat(8, minmax(132px, 1fr)) minmax(92px, .7fr);
@@ -1533,10 +1579,253 @@
     align-items: center;
     justify-content: center;
     padding: 3px 6px;
+    overflow: visible;
+    position: relative;
+    z-index: 4;
   }
   .third-summary-head.copy-grid-head {
     background: #c40000;
     color: #ffffff;
+  }
+  .copy-grid-actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    white-space: nowrap;
+  }
+  .add-inbound-train-btn {
+    height: 21px;
+    padding: 0 8px;
+    border: 1px solid #f8b516;
+    border-radius: 5px;
+    background: #fff3c4;
+    color: #6c4100;
+    font-size: 9px;
+    font-weight: 950;
+    letter-spacing: .035em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+  .add-inbound-train-btn:hover,
+  .add-inbound-train-btn:focus-visible {
+    border-color: #d99200;
+    background: #ffdf78;
+    outline: 0;
+  }
+  .inbound-train-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1320;
+    display: none;
+    place-items: center;
+    padding: 18px;
+    background: rgba(2, 6, 23, .68);
+    backdrop-filter: blur(4px);
+  }
+  .inbound-train-backdrop.open { display: grid; }
+  .inbound-train-dialog {
+    width: min(900px, calc(100vw - 30px));
+    max-height: min(820px, calc(100vh - 30px));
+    overflow: auto;
+    border: 1px solid #385174;
+    border-radius: 16px;
+    background: linear-gradient(180deg, #101a2f, #09111f 76%);
+    color: #eaf1ff;
+    box-shadow: 0 28px 90px rgba(0, 0, 0, .58);
+  }
+  .inbound-train-head {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 17px 20px;
+    border-bottom: 1px solid #2d4160;
+    background: #182849;
+  }
+  .inbound-train-title {
+    font-size: 13px;
+    font-weight: 950;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+  }
+  .inbound-train-title small {
+    display: block;
+    margin-top: 5px;
+    color: #9fb3d1;
+    font-size: 9px;
+    letter-spacing: .08em;
+  }
+  .inbound-train-close {
+    width: 32px;
+    height: 32px;
+    border: 1px solid #475d7d;
+    border-radius: 9px;
+    background: #111c2f;
+    color: #dce8f8;
+    font-size: 18px;
+    font-weight: 900;
+    cursor: pointer;
+  }
+  .inbound-train-body { padding: 18px 20px 12px; }
+  .inbound-train-note {
+    margin-bottom: 14px;
+    padding: 10px 12px;
+    border: 1px solid rgba(245, 181, 22, .38);
+    border-radius: 10px;
+    background: rgba(109, 74, 8, .18);
+    color: #ffdd78;
+    font-size: 11px;
+    font-weight: 750;
+    line-height: 1.4;
+  }
+  .inbound-train-field-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(180px, .6fr);
+    gap: 12px;
+  }
+  .inbound-train-field { display: grid; gap: 6px; min-width: 0; }
+  .inbound-train-field.source { grid-column: 1 / -1; }
+  .inbound-train-field label,
+  .inbound-train-section-label {
+    color: #8fa5c5;
+    font-size: 9px;
+    font-weight: 900;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+  }
+  .inbound-train-field input,
+  .inbound-train-field select {
+    width: 100%;
+    min-height: 40px;
+    padding: 8px 11px;
+    border: 1px solid #344965;
+    border-radius: 9px;
+    background: #0e182b;
+    color: #f2f6ff;
+    font: 800 12px "Segoe UI", Arial, sans-serif;
+    outline: 0;
+  }
+  .inbound-train-field input:focus,
+  .inbound-train-field select:focus { border-color: #4f95ff; box-shadow: 0 0 0 2px rgba(79,149,255,.18); }
+  .inbound-train-track-list {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    margin-top: 8px;
+  }
+  .inbound-train-track {
+    position: relative;
+    min-height: 76px;
+    padding: 10px 42px 9px 12px;
+    border: 1px solid #3a4c69;
+    border-radius: 11px;
+    background: linear-gradient(180deg, #17233a, #111a2b);
+    color: #e7eef9;
+    text-align: left;
+    cursor: pointer;
+  }
+  .inbound-train-track:hover { border-color: #6386b4; }
+  .inbound-train-track.selected {
+    border-color: #f4b91e;
+    background: linear-gradient(180deg, rgba(116,80,5,.72), rgba(57,40,5,.78));
+    box-shadow: 0 0 0 2px rgba(244,185,30,.14), inset 0 1px rgba(255,255,255,.08);
+  }
+  .inbound-train-track strong {
+    display: block;
+    font: 950 15px Consolas, "Courier New", monospace;
+    letter-spacing: .05em;
+  }
+  .inbound-train-track span {
+    display: block;
+    margin-top: 6px;
+    color: #aabbd2;
+    font-size: 9px;
+    font-weight: 800;
+  }
+  .inbound-train-track.selected span { color: #ffe399; }
+  .inbound-train-order {
+    position: absolute;
+    top: 50%;
+    right: 11px;
+    display: grid;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: #ffc62b;
+    color: #332000;
+    font-size: 12px;
+    font-weight: 950;
+    transform: translateY(-50%);
+  }
+  .inbound-train-preview {
+    margin-top: 16px;
+    padding: 12px;
+    border: 1px solid #344965;
+    border-radius: 12px;
+    background: rgba(5, 12, 24, .66);
+  }
+  .inbound-train-preview.empty { color: #8fa1ba; font-size: 11px; }
+  .inbound-train-preview-row {
+    display: grid;
+    grid-template-columns: 82px minmax(120px, 1fr) 82px 126px;
+    align-items: center;
+    gap: 8px;
+    margin-top: 7px;
+    padding: 8px;
+    border: 1px solid #2c4160;
+    border-radius: 9px;
+    background: #14233d;
+    font-size: 10px;
+    font-weight: 900;
+  }
+  .inbound-train-preview-row b { color: #ffd56c; }
+  .inbound-train-preview-row .projected-good { color: #67e4a5; }
+  .inbound-train-preview-row .projected-bad { color: #ff8790; }
+  .inbound-train-overflow {
+    margin-top: 9px;
+    padding: 8px 10px;
+    border: 1px solid #923d4a;
+    border-radius: 8px;
+    background: rgba(109, 24, 38, .48);
+    color: #ffc1c6;
+    font-size: 10px;
+    font-weight: 900;
+  }
+  .inbound-train-actions {
+    position: sticky;
+    bottom: 0;
+    display: flex;
+    justify-content: flex-end;
+    gap: 9px;
+    padding: 12px 20px 16px;
+    border-top: 1px solid #243651;
+    background: rgba(9, 17, 31, .97);
+  }
+  .inbound-train-action {
+    min-height: 36px;
+    padding: 0 15px;
+    border: 1px solid #3e536f;
+    border-radius: 9px;
+    background: #111a29;
+    color: #dce7f7;
+    font-size: 10px;
+    font-weight: 950;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+  .inbound-train-action.confirm { border-color: #4d82dd; background: #204f9e; color: #fff; }
+  .inbound-train-action:disabled { opacity: .42; cursor: not-allowed; }
+  @media (max-width: 680px) {
+    .inbound-train-field-grid { grid-template-columns: 1fr; }
+    .inbound-train-field.source { grid-column: auto; }
+    .inbound-train-track-list { grid-template-columns: 1fr; }
+    .inbound-train-preview-row { grid-template-columns: 72px 1fr; }
   }
   .undo-grid-btn {
     min-width: 72px;
@@ -2200,7 +2489,7 @@
     .side-column { grid-template-columns: 1fr; }
     .paste-layout, .status-strip { grid-template-columns: 1fr; }
     .dashboard-controls { justify-content: flex-start; width: 100%; }
-    .view-select { min-width: 100%; }
+    .view-picker, .view-select { width: 100%; min-width: 100%; }
     .modal-backdrop { padding: 10px; }
     .legend-grid { grid-template-columns: 1fr; }
   }
@@ -2997,12 +3286,18 @@
           <div class="dashboard-controls">
             <button class="btn btn-light undo-grid-btn" id="undoExcelView" type="button" disabled title="Undo the last block move, edit, delete, or other saved change">Undo</button>
             <button class="btn btn-white btn-small" id="toggleSplitView" type="button">Split View</button>
-            <select class="field view-select" id="viewSelect">
-              <option>CURRENT RAMP BLOCKING</option>
-              <option>LONG SHORT / BREAKDOWN</option>
-              <option>SS COLOR MAP</option>
-              <option>FUTURE DWELL IHOSA 2030</option>
-            </select>
+            <div class="view-picker" id="viewPicker">
+              <button class="view-select" id="viewSelect" type="button" aria-haspopup="listbox" aria-expanded="false">
+                <span id="viewSelectLabel">CURRENT RAMP BLOCKING</span>
+                <span class="view-select-arrow" aria-hidden="true">&#9662;</span>
+              </button>
+              <div class="view-select-menu" id="viewSelectMenu" role="listbox" aria-label="Ramp grid view">
+                <button class="view-select-option" type="button" role="option" data-grid-view="CURRENT RAMP BLOCKING">CURRENT RAMP BLOCKING</button>
+                <button class="view-select-option" type="button" role="option" data-grid-view="LONG SHORT / BREAKDOWN">LONG SHORT / BREAKDOWN</button>
+                <button class="view-select-option" type="button" role="option" data-grid-view="SS COLOR MAP">SS COLOR MAP</button>
+                <button class="view-select-option" type="button" role="option" data-grid-view="FUTURE DWELL IHOSA 2030">FUTURE DWELL IHOSA 2030</button>
+              </div>
+            </div>
             <label class="track-id-toggle" title="Hide bracketed track IDs like [805] inside block labels">
               <input id="hideTrackIdsToggle" type="checkbox">
               Hide track IDs
@@ -3121,6 +3416,39 @@
         <button class="split-block-confirm" id="confirmSplitBlock" type="button">Split Block</button>
       </div>
     </div>
+  </section>
+</div>
+
+<div class="inbound-train-backdrop" id="inboundTrainModal" role="dialog" aria-modal="true" aria-labelledby="inboundTrainTitle" hidden>
+  <section class="inbound-train-dialog">
+    <header class="inbound-train-head">
+      <div class="inbound-train-title" id="inboundTrainTitle">Add Inbound Train<small id="inboundTrainTargetLabel">Ramp Overview</small></div>
+      <button class="inbound-train-close" id="closeInboundTrain" type="button" aria-label="Close Add Inbound Train">&times;</button>
+    </header>
+    <div class="inbound-train-body">
+      <div class="inbound-train-note">Choose an inbound from the Inbounds popup or enter a train and footage manually. Tracks fill in the order selected; the last selected track carries any overflow so the full train footage is preserved.</div>
+      <div class="inbound-train-field-grid">
+        <div class="inbound-train-field source">
+          <label for="inboundTrainSource">Select from Inbounds</label>
+          <select id="inboundTrainSource"><option value="">Manual entry</option></select>
+        </div>
+        <div class="inbound-train-field">
+          <label for="inboundTrainName">Inbound Train</label>
+          <input id="inboundTrainName" type="text" maxlength="80" placeholder="ZLBHO 22" autocomplete="off">
+        </div>
+        <div class="inbound-train-field">
+          <label for="inboundTrainFootage">Total Footage</label>
+          <input id="inboundTrainFootage" type="text" inputmode="numeric" placeholder="6500" autocomplete="off">
+        </div>
+      </div>
+      <div class="inbound-train-preview empty" id="inboundTrainPreview">Enter footage and select landing tracks to preview the placement.</div>
+      <div class="inbound-train-section-label" style="margin-top:16px">Landing Tracks</div>
+      <div class="inbound-train-track-list" id="inboundTrainTrackList"></div>
+    </div>
+    <footer class="inbound-train-actions">
+      <button class="inbound-train-action" id="cancelInboundTrain" type="button">Cancel</button>
+      <button class="inbound-train-action confirm" id="confirmInboundTrain" type="button" disabled>Add Inbound Train</button>
+    </footer>
   </section>
 </div>
 
@@ -3392,6 +3720,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   let inboundArchiveSort = "newest";
   let inboundArchiveFilter = "all";
   let inboundArchivePreviewId = "";
+  let inboundTrainTarget = "two";
+  let inboundTrainTrackOrder = [];
 
   function defaultInboundPlans() {
     return [
@@ -6403,7 +6733,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   function copyAboveHeaderCell(target = "two") {
     const id = target === "three" ? "copyTableTwoToThree" : "copyTableOneToTwo";
     const headerClass = target === "three" ? "third-summary-head copy-grid-head" : "grid-head copy-grid-head";
-    return '<div class="' + headerClass + '"><button class="copy-grid-btn" id="' + id + '" type="button">COPY ABOVE</button></div>';
+    return '<div class="' + headerClass + '"><div class="copy-grid-actions"><button class="copy-grid-btn" id="' + id + '" type="button">COPY ABOVE</button><button class="add-inbound-train-btn" data-open-inbound-train="' + target + '" type="button">ADD INBOUND TRAIN</button></div></div>';
   }
 
   function copyTableOneToTwo() {
@@ -6420,6 +6750,172 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     state.secondaryGridThree = snapshotGrid(sourceGrid);
     state.secondaryGridThree.finalBlocks = normalizeFinalBlocks(finalBlocks);
     renderAll();
+  }
+
+  function inboundPlanFootage(plan) {
+    const stated = Math.max(0, parseInboundFt(plan && plan.totalFt));
+    if (stated) return stated;
+    return (Array.isArray(plan && plan.rows) ? plan.rows : []).reduce((sum, row) => sum + Math.max(0, parseInboundFt(row && row.ft)), 0);
+  }
+
+  function inboundTrainSources() {
+    const entries = [];
+    const seen = new Set();
+    const add = (plan, source, id) => {
+      const train = clean(plan && plan.train);
+      const footage = inboundPlanFootage(plan);
+      if (!train || !footage) return;
+      const signature = `${train.toUpperCase()}|${footage}`;
+      if (seen.has(signature)) return;
+      seen.add(signature);
+      entries.push({ id, train, footage, source, day:clean(plan && plan.day) });
+    };
+    normalizeInboundPlans(state.inboundPlans).forEach((plan, index) => add(plan, "Inbound popup", `plan:${index}`));
+    normalizeInboundArchive(state.inboundArchive).forEach(record => add(record.plan, "Inbound archive", `archive:${record.id}`));
+    return entries;
+  }
+
+  function inboundTrainTargetKey(target = inboundTrainTarget) {
+    return target === "three" ? "secondaryGridThree" : "secondaryGridTwo";
+  }
+
+  function inboundTrainSourceGrid(target = inboundTrainTarget) {
+    return target === "three" ? $("#blankYardGrid") : $("#yardGrid");
+  }
+
+  function inboundTrainPreviewModel() {
+    const key = inboundTrainTargetKey();
+    if (validSecondaryModel(state[key])) return state[key];
+    return snapshotGrid(inboundTrainSourceGrid());
+  }
+
+  function inboundTrainTrackUsage(model, track) {
+    return (Array.isArray(model && model.tracks && model.tracks[track]) ? model.tracks[track] : [])
+      .reduce((sum, block) => sum + Math.max(0, Number(block && block.footage) || 0), 0);
+  }
+
+  function inboundTrainAllocations() {
+    const footage = Math.max(0, Math.round(parseInboundFt($("#inboundTrainFootage").value)));
+    const model = inboundTrainPreviewModel();
+    let unallocated = footage;
+    const allocations = inboundTrainTrackOrder.map((track, index) => {
+      const capacity = TRACK_CAPACITY_FT[track] || 0;
+      const used = inboundTrainTrackUsage(model, track);
+      const available = capacity - used;
+      const isLast = index === inboundTrainTrackOrder.length - 1;
+      const assigned = isLast ? unallocated : Math.min(unallocated, Math.max(0, available));
+      unallocated = Math.max(0, unallocated - assigned);
+      return { track, capacity, used, available, assigned, projected:available - assigned };
+    });
+    return { footage, allocations, unallocated };
+  }
+
+  function populateInboundTrainSources() {
+    const select = $("#inboundTrainSource");
+    const entries = inboundTrainSources();
+    select.innerHTML = '<option value="">Manual entry</option>' + entries.map(entry => {
+      const context = entry.source === "Inbound archive" ? "ARCHIVED" : (entry.day || "INBOUNDS");
+      return `<option value="${escapeAttr(entry.id)}">${escapeHtml(entry.train)} — ${escapeHtml(fmtInt(entry.footage))} FT (${escapeHtml(context)})</option>`;
+    }).join("");
+  }
+
+  function renderInboundTrainPlacement() {
+    const train = clean($("#inboundTrainName").value);
+    const model = inboundTrainPreviewModel();
+    const result = inboundTrainAllocations();
+    $("#inboundTrainTrackList").innerHTML = TRACKS.map(track => {
+      const used = inboundTrainTrackUsage(model, track);
+      const available = (TRACK_CAPACITY_FT[track] || 0) - used;
+      const order = inboundTrainTrackOrder.indexOf(track);
+      return `<button class="inbound-train-track${order >= 0 ? " selected" : ""}" data-inbound-landing-track="${track}" type="button" aria-pressed="${order >= 0 ? "true" : "false"}"><strong>6-${track}</strong><span>${fmtInt(used)} used · ${fmtInt(available)} available</span>${order >= 0 ? `<i class="inbound-train-order">${order + 1}</i>` : ""}</button>`;
+    }).join("");
+
+    const preview = $("#inboundTrainPreview");
+    if (!result.footage || !result.allocations.length) {
+      preview.className = "inbound-train-preview empty";
+      preview.textContent = "Enter footage and select landing tracks to preview the placement.";
+    } else {
+      preview.className = "inbound-train-preview";
+      preview.innerHTML = `<div class="inbound-train-section-label">Placement Preview</div>${result.allocations.filter(item => item.assigned > 0).map(item => `<div class="inbound-train-preview-row"><b>${fmtInt(item.assigned)} FT</b><span>${escapeHtml(train || "Inbound train")} [${item.track}]</span><span>6-${item.track}</span><span class="${item.projected < 0 ? "projected-bad" : "projected-good"}">${fmtInt(item.projected)} FT remaining</span></div>`).join("")}${result.allocations.some(item => item.projected < 0) ? `<div class="inbound-train-overflow">The last selected track will exceed its available footage by ${fmtInt(Math.abs(Math.min(...result.allocations.map(item => item.projected))))} FT.</div>` : ""}`;
+    }
+    $("#confirmInboundTrain").disabled = !(train && result.footage > 0 && result.allocations.some(item => item.assigned > 0));
+  }
+
+  function openInboundTrainModal(target) {
+    inboundTrainTarget = target === "three" ? "three" : "two";
+    inboundTrainTrackOrder = [];
+    $("#inboundTrainTargetLabel").textContent = inboundTrainTarget === "three" ? "Adding to Ramp After Switching" : "Adding to Ramp Overview";
+    $("#inboundTrainName").value = "";
+    $("#inboundTrainFootage").value = "";
+    populateInboundTrainSources();
+    $("#inboundTrainSource").value = "";
+    renderInboundTrainPlacement();
+    const modal = $("#inboundTrainModal");
+    modal.hidden = false;
+    modal.classList.add("open");
+    document.body.classList.add("modal-open");
+    requestAnimationFrame(() => $("#inboundTrainSource").focus());
+  }
+
+  function closeInboundTrainModal() {
+    const modal = $("#inboundTrainModal");
+    modal.classList.remove("open");
+    modal.hidden = true;
+    inboundTrainTrackOrder = [];
+    document.body.classList.remove("modal-open");
+  }
+
+  function selectInboundTrainSource(value) {
+    if (!value) return;
+    const entry = inboundTrainSources().find(item => item.id === value);
+    if (!entry) return;
+    $("#inboundTrainName").value = entry.train;
+    $("#inboundTrainFootage").value = fmtInt(entry.footage);
+    renderInboundTrainPlacement();
+  }
+
+  function toggleInboundLandingTrack(trackValue) {
+    const track = Number(trackValue);
+    if (!TRACKS.includes(track)) return;
+    const index = inboundTrainTrackOrder.indexOf(track);
+    if (index >= 0) inboundTrainTrackOrder.splice(index, 1);
+    else inboundTrainTrackOrder.push(track);
+    renderInboundTrainPlacement();
+  }
+
+  function ensureInboundTrainTargetModel() {
+    const key = inboundTrainTargetKey();
+    if (validSecondaryModel(state[key])) return state[key];
+    const finalBlocks = key === "secondaryGridThree" && state[key] && state[key].finalBlocks;
+    state[key] = snapshotGrid(inboundTrainSourceGrid());
+    if (key === "secondaryGridThree") state[key].finalBlocks = normalizeFinalBlocks(finalBlocks);
+    return state[key];
+  }
+
+  function confirmInboundTrain() {
+    const train = clean($("#inboundTrainName").value).toUpperCase();
+    const result = inboundTrainAllocations();
+    if (!train || !result.footage || !result.allocations.length) return;
+    const model = ensureInboundTrainTargetModel();
+    const stamp = Date.now();
+    let added = 0;
+    result.allocations.forEach((item, index) => {
+      if (item.assigned <= 0) return;
+      const label = `${fmtInt(item.assigned)} ${train} [${item.track}]`;
+      model.tracks[item.track].push(normalizeSecondaryBlock({
+        id:`inbound-${stamp}-${item.track}-${index}`,
+        footage:item.assigned,
+        className:"cut-cell orange block-reorderable",
+        content:escapeHtml(label),
+        title:label,
+        sourceRows:[]
+      }, item.track));
+      added += 1;
+    });
+    state[inboundTrainTargetKey()] = model;
+    closeInboundTrainModal();
+    renderAll();
+    ssShowToast(`${train} added across ${added} track${added === 1 ? "" : "s"}.`);
   }
 
   function blankGridHeaderCells(copyTarget = "") {
@@ -6595,7 +7091,14 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   }
 
   function syncControls() {
-    $("#viewSelect").value = state.view;
+    const viewPicker = $("#viewPicker");
+    const viewButton = $("#viewSelect");
+    const viewLabel = $("#viewSelectLabel");
+    if (viewLabel) viewLabel.textContent = state.view;
+    if (viewButton) viewButton.setAttribute("aria-expanded", viewPicker && viewPicker.classList.contains("open") ? "true" : "false");
+    document.querySelectorAll("[data-grid-view]").forEach(option => {
+      option.setAttribute("aria-selected", option.dataset.gridView === state.view ? "true" : "false");
+    });
     $("#departureTime").value = state.departure;
     const hideToggle = $("#hideTrackIdsToggle");
     if (hideToggle) hideToggle.checked = Boolean(state.hideTrackIds);
@@ -7037,11 +7540,44 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     }
   });
 
-  $("#viewSelect").addEventListener("change", e => {
+  function selectGridView(view) {
+    if (!Object.prototype.hasOwnProperty.call(VIEW_DESCRIPTIONS, view)) return;
+    const picker = $("#viewPicker");
+    if (picker) picker.classList.remove("open");
+    $("#viewSelect")?.setAttribute("aria-expanded", "false");
+    if (state.view === view) {
+      syncControls();
+      return;
+    }
     selectedBlockIds.clear();
     selectedBlockGridId = "";
-    state.view = e.target.value;
+    state.view = view;
     renderAll();
+  }
+
+  $("#viewSelect").addEventListener("click", event => {
+    event.stopPropagation();
+    const picker = $("#viewPicker");
+    const open = !picker.classList.contains("open");
+    picker.classList.toggle("open", open);
+    event.currentTarget.setAttribute("aria-expanded", open ? "true" : "false");
+  });
+  $("#viewSelectMenu").addEventListener("click", event => {
+    const option = event.target.closest("[data-grid-view]");
+    if (!option) return;
+    event.stopPropagation();
+    selectGridView(option.dataset.gridView);
+  });
+  document.addEventListener("click", event => {
+    if (!event.target.closest("#viewPicker")) {
+      $("#viewPicker")?.classList.remove("open");
+      $("#viewSelect")?.setAttribute("aria-expanded", "false");
+    }
+  });
+  document.addEventListener("keydown", event => {
+    if (event.key !== "Escape") return;
+    $("#viewPicker")?.classList.remove("open");
+    $("#viewSelect")?.setAttribute("aria-expanded", "false");
   });
 
   $("#undoExcelView").addEventListener("click", undoExcelViewChange);
@@ -7104,6 +7640,27 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   $("#splitBlockModal").addEventListener("click", event => {
     if (event.target === $("#splitBlockModal")) closeSplitBlockModal();
   });
+  $("#toggleSplitView").addEventListener("click", event => {
+    event.preventDefault();
+    toggleSplitView();
+  });
+  $("#splitViewClose").addEventListener("click", event => {
+    event.preventDefault();
+    closeSplitView();
+  });
+  $("#inboundTrainSource").addEventListener("change", event => selectInboundTrainSource(event.target.value));
+  $("#inboundTrainName").addEventListener("input", renderInboundTrainPlacement);
+  $("#inboundTrainFootage").addEventListener("input", renderInboundTrainPlacement);
+  $("#inboundTrainTrackList").addEventListener("click", event => {
+    const track = event.target.closest("[data-inbound-landing-track]");
+    if (track) toggleInboundLandingTrack(track.dataset.inboundLandingTrack);
+  });
+  $("#closeInboundTrain").addEventListener("click", closeInboundTrainModal);
+  $("#cancelInboundTrain").addEventListener("click", closeInboundTrainModal);
+  $("#confirmInboundTrain").addEventListener("click", confirmInboundTrain);
+  $("#inboundTrainModal").addEventListener("click", event => {
+    if (event.target === event.currentTarget) closeInboundTrainModal();
+  });
 
   document.addEventListener("click", e => {
     if (!e.target.closest("#blockContextMenu")) hideBlockContextMenu();
@@ -7111,8 +7668,6 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     if (e.target.closest("#footageCalcClose")) closeFootageCalc();
     if (e.target.closest("#toggleCurrentWork")) toggleCurrentWorkPopup();
     if (e.target.closest("#currentWorkClose")) closeCurrentWorkPopup();
-    if (e.target.closest("#toggleSplitView")) toggleSplitView();
-    if (e.target.closest("#splitViewClose")) closeSplitView();
     if (e.target.closest("#toggleTodayRoster")) toggleTodayRoster();
     if (e.target.closest("#toggleLphInputMenu")) toggleLphInputMenu();
     if (e.target === $("#excelInputMenuOverlay")) closeLphInputMenu();
@@ -7134,6 +7689,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     if (archiveDelete) { deleteArchivedInbound(archiveDelete.dataset.archiveDelete); return; }
     if (e.target.closest("[data-add-archive-edit-row]")) { addArchivedInboundEditRow(); return; }
     if (e.target.closest("[data-save-archive-edit]")) { saveArchivedInboundEdit(); return; }
+    const addInboundTrain = e.target.closest("[data-open-inbound-train]");
+    if (addInboundTrain) { openInboundTrainModal(addInboundTrain.dataset.openInboundTrain); return; }
     if (e.target.closest("#copyTableOneToTwo")) copyTableOneToTwo();
     if (e.target.closest("#copyTableTwoToThree")) copyTableTwoToThree();
     if (e.target.closest("#toggleInboundPlanner")) {
@@ -7767,6 +8324,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     if (e.key !== "Escape") return;
     hideBlockContextMenu();
     if ($("#excelInputMenuOverlay").classList.contains("open")) closeLphInputMenu();
+    else if (!$("#inboundTrainModal").hidden) closeInboundTrainModal();
     else if (!$("#rawTrackModal").hidden) closeRawTrackModal();
     else if (!$("#inboundArchivePreview").hidden) closeInboundArchivePreview();
     else if (!$("#inboundArchivePage").hidden) closeInboundArchivePage();

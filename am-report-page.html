@@ -1315,6 +1315,130 @@ body{
   border-top-color:#dc2626;
   opacity:1;
 }
+#am-report .sheet-grid td.forecast-inbound-choice-cell{
+  cursor:pointer;
+  padding-right:22px !important;
+}
+#am-report .sheet-grid td.forecast-inbound-choice-cell::after{
+  content:"\25BE";
+  position:absolute;
+  top:50%;
+  right:6px;
+  transform:translateY(-50%);
+  color:#1d4ed8;
+  font:900 12px/1 Arial,sans-serif;
+  pointer-events:none;
+}
+#am-report .forecast-inbound-picker{
+  position:fixed;
+  z-index:1200;
+  width:min(390px,calc(100vw - 16px));
+  overflow:hidden;
+  border:2px solid #1e3a5f;
+  border-radius:9px;
+  background:#f8fafc;
+  box-shadow:0 18px 44px rgba(15,23,42,.34);
+  font-family:Calibri,Arial,sans-serif;
+}
+#am-report .forecast-inbound-picker[hidden]{display:none !important}
+#am-report .forecast-inbound-picker-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  min-height:36px;
+  padding:6px 7px 6px 11px;
+  background:#10233f;
+  color:#fff;
+}
+#am-report .forecast-inbound-picker-head strong{
+  font-size:13px;
+  font-weight:900;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+}
+#am-report .forecast-inbound-picker-close{
+  width:27px;
+  height:25px;
+  padding:0;
+  border:1px solid #71839a;
+  border-radius:4px;
+  background:#172c49;
+  color:#fff;
+  font-size:18px;
+  font-weight:900;
+  line-height:1;
+  cursor:pointer;
+}
+#am-report .forecast-inbound-picker-note{
+  margin:0;
+  padding:7px 10px;
+  border-bottom:1px solid #cbd5e1;
+  color:#52617a;
+  font-size:11px;
+  font-weight:700;
+}
+#am-report .forecast-inbound-picker-list{
+  display:grid;
+  gap:5px;
+  max-height:230px;
+  overflow:auto;
+  padding:8px;
+}
+#am-report .forecast-inbound-picker-option{
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr) auto;
+  align-items:center;
+  gap:8px;
+  min-height:34px;
+  padding:6px 8px;
+  border:1px solid #b7c5d8;
+  border-radius:6px;
+  background:#fff;
+  color:#172033;
+  cursor:pointer;
+}
+#am-report .forecast-inbound-picker-option:hover{border-color:#2563eb;background:#eff6ff}
+#am-report .forecast-inbound-picker-option input{width:17px;height:17px;margin:0;accent-color:#1d4ed8}
+#am-report .forecast-inbound-picker-option b{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}
+#am-report .forecast-inbound-picker-option span{color:#52617a;font-size:10px;font-weight:800;white-space:nowrap}
+#am-report .forecast-inbound-picker-empty{padding:14px 8px;color:#64748b;font-size:12px;font-weight:800;text-align:center}
+#am-report .forecast-inbound-picker-manual{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:6px;
+  padding:8px;
+  border-top:1px solid #cbd5e1;
+  background:#eef3f8;
+}
+#am-report .forecast-inbound-picker-manual input{
+  min-width:0;
+  height:34px;
+  padding:6px 8px;
+  border:1px solid #94a3b8;
+  border-radius:5px;
+  background:#fff;
+  color:#172033;
+  font:700 13px/1.2 Calibri,Arial,sans-serif;
+}
+#am-report .forecast-inbound-picker-actions{
+  display:flex;
+  justify-content:flex-end;
+  gap:6px;
+  padding:0 8px 8px;
+  background:#eef3f8;
+}
+#am-report .forecast-inbound-picker button.action{
+  min-height:31px;
+  padding:5px 10px;
+  border:1px solid #8fa1b8;
+  border-radius:5px;
+  background:#fff;
+  color:#22344d;
+  font:900 12px/1.1 Calibri,Arial,sans-serif;
+  cursor:pointer;
+}
+#am-report .forecast-inbound-picker button.action.primary{border-color:#1d4ed8;background:#1d4ed8;color:#fff}
 #am-report .sheet-grid td.outbound-footage-toggle-cell{
   padding:0 !important;
   text-align:center !important;
@@ -2494,6 +2618,9 @@ tags will be replaced.-->
   const INBOUND_CUSTOM_TOGGLE_CELL_SET = new Set(Object.keys(INBOUND_CUSTOM_TOGGLES));
   const FORECAST_INBOUND_EDITABLE_CELLS = Object.freeze(["A64", "B64", "A66", "B66", "A68", "B68"]);
   const FORECAST_INBOUND_EDITABLE_CELL_SET = new Set(FORECAST_INBOUND_EDITABLE_CELLS);
+  const FORECAST_INBOUND_NAME_CELLS = Object.freeze(["B64", "B66", "B68"]);
+  const FORECAST_INBOUND_NAME_CELL_SET = new Set(FORECAST_INBOUND_NAME_CELLS);
+  const FORECAST_INBOUND_TOTAL_CELLS = Object.freeze({ B64:"A64", B66:"A66", B68:"A68" });
   const OUTBOUND_FOOTAGE_PULLS = Object.freeze({
     C12: Object.freeze({ zone:"ihosa", target:"A12", label:"IHOSA" }),
     C13: Object.freeze({ zone:"mhoas", target:"A13", label:"MHOAS" })
@@ -2739,6 +2866,31 @@ tags will be replaced.-->
   ].join("");
   report.appendChild(modal);
 
+  const forecastInboundPicker = document.createElement("section");
+  forecastInboundPicker.className = "forecast-inbound-picker";
+  forecastInboundPicker.id = "amForecastInboundPicker";
+  forecastInboundPicker.hidden = true;
+  forecastInboundPicker.setAttribute("role", "dialog");
+  forecastInboundPicker.setAttribute("aria-modal", "false");
+  forecastInboundPicker.setAttribute("aria-labelledby", "amForecastInboundPickerTitle");
+  forecastInboundPicker.innerHTML = [
+    '<div class="forecast-inbound-picker-head">',
+      '<strong id="amForecastInboundPickerTitle">Chassis Forecast Inbounds</strong>',
+      '<button class="forecast-inbound-picker-close" id="amForecastInboundPickerClose" type="button" aria-label="Close inbound selector">&times;</button>',
+    '</div>',
+    '<p class="forecast-inbound-picker-note" id="amForecastInboundPickerNote">Select one or more inbounds, or enter any custom text.</p>',
+    '<div class="forecast-inbound-picker-list" id="amForecastInboundPickerList"></div>',
+    '<div class="forecast-inbound-picker-manual">',
+      '<input id="amForecastInboundManualText" type="text" autocomplete="off" aria-label="Custom inbound text" placeholder="Type any inbound text">',
+      '<button class="action" id="amForecastInboundUseManual" type="button">Use typed text</button>',
+    '</div>',
+    '<div class="forecast-inbound-picker-actions">',
+      '<button class="action" id="amForecastInboundPickerCancel" type="button">Cancel</button>',
+      '<button class="action primary" id="amForecastInboundUseSelected" type="button">Use selected</button>',
+    '</div>'
+  ].join("");
+  report.appendChild(forecastInboundPicker);
+
   const nameBox = document.getElementById("amNameBox");
   const formulaBar = document.getElementById("amFormulaBar");
   const saveStatus = document.getElementById("amSaveStatus");
@@ -2749,6 +2901,9 @@ tags will be replaced.-->
   const dropdownOptionsInput = document.getElementById("amDropdownOptions");
   const dropdownSummary = document.getElementById("amDropdownSummary");
   const dropdownError = document.getElementById("amDropdownError");
+  const forecastInboundPickerList = document.getElementById("amForecastInboundPickerList");
+  const forecastInboundPickerNote = document.getElementById("amForecastInboundPickerNote");
+  const forecastInboundManualText = document.getElementById("amForecastInboundManualText");
 
   let savedValues = {};
   let mergeRanges = [];
@@ -2769,6 +2924,7 @@ tags will be replaced.-->
   let forecastInboundManualOverrides = new Set();
   let sharedFormatSignature = "";
   let cellEditModeAddress = "";
+  let forecastInboundPickerAddress = "";
 
   function cloneDropdownMap(source) {
     const next = {};
@@ -3544,7 +3700,13 @@ tags will be replaced.-->
     return numberedTrain ? numberedTrain[1] + String(Number(numberedTrain[2])) : compact;
   }
 
-  function readChassisForecastInboundTotals() {
+  function displayForecastInboundName(value) {
+    const normalized = normalizeForecastInboundName(value);
+    const numberedTrain = /^(ZPBHO|ZLBHO|ZG4MQ)(\d+)$/.exec(normalized);
+    return numberedTrain ? numberedTrain[1] + "-" + numberedTrain[2] : cleanText(value).toUpperCase();
+  }
+
+  function readChassisForecastImportedUnits() {
     let importedUnits = [];
     for (const store of inboundArchiveStores()) {
       try {
@@ -3555,9 +3717,12 @@ tags will be replaced.-->
         }
       } catch (_) {}
     }
+    return importedUnits;
+  }
 
+  function readChassisForecastInboundTotals() {
     const totals = new Map();
-    importedUnits.forEach(unit => {
+    readChassisForecastImportedUnits().forEach(unit => {
       const name = cleanText(unit && (unit.trainId || unit.train || unit.inboundName) || "");
       const key = normalizeForecastInboundName(name);
       if (!key) return;
@@ -3566,16 +3731,50 @@ tags will be replaced.-->
     return totals;
   }
 
+  function readChassisForecastInboundOptions() {
+    const grouped = new Map();
+    readChassisForecastImportedUnits().forEach(unit => {
+      const sourceName = cleanText(unit && (unit.trainId || unit.train || unit.inboundName) || "");
+      const key = normalizeForecastInboundName(sourceName);
+      if (!key || ["STACKED", "MISMATCH", "NOTRAINLISTED"].includes(key)) return;
+      if (!grouped.has(key)) grouped.set(key, {
+        key,
+        name:displayForecastInboundName(sourceName),
+        units:0,
+        days:new Set()
+      });
+      const item = grouped.get(key);
+      item.units += 1;
+      const day = cleanText(unit && (unit.etaDay || unit.ETA_DAY || unit.etaDate) || "");
+      if (day) item.days.add(day);
+    });
+    return Array.from(grouped.values())
+      .map(item => ({ ...item, days:Array.from(item.days) }))
+      .sort((left, right) => {
+        const leftDay = Number(left.days[0]);
+        const rightDay = Number(right.days[0]);
+        if (Number.isFinite(leftDay) && Number.isFinite(rightDay) && leftDay !== rightDay) return leftDay - rightDay;
+        return left.name.localeCompare(right.name, undefined, { numeric:true });
+      });
+  }
+
+  function forecastNamesFromText(value) {
+    return cleanText(value).split(/\s*\+\s*/).map(cleanText).filter(Boolean);
+  }
+
   function updateForecastInboundPair(totalAddress, nameAddress, inboundNames, forecastTotals) {
+    const requestedNames = forecastInboundManualOverrides.has(nameAddress)
+      ? forecastNamesFromText(readCell(nameAddress))
+      : inboundNames;
     const missing = [];
     let total = 0;
-    inboundNames.forEach(name => {
+    requestedNames.forEach(name => {
       const match = forecastTotals.get(normalizeForecastInboundName(name));
       if (Number.isFinite(match)) total += match;
       else missing.push(name);
     });
 
-    const pairText = inboundNames.join(" + ");
+    const pairText = requestedNames.join(" + ");
     const detail = missing.length
       ? "Missing from Chassis Forecast: " + missing.join(", ") + ". Enter or correct this cell manually."
       : pairText + " = " + formatNumber(total) + " units from Chassis Forecast";
@@ -3591,6 +3790,95 @@ tags will be replaced.-->
       cell.title = detail + (forecastInboundManualOverrides.has(address) ? " Manual override active." : "");
     });
     return { total:numeric(totalAddress), missing };
+  }
+
+  function closeForecastInboundPicker(options) {
+    if (forecastInboundPicker.hidden) return;
+    const shouldRefocus = !options || options.refocus !== false;
+    const address = forecastInboundPickerAddress;
+    forecastInboundPicker.hidden = true;
+    forecastInboundPickerAddress = "";
+    if (shouldRefocus && address) {
+      const cell = cellMap.get(address);
+      if (cell) cell.focus({ preventScroll:true });
+    }
+  }
+
+  function positionForecastInboundPicker(cell) {
+    if (!cell || forecastInboundPicker.hidden) return;
+    const rect = cell.getBoundingClientRect();
+    const width = forecastInboundPicker.offsetWidth || Math.min(390, window.innerWidth - 16);
+    const height = forecastInboundPicker.offsetHeight || 390;
+    let left = Math.min(rect.left, window.innerWidth - width - 8);
+    left = Math.max(8, left);
+    let top = rect.bottom + 5;
+    if (top + height > window.innerHeight - 8) top = Math.max(8, rect.top - height - 5);
+    forecastInboundPicker.style.left = Math.round(left) + "px";
+    forecastInboundPicker.style.top = Math.round(top) + "px";
+  }
+
+  function openForecastInboundPicker(address) {
+    if (!FORECAST_INBOUND_NAME_CELL_SET.has(address)) return;
+    const cell = cellMap.get(address);
+    if (!cell) return;
+    const currentNames = new Set(forecastNamesFromText(readCell(address)).map(normalizeForecastInboundName));
+    const options = readChassisForecastInboundOptions();
+    forecastInboundPickerAddress = address;
+    forecastInboundManualText.value = readCell(address);
+    forecastInboundPickerList.textContent = "";
+    if (!options.length) {
+      const empty = document.createElement("div");
+      empty.className = "forecast-inbound-picker-empty";
+      empty.textContent = "No Chassis Forecast inbounds are currently available. You can still type any text below.";
+      forecastInboundPickerList.appendChild(empty);
+      forecastInboundPickerNote.textContent = "No forecast list found. Enter any custom inbound text below.";
+    } else {
+      options.forEach(option => {
+        const label = document.createElement("label");
+        label.className = "forecast-inbound-picker-option";
+        const input = document.createElement("input");
+        input.type = "checkbox";
+        input.value = option.name;
+        input.dataset.units = String(option.units);
+        input.checked = currentNames.has(option.key);
+        const name = document.createElement("b");
+        name.textContent = option.name;
+        const detail = document.createElement("span");
+        detail.textContent = formatNumber(option.units) + " units" + (option.days.length ? " • day " + option.days.join(", ") : "");
+        label.append(input, name, detail);
+        forecastInboundPickerList.appendChild(label);
+      });
+      forecastInboundPickerNote.textContent = "Select one or more Chassis Forecast inbounds, or enter any custom text.";
+    }
+    forecastInboundPicker.hidden = false;
+    positionForecastInboundPicker(cell);
+  }
+
+  function useSelectedForecastInbounds() {
+    const address = forecastInboundPickerAddress;
+    if (!FORECAST_INBOUND_NAME_CELL_SET.has(address)) return;
+    const selected = Array.from(forecastInboundPickerList.querySelectorAll('input[type="checkbox"]:checked'));
+    if (!selected.length) {
+      forecastInboundPickerNote.textContent = "Select at least one inbound, or use the custom text field.";
+      return;
+    }
+    writeCell(address, selected.map(input => input.value).join(" + "));
+    forecastInboundManualOverrides.add(address);
+    const totalAddress = FORECAST_INBOUND_TOTAL_CELLS[address];
+    if (totalAddress) forecastInboundManualOverrides.delete(totalAddress);
+    recalculate();
+    persist("Saved Chassis Forecast selection in " + address);
+    closeForecastInboundPicker();
+  }
+
+  function useManualForecastInboundText() {
+    const address = forecastInboundPickerAddress;
+    if (!FORECAST_INBOUND_NAME_CELL_SET.has(address)) return;
+    writeCell(address, forecastInboundManualText.value);
+    forecastInboundManualOverrides.add(address);
+    recalculate();
+    persist("Saved custom inbound text in " + address);
+    closeForecastInboundPicker();
   }
 
   function setFormulaResult(address, value, fullValue) {
@@ -4658,6 +4946,10 @@ tags will be replaced.-->
       cell.setAttribute("aria-label", address + " formula " + formulas[address]);
     } else {
       cell.classList.add("editable-cell");
+      if (FORECAST_INBOUND_NAME_CELL_SET.has(address)) {
+        cell.classList.add("forecast-inbound-choice-cell");
+        cell.title = "Click to choose Chassis Forecast inbounds; type to replace or double-click to edit manually";
+      }
       const initialValue = Object.prototype.hasOwnProperty.call(savedValues, address)
         ? savedValues[address]
         : originalValues[address];
@@ -4714,6 +5006,12 @@ tags will be replaced.-->
       const nativeSelection = window.getSelection && window.getSelection();
       if (nativeSelection) nativeSelection.removeAllRanges();
       event.preventDefault();
+    });
+
+    cell.addEventListener("click", event => {
+      if (!FORECAST_INBOUND_NAME_CELL_SET.has(address) || event.detail !== 1 || event.shiftKey) return;
+      if (event.target.closest("select, input")) return;
+      openForecastInboundPicker(address);
     });
 
     cell.addEventListener("focus", () => {
@@ -4822,6 +5120,7 @@ tags will be replaced.-->
   document.addEventListener("keydown", event => {
     if (event.key !== "Escape") return;
     closeCellContextMenu();
+    closeForecastInboundPicker({ refocus:false });
     if (REPORT_DAY_OFFSET === 0 && !todayRosterPopup.hidden) closeAmTodayRoster();
   });
   window.addEventListener("blur", closeCellContextMenu);
@@ -4830,6 +5129,23 @@ tags will be replaced.-->
   document.getElementById("amCancelDropdown").addEventListener("click", closeDropdownDialog);
   document.getElementById("amApplyDropdown").addEventListener("click", applyDropdownDialog);
   document.getElementById("amRemoveDropdown").addEventListener("click", removeDropdownDialog);
+  document.getElementById("amForecastInboundPickerClose").addEventListener("click", () => closeForecastInboundPicker());
+  document.getElementById("amForecastInboundPickerCancel").addEventListener("click", () => closeForecastInboundPicker());
+  document.getElementById("amForecastInboundUseSelected").addEventListener("click", useSelectedForecastInbounds);
+  document.getElementById("amForecastInboundUseManual").addEventListener("click", useManualForecastInboundText);
+  forecastInboundManualText.addEventListener("keydown", event => {
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+    useManualForecastInboundText();
+  });
+  document.addEventListener("pointerdown", event => {
+    if (forecastInboundPicker.hidden || forecastInboundPicker.contains(event.target)) return;
+    const choiceCell = event.target instanceof Element ? event.target.closest("td.forecast-inbound-choice-cell") : null;
+    if (!choiceCell) closeForecastInboundPicker({ refocus:false });
+  });
+  window.addEventListener("resize", () => {
+    if (!forecastInboundPicker.hidden && forecastInboundPickerAddress) positionForecastInboundPicker(cellMap.get(forecastInboundPickerAddress));
+  });
   modal.addEventListener("pointerdown", event => {
     if (event.target === modal) closeDropdownDialog();
   });

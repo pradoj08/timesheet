@@ -9062,6 +9062,8 @@ var ROSTER_AUDIT_KEY = 'eit_audit_roster_v3';
 var ROSTER_TRAIN_KEY = 'eit_train_roster_v3';
 var ROSTER_SUPABASE_TABLES = { audits: 'audit_roster_lists', trainings: 'training_roster_lists' };
 var rosterFilters = { audits: { shift: 'all', working: false }, trainings: { shift: 'all', working: false } };
+// Establish the training landing view before any async roster sync can render it.
+window.monthlyTrainingViewMode = 'course-board';
 var rosterLastUpdated = { audits: null, trainings: null };
 var rosterDeleteSuppression = { audits: {}, trainings: {} };
 var rosterDeleteSuppressMs = 10 * 60 * 1000;
@@ -14897,7 +14899,7 @@ document.addEventListener('input',function(e){
     if(!btn) return;
     confirmRosterDelete(btn.getAttribute('data-roster-type') || 'trainings', btn.getAttribute('data-roster-id') || '', btn.getAttribute('data-roster-name') || '');
   };
-  window.monthlyTrainingViewMode = 'course-board';
+  window.monthlyTrainingViewMode = window.monthlyTrainingViewMode || 'course-board';
   window.monthlyTrainingHideCompleted = window.monthlyTrainingHideCompleted !== false;
   window.monthlyTrainingHideOjt = !!window.monthlyTrainingHideOjt;
   window.monthlyTrainingHideCheckedCourses = !!window.monthlyTrainingHideCheckedCourses;

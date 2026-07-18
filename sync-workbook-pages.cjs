@@ -5,7 +5,6 @@ const workbookPath = "index.html";
 const pages = {
   matrix: "matrix-page.html",
   matrixWide: "matrix-wide-page.html",
-  superBash: "super-bash-page.html",
   lphTracker: "lph-tracker-page.html",
   amReport: "am-report-page.html",
   chassisStatus: "chassis-status-page.html",
@@ -37,15 +36,6 @@ function inlineYardCrewSprites(html) {
     const dataUri = `data:image/png;base64,${fs.readFileSync(spritePath).toString("base64")}`;
     return updated.replaceAll(spritePath, dataUri);
   }, html);
-}
-
-function configureSuperBashPage(html) {
-  // The upstream single-file build still loads its large runtime media from
-  // /assets. Root-relative paths resolve to the drive root under file://, so
-  // point them at the asset package carried beside this workbook instead.
-  return html
-    .replaceAll("/assets/", "assets/super-bash/")
-    .replaceAll("./favicon.svg", "assets/super-bash/favicon.svg");
 }
 
 function configureAmReportSheet(html, offset, label) {
@@ -720,7 +710,6 @@ for (const [pageId, sourcePath] of Object.entries(pages)) {
     if (!sourceTag.test(pageHtml)) throw new Error("Could not find the embedded LPH Input Menu source slot in Excel View.");
     pageHtml = pageHtml.replace(sourceTag, (_, open, _oldSource, close) => open + escapeScriptString(lphInputHtml) + close);
   }
-  if (pageId === "superBash") pageHtml = configureSuperBashPage(pageHtml);
   if (pageId === "timeOff") pageHtml = inlineYardCrewSprites(pageHtml);
   if (pageId === "amReport") {
     validatePageScripts("amReportSheet", pageHtml);
