@@ -9063,6 +9063,7 @@ var ROSTER_TRAIN_KEY = 'eit_train_roster_v3';
 var ROSTER_SUPABASE_TABLES = { audits: 'audit_roster_lists', trainings: 'training_roster_lists' };
 var rosterFilters = { audits: { shift: 'all', working: false }, trainings: { shift: 'all', working: false } };
 var monthlyTrainingDefaultFilterApplied = false;
+var rosterPanelSyncPromise = null;
 // Establish the training landing view before any async roster sync can render it.
 window.monthlyTrainingViewMode = 'course-board';
 var rosterLastUpdated = { audits: null, trainings: null };
@@ -9581,14 +9582,27 @@ function renderRosterTable(type){
     + '</table>';
 }
 
-async function renderRosterPanels(){
-  var now = Date.now();
-  var suppress = window.__rosterImportNoSyncUntil || {};
-  if(!suppress.audits || suppress.audits < now) await syncRosterFromSupabase('audits');
-  if(!suppress.trainings || suppress.trainings < now) await syncRosterFromSupabase('trainings');
+function renderCachedRosterPanels(){
   renderRosterTable('audits');
   renderRosterTable('trainings');
   updateRosterUndoButton();
+}
+
+async function renderRosterPanels(){
+  // Paint the most recent local snapshot immediately. Remote synchronization
+  // must never leave the popup looking empty while the network responds.
+  renderCachedRosterPanels();
+
+  var now = Date.now();
+  var suppress = window.__rosterImportNoSyncUntil || {};
+  if(!rosterPanelSyncPromise){
+    var syncJobs = [];
+    if(!suppress.audits || suppress.audits < now) syncJobs.push(Promise.resolve(syncRosterFromSupabase('audits')).catch(function(error){ console.warn('Audit roster refresh failed', error); }));
+    if(!suppress.trainings || suppress.trainings < now) syncJobs.push(Promise.resolve(syncRosterFromSupabase('trainings')).catch(function(error){ console.warn('Training roster refresh failed', error); }));
+    rosterPanelSyncPromise = Promise.all(syncJobs).finally(function(){ rosterPanelSyncPromise = null; });
+  }
+  await rosterPanelSyncPromise;
+  renderCachedRosterPanels();
 }
 
 function openRosterModal(){
@@ -15115,7 +15129,7 @@ document.addEventListener('input',function(e){
     var viewMenu = '<div class="training-toolbar-menu-wrap"><button class="roster-filter-btn training-toolbar-menu-toggle'+(window.monthlyTrainingViewMode === 'timesheet' ? ' active' : '')+'" type="button">'+icon('sheet')+'<span>View: '+viewLabel+'</span><span aria-hidden="true">&#9662;</span></button><div class="training-toolbar-menu"><button class="training-toolbar-choice timesheet-toggle'+(window.monthlyTrainingViewMode === 'timesheet'?' active':'')+'" onclick="toggleMonthlyTrainingTimesheet()" type="button">'+icon('sheet')+'<span>Timesheet</span></button><button class="training-toolbar-choice matrix-toggle'+(window.monthlyTrainingViewMode === 'matrix'?' active':'')+'" onclick="toggleMonthlyTrainingMatrix()" type="button">'+icon('sheet')+'<span>Matrix</span></button><button class="training-toolbar-choice course-board-toggle'+(window.monthlyTrainingViewMode === 'course-board'?' active':'')+'" onclick="toggleMonthlyTrainingCourseBoard()" type="button">'+icon('board')+'<span>Course Board</span></button><button class="training-toolbar-choice kanban-toggle'+(window.monthlyTrainingViewMode === 'board'?' active':'')+'" onclick="toggleMonthlyTrainingKanban()" type="button">'+icon('board')+'<span>Board View</span></button></div></div>';
     var qrButtons = '<button class="roster-filter-btn monthly-qr-replace-toggle'+(window.monthlyTrainingQrReplaceMode?' active':'')+'" onclick="toggleMonthlyTrainingQrReplacement()" type="button">'+icon('qr')+'<span>'+(window.monthlyTrainingQrReplaceMode?'Show Gate/MM':'QR Mode')+'</span></button><button class="roster-filter-btn monthly-qr-upload-toggle" onclick="uploadMonthlyTrainingQrCodes()" type="button">'+icon('upload')+'<span>Upload QR</span></button>';
     var kanbanButton = type === 'trainings'
-      ? '<span class="roster-filter-spacer"></span>'+shiftButtons+dataMenu+'<button class="roster-filter-btn edit-courses-toggle" onclick="openCourseManagerModal()" type="button">'+icon('edit')+'<span>Edit</span></button>'+qrButtons+'<button class="roster-filter-btn training-clear-toggle'+(window.monthlyTrainingClearConfirm?' active':'')+'" onclick="clearAllMonthlyTrainings()" type="button">'+icon('clear')+'<span>'+(window.monthlyTrainingClearConfirm?'Confirm Clear':'Clear All')+'</span></button>'+visibilityMenu+viewMenu
+      ? '<div class="monthly-training-action-row">'+shiftButtons+dataMenu+'<button class="roster-filter-btn edit-courses-toggle" onclick="openCourseManagerModal()" type="button">'+icon('edit')+'<span>Edit</span></button>'+qrButtons+'<button class="roster-filter-btn training-clear-toggle'+(window.monthlyTrainingClearConfirm?' active':'')+'" onclick="clearAllMonthlyTrainings()" type="button">'+icon('clear')+'<span>'+(window.monthlyTrainingClearConfirm?'Confirm Clear':'Clear All')+'</span></button>'+visibilityMenu+viewMenu+'</div>'
       : '';
     return (type === 'trainings' ? '' : shiftButtons) + displayControls + workingButton + kanbanButton;
   };
@@ -16338,14 +16352,25 @@ document.addEventListener('input',function(e){
 </style>
 <style id="monthly-training-toolbar-single-line-final">
   #page-audits #train-filter-row{
+    display:grid !important;
+    grid-template-columns:minmax(0,1fr) !important;
+    gap:10px !important;
+  }
+  #page-audits #train-filter-row > .timesheet-display-controls,
+  #page-audits #train-filter-row > .monthly-training-action-row{
+    width:100% !important;
+    min-width:0 !important;
+    display:flex !important;
+    align-items:center !important;
     flex-wrap:nowrap !important;
     gap:10px !important;
   }
-  #page-audits #train-filter-row .roster-filter-spacer{
-    display:none !important;
+  #page-audits #train-filter-row > .timesheet-display-controls{
+    justify-content:space-between !important;
   }
-  #page-audits #train-filter-row > .roster-filter-btn,
-  #page-audits #train-filter-row > .training-filter-menu-wrap{
+  #page-audits #train-filter-row .timesheet-display-control,
+  #page-audits #train-filter-row .monthly-training-action-row > .roster-filter-btn,
+  #page-audits #train-filter-row .monthly-training-action-row > .training-filter-menu-wrap{
     flex:0 0 auto !important;
     min-width:0 !important;
   }
