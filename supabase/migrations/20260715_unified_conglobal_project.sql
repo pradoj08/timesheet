@@ -14,6 +14,7 @@ create table if not exists public.conglobal_app_config (
   id boolean primary key default true check (id),
   pin_hash text not null,
   enabled boolean not null default true,
+  schema_version integer not null default 2,
   updated_at timestamptz not null default now()
 );
 
@@ -77,7 +78,7 @@ create table if not exists public.activity_log (
 );
 
 create table if not exists public.callouts (
-  id text primary key default gen_random_uuid()::text,
+  id text primary key default extensions.gen_random_uuid()::text,
   subject text not null,
   message text not null,
   priority text not null default 'normal',
@@ -108,7 +109,7 @@ create table if not exists public.ppe_compliance_state (
 );
 
 create table if not exists public.employee_audit_log (
-  id text primary key default gen_random_uuid()::text,
+  id text primary key default extensions.gen_random_uuid()::text,
   employee_id text,
   employee_name text,
   action text not null,
@@ -125,6 +126,7 @@ create table if not exists public.employee_audit_log (
 alter table public.conglobal_workbook_state add column if not exists state jsonb not null default '{}'::jsonb;
 alter table public.conglobal_workbook_state add column if not exists client_updated_at timestamptz;
 alter table public.conglobal_workbook_state add column if not exists updated_at timestamptz not null default now();
+alter table public.conglobal_app_config add column if not exists schema_version integer not null default 2;
 alter table public.chassis_reconciliation_state add column if not exists state_value jsonb not null default '{}'::jsonb;
 alter table public.chassis_reconciliation_state add column if not exists updated_at timestamptz not null default now();
 
@@ -188,6 +190,26 @@ create trigger conglobal_workbook_touch_updated_at
 before update on public.conglobal_workbook_state
 for each row execute function public.conglobal_touch_updated_at();
 
+do $$
+declare
+  table_name text;
+  trigger_name text;
+begin
+  foreach table_name in array array[
+    'chassis_reconciliation_state', 'employees', 'equipment',
+    'audit_roster_lists', 'training_roster_lists', 'ppe_compliance_state'
+  ]
+  loop
+    trigger_name := table_name || '_touch_updated_at';
+    execute format('drop trigger if exists %I on public.%I', trigger_name, table_name);
+    execute format(
+      'create trigger %I before update on public.%I for each row execute function public.conglobal_touch_updated_at()',
+      trigger_name, table_name
+    );
+  end loop;
+end
+$$;
+
 create or replace function private.valid_conglobal_app_pin()
 returns boolean
 language sql
@@ -218,6 +240,88 @@ alter table public.conglobal_app_config enable row level security;
 grant usage on schema private to anon, authenticated;
 revoke all on function private.valid_conglobal_app_pin() from public;
 grant execute on function private.valid_conglobal_app_pin() to anon, authenticated;
+
+create or replace function public.conglobal_schema_status()
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+begin
+  if not private.valid_conglobal_app_pin() then
+    raise insufficient_privilege using message = 'Invalid or missing ConGlobal sync PIN.';
+  end if;
+  return jsonb_build_object(
+    'compatible', true,
+    'schema_version', 2,
+    'project', 'unified-conglobal',
+    'checked_at', now()
+  );
+end;
+$$;
+
+revoke all on function public.conglobal_schema_status() from public;
+grant execute on function public.conglobal_schema_status() to anon, authenticated;
+
+create or replace function public.replace_conglobal_equipment(p_rows jsonb)
+returns integer
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  row_count integer;
+begin
+  if not private.valid_conglobal_app_pin() then
+    raise insufficient_privilege using message = 'Invalid or missing ConGlobal sync PIN.';
+  end if;
+  if jsonb_typeof(p_rows) <> 'array' or jsonb_array_length(p_rows) = 0 then
+    raise exception 'Equipment replacement requires a non-empty JSON array.';
+  end if;
+  if exists (
+    select 1 from jsonb_array_elements(p_rows) item
+    where nullif(btrim(item ->> 'id'), '') is null
+  ) then
+    raise exception 'Every equipment row requires a non-empty id.';
+  end if;
+
+  insert into public.equipment (
+    id, type, unit, name, tablet_assigned, tablet, assigned_to,
+    stays_charged, charged, status, notes, updated_at,
+    status_changed_at, status_changed_day
+  )
+  select
+    id, coalesce(type, 'Hostler'), coalesce(unit, ''), coalesce(name, ''),
+    coalesce(tablet_assigned, ''), coalesce(tablet, ''), coalesce(assigned_to, ''),
+    coalesce(stays_charged, 'pending'), coalesce(charged, 'pending'),
+    coalesce(status, 'operational'), coalesce(notes, ''), coalesce(updated_at, now()),
+    status_changed_at, status_changed_day
+  from jsonb_to_recordset(p_rows) as incoming(
+    id text, type text, unit text, name text, tablet_assigned text, tablet text,
+    assigned_to text, stays_charged text, charged text, status text, notes text,
+    updated_at timestamptz, status_changed_at timestamptz, status_changed_day text
+  )
+  on conflict (id) do update set
+    type = excluded.type, unit = excluded.unit, name = excluded.name,
+    tablet_assigned = excluded.tablet_assigned, tablet = excluded.tablet,
+    assigned_to = excluded.assigned_to, stays_charged = excluded.stays_charged,
+    charged = excluded.charged, status = excluded.status, notes = excluded.notes,
+    updated_at = excluded.updated_at, status_changed_at = excluded.status_changed_at,
+    status_changed_day = excluded.status_changed_day;
+
+  delete from public.equipment existing
+  where not exists (
+    select 1 from jsonb_array_elements(p_rows) item
+    where item ->> 'id' = existing.id
+  );
+  select count(*)::integer into row_count from public.equipment;
+  return row_count;
+end;
+$$;
+
+revoke all on function public.replace_conglobal_equipment(jsonb) from public;
+grant execute on function public.replace_conglobal_equipment(jsonb) to anon, authenticated;
 
 -- Replace every prior API policy on the unified tables with the shared-PIN policy.
 do $$
@@ -374,11 +478,12 @@ do $$
 declare
   app_pin_hash text := '$2a$12$JA1tL6fGNQ0kj.gfJTMrg.lv.pJ0vnWgWjqfVy/wIcFuOMIUouMku';
 begin
-  insert into public.conglobal_app_config (id, pin_hash, enabled, updated_at)
-  values (true, app_pin_hash, true, now())
+  insert into public.conglobal_app_config (id, pin_hash, enabled, schema_version, updated_at)
+  values (true, app_pin_hash, true, 2, now())
   on conflict (id) do update
   set pin_hash = excluded.pin_hash,
       enabled = true,
+      schema_version = 2,
       updated_at = now();
 end
 $$;

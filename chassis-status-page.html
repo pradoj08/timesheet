@@ -6633,6 +6633,11 @@ const CONGLOBAL_SUPABASE_PIN_KEY="conglobal-supabase-sync-pin";
 const CLOUD_KEYS={current:"current_session",archives:"archive_list",recycle:"archive_recycle_bin",calendar:"yard_check_calendar",forecastRequestHistory:"forecast_request_history",forecastArchives:"forecast_archive_list"};
 let cloudReady=false, cloudLoading=false, cloudSaveTimer=null, cloudLastSavedAt=null;
 
+function cloudHasPin(){
+  try{return Boolean((localStorage.getItem(CONGLOBAL_SUPABASE_PIN_KEY)||"").trim())}
+  catch(error){return false}
+}
+
 function setCloudStatus(text,mode="warn"){
   const el=$("cloudStatus"); if(!el)return;
   el.textContent=text; el.classList.remove("ok","warn","err"); el.classList.add(mode);
@@ -6649,6 +6654,44 @@ function cloudHeaders(extra={}){
     ...extra
   };
 }
+async function cloudRequest(path,options={}){
+  const controller=new AbortController();
+  const timeout=setTimeout(()=>controller.abort(),15000);
+  const requestOptions={...options,signal:controller.signal};
+  requestOptions.headers=cloudHeaders(options.headers||{});
+  try{
+    const res=await fetch(`${SUPABASE_URL}${path}`,requestOptions);
+    if(!res.ok){
+      let detail="";
+      try{
+        const body=await res.json();
+        detail=body.message||body.hint||body.details||JSON.stringify(body);
+      }catch(error){
+        detail=await res.text().catch(()=>"");
+      }
+      throw new Error(`Supabase request failed ${res.status}${detail?`: ${detail}`:""}`);
+    }
+    if(res.status===204) return null;
+    const contentType=res.headers.get("content-type")||"";
+    return contentType.includes("application/json")?res.json():res.text();
+  }catch(error){
+    if(error&&error.name==="AbortError") throw new Error("Supabase request timed out after 15 seconds.");
+    throw error;
+  }finally{
+    clearTimeout(timeout);
+  }
+}
+async function cloudSchemaStatus(){
+  const status=await cloudRequest("/rest/v1/rpc/conglobal_schema_status",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:"{}"
+  });
+  if(!status||status.compatible!==true||Number(status.schema_version)<2){
+    throw new Error("Supabase schema is outdated. Run 20260717_supabase_compatibility.sql.");
+  }
+  return status;
+}
 async function cloudUpsert(key,value,options={}){
   const payload=JSON.stringify({state_key:key,state_value:value,updated_at:new Date().toISOString()});
   const fetchOptions={
@@ -6658,35 +6701,31 @@ async function cloudUpsert(key,value,options={}){
   };
   if(options.keepalive && payload.length < 60000) fetchOptions.keepalive=true;
 
-  const res=await fetch(`${SUPABASE_URL}/rest/v1/chassis_reconciliation_state?on_conflict=state_key`,fetchOptions);
-  if(!res.ok){
-    const text=await res.text().catch(()=>"");
-    throw new Error(`Supabase upsert failed ${res.status}: ${text}`);
-  }
+  await cloudRequest("/rest/v1/chassis_reconciliation_state?on_conflict=state_key",fetchOptions);
   return true;
 }
 async function cloudGet(key){
-  const res=await fetch(`${SUPABASE_URL}/rest/v1/chassis_reconciliation_state?state_key=eq.${encodeURIComponent(key)}&select=state_value`,{
+  const rows=await cloudRequest(`/rest/v1/chassis_reconciliation_state?state_key=eq.${encodeURIComponent(key)}&select=state_value`,{
     method:"GET",
-    headers:cloudHeaders()
+    headers:{}
   });
-  if(!res.ok){
-    const text=await res.text().catch(()=>"");
-    throw new Error(`Supabase read failed ${res.status}: ${text}`);
-  }
-  const rows=await res.json();
   return rows && rows[0] ? rows[0].state_value : null;
 }
 async function testCloudConnection(){
   try{
+    if(!cloudHasPin()){
+      setCloudStatus("Cloud: enter PIN in Cloud Setup","warn");
+      return false;
+    }
     setCloudStatus("Cloud: testing","warn");
+    await cloudSchemaStatus();
     await cloudGet(CLOUD_KEYS.current);
     setCloudStatus("Cloud: connected","ok");
     cloudReady=true;
     return true;
   }catch(err){
     console.error("Cloud test failed",err);
-    setCloudStatus("Cloud: SQL/URL issue","err");
+    setCloudStatus("Cloud: run compatibility SQL","err");
     return false;
   }
 }
@@ -6716,10 +6755,15 @@ function applyCurrentSessionSnapshot(snap){
   return true;
 }
 function queueCloudSave(){
+  if(!cloudHasPin()) return;
   clearTimeout(cloudSaveTimer);
   cloudSaveTimer=setTimeout(saveCurrentSessionToCloud,350);
 }
 async function saveCurrentSessionToCloud(){
+  if(!cloudHasPin()){
+    setCloudStatus("Cloud: enter PIN in Cloud Setup","warn");
+    return false;
+  }
   try{
     await cloudUpsert(CLOUD_KEYS.current,makeCurrentSessionSnapshot(),{keepalive:true});
     cloudReady=true;

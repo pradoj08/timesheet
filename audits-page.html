@@ -3220,6 +3220,9 @@ function readConglobalSupabasePin() {
   try { return (localStorage.getItem(CONGLOBAL_SUPABASE_PIN_KEY) || '').trim(); }
   catch (error) { return ''; }
 }
+function conglobalSupabaseAvailable() {
+  return !!(supabaseClient && readConglobalSupabasePin());
+}
 function conglobalSupabaseFetch(input, init) {
   var options = Object.assign({}, init || {});
   var headers = new Headers(options.headers || {});
@@ -3231,11 +3234,9 @@ function conglobalSupabaseFetch(input, init) {
 var supabaseClient = null;
 try {
   if (window.supabase && typeof window.supabase.createClient === 'function') {
-    var initialPin = readConglobalSupabasePin();
     supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
       global: {
-        fetch: conglobalSupabaseFetch,
-        headers: initialPin ? { 'x-conglobal-sync-pin': initialPin } : {}
+        fetch: conglobalSupabaseFetch
       }
     });
   } else {
@@ -3245,6 +3246,24 @@ try {
   console.warn('Supabase client init failed. App will preview with local fallback.', err);
   supabaseClient = null;
 }
+
+async function verifyConglobalSupabaseSchema(){
+  if(!supabaseClient || !readConglobalSupabasePin()) return false;
+  var result = await supabaseClient.rpc('conglobal_schema_status');
+  if(result.error){
+    console.warn('Supabase compatibility check failed. Run 20260717_supabase_compatibility.sql.', result.error);
+    return false;
+  }
+  var status = result.data || {};
+  if(status.compatible !== true || Number(status.schema_version) < 2){
+    console.warn('Supabase schema version is outdated. Run 20260717_supabase_compatibility.sql.');
+    return false;
+  }
+  return true;
+}
+setTimeout(function(){ verifyConglobalSupabaseSchema().catch(function(error){
+  console.warn('Supabase compatibility check could not complete.', error);
+}); }, 0);
 
 setInterval(function(){
   if(document.hidden) return;
@@ -6800,45 +6819,25 @@ function saveEmployeesToCache(){
 }
 
 
-function dbMissingColumn(error){
-  var msg = String((error && (error.message || error.details || error.hint)) || error || '');
-  var m = msg.match(/Could not find the '([^']+)' column/i) || msg.match(/column ["']?([a-zA-Z0-9_]+)["']? does not exist/i);
-  return m ? m[1] : '';
-}
-
-function stripColumnFromRows(rows, column){
-  if(!column) return rows;
-  return (rows || []).map(function(row){
-    var copy = Object.assign({}, row);
-    delete copy[column];
-    return copy;
-  });
-}
-
 async function supabaseUpsertWithColumnFallback(tableName, rows, options){
-  if(!supabaseClient || !Array.isArray(rows)) return { error:null };
-  var payload = rows.slice();
+  if(!conglobalSupabaseAvailable() || !Array.isArray(rows)) return { error:null, skipped:true };
   var opts = options || {};
-  for(var tries=0; tries<30; tries++){
-    if(!payload.length) return { error:null };
-    if(!opts.onConflict || !Object.prototype.hasOwnProperty.call(payload[0], opts.onConflict)){
-      return { error:{ message:'Safe Supabase upsert for '+tableName+' requires a stable conflict key.' } };
-    }
-    var res = await supabaseClient.from(tableName).upsert(payload, { onConflict: opts.onConflict });
-    if(!res.error) return { error:null };
-    var missing = dbMissingColumn(res.error);
-    if(!missing) return { error: res.error };
-    if(missing === opts.onConflict){
-      return { error:{ message:'Required conflict column "'+opts.onConflict+'" is missing from '+tableName+'. No rows were deleted.' } };
-    }
-    console.warn('Supabase schema fallback: removing missing column "'+missing+'" from '+tableName+' payload.');
-    payload = stripColumnFromRows(payload, missing);
+  if(!rows.length) return { error:null };
+  if(!opts.onConflict || !Object.prototype.hasOwnProperty.call(rows[0], opts.onConflict)){
+    return { error:{ message:'Safe Supabase upsert for '+tableName+' requires a stable conflict key.' } };
   }
-  return { error: { message:'Supabase save failed after schema fallback retries.' } };
+  var res = await supabaseClient.from(tableName).upsert(rows, { onConflict: opts.onConflict });
+  if(res.error && /column|schema cache|could not find/i.test(String(res.error.message || res.error.details || ''))){
+    return { error:{
+      message:'Supabase schema is not compatible with '+tableName+'. Run 20260717_supabase_compatibility.sql before saving.',
+      details:res.error
+    } };
+  }
+  return { error:res.error || null };
 }
 
 async function supabaseReplaceByKeySafely(tableName, rows, key){
-  if(!supabaseClient || !Array.isArray(rows)) return { error:null };
+  if(!conglobalSupabaseAvailable() || !Array.isArray(rows)) return { error:null, skipped:true };
   if(!rows.length){
     return { error:{ message:'Refusing to replace '+tableName+' with an empty payload.' } };
   }
@@ -6846,21 +6845,17 @@ async function supabaseReplaceByKeySafely(tableName, rows, key){
     return { error:{ message:'Safe replacement for '+tableName+' requires "'+key+'" on every row.' } };
   }
 
-  var existing = await supabaseClient.from(tableName).select(key);
-  if(existing.error) return { error:existing.error };
-
-  var saved = await supabaseUpsertWithColumnFallback(tableName, rows, { onConflict:key });
-  if(saved.error) return saved;
-
-  var desired = new Set(rows.map(function(row){ return String(row[key]); }));
-  var stale = (existing.data || []).map(function(row){ return row && row[key]; }).filter(function(value){
-    return value !== undefined && value !== null && !desired.has(String(value));
-  });
-  if(stale.length){
-    var removed = await supabaseClient.from(tableName).delete().in(key, stale);
-    if(removed.error) return { error:removed.error };
+  if(tableName === 'equipment' && key === 'id'){
+    var atomic = await supabaseClient.rpc('replace_conglobal_equipment', { p_rows:rows });
+    if(atomic.error){
+      return { error:{
+        message:'Atomic equipment replacement is unavailable. Run 20260717_supabase_compatibility.sql; local equipment was preserved.',
+        details:atomic.error
+      } };
+    }
+    return { error:null, count:atomic.data };
   }
-  return { error:null };
+  return { error:{ message:'No atomic replacement function is configured for '+tableName+'.' } };
 }
 
 async function loadEmployees(){
@@ -6870,8 +6865,8 @@ async function loadEmployees(){
   }
 
   try{
-    if(typeof supabaseClient === 'undefined' || !supabaseClient){
-      console.warn('Supabase client unavailable; using cached employee data.');
+    if(typeof supabaseClient === 'undefined' || !conglobalSupabaseAvailable()){
+      console.info('Supabase PIN is not configured; using cached employee data.');
       if(!Array.isArray(employees) || !employees.length){
         if(!loadEmployeesFromCache()) seedData();
       }
@@ -6935,8 +6930,8 @@ async function saveEmployees(){
   saveEmployeesToCache();
 
   try{
-    if(typeof supabaseClient === 'undefined' || !supabaseClient){
-      console.warn('Supabase client unavailable; employee changes saved locally only.');
+    if(typeof supabaseClient === 'undefined' || !conglobalSupabaseAvailable()){
+      console.info('Supabase PIN is not configured; employee changes saved locally only.');
       return;
     }
 
@@ -7458,27 +7453,39 @@ async function startEquipmentRealtimeSync(){
   if(equipmentRealtimeChannel || equipmentPollTimer) return;
 
   try{
-    equipmentRealtimeChannel = supabaseClient
-      .channel('equipment-live-sync')
-      .on('postgres_changes',
-        { event: '*', schema: 'public', table: 'equipment' },
-        async function(){
-          if(!legacyEquipmentModulesEnabled || equipmentSyncBusy || equipmentEditCoolingDown()) return;
-          equipmentSyncBusy = true;
-          try{
-            await loadEquipment();
-            renderEquipment();
-            updateEquipmentStatusMeta();
-            renderEquipmentAttention();
-            refreshEquipmentAgingDisplay();
-          }finally{
-            equipmentSyncBusy = false;
+    var sessionResult = supabaseClient && supabaseClient.auth
+      ? await supabaseClient.auth.getSession()
+      : null;
+    var authenticatedSession = sessionResult && sessionResult.data && sessionResult.data.session;
+    if(authenticatedSession){
+      equipmentRealtimeChannel = supabaseClient
+        .channel('equipment-live-sync')
+        .on('postgres_changes',
+          { event: '*', schema: 'public', table: 'equipment' },
+          async function(){
+            if(!legacyEquipmentModulesEnabled || equipmentSyncBusy || equipmentEditCoolingDown()) return;
+            equipmentSyncBusy = true;
+            try{
+              await loadEquipment();
+              renderEquipment();
+              updateEquipmentStatusMeta();
+              renderEquipmentAttention();
+              refreshEquipmentAgingDisplay();
+            }finally{
+              equipmentSyncBusy = false;
+            }
           }
-        }
-      )
-      .subscribe();
+        )
+        .subscribe(function(status){
+          if(status === 'CHANNEL_ERROR' || status === 'TIMED_OUT'){
+            console.warn('Equipment Realtime unavailable; 15-second polling remains active.');
+          }
+        });
+    }else{
+      console.info('Equipment sync uses polling because this PIN-only client has no Supabase Auth session.');
+    }
   }catch(err){
-    console.error('Realtime equipment sync unavailable:', err);
+    console.warn('Realtime equipment sync unavailable; polling remains active.', err);
   }
 
   // Fallback for environments where realtime is not available
@@ -10544,7 +10551,7 @@ document.addEventListener('input',function(e){
   async function saveRemote(type, payload){
     var key = typeKey(type);
     try{
-      if(typeof supabaseClient === 'undefined' || !supabaseClient) return {ok:false, skipped:true};
+      if(typeof supabaseClient === 'undefined' || !conglobalSupabaseAvailable()) return {ok:false, skipped:true};
       var table = key === 'trainings' ? 'training_roster_lists' : 'audit_roster_lists';
       var res = await supabaseClient.from(table).upsert({
         id: key,
@@ -11048,7 +11055,7 @@ document.addEventListener('input',function(e){
 
   async function loadEmployeeRosterState(){
     try{
-      if(typeof supabaseClient === 'undefined' || !supabaseClient) return false;
+      if(typeof supabaseClient === 'undefined' || !conglobalSupabaseAvailable()) return false;
       var res = await supabaseClient.from('ppe_compliance_state').select('state,updated_at,last_edited_by').eq('id', EMPLOYEE_ROSTER_GLOBAL_ID).maybeSingle();
       if(res && res.error) return false;
       var list = res && res.data && res.data.state && res.data.state.employees;
