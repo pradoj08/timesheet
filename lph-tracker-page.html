@@ -534,6 +534,31 @@ input[type=range]::-webkit-slider-thumb{
 .slider-train{background:color-mix(in srgb, var(--thumb-color) 18%, transparent);border-color:color-mix(in srgb, var(--thumb-color) 35%, transparent);}
 .slider-train::-webkit-slider-thumb{background:var(--thumb-color);box-shadow:0 0 8px color-mix(in srgb, var(--thumb-color) 60%, transparent);}
 
+/* Input Menu slide typography: increase every slide's text by exactly 4px. */
+.input-menu-slide{font-size:17px;}
+.input-menu-slide :is(
+  .sb-cap,.coh-stat-label,.shift-badge,.profile-loaded-tag
+){font-size:12px;}
+.input-menu-slide :is(
+  .section-label,.sb-auto-inbounds,.sw-roster-sync,
+  .sb-train-source-units,.profile-btn,.unexpected-delay-btn
+){font-size:13px;}
+.input-menu-slide :is(
+  .ctrl-val,.time-lbl,.toggle-btn,.car-info,.note,.sb-card-title,
+  .sw-wraps,.sb-train-card-badge,.sb-train-source-select,
+  .profile-loaded-name,.profile-default-label,.unexpected-delay-chip
+){font-size:14px;}
+.input-menu-slide :is(
+  .ctrl-name,.total-delay,.name-field,.profile-select,
+  .sb-section input[type=time],.sw-time-box input[type=time],
+  .sb-train-card-title
+){font-size:15px;}
+.input-menu-slide :is(.coh-stat-val,.sw-shift-label){font-size:16px;}
+.input-menu-slide .sw-head-title{font-size:17px;}
+.input-menu-slide .sw-info-bar .note{font-size:14.5px;}
+.input-menu-slide [style*="font-size:9px"]{font-size:13px !important;}
+.input-menu-slide [style*="font-size:10px"]{font-size:14px !important;}
+
 
 /* ── MAIN CONTENT ─────────────────────────────────────────────────── */
 .main-content{
