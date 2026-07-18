@@ -403,6 +403,25 @@ input[type=range]::-webkit-slider-thumb{
   width:90px;flex-shrink:0;
 }
 .sb-train-card-badge:focus{outline:none;}
+.sb-train-source-row{
+  display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:7px;
+  margin:-1px 0 10px;
+}
+.sb-train-source-select{
+  width:100%;min-width:0;height:28px;padding:0 8px;
+  border:1px solid var(--border2);border-radius:5px;
+  background:var(--s3);color:var(--text);
+  font-family:var(--cond);font-size:10px;font-weight:700;
+  letter-spacing:.02em;cursor:pointer;
+}
+.sb-train-source-select:focus{outline:none;border-color:var(--thumb-color,var(--amber));box-shadow:0 0 0 2px color-mix(in srgb,var(--thumb-color,var(--amber)) 15%,transparent);}
+.sb-train-source-select option{background:var(--s2);color:var(--text);}
+.sb-train-source-units{
+  min-width:64px;color:var(--text3);font-family:var(--mono);
+  font-size:9px;font-weight:700;text-align:right;white-space:nowrap;
+}
+.sb-train-source-units.matched{color:var(--green);}
+.sb-train-source-units.missing{color:var(--red);}
 
 /* Outbound Commitments sub-cards */
 .commit-card{
@@ -3778,6 +3797,104 @@ var TRAINS={
   zlbho2:{defLabel:'ZLBHO-2',arrMin:0,arrMax:24,arrDef:18,uDef:120,color:'#185FA5'}
 };
 var trainNames={zlbho1:'ZLBHO',zpbho:'ZPBHO',zlbho2:'ZLBHO-2'};
+var EXCEL_INBOUND_STORAGE_KEY='rampBlockingControl.v2';
+var CHASSIS_FORECAST_STORAGE_KEY='chassisForecastReport';
+
+function sharedStorageCandidates(){
+  var stores=[];
+  try{ stores.push(window.localStorage); }catch(e){}
+  try{
+    if(window.parent&&window.parent!==window&&window.parent.localStorage&&!stores.includes(window.parent.localStorage)){
+      stores.push(window.parent.localStorage);
+    }
+  }catch(e){}
+  return stores;
+}
+
+function readSharedJson(key){
+  var stores=sharedStorageCandidates();
+  for(var i=0;i<stores.length;i+=1){
+    try{
+      var raw=stores[i].getItem(key);
+      if(raw){
+        var parsed=JSON.parse(raw);
+        if(parsed&&typeof parsed==='object') return parsed;
+      }
+    }catch(e){}
+  }
+  return {};
+}
+
+function normalizeSharedTrainName(value){
+  var compact=String(value||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+  var match=compact.match(/^(.*?)(\d+)$/);
+  return match ? match[1]+String(Number(match[2])) : compact;
+}
+
+function chassisForecastUnitsForInbound(trainName){
+  var trainKey=normalizeSharedTrainName(trainName);
+  if(!trainKey) return 0;
+  var forecast=readSharedJson(CHASSIS_FORECAST_STORAGE_KEY);
+  var units=Array.isArray(forecast.importedUnits)?forecast.importedUnits:[];
+  return units.reduce(function(total,unit){
+    var unitTrain=unit&&(unit.trainId||unit.train||unit.scheduledObjective||unit.scheduledObjectiveTrain);
+    return normalizeSharedTrainName(unitTrain)===trainKey ? total+1 : total;
+  },0);
+}
+
+function readExcelViewInbounds(){
+  var excelState=readSharedJson(EXCEL_INBOUND_STORAGE_KEY);
+  var plans=Array.isArray(excelState.inboundPlans)?excelState.inboundPlans:[];
+  var seen={};
+  return plans.reduce(function(list,plan){
+    var train=String(plan&&plan.train||'').trim();
+    var key=normalizeSharedTrainName(train);
+    if(!train||!key||key==='TRAIN'||seen[key]) return list;
+    seen[key]=true;
+    list.push({
+      train:train,
+      day:String(plan&&plan.day||'').trim(),
+      eta:String(plan&&plan.eta||'').trim(),
+      units:chassisForecastUnitsForInbound(train)
+    });
+    return list;
+  },[]);
+}
+
+function populateInboundSourceSelect(select,key){
+  if(!select) return;
+  var currentKey=normalizeSharedTrainName(trainNames[key]);
+  var inbounds=readExcelViewInbounds();
+  select.innerHTML='';
+  var prompt=document.createElement('option');
+  prompt.value='';
+  prompt.textContent=inbounds.length?'Select Excel View inbound':'No Excel View inbounds available';
+  select.appendChild(prompt);
+  inbounds.forEach(function(inbound,index){
+    var option=document.createElement('option');
+    option.value=String(index);
+    option.dataset.train=inbound.train;
+    option.dataset.units=String(inbound.units);
+    option.textContent=inbound.train+(inbound.day?' | '+inbound.day:'')+' | '+inbound.units+' units';
+    select.appendChild(option);
+    if(normalizeSharedTrainName(inbound.train)===currentKey) select.value=String(index);
+  });
+  select.disabled=!inbounds.length;
+  var status=select.parentElement&&select.parentElement.querySelector('.sb-train-source-units');
+  if(status){
+    var matched=select.value!==''?inbounds[Number(select.value)]:null;
+    status.textContent=matched?(matched.units+' units'):'Manual';
+    status.classList.toggle('matched',!!matched&&matched.units>0);
+    status.classList.toggle('missing',!!matched&&matched.units===0);
+  }
+}
+
+function refreshInboundSourceSelectors(syncUnits){
+  document.querySelectorAll('.sb-train-source-select[data-train-key]').forEach(function(select){
+    populateInboundSourceSelect(select,select.dataset.trainKey);
+    if(syncUnits&&select.value!=='') select.dispatchEvent(new Event('change'));
+  });
+}
 var UNITS_PER_CAR=2;
 // Empty-car loadout threshold: when inbound is available, keep loading only if
 // the remaining empty-car loadout is small enough to finish quickly.
@@ -4293,10 +4410,23 @@ function buildTrains(){
     titleLeft.appendChild(dot);titleLeft.appendChild(trainLabel);
     titleDiv.appendChild(titleLeft);titleDiv.appendChild(nameInput);
 
+    var sourceRow=document.createElement('div');
+    sourceRow.className='sb-train-source-row';
+    var sourceSelect=document.createElement('select');
+    sourceSelect.className='sb-train-source-select';
+    sourceSelect.dataset.trainKey=key;
+    sourceSelect.style.setProperty('--thumb-color',t.color);
+    sourceSelect.setAttribute('aria-label','Select an inbound from Excel View for Train '+(idx+1));
+    var sourceUnits=document.createElement('span');
+    sourceUnits.className='sb-train-source-units';
+    sourceUnits.textContent='Manual';
+    sourceRow.appendChild(sourceSelect);sourceRow.appendChild(sourceUnits);
+
     arrDiv.appendChild(arrHeader);arrDiv.appendChild(arrSlider);
     uDiv.appendChild(uHeader);uDiv.appendChild(uSlider);
-    div.appendChild(titleDiv);div.appendChild(arrDiv);div.appendChild(uDiv);
+    div.appendChild(titleDiv);div.appendChild(sourceRow);div.appendChild(arrDiv);div.appendChild(uDiv);
     wrap.appendChild(div);
+    populateInboundSourceSelect(sourceSelect,key);
 
     // Color this train's sliders to match its badge/dot color.
     [arrSlider,uSlider].forEach(function(sl){
@@ -4304,7 +4434,33 @@ function buildTrains(){
       sl.classList.add('slider-train');
     });
 
-    nameInput.addEventListener('input',function(e){trainNames[key]=e.target.value;simulate();});
+    nameInput.addEventListener('input',function(e){
+      trainNames[key]=e.target.value;
+      populateInboundSourceSelect(sourceSelect,key);
+      simulate();
+    });
+    sourceSelect.addEventListener('change',function(){
+      var option=sourceSelect.options[sourceSelect.selectedIndex];
+      if(!option||!option.dataset.train){
+        uSlider.step='5';
+        sourceUnits.textContent='Manual';
+        sourceUnits.classList.remove('matched','missing');
+        return;
+      }
+      var selectedTrain=option.dataset.train;
+      var selectedUnits=Math.max(0,Number(option.dataset.units)||0);
+      trainNames[key]=selectedTrain;
+      nameInput.value=selectedTrain;
+      uSlider.step='1';
+      uSlider.max=String(Math.max(300,Math.ceil(selectedUnits/5)*5));
+      uSlider.value=String(selectedUnits);
+      uVal.textContent=String(selectedUnits);
+      sourceUnits.textContent=selectedUnits?selectedUnits+' units':'No forecast match';
+      sourceUnits.classList.toggle('matched',selectedUnits>0);
+      sourceUnits.classList.toggle('missing',selectedUnits===0);
+      simulate();
+    });
+    sourceSelect.addEventListener('pointerdown',function(){populateInboundSourceSelect(sourceSelect,key);});
     arrSlider.addEventListener('input',function(e){
       document.getElementById('v-'+key+'-arr').textContent=fmtH(parseFloat(e.target.value));
       updateCoh();simulate();
@@ -7695,6 +7851,12 @@ document.getElementById('carryover-type').addEventListener('change',function(){s
 
 // PPE startup omitted from standalone main-dashboard build.
 initTime();buildTrains();simulate();
+window.addEventListener('focus',function(){refreshInboundSourceSelectors(true);});
+window.addEventListener('storage',function(event){
+  if(event.key===EXCEL_INBOUND_STORAGE_KEY||event.key===CHASSIS_FORECAST_STORAGE_KEY){
+    refreshInboundSourceSelectors(true);
+  }
+});
 
 function setFontSize(size){
   var scale = 0.80 + (size - 11) / (18 - 11) * 0.55;

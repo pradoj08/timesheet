@@ -3583,8 +3583,24 @@
       return { dateValue: dateValue, rows: rows, people: people, buckets: buckets, totals: totals };
     }
     function scenarioPayloadFromModel(model) {
+      const scenarioBreaks = ["lunch", "shiftChange", "craneRepair", "inboundBlocking", "upsFocus", "shiftEnd"].reduce(function(result, mode) {
+        result[mode] = readMarkerRanges(model.dateValue, mode).map(function(range) {
+          const startSlot = markerSlotFromPeriod(range.start);
+          const startOffset = startSlot / 2;
+          return {
+            type: mode,
+            label: markerModeLabel(mode),
+            start: Number(range.start),
+            startOffset: startOffset,
+            duration: Number(range.duration) || markerDefaults[mode] || 1,
+            endOffset: Math.min(24, startOffset + (Number(range.duration) || markerDefaults[mode] || 1))
+          };
+        });
+        return result;
+      }, {});
       return {
         dateValue: model.dateValue,
+        breaks: scenarioBreaks,
         totals: {
           lifts: Number(model.totals.lifts) || 0,
           laborHours: Number(model.totals.laborHours) || 0,

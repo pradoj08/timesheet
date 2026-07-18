@@ -1767,6 +1767,38 @@
       letter-spacing: .08em;
     }
 
+    .three-day-mode .staff-scheduled-time {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      align-items: center;
+      gap: 6px;
+      min-height: 38px;
+      padding: 4px 5px 5px;
+      border-top: 1px solid #3c5068;
+      border-bottom: 1px solid #0f1b2b;
+      background: #203144;
+    }
+
+    .three-day-mode .staff-scheduled-time input {
+      grid-row: 1;
+      width: 100%;
+      min-width: 0;
+      height: 28px;
+      padding: 2px 5px;
+      border: 1px solid #3f5876;
+      border-radius: 6px;
+      background: #101a2c;
+      color: #fff;
+      color-scheme: dark;
+      font: 900 11px/1 "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+      letter-spacing: .03em;
+      text-align: center;
+    }
+
+    .three-day-mode .staff-scheduled-time input:first-child { grid-column: 1; }
+    .three-day-mode .staff-scheduled-time input:last-child { grid-column: 2; }
+    .three-day-mode .staff-scheduled-time input:focus { border-color: #38bdf8; outline: 2px solid #38bdf8; outline-offset: -1px; }
+
     .three-day-mode .staff-pill-list {
       display: flex;
       flex-direction: column;
@@ -2428,6 +2460,7 @@
     const employeeDayStatusStorageKey = "conglobal-time-off-day-status-v1";
     const employeeDayAdditionsStorageKey = "conglobal-time-off-day-additions-v1";
     const employeePunchStorageKey = "conglobal-dayforce-punches-v1";
+    const scheduledShiftTimesStorageKey = "conglobal-scheduled-shift-times-v1";
     const yardCrewStorageKey = "conglobal-three-day-yard-crew-v1";
     const threeDayManpowerSummaryStorageKey = "conglobal-three-day-manpower-summary-v1";
     const yardCrewRoleLabels = {
@@ -3630,11 +3663,53 @@
       return `<button class="${classes.join(" ")}" type="button" data-status-name="${escapeHtml(employee.name)}" data-status-date="${escapeHtml(dateKey)}" title="${escapeHtml(title)}"><span>${escapeHtml(employee.name)}</span>${flagsHtml}</button>`;
     }
 
+    function readScheduledShiftTimes() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(scheduledShiftTimesStorageKey) || "{}");
+        return saved && typeof saved === "object" && !Array.isArray(saved) ? saved : {};
+      } catch (_) {
+        return {};
+      }
+    }
+
+    function scheduledShiftTimeValue(dateKey, shiftKey, field) {
+      const defaults = shiftKey === "second"
+        ? { start: "15:00", end: "03:00" }
+        : { start: "03:00", end: "15:00" };
+      const saved = readScheduledShiftTimes();
+      const value = saved[dateKey] && saved[dateKey][shiftKey] && saved[dateKey][shiftKey][field];
+      return /^\d{2}:\d{2}$/.test(String(value || "")) ? String(value) : defaults[field];
+    }
+
+    function scheduledShiftTimeHtml(dateKey, shiftKey) {
+      if (listRange !== "three-day") return "";
+      const shiftName = shiftKey === "second" ? "Night" : "Day";
+      return `
+        <div class="staff-scheduled-time" data-scheduled-shift="${escapeHtml(shiftKey)}" aria-label="${escapeHtml(shiftName)} scheduled work time">
+          <input type="time" step="600" value="${escapeHtml(scheduledShiftTimeValue(dateKey, shiftKey, "start"))}" data-scheduled-shift-time="start" data-scheduled-date="${escapeHtml(dateKey)}" data-scheduled-shift="${escapeHtml(shiftKey)}" aria-label="${escapeHtml(shiftName)} scheduled clock in" title="${escapeHtml(shiftName)} scheduled clock in">
+          <input type="time" step="600" value="${escapeHtml(scheduledShiftTimeValue(dateKey, shiftKey, "end"))}" data-scheduled-shift-time="end" data-scheduled-date="${escapeHtml(dateKey)}" data-scheduled-shift="${escapeHtml(shiftKey)}" aria-label="${escapeHtml(shiftName)} scheduled clock out" title="${escapeHtml(shiftName)} scheduled clock out">
+        </div>
+      `;
+    }
+
+    function saveScheduledShiftTime(input) {
+      const dateKey = input.dataset.scheduledDate;
+      const shiftKey = input.dataset.scheduledShift;
+      const field = input.dataset.scheduledShiftTime;
+      if (!dateKey || !["first", "second"].includes(shiftKey) || !["start", "end"].includes(field) || !/^\d{2}:\d{2}$/.test(input.value)) return;
+      const saved = readScheduledShiftTimes();
+      if (!saved[dateKey] || typeof saved[dateKey] !== "object") saved[dateKey] = {};
+      if (!saved[dateKey][shiftKey] || typeof saved[dateKey][shiftKey] !== "object") saved[dateKey][shiftKey] = {};
+      saved[dateKey][shiftKey][field] = input.value;
+      localStorage.setItem(scheduledShiftTimesStorageKey, JSON.stringify(saved));
+    }
+
     function shiftStaffHtml(label, employees, dateKey, shiftKey, extraClass = "") {
       const displayEmployees = orderedStaffForDisplay(employees);
       return `
         <section class="staff-shift${extraClass ? ` ${extraClass}` : ""}">
           <h3 role="button" tabindex="0" data-off-schedule-date="${escapeHtml(dateKey)}" data-off-schedule-shift="${escapeHtml(shiftKey)}" title="Show employees not scheduled for ${escapeHtml(label)} shift"><span>${escapeHtml(label)}</span></h3>
+          ${scheduledShiftTimeHtml(dateKey, shiftKey)}
           <div class="staff-pill-list">
             ${displayEmployees.length ? displayEmployees.map(({ employee, bottomHug }) => staffPillHtml(employee, dateKey, bottomHug ? "bottom-hug" : "")).join("") : '<span class="staff-empty">No one scheduled</span>'}
           </div>
@@ -4229,6 +4304,12 @@
       openDayEditor(cell.dataset.listDate);
     });
 
+    document.getElementById("listView").addEventListener("change", (event) => {
+      const scheduledTimeInput = event.target.closest("[data-scheduled-shift-time]");
+      if (!scheduledTimeInput) return;
+      saveScheduledShiftTime(scheduledTimeInput);
+    });
+
     document.getElementById("listView").addEventListener("keydown", (event) => {
       if (!['Enter', ' '].includes(event.key)) return;
       const projectionChoice = event.target.closest("[data-yard-projection-shift]");
@@ -4491,7 +4572,7 @@
     });
 
     window.addEventListener("storage", (event) => {
-      if ([timeOffStorageKey, rosterStorageKey, rosterAdditionsKey, employeeBankStorageKey, employeeDayStatusStorageKey, employeeDayAdditionsStorageKey, employeePunchStorageKey].includes(event.key)) {
+      if ([timeOffStorageKey, rosterStorageKey, rosterAdditionsKey, employeeBankStorageKey, employeeDayStatusStorageKey, employeeDayAdditionsStorageKey, employeePunchStorageKey, scheduledShiftTimesStorageKey].includes(event.key)) {
         populateEditorOptions();
         renderCalendar();
         if (event.key === employeePunchStorageKey && document.getElementById("employeeStatusBackdrop").classList.contains("open")) syncEmployeeQuickTimes();

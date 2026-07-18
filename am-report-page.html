@@ -887,10 +887,11 @@ body{
   box-shadow:0 16px 42px rgba(15,23,42,.10);
   overflow-x:auto;
 }
+#am-report > h1{display:none !important}
 .sheet-heading-row{
   display:flex;
   align-items:center;
-  justify-content:space-between;
+  justify-content:center;
   gap:12px;
   min-height:30px;
   margin:0 0 7px;
@@ -905,9 +906,9 @@ body{
 .sheet-heading-actions{
   display:flex;
   align-items:center;
-  justify-content:flex-end;
+  justify-content:center;
   gap:6px;
-  margin-left:auto;
+  margin-left:0;
 }
 .sheet-heading-row h1{
   margin:0 !important;
@@ -1592,7 +1593,7 @@ body{
   #am-report{padding:18px 12px 24px;border-radius:12px}
   .sheet-save-status{width:100%;margin-left:0}
   .sheet-tool-divider{display:none}
-  .am-weather-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .am-weather-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
 }
 @media print{
   html,body{background:#fff}
@@ -2635,10 +2636,12 @@ tags will be replaced.-->
   checklistButton.textContent = "Checklist";
   checklistButton.title = "Open Checklist";
   if (title) {
-    title.before(headingRow);
-    headingCopy.append(title);
-    if (REPORT_DAY_OFFSET === 0) headingActions.append(massExportButton, todayRosterButton, auditsButton, checklistButton);
-    headingRow.append(headingCopy, headingActions);
+    if (REPORT_DAY_OFFSET === 0) {
+      title.before(headingRow);
+      headingActions.append(massExportButton, todayRosterButton, auditsButton, checklistButton);
+      headingRow.append(headingActions);
+    }
+    title.remove();
   }
 
   const todayRosterPopup = document.createElement("section");
@@ -2708,11 +2711,6 @@ tags will be replaced.-->
   table.before(toolbar);
   table.before(gridWrap);
   gridWrap.appendChild(table);
-
-  const help = document.createElement("div");
-  help.className = "sheet-help";
-  help.textContent = "Drag or Shift-click to select a range, then right-click the highlighted cells to merge them. Copy and paste tab-separated cells, align cells, and add dropdown options. Formula cells recalculate automatically.";
-  gridWrap.after(help);
 
   const cellContextMenu = document.createElement("div");
   cellContextMenu.className = "sheet-cell-context-menu";

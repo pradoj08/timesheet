@@ -53,7 +53,48 @@ function configureAmReportSheet(html, offset, label) {
   return html.replace(/<head\b[^>]*>/i, match => match + "\n" + config);
 }
 
-function buildAmReportWorkspace(sheetHtml) {
+function configureCurrentDayRosterEmbed(html) {
+  const styles = `<style id="am-current-roster-embed-styles">
+html,body{min-height:0!important;margin:0!important;background:#f8fafc!important;overflow:auto!important}
+body{padding:0!important}
+.calendar-shell{width:min(470px,100%)!important;min-height:0!important;margin:0 auto!important;padding:0!important;border:0!important;border-radius:0!important;background:#fff!important;box-shadow:none!important;overflow:visible!important}
+.calendar-toolbar,#calendarView,#yardCrewPanel{display:none!important}
+#listView{display:block!important;padding:0!important}
+#listView .staff-week{display:none!important;margin:0!important}
+#listView .staff-week:has(.staff-day.today){display:block!important}
+#listView .staff-week-head{display:none!important}
+#listView .staff-week-grid{display:block!important}
+#listView .staff-day{display:none!important}
+#listView .staff-day.today{display:flex!important;width:100%!important;min-height:0!important;border:2px solid #334e7d!important}
+#employeeStatusBackdrop{display:none!important}
+</style>`;
+  const bridge = `<script id="am-current-roster-embed-bridge">
+(() => {
+  const modalSelectors = ["#dayEditorBackdrop", "#employeeBankBackdrop", "#employeeStatusBackdrop", "#offScheduleBackdrop"];
+  const modalOpen = element => Boolean(element && (element.classList.contains("open") || element.getAttribute("aria-hidden") === "false"));
+  const publishState = () => {
+    const expanded = modalSelectors.some(selector => modalOpen(document.querySelector(selector)));
+    window.parent.postMessage({ type:"conglobal-current-roster-modal-state", expanded }, "*");
+  };
+  const start = () => {
+    if (typeof setViewMode === "function") setViewMode("list", "three-day");
+    modalSelectors.forEach(selector => {
+      const element = document.querySelector(selector);
+      if (element && typeof MutationObserver === "function") {
+        new MutationObserver(publishState).observe(element, { attributes:true, attributeFilter:["class", "aria-hidden"] });
+      }
+    });
+    publishState();
+    window.parent.postMessage({ type:"conglobal-current-roster-ready" }, "*");
+  };
+  if (document.readyState === "loading") window.addEventListener("DOMContentLoaded", start, { once:true });
+  else start();
+})();
+</script>`;
+  return html.replace(/<\/head>/i, styles + "\n</head>").replace(/<\/body>/i, bridge + "\n</body>");
+}
+
+function buildAmReportWorkspace(sheetHtml, rosterPageHtml) {
   const dayDefinitions = [
     { offset:-1, label:"Yesterday" },
     { offset:0, label:"Today" },
@@ -63,6 +104,9 @@ function buildAmReportWorkspace(sheetHtml) {
     html:configureAmReportSheet(sheetHtml, day.offset, day.label),
   }));
   const dayPayload = escapeScriptString(dayDefinitions);
+  const configuredRosterPage = configureCurrentDayRosterEmbed(rosterPageHtml);
+  validatePageScripts("amCurrentDayRoster", configuredRosterPage);
+  const rosterPayload = escapeScriptString(configuredRosterPage);
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -80,7 +124,7 @@ function buildAmReportWorkspace(sheetHtml) {
   .am-day-heading strong{font-size:15px;font-weight:900;letter-spacing:.08em;text-transform:uppercase}
   .am-day-heading span{color:#dbeafe;font-size:13px;font-weight:800}
   .am-day-frame{display:block;width:100%;min-width:0;height:900px;border:0;background:#eef2f6;overflow:hidden}
-  .am-roster-float{position:fixed;z-index:1000;top:76px;left:50%;width:min(470px,calc(100vw - 24px));max-height:calc(100vh - 92px);transform:translateX(-50%);overflow:hidden;border:2px solid #22344d;border-radius:8px;background:#f8fafc;box-shadow:0 20px 55px rgba(15,23,42,.38)}
+  .am-roster-float{position:fixed;z-index:1000;top:76px;left:50%;width:min(500px,calc(100vw - 24px));max-height:calc(100vh - 92px);transform:translateX(-50%);overflow:hidden;border:2px solid #22344d;border-radius:8px;background:#f8fafc;box-shadow:0 20px 55px rgba(15,23,42,.38)}
   .am-roster-float[hidden]{display:none!important}
   .am-roster-float.dragging{opacity:.96;user-select:none}
   .am-roster-titlebar{display:flex;align-items:center;justify-content:space-between;min-height:36px;padding:5px 7px 5px 12px;background:#0f1b31;color:#fff;cursor:move;touch-action:none}
@@ -98,8 +142,9 @@ function buildAmReportWorkspace(sheetHtml) {
   .am-roster-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:850}.am-roster-flags{display:inline-flex;align-items:center;gap:3px;font-size:9px;font-weight:950;white-space:nowrap}.am-roster-unassigned{color:#dc2626}
   .am-roster-total{display:flex;align-items:center;justify-content:space-between;min-height:28px;padding:5px 8px;border-top:1px solid #263950;background:#ffe1e5;color:#b10e2d;font-size:13px;font-weight:950}
   .am-roster-save-note{padding:6px 8px;background:#f8fafc;color:#52617a;font-size:10px;font-weight:700;text-align:center}
+  .am-roster-exact-frame{display:block;width:100%;height:min(470px,calc(100vh - 132px));border:0;background:#f8fafc}
   .am-quick-actions{position:fixed;z-index:1010;width:min(390px,calc(100vw - 16px));overflow:hidden;border:1px solid #9aa9bc;border-radius:5px;background:#f8fafc;box-shadow:0 16px 40px rgba(15,23,42,.38)}.am-quick-actions[hidden]{display:none!important}
-  .am-quick-titlebar{display:flex;align-items:center;justify-content:space-between;min-height:34px;padding:5px 7px 5px 10px;background:#0f1b31;color:#fff}.am-quick-titlebar strong{font-size:12px;font-weight:900}.am-quick-close{width:25px;height:24px;padding:0;border:1px solid #64748b;border-radius:3px;background:#16263d;color:#fff;font-size:18px;font-weight:900;line-height:1;cursor:pointer}
+  .am-quick-titlebar{display:flex;align-items:center;justify-content:space-between;min-height:34px;padding:5px 7px 5px 10px;background:#0f1b31;color:#fff;cursor:move;touch-action:none}.am-quick-titlebar strong{font-size:12px;font-weight:900}.am-quick-close{width:25px;height:24px;padding:0;border:1px solid #64748b;border-radius:3px;background:#16263d;color:#fff;font-size:18px;font-weight:900;line-height:1;cursor:pointer}
   .am-quick-name{padding:8px 10px 6px;background:#fff;color:#172033;font-size:13px;font-weight:900}.am-quick-columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;padding:0 7px 7px}.am-quick-column{overflow:hidden;border:1px solid #c4cfdd;border-radius:4px;background:#f8fafc}.am-quick-column h3{display:flex;align-items:center;justify-content:space-between;margin:0;padding:6px 7px;background:#edf2f7;color:#425168;font-size:10px;font-weight:950;letter-spacing:.05em;text-transform:uppercase}.am-quick-column h3 span{font-size:8px;color:#718096}
   .am-quick-action{display:flex;width:100%;min-height:29px;align-items:center;justify-content:space-between;padding:5px 8px;border:0;border-top:1px solid #cbd5e1;background:#fff;color:#172033;font:900 12px/1.1 Calibri,Arial,sans-serif;text-align:left;cursor:pointer}.am-quick-action span{font-size:9px}.am-quick-action:hover:not(:disabled),.am-quick-action:focus-visible:not(:disabled){outline:2px solid #2563eb;outline-offset:-2px}.am-quick-action.active{box-shadow:inset 0 0 0 2px #d69e00}.am-quick-action:disabled{background:#f1f5f9;color:#9aa5b5;cursor:not-allowed}
   .am-quick-action.here,.am-quick-action.flipline{background:#d6f7df;color:#126430}.am-quick-action.sic,.am-quick-action.calledoff,.am-quick-action.ncns{background:#ffe0e4;color:#b42336}.am-quick-action.vac{background:#f1e6ff;color:#6d28d9}.am-quick-action.out,.am-quick-action.unknown{background:#dfe7f0;color:#34445c}.am-quick-action.bnsf{background:#ffe5ea;color:#b42336}.am-quick-action.hostler,.am-quick-action.traineehostler{background:#fff2c6;color:#8a5100}.am-quick-action.groundman,.am-quick-action.traineegroundman{background:#ffead5;color:#9a3412}.am-quick-action.flipoperator{background:#eee5ff;color:#6d28d9}.am-quick-action.crane1,.am-quick-action.crane2{background:#dbeafe;color:#1d4ed8}.am-quick-action.clear{background:#f8fafc;color:#52617a}
@@ -112,11 +157,11 @@ function buildAmReportWorkspace(sheetHtml) {
 <main class="am-three-day-workspace" aria-label="Yesterday, today, and tomorrow AM Reports"></main>
 <section class="am-roster-float" id="amRosterFloat" role="dialog" aria-modal="false" aria-labelledby="amRosterTitle" hidden>
   <div class="am-roster-titlebar" id="amRosterHandle"><strong id="amRosterTitle">Current Day Roster</strong><button class="am-roster-close" id="amRosterClose" type="button" aria-label="Close roster">&times;</button></div>
-  <div class="am-roster-date"><strong id="amRosterWeekday"></strong><em>Today</em><b id="amRosterDayNumber"></b></div>
-  <div class="am-roster-body"><div class="am-roster-columns" id="amRosterColumns"></div><div class="am-roster-save-note" id="amRosterNote">Changes save immediately and are shared with Timesheet.</div></div>
+  <iframe class="am-roster-exact-frame" id="inlineToolFrame" title="Current day 3 Day roster"></iframe>
+  <div class="am-roster-body" hidden aria-hidden="true"><div class="am-roster-date"><strong id="amRosterWeekday"></strong><em>Today</em><b id="amRosterDayNumber"></b></div><div class="am-roster-columns" id="amRosterColumns"></div><div class="am-roster-save-note" id="amRosterNote">Changes save immediately and are shared with Timesheet.</div></div>
 </section>
 <section class="am-quick-actions" id="amQuickActions" role="dialog" aria-modal="false" aria-labelledby="amQuickTitle" hidden>
-  <div class="am-quick-titlebar"><strong id="amQuickTitle">Quick Actions</strong><button class="am-quick-close" id="amQuickClose" type="button" aria-label="Close quick actions">&times;</button></div>
+  <div class="am-quick-titlebar" id="amQuickHandle"><strong id="amQuickTitle">Quick Actions</strong><button class="am-quick-close" id="amQuickClose" type="button" aria-label="Close quick actions">&times;</button></div>
   <div class="am-quick-name" id="amQuickName"></div>
   <div class="am-quick-columns"><section class="am-quick-column"><h3>Status <span>Selected day</span></h3><div id="amQuickStatuses"></div></section><section class="am-quick-column"><h3>Today's role <span id="amQuickRoleShift"></span></h3><div id="amQuickRoles"></div></section></div>
   <div class="am-quick-times" aria-label="Employee clock times">
@@ -128,16 +173,19 @@ function buildAmReportWorkspace(sheetHtml) {
 <script>
 (() => {
   const days = ${dayPayload};
+  const rosterPageHtml = ${rosterPayload};
   const workspace = document.querySelector(".am-three-day-workspace");
   const frames = [];
   const rosterFloat = document.getElementById("amRosterFloat");
+  const rosterFrame = document.getElementById("inlineToolFrame");
+  rosterFrame.srcdoc = rosterPageHtml;
   const rosterColumns = document.getElementById("amRosterColumns");
   const rosterNote = document.getElementById("amRosterNote");
   const rosterDefaults = {
     first:["Branford Alton","Castruita Armando","Frazer Dacoyea","Citizen Dante","Towler Demetrius","Stewart Dexter","Gardner Dorrean","Thomas Henry","Brown James","Herrera Jose","Player Keyston","Hickman Makia","Dever Mikey","Wanza Myles","Romero Nelson","McDaniel Charles","Nava Ramon","Tran Tyler"],
     second:["Carruthers Timothy","Caceres Virula Victor","Keme Aweri Jr.","Hosey Kevin","Brown Brandy","Mejia Aaron","Bookman Derrell","Hopkins Alexander","Tingle Jason","Contreras Marco","Benavides Robert","Urtado Ernest","Johnson Messiah","Gilder Rufus II","Echendu Chimenierm","Delgado Jose"]
   };
-  const statusOptions = [["here","Here","✓"],["flipline","Flip Line","FL"],["sic","Sick","S"],["vac","Vacation","V"],["calledoff","Called Off","CO"],["out","Out","O"],["ncns","NCNS","NC"],["bnsf","BNSF","BN"],["unknown","Unknown","??"],["clear","Clear Selection","—"]];
+  const statusOptions = [["here","Here","✓"],["sic","Sick","S"],["vac","Vacation","V"],["calledoff","Called Off","CO"],["out","Out","O"],["ncns","NCNS","NC"],["bnsf","BNSF","BN"],["unknown","Unknown","??"],["clear","Clear Selection","—"]];
   const roleOptions = [["hostler","Hostler","H"],["groundman","Groundman","G"],["traineehostler","Trainee Hostler","TH"],["traineegroundman","Trainee Groundman","TG"],["flipoperator","Flip Operator","FO"],["crane1","Crane 1","C1"],["crane2","Crane 2","C2"],["clear","Clear Role","—"]];
   const readJson = (key, fallback) => {
     try { const value = JSON.parse(localStorage.getItem(key) || "null"); return value == null ? fallback : value; }
@@ -388,8 +436,64 @@ function buildAmReportWorkspace(sheetHtml) {
     syncQuickActions();
     if (quickStatusChosen && quickRoleChosen) closeQuickActions();
   };
-  const openRoster = () => { renderRoster(); rosterFloat.hidden = false; };
-  const closeRoster = () => { closeQuickActions(); rosterFloat.hidden = true; };
+  const openRoster = () => {
+    renderRoster();
+    rosterFloat.hidden = false;
+    requestAnimationFrame(fitRosterFrame);
+    setTimeout(fitRosterFrame,120);
+  };
+  const closeRoster = () => { rosterFloat.hidden = true; };
+  const fitRosterFrame = () => {
+    try {
+      const frameDocument = rosterFrame.contentDocument;
+      const todayCard = frameDocument && frameDocument.querySelector("#listView .staff-day.today");
+      if (!todayCard) return;
+      const available = Math.max(260,window.innerHeight - 132);
+      const measuredHeight = Math.max(
+        420,
+        todayCard.offsetHeight || 0,
+        todayCard.scrollHeight || 0,
+        Math.ceil(todayCard.getBoundingClientRect().height || 0),
+        frameDocument.body ? frameDocument.body.scrollHeight : 0
+      );
+      rosterFrame.style.height = Math.min(available,measuredHeight + 2) + "px";
+    } catch (_) {}
+  };
+  const bindRosterFrame = () => {
+    try {
+      const frameDocument = rosterFrame.contentDocument;
+      if (!frameDocument || frameDocument.documentElement.dataset.amFloatingRosterBound === "true") return;
+      frameDocument.documentElement.dataset.amFloatingRosterBound = "true";
+      frameDocument.addEventListener("click", event => {
+        const target = event.target;
+        const person = target && target.closest ? target.closest("[data-status-name][data-status-date]") : null;
+        if (!person) return;
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        const shiftSection = person.closest(".staff-shift");
+        const shiftLabel = String(shiftSection && shiftSection.querySelector("h3") ? shiftSection.querySelector("h3").textContent : "").trim().toLowerCase();
+        const shift = shiftLabel.includes("night") ? "second" : "first";
+        const personRect = person.getBoundingClientRect();
+        const frameRect = rosterFrame.getBoundingClientRect();
+        const anchor = { getBoundingClientRect:() => ({
+          left:frameRect.left + personRect.left,
+          right:frameRect.left + personRect.right,
+          top:frameRect.top + personRect.top,
+          bottom:frameRect.top + personRect.bottom,
+          width:personRect.width,
+          height:personRect.height
+        }) };
+        openQuickActions(person.dataset.statusName,shift,anchor);
+      },true);
+      const list = frameDocument.getElementById("listView");
+      if (list && typeof MutationObserver === "function") new MutationObserver(fitRosterFrame).observe(list,{childList:true,subtree:true});
+      requestAnimationFrame(fitRosterFrame);
+      setTimeout(fitRosterFrame,120);
+      setTimeout(fitRosterFrame,400);
+    } catch (_) {}
+  };
+  rosterFrame.addEventListener("load",bindRosterFrame);
+  setTimeout(bindRosterFrame,0);
   rosterColumns.addEventListener("click", event => {
     const person = event.target.closest("[data-roster-name]");
     if (person) openQuickActions(person.dataset.rosterName,person.dataset.rosterShift,person);
@@ -444,7 +548,6 @@ function buildAmReportWorkspace(sheetHtml) {
     let drag = null;
     handle.addEventListener("pointerdown", event => {
       if (event.target.closest("button")) return;
-      closeQuickActions();
       const rect = rosterFloat.getBoundingClientRect();
       rosterFloat.style.left = rect.left + "px";
       rosterFloat.style.top = rect.top + "px";
@@ -461,6 +564,26 @@ function buildAmReportWorkspace(sheetHtml) {
       rosterFloat.style.top = top + "px";
     });
     const end = event => { if (!drag) return; drag = null; rosterFloat.classList.remove("dragging"); try { handle.releasePointerCapture(event.pointerId); } catch (_) {} };
+    handle.addEventListener("pointerup",end);
+    handle.addEventListener("pointercancel",end);
+  })();
+  (() => {
+    const handle = document.getElementById("amQuickHandle");
+    let drag = null;
+    handle.addEventListener("pointerdown", event => {
+      if (event.target.closest("button")) return;
+      const rect = quickActions.getBoundingClientRect();
+      drag = { x:event.clientX - rect.left, y:event.clientY - rect.top };
+      handle.setPointerCapture(event.pointerId);
+    });
+    handle.addEventListener("pointermove", event => {
+      if (!drag) return;
+      const left = Math.max(4,Math.min(window.innerWidth - quickActions.offsetWidth - 4,event.clientX - drag.x));
+      const top = Math.max(4,Math.min(window.innerHeight - 34,event.clientY - drag.y));
+      quickActions.style.left = left + "px";
+      quickActions.style.top = top + "px";
+    });
+    const end = event => { if (!drag) return; drag = null; try { handle.releasePointerCapture(event.pointerId); } catch (_) {} };
     handle.addEventListener("pointerup",end);
     handle.addEventListener("pointercancel",end);
   })();
@@ -531,6 +654,8 @@ function buildAmReportWorkspace(sheetHtml) {
     frames.forEach(clearFrameSelection);
   });
   window.addEventListener("message", event => {
+    if (event.source === rosterFrame.contentWindow && event.data && event.data.type === "conglobal-current-roster-modal-state") return;
+    if (event.source === rosterFrame.contentWindow && event.data && event.data.type === "conglobal-current-roster-ready") return;
     if (!frames.some(frame => frame.contentWindow === event.source)) return;
     if (event.data && event.data.type === "conglobal-open-todays-roster") {
       if (rosterFloat.hidden) openRoster(); else closeRoster();
@@ -585,6 +710,7 @@ function syncPerformanceIntoBilling() {
 syncPerformanceIntoBilling();
 
 let output = fs.readFileSync(workbookPath, "utf8");
+const amRosterPageHtml = inlineYardCrewSprites(stripPageSwitcher(fs.readFileSync(pages.timeOff, "utf8")));
 
 for (const [pageId, sourcePath] of Object.entries(pages)) {
   let pageHtml = stripPageSwitcher(fs.readFileSync(sourcePath, "utf8"));
@@ -592,7 +718,7 @@ for (const [pageId, sourcePath] of Object.entries(pages)) {
   if (pageId === "timeOff") pageHtml = inlineYardCrewSprites(pageHtml);
   if (pageId === "amReport") {
     validatePageScripts("amReportSheet", pageHtml);
-    pageHtml = buildAmReportWorkspace(pageHtml);
+    pageHtml = buildAmReportWorkspace(pageHtml, amRosterPageHtml);
   }
   validatePageScripts(pageId, pageHtml);
   const entry = new RegExp(
