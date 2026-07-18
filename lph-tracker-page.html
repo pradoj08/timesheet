@@ -77,7 +77,7 @@ html, body{height:100%;min-height:100%;background:var(--bg);}
 .profile-default-check{accent-color:var(--amber);width:13px;height:13px;cursor:pointer;}
 
 /* Profile save modal */
-.pm-overlay{display:none;position:fixed;inset:0;z-index:1100;background:rgba(0,0,0,0.75);backdrop-filter:blur(5px);align-items:center;justify-content:center;padding:24px;}
+.pm-overlay{display:none;position:fixed;inset:0;z-index:2600;background:rgba(0,0,0,0.75);backdrop-filter:blur(5px);align-items:center;justify-content:center;padding:24px;}
 .pm-overlay.open{display:flex;}
 .pm-modal{background:var(--surface);border:1px solid var(--border2);border-radius:12px;width:100%;max-width:400px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.5);animation:ho-in 0.18s ease;}
 .pm-head{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border);background:var(--s2);}
@@ -200,6 +200,82 @@ input[type=time]:focus{outline:none;}
   width:100%;
 }
 
+body.input-menu-ready .app-body{grid-template-columns:1fr;}
+body.input-menu-ready .sidebar{display:none;}
+
+/* Floating, swipeable input menu */
+.input-menu-overlay{
+  position:fixed;inset:0;z-index:2400;display:flex;align-items:center;justify-content:center;
+  padding:18px;background:rgba(2,6,14,.78);backdrop-filter:blur(7px);
+  opacity:0;pointer-events:none;transition:opacity .18s ease;
+}
+.input-menu-overlay.open{opacity:1;pointer-events:auto;}
+.input-menu-dialog{
+  width:min(460px,96vw);height:min(760px,92vh);display:flex;flex-direction:column;
+  background:var(--surface);border:1px solid var(--border3);border-radius:14px;
+  box-shadow:0 28px 90px rgba(0,0,0,.62),0 0 34px rgba(245,158,11,.09);
+  overflow:hidden;transform:translateY(14px) scale(.985);transition:transform .2s ease;
+}
+.input-menu-overlay.open .input-menu-dialog{transform:translateY(0) scale(1);}
+.input-menu-head{
+  display:flex;align-items:center;gap:10px;min-height:54px;padding:10px 13px 10px 16px;
+  background:linear-gradient(90deg,rgba(245,158,11,.12),rgba(18,18,27,.96) 42%);
+  border-bottom:1px solid var(--border2);
+}
+.input-menu-kicker{font:700 8px/1 var(--mono);letter-spacing:.16em;color:var(--amber);text-transform:uppercase;margin-bottom:4px;}
+.input-menu-title{font:700 17px/1 var(--cond);letter-spacing:.08em;color:var(--text);text-transform:uppercase;}
+.input-menu-count{margin-left:auto;font:700 10px/1 var(--mono);color:var(--text3);white-space:nowrap;}
+.input-menu-close{
+  width:31px;height:31px;display:grid;place-items:center;border-radius:7px;border:1px solid var(--border2);
+  background:var(--s3);color:var(--text);font-size:17px;line-height:1;cursor:pointer;
+}
+.input-menu-close:hover{border-color:var(--amber);color:var(--amber);}
+.input-menu-viewport{flex:1;min-height:0;overflow:hidden;touch-action:pan-y;}
+.input-menu-track{height:100%;display:flex;transition:transform .28s cubic-bezier(.22,.8,.25,1);will-change:transform;}
+.input-menu-slide{
+  flex:0 0 100%;width:100%;height:100%;padding:14px;overflow-y:auto;overscroll-behavior:contain;
+  scrollbar-width:thin;scrollbar-color:var(--border3) transparent;
+}
+.input-menu-slide::-webkit-scrollbar{width:5px;}
+.input-menu-slide::-webkit-scrollbar-thumb{background:var(--border3);border-radius:6px;}
+.input-menu-slide > .sb-card{margin:0;min-height:100%;}
+.input-menu-slide > .sb-card.input-menu-compact{min-height:auto;}
+.input-menu-foot{
+  min-height:58px;padding:9px 12px;display:grid;grid-template-columns:82px 1fr 82px;align-items:center;gap:10px;
+  border-top:1px solid var(--border2);background:var(--s2);
+}
+.input-menu-nav{
+  height:36px;border:1px solid var(--border2);border-radius:7px;background:var(--s3);color:var(--text2);
+  font:700 10px/1 var(--mono);letter-spacing:.06em;text-transform:uppercase;cursor:pointer;
+}
+.input-menu-nav:hover:not(:disabled){border-color:var(--amber);color:var(--amber);}
+.input-menu-nav:disabled{opacity:.28;cursor:not-allowed;}
+.input-menu-dots{display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;}
+.input-menu-dot{width:7px;height:7px;padding:0;border:0;border-radius:50%;background:var(--border3);cursor:pointer;transition:all .18s ease;}
+.input-menu-dot.active{width:20px;border-radius:999px;background:var(--amber);box-shadow:0 0 10px rgba(245,158,11,.45);}
+.input-menu-group{overflow:hidden;padding:0 !important;}
+.input-menu-group > .sb-cap{border-radius:8px 8px 0 0;}
+.input-menu-group > .sb-section{padding:14px;border-bottom:0;}
+body.input-menu-open{overflow:hidden;}
+body.input-menu-embed{margin:0;min-height:100vh;background:transparent;overflow:hidden;}
+body.input-menu-embed > .topbar,
+body.input-menu-embed > .app-body,
+body.input-menu-embed > .statusbar,
+body.input-menu-embed > .milestone-toast-stack,
+body.input-menu-embed > .rampiq-sync-callout{display:none !important;}
+body.input-menu-embed .input-menu-overlay{
+  padding:0;background:transparent;backdrop-filter:none;
+}
+body.input-menu-embed .input-menu-dialog{
+  width:100vw;height:100vh;max-width:none;max-height:none;border:0;border-radius:0;box-shadow:none;
+}
+@media(max-width:560px){
+  .input-menu-overlay{padding:0;align-items:flex-end;}
+  .input-menu-dialog{width:100vw;height:92vh;border-radius:16px 16px 0 0;}
+  .input-menu-slide{padding:10px;}
+  .input-menu-foot{grid-template-columns:72px 1fr 72px;}
+}
+
 
 /* ── SIDEBAR ─────────────────────────────────────────────────────── */
 .sidebar{background:var(--surface);border-right:1px solid var(--border);overflow-y:auto;overflow-x:hidden;zoom:1.25;}
@@ -310,6 +386,16 @@ input[type=range]::-webkit-slider-thumb{
 .sb-card-crew .section-label{color:var(--pink);}
 .sb-card-trains{border-left:3px solid var(--amber);}
 .sb-card-trains .sb-card-title{color:var(--amber);}
+.sb-auto-inbounds{
+  margin-left:auto;display:inline-flex;align-items:center;gap:6px;cursor:pointer;
+  color:var(--text2);font-family:var(--cond);font-size:9px;font-weight:700;
+  letter-spacing:.05em;text-transform:uppercase;white-space:nowrap;
+}
+.sb-auto-inbounds input{width:14px;height:14px;margin:0;accent-color:var(--amber);cursor:pointer;}
+.sb-card-trains.auto-inbounds-active{box-shadow:inset 0 0 0 1px rgba(245,158,11,.35);}
+.sb-card-trains.auto-inbounds-active .toggle-btn,
+.sb-card-trains.auto-inbounds-active .sb-train-card input,
+.sb-card-trains.auto-inbounds-active .sb-train-card select{opacity:.88;cursor:not-allowed;}
 .sb-card-commit{border-left:3px solid var(--purple);}
 .sb-card-commit .sb-card-title{color:var(--purple);}
 .sb-card-shift{border-left:3px solid var(--blue);}
@@ -347,6 +433,15 @@ input[type=range]::-webkit-slider-thumb{
   font-family:var(--cond);font-size:13px;font-weight:700;letter-spacing:0.12em;
   text-transform:uppercase;color:var(--text);
 }
+.sw-roster-sync{
+  margin-left:auto;display:inline-flex;align-items:center;gap:6px;cursor:pointer;
+  color:var(--text2);font-family:var(--cond);font-size:9px;font-weight:700;
+  letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;
+}
+.sw-roster-sync input{width:14px;height:14px;margin:0;accent-color:var(--blue);cursor:pointer;}
+.sw-card.roster-times-active{box-shadow:inset 0 0 0 1px rgba(74,158,255,.34);}
+.sw-card.roster-times-active .sw-time-box{background:rgba(74,158,255,.08);}
+.sw-card.roster-times-active .sw-time-box input:disabled{color:var(--text);opacity:1;cursor:not-allowed;}
 .sw-divider{height:1px;background:var(--border);margin:10px 0;}
 .sw-shift-label{
   display:flex;align-items:center;gap:8px;margin-bottom:10px;
@@ -2158,9 +2253,9 @@ body:not(.print-mode) > .topbar .hidden-current-time-input{display:block !import
 <div class="tb-spacer"></div>
 <div class="sb-item" id="supabase-sync-status" style="font-family:var(--mono);font-size:17px;letter-spacing:.1em;color:var(--text3);white-space:nowrap;">LOCAL CACHE</div>
 <input aria-hidden="true" class="hidden-current-time-input" id="current-time" tabindex="-1" type="time"/>
-<button class="tb-btn" id="sidebar-toggle-btn" onclick="toggleSidebar()">HIDE INPUTS</button>
+<button class="tb-btn" id="sidebar-toggle-btn" onclick="toggleSidebar()" title="Open the swipeable simulation input menu">☰ INPUT MENU</button>
 <button class="tb-btn tb-save-btn" id="manual-save-btn" onclick="rampiqManualSave()" title="Save current inputs to Supabase/global storage">💾 SAVE</button>
-<button class="tb-btn tb-reset-btn" id="reset-inputs-btn" onclick="resetLeftInputs()" title="Reset left-side simulation inputs to defaults">↺ RESET INPUTS</button>
+<button class="tb-btn tb-reset-btn" id="reset-inputs-btn" onclick="resetLeftInputs()" title="Reset simulation inputs to defaults">↺ RESET INPUTS</button>
 
 
 
@@ -2176,10 +2271,11 @@ body:not(.print-mode) > .topbar .hidden-current-time-input{display:block !import
 <div class="app-body">
 <!-- SIDEBAR -->
 <aside class="sidebar">
-<div class="sb-card sw-card sb-card-shift">
+<div class="sb-card sw-card sb-card-shift" data-input-menu-title="Shift Windows">
 <div class="sw-head">
 <span class="sw-head-icon"><svg fill="none" height="16" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="16"><circle cx="12" cy="12" r="9"></circle><polyline points="12 7 12 12 16 14"></polyline></svg></span>
 <span class="sw-head-title">Shift Windows</span>
+<label class="sw-roster-sync" title="Use scheduled shift times from the Current Day Roster"><input id="use-roster-shift-times" type="checkbox"/>Use roster times</label>
 </div>
 <div class="sw-divider"></div>
 <div class="shift-block">
@@ -2216,10 +2312,11 @@ body:not(.print-mode) > .topbar .hidden-current-time-input{display:block !import
 <span class="note" id="night-hours-note" style="margin:0;">Night: crew × 12h</span>
 </div>
 </div>
-<div class="sb-card sb-card-trains">
+<div class="sb-card sb-card-trains" data-input-menu-title="Inbound Trains">
 <div class="sb-card-head">
 <span class="sb-card-icon">🚆</span>
 <span class="sb-card-title">Inbound Trains</span>
+<label class="sb-auto-inbounds" title="Use today's Excel View inbounds, their arrival times, and Chassis Forecast unit counts"><input id="use-today-inbounds" type="checkbox"/>Use today</label>
 </div>
 <div class="toggle-row">
 <button class="toggle-btn" id="btn1" onclick="setCount(1)">1</button>
@@ -2228,7 +2325,7 @@ body:not(.print-mode) > .topbar .hidden-current-time-input{display:block !import
 </div>
 <div id="train-controls"></div>
 </div>
-<div class="sb-card sb-card-commit">
+<div class="sb-card sb-card-commit" data-input-menu-title="Outbound Commitments">
 <div class="sb-card-head">
 <span class="sb-card-icon">🏗</span>
 <span class="sb-card-title">Outbound Commitments</span>
@@ -2268,7 +2365,7 @@ body:not(.print-mode) > .topbar .hidden-current-time-input{display:block !import
 </div>
 </div>
 </div>
-<div class="sb-card sb-card-throughput">
+<div class="sb-card sb-card-throughput input-menu-compact" data-input-menu-title="Throughput">
 <div class="section-label">Throughput</div>
 <div class="ctrl-group">
 <div class="ctrl-header">
@@ -2278,7 +2375,7 @@ body:not(.print-mode) > .topbar .hidden-current-time-input{display:block !import
 <input id="rate" max="30" min="15" step="1" type="range" value="20"/>
 </div>
 </div>
-<div class="sb-card sb-card-coh">
+<div class="sb-card sb-card-coh" data-input-menu-title="Cars on Hand">
 <div class="section-label">Cars on Hand — empty, ready to load</div>
 <div class="ctrl-group">
 <div class="ctrl-header">
@@ -2296,7 +2393,7 @@ body:not(.print-mode) > .topbar .hidden-current-time-input{display:block !import
 <div class="car-info">Covers IHOSA: <span id="coh-cars-used">0</span> · Still from drops: <span id="coh-cars-remaining">0</span></div>
 <div class="note">Empty — available for outbound loading from 0300. No prior unloading needed.</div>
 </div>
-<div class="sb-card sb-card-delays">
+<div class="sb-card sb-card-delays" data-input-menu-title="Delays &amp; Interruptions">
 <div class="section-label">Delays &amp; Interruptions</div>
 <div class="ctrl-group">
 <div class="ctrl-header"><span class="ctrl-name">Shift change @ 1500</span><span class="ctrl-val" id="v-sc">0.0h</span></div>
@@ -2339,7 +2436,7 @@ body:not(.print-mode) > .topbar .hidden-current-time-input{display:block !import
 </div>
 <div class="total-delay" id="total-delay-note">Total delays: <span>1.0h</span></div>
 </div>
-<div class="sb-card sb-card-crew">
+<div class="sb-card sb-card-crew" data-input-menu-title="Crew &amp; Lifts">
 <div class="section-label">Crew &amp; Lifts</div>
 <div class="ctrl-group">
 <div class="ctrl-header">
@@ -2392,6 +2489,7 @@ body:not(.print-mode) > .topbar .hidden-current-time-input{display:block !import
 </div>
 </div>
 <!-- FIELD NOTES — above profiles -->
+<div class="sb-card input-menu-group input-menu-compact" data-input-menu-title="Field Notes">
 <div class="sb-cap" id="field-notes-cap" onclick="toggleFieldNotes()" style="cursor:pointer;user-select:none;justify-content:space-between;">
 <span>📝 FIELD NOTES</span>
 <span id="field-notes-chevron" style="font-size:10px;color:var(--text3);">▼</span>
@@ -2400,7 +2498,9 @@ body:not(.print-mode) > .topbar .hidden-current-time-input{display:block !import
 <textarea id="field-notes-input" onblur="this.style.borderColor='var(--border2)'" onfocus="this.style.borderColor='var(--amber)'" oninput="simulate()" placeholder="Add shift notes, observations, or anything to include in the handoff report..." style="width:100%;box-sizing:border-box;min-height:90px;resize:vertical;background:var(--surface);border:1px solid var(--border2);border-radius:7px;color:var(--text);font-family:var(--font);font-size:11.5px;line-height:1.6;padding:9px 10px;outline:none;transition:border-color 0.15s;"></textarea>
 <div class="note" style="margin-top:4px;">Included verbatim in handoff report frontline section.</div>
 </div>
+</div>
 <!-- PROFILES — bottom of sidebar, collapsible -->
+<div class="sb-card input-menu-group input-menu-compact" data-input-menu-title="Profiles">
 <div class="sb-cap profile-sb-cap" id="profiles-sb-cap" onclick="toggleProfilePanel()" style="cursor:pointer;user-select:none;justify-content:space-between;">
 <span>👤 PROFILES</span>
 <span id="profile-cap-status" style="font-size:9px;color:var(--green);font-weight:700;letter-spacing:0.06em;"></span>
@@ -2424,6 +2524,7 @@ body:not(.print-mode) > .topbar .hidden-current-time-input{display:block !import
 <div class="profile-default-row">
 <input class="profile-default-check" id="profile-autoload" onchange="toggleAutoload()" type="checkbox"/>
 <label class="profile-default-label" for="profile-autoload">Auto-load selected profile on open</label>
+</div>
 </div>
 </div>
 </aside>
@@ -2499,6 +2600,22 @@ body:not(.print-mode) > .topbar .hidden-current-time-input{display:block !import
 </main>
 <!-- PPE SCREEN -->
 
+</div>
+<!-- SWIPEABLE INPUT MENU -->
+<div aria-hidden="true" class="input-menu-overlay" id="input-menu-overlay" onclick="if(event.target===this)closeInputMenu()">
+<section aria-labelledby="input-menu-current-title" aria-modal="true" class="input-menu-dialog" role="dialog">
+<header class="input-menu-head">
+<div><div class="input-menu-kicker">Simulation controls</div><div class="input-menu-title" id="input-menu-current-title">Input Menu</div></div>
+<div class="input-menu-count" id="input-menu-count">1 / 1</div>
+<button aria-label="Close input menu" class="input-menu-close" onclick="closeInputMenu()" type="button">×</button>
+</header>
+<div class="input-menu-viewport" id="input-menu-viewport"><div class="input-menu-track" id="input-menu-track"></div></div>
+<footer class="input-menu-foot">
+<button class="input-menu-nav" id="input-menu-prev" onclick="lphStepInputSlide(-1)" type="button">← Previous</button>
+<div aria-label="Input menu pages" class="input-menu-dots" id="input-menu-dots"></div>
+<button class="input-menu-nav" id="input-menu-next" onclick="lphStepInputSlide(1)" type="button">Next →</button>
+</footer>
+</section>
 </div>
 <style>
 .panel-toggle{cursor:pointer;user-select:none;}
@@ -3760,11 +3877,130 @@ function togglePanel(id){document.getElementById(id).classList.toggle('collapsed
 <script>
 // PPE controller omitted from standalone main-dashboard build.
 
+var lphInputSlides=[];
+var lphInputSlideIndex=0;
+var lphInputSwipeStart=null;
+var LPH_INPUT_MENU_SLIDE_KEY='settegast-lph-input-menu-slide-v1';
+
+function lphRenderInputMenu(){
+  var track=document.getElementById('input-menu-track');
+  if(!track||!lphInputSlides.length)return;
+  lphInputSlideIndex=Math.max(0,Math.min(lphInputSlides.length-1,lphInputSlideIndex));
+  track.style.transform='translate3d(-'+(lphInputSlideIndex*100)+'%,0,0)';
+  lphInputSlides.forEach(function(slide,index){
+    var active=index===lphInputSlideIndex;
+    slide.setAttribute('aria-hidden',active?'false':'true');
+    slide.toggleAttribute('inert',!active);
+  });
+  var activeCard=lphInputSlides[lphInputSlideIndex].querySelector('.sb-card');
+  var title=activeCard&&activeCard.dataset.inputMenuTitle||'Input Menu';
+  var titleNode=document.getElementById('input-menu-current-title');
+  var countNode=document.getElementById('input-menu-count');
+  if(titleNode)titleNode.textContent=title;
+  if(countNode)countNode.textContent=(lphInputSlideIndex+1)+' / '+lphInputSlides.length;
+  var previous=document.getElementById('input-menu-prev');
+  var next=document.getElementById('input-menu-next');
+  if(previous)previous.disabled=lphInputSlideIndex===0;
+  if(next)next.disabled=lphInputSlideIndex===lphInputSlides.length-1;
+  document.querySelectorAll('#input-menu-dots .input-menu-dot').forEach(function(dot,index){
+    dot.classList.toggle('active',index===lphInputSlideIndex);
+    dot.setAttribute('aria-current',index===lphInputSlideIndex?'page':'false');
+  });
+  try{localStorage.setItem(LPH_INPUT_MENU_SLIDE_KEY,String(lphInputSlideIndex));}catch(e){}
+}
+
+function lphGoInputSlide(index){
+  lphInputSlideIndex=Math.max(0,Math.min(lphInputSlides.length-1,Number(index)||0));
+  lphRenderInputMenu();
+}
+
+function lphStepInputSlide(direction){lphGoInputSlide(lphInputSlideIndex+direction);}
+
+function openInputMenu(index){
+  if(!lphInputSlides.length)lphInitInputMenu();
+  if(Number.isFinite(Number(index)))lphInputSlideIndex=Number(index);
+  lphRenderInputMenu();
+  var overlay=document.getElementById('input-menu-overlay');
+  if(!overlay)return;
+  overlay.classList.add('open');
+  overlay.setAttribute('aria-hidden','false');
+  document.body.classList.add('input-menu-open');
+  var closeButton=overlay.querySelector('.input-menu-close');
+  if(closeButton)setTimeout(function(){closeButton.focus();},0);
+}
+
+function closeInputMenu(){
+  var overlay=document.getElementById('input-menu-overlay');
+  if(!overlay)return;
+  if(document.body.classList.contains('input-menu-embed')){
+    try{window.parent.postMessage({type:'conglobal-close-lph-input-menu'},'*');}catch(e){}
+    return;
+  }
+  overlay.classList.remove('open');
+  overlay.setAttribute('aria-hidden','true');
+  document.body.classList.remove('input-menu-open');
+  var button=document.getElementById('sidebar-toggle-btn');
+  if(button)button.focus();
+}
+
+function toggleInputMenu(){
+  var overlay=document.getElementById('input-menu-overlay');
+  if(overlay&&overlay.classList.contains('open'))closeInputMenu();
+  else openInputMenu();
+}
+
+function lphInitInputMenu(){
+  if(lphInputSlides.length)return;
+  var source=document.querySelector('.sidebar');
+  var track=document.getElementById('input-menu-track');
+  var dots=document.getElementById('input-menu-dots');
+  var viewport=document.getElementById('input-menu-viewport');
+  if(!source||!track||!dots||!viewport)return;
+  var cards=Array.prototype.filter.call(source.children,function(child){return child.classList&&child.classList.contains('sb-card');});
+  cards.forEach(function(card,index){
+    var slide=document.createElement('div');
+    slide.className='input-menu-slide';
+    slide.dataset.slideIndex=String(index);
+    slide.appendChild(card);
+    track.appendChild(slide);
+    lphInputSlides.push(slide);
+    var dot=document.createElement('button');
+    dot.className='input-menu-dot';
+    dot.type='button';
+    dot.setAttribute('aria-label','Open '+(card.dataset.inputMenuTitle||('input page '+(index+1))));
+    dot.addEventListener('click',function(){lphGoInputSlide(index);});
+    dots.appendChild(dot);
+  });
+  try{lphInputSlideIndex=Number(localStorage.getItem(LPH_INPUT_MENU_SLIDE_KEY))||0;}catch(e){}
+  viewport.addEventListener('pointerdown',function(event){
+    if(event.pointerType==='mouse'&&event.button!==0)return;
+    if(event.target.closest('input,select,textarea,button,label'))return;
+    lphInputSwipeStart={x:event.clientX,y:event.clientY};
+  });
+  viewport.addEventListener('pointerup',function(event){
+    if(!lphInputSwipeStart)return;
+    var dx=event.clientX-lphInputSwipeStart.x;
+    var dy=event.clientY-lphInputSwipeStart.y;
+    lphInputSwipeStart=null;
+    if(Math.abs(dx)>55&&Math.abs(dx)>Math.abs(dy)*1.15)lphStepInputSlide(dx<0?1:-1);
+  });
+  viewport.addEventListener('pointercancel',function(){lphInputSwipeStart=null;});
+  document.addEventListener('keydown',function(event){
+    var overlay=document.getElementById('input-menu-overlay');
+    if(!overlay||!overlay.classList.contains('open'))return;
+    if(event.key==='Escape'){closeInputMenu();return;}
+    if(event.target&&event.target.closest&&event.target.closest('input,select,textarea'))return;
+    if(event.key==='ArrowRight')lphStepInputSlide(1);
+    if(event.key==='ArrowLeft')lphStepInputSlide(-1);
+  });
+  document.body.classList.add('input-menu-ready');
+  var button=document.getElementById('sidebar-toggle-btn');
+  if(button)button.textContent='☰ INPUT MENU';
+  lphRenderInputMenu();
+}
+
 function toggleSidebar(){
-  const appBody = document.querySelector('.app-body');
-  const btn = document.getElementById('sidebar-toggle-btn');
-  appBody.classList.toggle('sidebar-hidden');
-  btn.textContent = appBody.classList.contains('sidebar-hidden') ? 'SHOW INPUTS' : 'HIDE INPUTS';
+  toggleInputMenu();
 }
 
 function showScreen(id){
@@ -3779,10 +4015,8 @@ document.addEventListener('DOMContentLoaded', function(){
   document.querySelectorAll('.screen').forEach(function(el){ el.classList.remove('active-screen'); });
   var main = document.getElementById('main-dashboard');
   if(main) main.classList.add('active-screen');
-  var appBody = document.querySelector('.app-body');
-  if(appBody) appBody.classList.remove('sidebar-hidden');
   var sbBtn = document.getElementById('sidebar-toggle-btn');
-  if(sbBtn) sbBtn.textContent = 'HIDE INPUTS';
+  if(sbBtn) sbBtn.textContent = '☰ INPUT MENU';
   var trendsBtn = document.getElementById('trends-toggle-btn');
   if(trendsBtn) trendsBtn.innerHTML = '&#x1F4C8; TRENDS &#x25BE;';
 });
@@ -3799,6 +4033,8 @@ var TRAINS={
 var trainNames={zlbho1:'ZLBHO',zpbho:'ZPBHO',zlbho2:'ZLBHO-2'};
 var EXCEL_INBOUND_STORAGE_KEY='rampBlockingControl.v2';
 var CHASSIS_FORECAST_STORAGE_KEY='chassisForecastReport';
+var LPH_USE_TODAY_INBOUNDS_KEY='settegast-lph-use-today-inbounds-v1';
+var LPH_MANUAL_INBOUNDS_KEY='settegast-lph-manual-inbounds-v1';
 
 function sharedStorageCandidates(){
   var stores=[];
@@ -3861,6 +4097,52 @@ function readExcelViewInbounds(){
   },[]);
 }
 
+function lphInboundEtaHours(value){
+  var text=String(value||'').trim();
+  if(!text)return null;
+  var ampm=text.match(/\b(\d{1,2}):(\d{2})\s*(AM|PM)\b/i);
+  if(ampm){
+    var hour=Number(ampm[1])%12;
+    var minute=Math.min(59,Number(ampm[2])||0);
+    if(ampm[3].toUpperCase()==='PM')hour+=12;
+    return hour+(minute/60);
+  }
+  var military=text.match(/(?:^|\s)([01]?\d|2[0-3]):?([0-5]\d)(?:\s|$)/);
+  if(military)return Number(military[1])+(Number(military[2])/60);
+  var parsed=Date.parse(text);
+  if(Number.isFinite(parsed)){
+    var date=new Date(parsed);
+    return date.getHours()+(date.getMinutes()/60);
+  }
+  return null;
+}
+
+function readTodayExcelViewInbounds(){
+  var excelState=readSharedJson(EXCEL_INBOUND_STORAGE_KEY);
+  var plans=Array.isArray(excelState.inboundPlans)?excelState.inboundPlans:[];
+  var seen={};
+  return plans.reduce(function(list,plan){
+    var day=String(plan&&plan.day||'').trim();
+    var train=String(plan&&plan.train||'').trim();
+    var key=normalizeSharedTrainName(train);
+    if(day.toUpperCase()!=='TODAY'||!train||!key||key==='TRAIN'||seen[key])return list;
+    seen[key]=true;
+    var eta=String(plan&&plan.eta||'').trim();
+    list.push({
+      train:train,
+      day:day,
+      eta:eta,
+      arrival:lphInboundEtaHours(eta),
+      units:chassisForecastUnitsForInbound(train)
+    });
+    return list;
+  },[]).sort(function(a,b){
+    var aTime=Number.isFinite(a.arrival)?a.arrival:99;
+    var bTime=Number.isFinite(b.arrival)?b.arrival:99;
+    return aTime-bTime;
+  });
+}
+
 function populateInboundSourceSelect(select,key){
   if(!select) return;
   var currentKey=normalizeSharedTrainName(trainNames[key]);
@@ -3875,6 +4157,7 @@ function populateInboundSourceSelect(select,key){
     option.value=String(index);
     option.dataset.train=inbound.train;
     option.dataset.units=String(inbound.units);
+    option.dataset.eta=inbound.eta;
     option.textContent=inbound.train+(inbound.day?' | '+inbound.day:'')+' | '+inbound.units+' units';
     select.appendChild(option);
     if(normalizeSharedTrainName(inbound.train)===currentKey) select.value=String(index);
@@ -3895,6 +4178,154 @@ function refreshInboundSourceSelectors(syncUnits){
     if(syncUnits&&select.value!=='') select.dispatchEvent(new Event('change'));
   });
 }
+
+function lphActiveTrainKeys(count){
+  return count===1?['zlbho1']:count===2?['zlbho1','zpbho']:['zlbho1','zpbho','zlbho2'];
+}
+
+function lphSetTrainCountDisplay(count,disabled){
+  [1,2,3].forEach(function(i){
+    var button=document.getElementById('btn'+i);
+    if(!button)return;
+    button.classList.toggle('active',i===count);
+    button.disabled=!!disabled;
+  });
+}
+
+function lphSetAutoInboundControlsDisabled(disabled){
+  lphSetTrainCountDisplay(trainCount,disabled);
+  document.querySelectorAll('#train-controls input, #train-controls select').forEach(function(control){
+    control.disabled=!!disabled;
+  });
+}
+
+function lphCaptureManualInboundState(){
+  var state={trainCount:trainCount,trainNames:Object.assign({},trainNames),trains:{}};
+  ['zlbho1','zpbho','zlbho2'].forEach(function(key){
+    var arrival=document.getElementById(key+'-arr');
+    var units=document.getElementById(key+'-units');
+    state.trains[key]={
+      arrival:arrival?Number(arrival.value):TRAINS[key].arrDef,
+      units:units?Number(units.value):TRAINS[key].uDef
+    };
+  });
+  try{localStorage.setItem(LPH_MANUAL_INBOUNDS_KEY,JSON.stringify(state));}catch(e){}
+}
+
+function lphRestoreManualInboundState(){
+  var state=null;
+  try{state=JSON.parse(localStorage.getItem(LPH_MANUAL_INBOUNDS_KEY)||'null');}catch(e){}
+  if(!state||typeof state!=='object'){
+    lphSetAutoInboundControlsDisabled(false);
+    return;
+  }
+  trainCount=Math.max(1,Math.min(3,Number(state.trainCount)||2));
+  if(state.trainNames&&typeof state.trainNames==='object'){
+    Object.keys(trainNames).forEach(function(key){
+      if(typeof state.trainNames[key]==='string')trainNames[key]=state.trainNames[key];
+    });
+  }
+  lphSetTrainCountDisplay(trainCount,false);
+  buildTrains();
+  lphActiveTrainKeys(trainCount).forEach(function(key){
+    var saved=state.trains&&state.trains[key];
+    if(!saved)return;
+    var arrival=document.getElementById(key+'-arr');
+    var units=document.getElementById(key+'-units');
+    if(arrival&&Number.isFinite(Number(saved.arrival))){
+      arrival.value=String(saved.arrival);
+      document.getElementById('v-'+key+'-arr').textContent=fmtH(Number(saved.arrival));
+    }
+    if(units&&Number.isFinite(Number(saved.units))){
+      units.value=String(saved.units);
+      document.getElementById('v-'+key+'-units').textContent=String(saved.units);
+    }
+  });
+  lphSetAutoInboundControlsDisabled(false);
+}
+
+function lphApplyTodayInbounds(runSimulation){
+  var checkbox=document.getElementById('use-today-inbounds');
+  var card=document.querySelector('.sb-card-trains');
+  if(!checkbox||!checkbox.checked){
+    if(card)card.classList.remove('auto-inbounds-active');
+    return false;
+  }
+  var inbounds=readTodayExcelViewInbounds().slice(0,3);
+  if(card)card.classList.add('auto-inbounds-active');
+  if(!inbounds.length){
+    checkbox.title='No Excel View inbounds are scheduled for TODAY';
+    lphSetAutoInboundControlsDisabled(false);
+    return false;
+  }
+  trainCount=inbounds.length;
+  var keys=lphActiveTrainKeys(trainCount);
+  keys.forEach(function(key,index){trainNames[key]=inbounds[index].train;});
+  lphSetTrainCountDisplay(trainCount,true);
+  buildTrains();
+  keys.forEach(function(key,index){
+    var inbound=inbounds[index];
+    var arrival=document.getElementById(key+'-arr');
+    var units=document.getElementById(key+'-units');
+    var name=document.getElementById(key+'-name');
+    var source=document.querySelector('.sb-train-source-select[data-train-key="'+key+'"]');
+    if(name)name.value=inbound.train;
+    if(arrival&&Number.isFinite(inbound.arrival)){
+      arrival.value=String(inbound.arrival);
+      document.getElementById('v-'+key+'-arr').textContent=fmtH(inbound.arrival);
+    }
+    if(units){
+      units.step='1';
+      units.max=String(Math.max(300,Math.ceil(inbound.units/5)*5));
+      units.value=String(inbound.units);
+      document.getElementById('v-'+key+'-units').textContent=String(inbound.units);
+    }
+    if(source){
+      Array.prototype.some.call(source.options,function(option,optionIndex){
+        if(normalizeSharedTrainName(option.dataset.train)===normalizeSharedTrainName(inbound.train)){
+          source.selectedIndex=optionIndex;
+          return true;
+        }
+        return false;
+      });
+      var status=source.parentElement&&source.parentElement.querySelector('.sb-train-source-units');
+      if(status){
+        status.textContent=inbound.units?inbound.units+' units':'No forecast match';
+        status.classList.toggle('matched',inbound.units>0);
+        status.classList.toggle('missing',inbound.units===0);
+      }
+    }
+  });
+  lphSetAutoInboundControlsDisabled(true);
+  checkbox.title='Using '+inbounds.length+' TODAY inbound'+(inbounds.length===1?'':'s')+' from Excel View with Chassis Forecast units';
+  if(runSimulation&&typeof simulate==='function')simulate();
+  return true;
+}
+
+function lphSetUseTodayInbounds(enabled,initializing){
+  var checkbox=document.getElementById('use-today-inbounds');
+  if(!checkbox)return;
+  checkbox.checked=!!enabled;
+  try{localStorage.setItem(LPH_USE_TODAY_INBOUNDS_KEY,enabled?'true':'false');}catch(e){}
+  if(enabled){
+    if(!initializing)lphCaptureManualInboundState();
+    lphApplyTodayInbounds(false);
+  }else{
+    var card=document.querySelector('.sb-card-trains');
+    if(card)card.classList.remove('auto-inbounds-active');
+    lphRestoreManualInboundState();
+  }
+  if(!initializing&&typeof simulate==='function')simulate();
+}
+
+function lphInitTodayInboundLink(){
+  var checkbox=document.getElementById('use-today-inbounds');
+  if(!checkbox)return;
+  checkbox.addEventListener('change',function(){lphSetUseTodayInbounds(checkbox.checked,false);});
+  var enabled=false;
+  try{enabled=localStorage.getItem(LPH_USE_TODAY_INBOUNDS_KEY)==='true';}catch(e){}
+  if(enabled)lphSetUseTodayInbounds(true,true);
+}
 var UNITS_PER_CAR=2;
 // Empty-car loadout threshold: when inbound is available, keep loading only if
 // the remaining empty-car loadout is small enough to finish quickly.
@@ -3910,6 +4341,96 @@ var AUTOLOAD_KEY = 'settegast_autoload_v1';
 var TRENDS_KEY   = 'settegast_trends_v1';
 var HOURLY_ACTUALS_KEY = 'settegast_hourly_actuals_v1';
 var REPORT_SCORE_KEY = 'settegast_report_score_v1';
+var ROSTER_SCHEDULE_KEY = 'conglobal-scheduled-shift-times-v1';
+var LPH_USE_ROSTER_TIMES_KEY = 'settegast-lph-use-roster-shift-times-v1';
+var LPH_MANUAL_SHIFT_TIMES_KEY = 'settegast-lph-manual-shift-times-v1';
+
+function lphCurrentDateKey(){
+  var date=new Date();
+  return date.getFullYear()+'-'+String(date.getMonth()+1).padStart(2,'0')+'-'+String(date.getDate()).padStart(2,'0');
+}
+
+function lphValidShiftTime(value,fallback){
+  return /^\d{2}:\d{2}$/.test(String(value||''))?String(value):fallback;
+}
+
+function lphCurrentShiftInputs(){
+  function value(id,fallback){var input=document.getElementById(id);return lphValidShiftTime(input&&input.value,fallback);}
+  return {
+    s1Start:value('s1-start','03:00'),s1End:value('s1-end','15:00'),
+    s2Start:value('s2-start','15:00'),s2End:value('s2-end','03:00')
+  };
+}
+
+function lphSaveManualShiftTimes(){
+  try{localStorage.setItem(LPH_MANUAL_SHIFT_TIMES_KEY,JSON.stringify(lphCurrentShiftInputs()));}catch(e){}
+}
+
+function lphReadManualShiftTimes(){
+  try{
+    var saved=JSON.parse(localStorage.getItem(LPH_MANUAL_SHIFT_TIMES_KEY)||'null');
+    return saved&&typeof saved==='object'?saved:null;
+  }catch(e){return null;}
+}
+
+function lphSetShiftTimeInputsDisabled(disabled){
+  ['s1-start','s1-end','s2-start','s2-end'].forEach(function(id){
+    var input=document.getElementById(id);
+    if(input) input.disabled=!!disabled;
+  });
+  var card=document.querySelector('.sw-card-shift');
+  if(card) card.classList.toggle('roster-times-active',!!disabled);
+}
+
+function lphApplyRosterScheduledShiftTimes(runSimulation){
+  var checkbox=document.getElementById('use-roster-shift-times');
+  if(!checkbox||!checkbox.checked)return false;
+  var saved=readSharedJson(ROSTER_SCHEDULE_KEY);
+  var dateSchedule=saved&&saved[lphCurrentDateKey()]||{};
+  var day=dateSchedule.first||{};
+  var night=dateSchedule.second||{};
+  setControlValue('s1-start',lphValidShiftTime(day.start,'03:00'));
+  setControlValue('s1-end',lphValidShiftTime(day.end,'15:00'));
+  setControlValue('s2-start',lphValidShiftTime(night.start,'15:00'));
+  setControlValue('s2-end',lphValidShiftTime(night.end,'03:00'));
+  lphSetShiftTimeInputsDisabled(true);
+  checkbox.title=(dateSchedule.first||dateSchedule.second)
+    ? 'Using scheduled shift times from today\'s Current Day Roster'
+    : 'No roster schedule was saved for today; using the roster defaults';
+  if(runSimulation!==false&&typeof simulate==='function')simulate();
+  return true;
+}
+
+function lphSetUseRosterShiftTimes(enabled,initializing){
+  var checkbox=document.getElementById('use-roster-shift-times');
+  if(!checkbox)return;
+  if(enabled&&!initializing)lphSaveManualShiftTimes();
+  checkbox.checked=!!enabled;
+  try{localStorage.setItem(LPH_USE_ROSTER_TIMES_KEY,enabled?'true':'false');}catch(e){}
+  if(enabled){
+    lphApplyRosterScheduledShiftTimes(false);
+  }else{
+    var manual=lphReadManualShiftTimes();
+    if(manual){
+      setControlValue('s1-start',lphValidShiftTime(manual.s1Start,'03:00'));
+      setControlValue('s1-end',lphValidShiftTime(manual.s1End,'15:00'));
+      setControlValue('s2-start',lphValidShiftTime(manual.s2Start,'15:00'));
+      setControlValue('s2-end',lphValidShiftTime(manual.s2End,'03:00'));
+    }
+    lphSetShiftTimeInputsDisabled(false);
+    checkbox.title='Use scheduled shift times from the Current Day Roster';
+  }
+  if(!initializing&&typeof simulate==='function')simulate();
+}
+
+function lphInitRosterShiftTimeLink(){
+  var checkbox=document.getElementById('use-roster-shift-times');
+  if(!checkbox)return;
+  checkbox.addEventListener('change',function(){lphSetUseRosterShiftTimes(checkbox.checked,false);});
+  var enabled=false;
+  try{enabled=localStorage.getItem(LPH_USE_ROSTER_TIMES_KEY)==='true';}catch(e){}
+  lphSetUseRosterShiftTimes(enabled,true);
+}
 
 // Whether each Hourly Lift Time Map (forecast / actual) is in "fit to width"
 // mode (shrinks nodes/cards to fit the panel width instead of horizontally
@@ -4355,15 +4876,18 @@ function updateCoh(){
 }
 
 function setCount(n){
+  var autoToggle=document.getElementById('use-today-inbounds');
+  if(autoToggle&&autoToggle.checked)return;
   trainCount=n;
-  [1,2,3].forEach(function(i){document.getElementById('btn'+i).classList.toggle('active',i===n);});
+  lphSetTrainCountDisplay(n,false);
   buildTrains();
+  lphCaptureManualInboundState();
   simulate();
 }
 
 function buildTrains(){
   var wrap=document.getElementById('train-controls');
-  var keys=trainCount===1?['zlbho1']:trainCount===2?['zlbho1','zpbho']:['zlbho1','zpbho','zlbho2'];
+  var keys=lphActiveTrainKeys(trainCount);
   wrap.innerHTML='';
   keys.forEach(function(key,idx){
     var t=TRAINS[key];
@@ -4449,8 +4973,13 @@ function buildTrains(){
       }
       var selectedTrain=option.dataset.train;
       var selectedUnits=Math.max(0,Number(option.dataset.units)||0);
+      var selectedArrival=lphInboundEtaHours(option.dataset.eta);
       trainNames[key]=selectedTrain;
       nameInput.value=selectedTrain;
+      if(Number.isFinite(selectedArrival)){
+        arrSlider.value=String(selectedArrival);
+        arrVal.textContent=fmtH(selectedArrival);
+      }
       uSlider.step='1';
       uSlider.max=String(Math.max(300,Math.ceil(selectedUnits/5)*5));
       uSlider.value=String(selectedUnits);
@@ -7816,6 +8345,9 @@ function resetLeftInputs(){
   buildTrains();
   updateStaticControlLabels();
   updateCoh();
+  var rosterTimesToggle=document.getElementById('use-roster-shift-times');
+  if(rosterTimesToggle&&rosterTimesToggle.checked)lphApplyRosterScheduledShiftTimes(false);
+  else lphSaveManualShiftTimes();
   simulate(true);
 }
 
@@ -7847,14 +8379,70 @@ if(unexpectedDelayBtn){
 ['cars-on-hand','crew1','swing-hours','crew2','flips','prelifts','carryover-lifts','current-time','s1-start','s1-end','s2-start','s2-end'].forEach(function(id){
   document.getElementById(id).addEventListener('input',function(){simulate();});
 });
+['s1-start','s1-end','s2-start','s2-end'].forEach(function(id){
+  document.getElementById(id).addEventListener('change',function(){
+    var rosterTimesToggle=document.getElementById('use-roster-shift-times');
+    if(!rosterTimesToggle||!rosterTimesToggle.checked)lphSaveManualShiftTimes();
+  });
+});
 document.getElementById('carryover-type').addEventListener('change',function(){simulate();});
 
 // PPE startup omitted from standalone main-dashboard build.
-initTime();buildTrains();simulate();
-window.addEventListener('focus',function(){refreshInboundSourceSelectors(true);});
+lphInitInputMenu();
+if(new URLSearchParams(window.location.search).get('inputMenuOnly')==='1'){
+  document.body.classList.add('input-menu-embed');
+  openInputMenu();
+  (function(){
+    var handle=document.querySelector('.input-menu-head');
+    if(!handle)return;
+    handle.style.cursor='move';
+    var activePointer=null;
+    handle.addEventListener('pointerdown',function(event){
+      if(event.button!==0||event.target.closest('button'))return;
+      activePointer=event.pointerId;
+      try{handle.setPointerCapture(activePointer);}catch(e){}
+      window.parent.postMessage({type:'conglobal-lph-input-drag-start',screenX:event.screenX,screenY:event.screenY},'*');
+      event.preventDefault();
+    });
+    handle.addEventListener('pointermove',function(event){
+      if(activePointer!==event.pointerId)return;
+      window.parent.postMessage({type:'conglobal-lph-input-drag-move',screenX:event.screenX,screenY:event.screenY},'*');
+    });
+    function finishDrag(event){
+      if(activePointer!==event.pointerId)return;
+      activePointer=null;
+      window.parent.postMessage({type:'conglobal-lph-input-drag-end'},'*');
+    }
+    handle.addEventListener('pointerup',finishDrag);
+    handle.addEventListener('pointercancel',finishDrag);
+  })();
+}
+lphInitRosterShiftTimeLink();
+initTime();buildTrains();lphInitTodayInboundLink();simulate();
+window.addEventListener('focus',function(){
+  var todayInboundToggle=document.getElementById('use-today-inbounds');
+  if(todayInboundToggle&&todayInboundToggle.checked)lphApplyTodayInbounds(true);
+  else refreshInboundSourceSelectors(true);
+  lphApplyRosterScheduledShiftTimes(true);
+});
 window.addEventListener('storage',function(event){
   if(event.key===EXCEL_INBOUND_STORAGE_KEY||event.key===CHASSIS_FORECAST_STORAGE_KEY){
-    refreshInboundSourceSelectors(true);
+    var todayInboundToggle=document.getElementById('use-today-inbounds');
+    if(todayInboundToggle&&todayInboundToggle.checked)lphApplyTodayInbounds(true);
+    else refreshInboundSourceSelectors(true);
+  }
+  if(event.key===LPH_USE_TODAY_INBOUNDS_KEY){
+    var inboundEnabled=false;
+    try{inboundEnabled=localStorage.getItem(LPH_USE_TODAY_INBOUNDS_KEY)==='true';}catch(e){}
+    lphSetUseTodayInbounds(inboundEnabled,true);
+    if(typeof simulate==='function')simulate();
+  }
+  if(event.key===ROSTER_SCHEDULE_KEY)lphApplyRosterScheduledShiftTimes(true);
+  if(event.key===LPH_USE_ROSTER_TIMES_KEY){
+    var enabled=false;
+    try{enabled=localStorage.getItem(LPH_USE_ROSTER_TIMES_KEY)==='true';}catch(e){}
+    lphSetUseRosterShiftTimes(enabled,true);
+    if(typeof simulate==='function')simulate();
   }
 });
 
@@ -8681,6 +9269,9 @@ function applyProfile(p){
     var idx = arr.findIndex(function(x){ return String(x.id) === String(p.id); });
     if(idx >= 0){ arr[idx] = p; saveProfilesDB(arr); renderProfileDropdown(); }
   }
+  var rosterTimesToggle=document.getElementById('use-roster-shift-times');
+  if(rosterTimesToggle&&rosterTimesToggle.checked)lphApplyRosterScheduledShiftTimes(false);
+  else lphSaveManualShiftTimes();
   simulate();
 }
 

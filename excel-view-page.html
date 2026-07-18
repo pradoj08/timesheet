@@ -531,6 +531,40 @@
   }
   .today-roster-total { min-height: 25px; display: flex; align-items: center; padding: 4px 7px; }
   .today-roster-total:first-child { border-right: 1px solid #d7aeb5; }
+  .excel-input-menu-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 120;
+    background: transparent;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .16s ease;
+  }
+  .excel-input-menu-overlay.open { opacity: 1; }
+  .excel-input-menu-shell {
+    position: absolute;
+    top: 72px;
+    right: 16px;
+    width: min(480px, calc(100vw - 24px));
+    height: min(760px, calc(100vh - 88px));
+    overflow: hidden;
+    border: 1px solid #52647b;
+    border-radius: 14px;
+    background: #12121b;
+    box-shadow: 0 28px 90px rgba(0,0,0,.58);
+    pointer-events: auto;
+    transform: translateY(8px) scale(.99);
+    transition: transform .18s ease, box-shadow .18s ease;
+  }
+  .excel-input-menu-overlay.open .excel-input-menu-shell { transform: translateY(0) scale(1); }
+  .excel-input-menu-overlay.dragging .excel-input-menu-shell {
+    transition: none;
+    box-shadow: 0 20px 64px rgba(0,0,0,.5), 0 0 0 2px rgba(245,158,11,.35);
+  }
+  .excel-input-menu-frame { width: 100%; height: 100%; display: block; border: 0; background: #12121b; }
+  @media (max-width: 620px) {
+    .excel-input-menu-shell { top: 8px; right: 8px; width: calc(100vw - 16px); height: calc(100vh - 16px); }
+  }
   .split-view-section { margin-bottom: 6px; }
   .split-view-section:last-child { margin-bottom: 0; }
   .split-view-table {
@@ -2641,6 +2675,8 @@
     flex: 1 1 auto;
     min-height: 0;
     overflow-y: auto;
+    padding-bottom: 36px;
+    scroll-padding-bottom: 36px;
     scrollbar-gutter: stable;
   }
   .inbound-popup-resize-grip {
@@ -2793,6 +2829,7 @@
     <div class="top-actions">
       <input id="inventoryFileTop" type="file" accept=".xlsx,.csv,.txt,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" hidden>
       <button class="btn btn-light" id="toggleTodayRoster" type="button">Today's Roster</button>
+      <button class="btn btn-light" id="toggleLphInputMenu" type="button">Input Menu</button>
       <button class="btn btn-light" id="toggleCompactChecklist" type="button">Checklist</button>
       <button class="btn btn-light" id="toggleUrgentNotes" type="button" aria-pressed="false">Urgent Notes</button>
       <button class="btn btn-light" id="resolveSsBtn" type="button" onclick="document.getElementById('ssResolverModal').hidden=false;document.getElementById('ssResolverModal').classList.add('open');document.body.classList.add('modal-open')">Resolve SS</button>
@@ -2872,6 +2909,12 @@
     </div>
     <div class="today-roster-card" id="todayRosterCard"></div>
   </section>
+
+  <div class="excel-input-menu-overlay" id="excelInputMenuOverlay" aria-hidden="true">
+    <div class="excel-input-menu-shell" role="dialog" aria-modal="true" aria-label="LPH Tracker input menu">
+      <iframe class="excel-input-menu-frame" id="excelInputMenuFrame" title="LPH Tracker input menu"></iframe>
+    </div>
+  </div>
 
   <section class="inbound-archive-page" id="inboundArchivePage" hidden aria-label="Archived inbound page">
     <div class="inbound-archive-head">
@@ -4680,6 +4723,30 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     popup.hidden ? openTodayRoster() : closeTodayRoster();
   }
 
+  function openLphInputMenu() {
+    const overlay = $("#excelInputMenuOverlay");
+    const frame = $("#excelInputMenuFrame");
+    if (!overlay || !frame) return;
+    if (!frame.getAttribute("src")) frame.setAttribute("src", "lph-tracker-page.html?inputMenuOnly=1");
+    overlay.classList.add("open");
+    overlay.setAttribute("aria-hidden", "false");
+  }
+
+  function closeLphInputMenu() {
+    const overlay = $("#excelInputMenuOverlay");
+    if (!overlay) return;
+    overlay.classList.remove("open");
+    overlay.classList.remove("dragging");
+    overlay.setAttribute("aria-hidden", "true");
+    $("#toggleLphInputMenu")?.focus();
+  }
+
+  function toggleLphInputMenu() {
+    const overlay = $("#excelInputMenuOverlay");
+    if (!overlay) return;
+    overlay.classList.contains("open") ? closeLphInputMenu() : openLphInputMenu();
+  }
+
   function initTodayRosterPopup() {
     const popup = $("#todayRosterPopup");
     const handle = $("#todayRosterHandle");
@@ -4770,6 +4837,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       ordered.filter(item => item.plan.day === day).forEach(({plan, index}) => parts.push(renderInboundCard(plan, index)));
     });
     host.innerHTML = parts.join("");
+    requestAnimationFrame(constrainInboundPopupToViewport);
   }
 
 
@@ -7037,6 +7105,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     if (e.target.closest("#toggleSplitView")) toggleSplitView();
     if (e.target.closest("#splitViewClose")) closeSplitView();
     if (e.target.closest("#toggleTodayRoster")) toggleTodayRoster();
+    if (e.target.closest("#toggleLphInputMenu")) toggleLphInputMenu();
+    if (e.target === $("#excelInputMenuOverlay")) closeLphInputMenu();
     if (e.target.closest("#todayRosterClose")) closeTodayRoster();
     if (e.target.closest("#inboundArchiveBtn")) openInboundArchivePage();
     if (e.target.closest("#closeInboundArchive")) closeInboundArchivePage();
@@ -7687,7 +7757,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   document.addEventListener("keydown", e => {
     if (e.key !== "Escape") return;
     hideBlockContextMenu();
-    if (!$("#rawTrackModal").hidden) closeRawTrackModal();
+    if ($("#excelInputMenuOverlay").classList.contains("open")) closeLphInputMenu();
+    else if (!$("#rawTrackModal").hidden) closeRawTrackModal();
     else if (!$("#inboundArchivePreview").hidden) closeInboundArchivePreview();
     else if (!$("#inboundArchivePage").hidden) closeInboundArchivePage();
     else if (!$("#todayRosterPopup").hidden) closeTodayRoster();
@@ -7697,6 +7768,42 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     else if (!ssResolverModal.hidden) closeSsResolver();
     else if (!colorTabModal.hidden) closeColorTab();
     else if (selectedBlockIds.size) clearBlockSelection();
+  });
+
+  let lphInputDrag = null;
+  window.addEventListener("message", event => {
+    const frame = $("#excelInputMenuFrame");
+    if (!frame || event.source !== frame.contentWindow) return;
+    const message = event.data || {};
+    const overlay = $("#excelInputMenuOverlay");
+    const shell = overlay?.querySelector(".excel-input-menu-shell");
+    if (message.type === "conglobal-close-lph-input-menu") {
+      closeLphInputMenu();
+      return;
+    }
+    if (!overlay || !shell) return;
+    if (message.type === "conglobal-lph-input-drag-start") {
+      const rect = shell.getBoundingClientRect();
+      lphInputDrag = { screenX:Number(message.screenX) || 0, screenY:Number(message.screenY) || 0, left:rect.left, top:rect.top };
+      shell.style.right = "auto";
+      shell.style.left = `${rect.left}px`;
+      shell.style.top = `${rect.top}px`;
+      overlay.classList.add("dragging");
+      return;
+    }
+    if (message.type === "conglobal-lph-input-drag-move" && lphInputDrag) {
+      const width = shell.offsetWidth;
+      const height = shell.offsetHeight;
+      const left = Math.max(4, Math.min(window.innerWidth - width - 4, lphInputDrag.left + (Number(message.screenX) - lphInputDrag.screenX)));
+      const top = Math.max(4, Math.min(window.innerHeight - height - 4, lphInputDrag.top + (Number(message.screenY) - lphInputDrag.screenY)));
+      shell.style.left = `${left}px`;
+      shell.style.top = `${top}px`;
+      return;
+    }
+    if (message.type === "conglobal-lph-input-drag-end") {
+      lphInputDrag = null;
+      overlay.classList.remove("dragging");
+    }
   });
 
   window.addEventListener("pagehide", () => { saveState(); persistColorRules(); saveCurrentWorkState(); });
@@ -7954,6 +8061,21 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     }));
   }
 
+  function constrainInboundPopupToViewport() {
+    const panel = document.getElementById("inboundPanel");
+    if (!panel || panel.hidden || getComputedStyle(panel).display === "none") return;
+    const rect = panel.getBoundingClientRect();
+    if (rect.width < 1 || rect.height < 1) return;
+    const width = Math.max(330, Math.min(rect.width, innerWidth - 8));
+    const height = Math.max(280, Math.min(rect.height, innerHeight - 46));
+    const left = Math.max(0, Math.min(rect.left, innerWidth - width - 4));
+    const top = Math.max(42, Math.min(rect.top, innerHeight - height - 4));
+    panel.style.width = width + "px";
+    panel.style.height = height + "px";
+    panel.style.left = left + "px";
+    panel.style.top = top + "px";
+  }
+
   function initInboundPopup() {
     const panel = document.getElementById("inboundPanel");
     const handle = document.getElementById("inboundPopupDragHandle");
@@ -7969,6 +8091,10 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         if (Number.isFinite(saved.top)) panel.style.top = Math.max(42, Math.min(saved.top, innerHeight - 80)) + "px";
       }
     } catch (_) {}
+    requestAnimationFrame(() => {
+      constrainInboundPopupToViewport();
+      saveInboundPopupLayout();
+    });
 
     handle.addEventListener("pointerdown", event => {
       if (event.target.closest("button")) return;
@@ -7977,11 +8103,12 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       const startY = event.clientY;
       const move = moveEvent => {
         panel.style.left = Math.max(0, Math.min(start.left + moveEvent.clientX - startX, innerWidth - panel.offsetWidth)) + "px";
-        panel.style.top = Math.max(42, Math.min(start.top + moveEvent.clientY - startY, innerHeight - 55)) + "px";
+        panel.style.top = Math.max(42, Math.min(start.top + moveEvent.clientY - startY, innerHeight - panel.offsetHeight - 4)) + "px";
       };
       const stop = () => {
         document.removeEventListener("pointermove", move);
         document.removeEventListener("pointerup", stop);
+        constrainInboundPopupToViewport();
         saveInboundPopupLayout();
       };
       document.addEventListener("pointermove", move);
@@ -8001,10 +8128,15 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       const stop = () => {
         document.removeEventListener("pointermove", move);
         document.removeEventListener("pointerup", stop);
+        constrainInboundPopupToViewport();
         saveInboundPopupLayout();
       };
       document.addEventListener("pointermove", move);
       document.addEventListener("pointerup", stop);
+    });
+    window.addEventListener("resize", () => {
+      constrainInboundPopupToViewport();
+      saveInboundPopupLayout();
     });
   }
 
