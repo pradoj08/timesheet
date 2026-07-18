@@ -8389,7 +8389,7 @@ document.getElementById('carryover-type').addEventListener('change',function(){s
 
 // PPE startup omitted from standalone main-dashboard build.
 lphInitInputMenu();
-if(new URLSearchParams(window.location.search).get('inputMenuOnly')==='1'){
+if(window.LPH_INPUT_MENU_ONLY===true || new URLSearchParams(window.location.search).get('inputMenuOnly')==='1'){
   document.body.classList.add('input-menu-embed');
   openInputMenu();
   (function(){

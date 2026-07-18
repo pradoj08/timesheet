@@ -714,6 +714,12 @@ const amRosterPageHtml = inlineYardCrewSprites(stripPageSwitcher(fs.readFileSync
 
 for (const [pageId, sourcePath] of Object.entries(pages)) {
   let pageHtml = stripPageSwitcher(fs.readFileSync(sourcePath, "utf8"));
+  if (pageId === "excelView") {
+    const lphInputHtml = stripPageSwitcher(fs.readFileSync(pages.lphTracker, "utf8"));
+    const sourceTag = /(<script id="lphInputMenuPageSource" type="application\/json">)([\s\S]*?)(<\/script>)/;
+    if (!sourceTag.test(pageHtml)) throw new Error("Could not find the embedded LPH Input Menu source slot in Excel View.");
+    pageHtml = pageHtml.replace(sourceTag, (_, open, _oldSource, close) => open + escapeScriptString(lphInputHtml) + close);
+  }
   if (pageId === "superBash") pageHtml = configureSuperBashPage(pageHtml);
   if (pageId === "timeOff") pageHtml = inlineYardCrewSprites(pageHtml);
   if (pageId === "amReport") {

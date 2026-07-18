@@ -2911,8 +2911,9 @@
   </section>
 
   <div class="excel-input-menu-overlay" id="excelInputMenuOverlay" aria-hidden="true">
-    <div class="excel-input-menu-shell" role="dialog" aria-modal="true" aria-label="LPH Tracker input menu">
+    <div class="excel-input-menu-shell" role="dialog" aria-modal="false" aria-label="LPH Tracker input menu">
       <iframe class="excel-input-menu-frame" id="excelInputMenuFrame" title="LPH Tracker input menu"></iframe>
+      <script id="lphInputMenuPageSource" type="application/json"></script>
     </div>
   </div>
 
@@ -4727,7 +4728,15 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     const overlay = $("#excelInputMenuOverlay");
     const frame = $("#excelInputMenuFrame");
     if (!overlay || !frame) return;
-    if (!frame.getAttribute("src")) frame.setAttribute("src", "lph-tracker-page.html?inputMenuOnly=1");
+    if (!frame.getAttribute("src") && !frame.srcdoc) {
+      let embeddedHtml = "";
+      try {
+        const source = $("#lphInputMenuPageSource")?.textContent.trim();
+        if (source) embeddedHtml = JSON.parse(source);
+      } catch (_) {}
+      if (embeddedHtml) loadEmbeddedLphInputMenu(frame, embeddedHtml);
+      else frame.setAttribute("src", "lph-tracker-page.html?inputMenuOnly=1");
+    }
     overlay.classList.add("open");
     overlay.setAttribute("aria-hidden", "false");
   }
@@ -7771,6 +7780,14 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   });
 
   let lphInputDrag = null;
+  function loadEmbeddedLphInputMenu(frame, html) {
+    if (!frame || !html || frame.srcdoc) return;
+    const marker = '<script>window.LPH_INPUT_MENU_ONLY=true;</scr' + 'ipt>';
+    frame.removeAttribute("src");
+    frame.srcdoc = /<head(?:\s[^>]*)?>/i.test(html)
+      ? html.replace(/<head(?:\s[^>]*)?>/i, match => match + marker)
+      : marker + html;
+  }
   window.addEventListener("message", event => {
     const frame = $("#excelInputMenuFrame");
     if (!frame || event.source !== frame.contentWindow) return;
