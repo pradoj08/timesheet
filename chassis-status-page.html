@@ -5973,6 +5973,7 @@ body.forecast-view .forecast-bottom-controls {
     <div class="forecast-head">
       <div class="forecast-head-actions">
         <button id="forecastDifferenceToggleBtn" type="button" class="forecast-tools-toggle-btn forecast-difference-top-toggle">Show +/-</button>
+        <button id="forecastRequestBoardToggleBtn" type="button" class="forecast-tools-toggle-btn" aria-controls="forecastChassisRequestBoard" aria-expanded="false">Show Request Board</button>
         <button id="forecastSummaryVisibilityToggle" type="button" class="forecast-tools-toggle-btn" aria-expanded="false">Show Deficits &amp; Request Summary</button>
         <button id="forecastUnplannedUnitsBtn" type="button" class="forecast-tools-toggle-btn">Unplanned Units</button>
         <button id="openForecastExcelViewBtn" class="forecast-tools-toggle-btn forecast-excel-open-btn" type="button">Excel View</button>
@@ -6042,7 +6043,7 @@ body.forecast-view .forecast-bottom-controls {
           
         </div>
       </div>
-      <div id="forecastChassisRequestBoard" class="forecast-chassis-request-board"></div>
+      <div id="forecastChassisRequestBoard" class="forecast-chassis-request-board" hidden></div>
       <div id="forecastRequestHistoryPreview" class="forecast-request-history-preview forecast-request-history-hidden"></div>
       <div id="forecastStatusCards" class="forecast-status-cards"></div>
     </div>
@@ -14724,6 +14725,18 @@ function setupForecastSummaryVisibility(){
   setVisible(false);
   button.onclick=()=>setVisible(grid.hidden);
 }
+function setupForecastRequestBoardVisibility(){
+  const button=$("forecastRequestBoardToggleBtn");
+  const board=$("forecastChassisRequestBoard");
+  if(!button||!board)return;
+  const setVisible=visible=>{
+    board.hidden=!visible;
+    button.setAttribute("aria-expanded",String(visible));
+    button.textContent=visible?"Hide Request Board":"Show Request Board";
+  };
+  setVisible(false);
+  button.onclick=()=>setVisible(board.hidden);
+}
 function getForecastRequestBoardPair(pool,size){
   const p=String(pool||"").trim().toUpperCase();
   const s=normalizeInventorySize(size);
@@ -14935,6 +14948,7 @@ async function init(){
   setupForecastExcelViewSettings();
   setupForecastExcelFontControls();
   setupForecastSummaryVisibility();
+  setupForecastRequestBoardVisibility();
   const forecastTrainSummaryCard=$("forecastTrainSummaryCard");
   if(forecastTrainSummaryCard)forecastTrainSummaryCard.remove();
   const forecastDifferenceToggleBtn=$("forecastDifferenceToggleBtn"); if(forecastDifferenceToggleBtn){
@@ -25350,6 +25364,7 @@ body.forecast-view.forecast-print-clean-view #forecastModal .forecast-page > .he
       inset 0 0 16px rgba(251, 191, 36, .18) !important;
   }
 }
+#forecastChassisRequestBoard[hidden]{display:none!important;}
 </style>
 <script id="forecast-hotbox-list-script">(function forecastHotboxListFeature() {
   const button = document.getElementById("forecastHotboxListBtn");

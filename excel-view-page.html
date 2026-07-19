@@ -25,6 +25,8 @@
     --red-soft: #ffd9dd;
     --gray-soft: #edf1f5;
     --shadow: 0 12px 35px rgba(17, 34, 61, .10);
+    --grid-block-weight: 700;
+    --grid-header-weight: 700;
   }
   * { box-sizing: border-box; }
   html { background: var(--canvas); }
@@ -455,7 +457,7 @@
     color:#fff;
     font-family:var(--grid-header-font,"Aptos Narrow","Arial Narrow",Arial,sans-serif);
     font-size:var(--grid-header-size,11px);
-    font-weight:800;
+    font-weight:var(--grid-header-weight,700);
     text-transform:uppercase;
   }
   .yard-view-track,
@@ -493,7 +495,7 @@
     color:#fff;
     font-family:var(--grid-block-font,"Aptos Narrow","Arial Narrow",Arial,sans-serif);
     font-size:max(10px,var(--grid-block-size,12px));
-    font-weight:850;
+    font-weight:var(--grid-block-weight,700);
     line-height:1.05;
     overflow:hidden;
     box-shadow:0 1px 2px rgba(15,23,42,.28),inset 0 1px rgba(255,255,255,.16);
@@ -506,8 +508,8 @@
     gap:4px;
     padding:3px 7px 2px;
     overflow:hidden;
-    font-size:11px;
-    font-weight:900;
+    font-size:var(--grid-block-size,12px);
+    font-weight:var(--grid-block-weight,700);
     letter-spacing:.01em;
     white-space:nowrap;
   }
@@ -526,8 +528,8 @@
     overflow:hidden;
     border-top:1px solid rgba(255,255,255,.24);
     background:rgba(3,10,20,.2);
-    font-size:10px;
-    font-weight:900;
+    font-size:max(8px,calc(var(--grid-block-size,12px) - 2px));
+    font-weight:var(--grid-block-weight,700);
     letter-spacing:.04em;
     opacity:1;
     text-overflow:ellipsis;
@@ -696,7 +698,7 @@
     color: white;
     font-family: var(--grid-header-font, "Aptos Narrow", "Arial Narrow", "Roboto Condensed", Arial, sans-serif);
     font-size: var(--grid-header-size, 11px);
-    font-weight: 700;
+    font-weight: var(--grid-header-weight, 700);
     line-height: 1.05;
     text-transform: uppercase;
   }
@@ -727,6 +729,7 @@
   .split-view-table .cut-cell {
     font-family: var(--grid-block-font, "Aptos Narrow", "Arial Narrow", "Roboto Condensed", Arial, sans-serif);
     font-size: max(9px, calc(var(--grid-block-size, 12px) - 1px));
+    font-weight: var(--grid-block-weight, 700);
     white-space: nowrap;
     text-overflow: ellipsis;
   }
@@ -1353,7 +1356,7 @@
   .grid-typography-controls { display: grid; gap: 6px; margin-top: 7px; }
   .grid-typography-row {
     display: grid;
-    grid-template-columns: 64px minmax(0, 1fr) 98px;
+    grid-template-columns: 64px minmax(150px, 1fr) minmax(150px, .8fr) 72px;
     gap: 7px;
     align-items: center;
   }
@@ -1375,6 +1378,49 @@
     font-size: 10px;
     font-weight: 750;
   }
+  .grid-typography-size-control {
+    min-width: 0;
+    min-height: 31px;
+    display: grid;
+    grid-template-columns: minmax(74px, 1fr) 43px;
+    align-items: center;
+    gap: 7px;
+    padding: 3px 7px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: #fff;
+  }
+  .grid-typography-range {
+    width: 100%;
+    min-width: 0;
+    margin: 0;
+    accent-color: var(--navy-2);
+    cursor: pointer;
+  }
+  .grid-typography-size-value {
+    color: var(--navy);
+    font-size: 10px;
+    font-weight: 850;
+    text-align: right;
+    white-space: nowrap;
+  }
+  .grid-typography-bold {
+    min-height: 31px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 4px 7px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: #fff;
+    color: var(--navy);
+    font-size: 10px;
+    font-weight: 850;
+    cursor: pointer;
+    user-select: none;
+  }
+  .grid-typography-bold input { width: 14px; height: 14px; margin: 0; accent-color: var(--navy-2); }
   @media (max-width: 680px) { .color-rule-row { grid-template-columns: 1fr; } .color-picker-grid { grid-template-columns: repeat(10, 20px); } .color-rule-remove { width: 100%; } }
   .dashboard-panel { min-width: 0; overflow: visible; }
   .dashboard-controls {
@@ -1472,7 +1518,7 @@
     color: #12233e;
     font-family: var(--grid-header-font, "Aptos Narrow", "Arial Narrow", Arial, sans-serif);
     font-size: var(--grid-header-size, 11px);
-    font-weight: 950;
+    font-weight: var(--grid-header-weight, 700);
     letter-spacing: .08em;
     text-transform: uppercase;
   }
@@ -1500,6 +1546,7 @@
     letter-spacing: .02em;
     font-family: var(--grid-header-font, "Aptos Narrow", "Arial Narrow", "Roboto Condensed", Arial, sans-serif);
     font-size: var(--grid-header-size, 11px);
+    font-weight: var(--grid-header-weight, 700);
   }
   .third-summary-label {
     background: #ffffff;
@@ -1984,7 +2031,7 @@
     background: #b42318; color: #ffffff; padding: 8px 7px;
     border-right: 0; border-bottom: 1px solid #8f1c14;
     font-family: var(--grid-header-font, "Aptos Narrow", "Arial Narrow", "Roboto Condensed", Arial, sans-serif);
-    font-size: var(--grid-header-size, 11px); font-weight: 700; letter-spacing: .07em; text-transform: uppercase;
+    font-size: var(--grid-header-size, 11px); font-weight: var(--grid-header-weight, 700); letter-spacing: .07em; text-transform: uppercase;
     text-align: center;
   }
   .grid-head.grid-head-action {
@@ -1999,7 +2046,7 @@
     color: #7c2d12;
     font-family: var(--grid-header-font, "Aptos Narrow", "Arial Narrow", "Roboto Condensed", Arial, sans-serif);
     font-size: var(--grid-header-size, 11px);
-    font-weight: 800;
+    font-weight: var(--grid-header-weight, 700);
     line-height: 1;
     letter-spacing: .04em;
     text-transform: uppercase;
@@ -2024,7 +2071,7 @@
   .track-remaining.over { background: #a61b1b; color: #ffffff; }
   .cut-cell {
     font-family: var(--grid-block-font, Georgia, "Times New Roman", serif);
-    font-size: var(--grid-block-size, 12px); font-weight: 700; text-align: center; line-height: 1.12;
+    font-size: var(--grid-block-size, 12px); font-weight: var(--grid-block-weight, 700); text-align: center; line-height: 1.12;
     letter-spacing: 0; text-wrap: balance; white-space: nowrap;
     background: white; position: relative; word-break: normal; overflow: hidden;
   }
@@ -3242,8 +3289,10 @@
   }
   #colorTabModal .grid-typography-editor { margin-top: 8px; padding-top: 8px; }
   #colorTabModal .grid-typography-controls { margin-top: 5px; gap: 5px; }
-  #colorTabModal .grid-typography-row { grid-template-columns: 62px minmax(0, 1fr) 88px; gap: 6px; }
+  #colorTabModal .grid-typography-row { grid-template-columns: 62px minmax(140px, 1fr) minmax(140px, .8fr) 68px; gap: 6px; }
   #colorTabModal .grid-typography-select { min-height: 29px; padding: 4px 6px; font-size: 10px; }
+  #colorTabModal .grid-typography-size-control,
+  #colorTabModal .grid-typography-bold { min-height: 29px; }
   #colorTabModal .color-rule-top { margin-bottom: 6px; }
   #colorTabModal .color-rule-hint { font-size: 9px; }
   #colorTabModal .color-rule-rows { gap: 5px; }
@@ -3289,7 +3338,7 @@
     #colorTabModal .legend-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     #colorTabModal .color-rule-row { grid-template-columns: 1fr 28px; }
     #colorTabModal .color-picker-grid { grid-column: 1 / -1; }
-    #colorTabModal .grid-typography-row { grid-template-columns: 58px minmax(0, 1fr) 82px; }
+    #colorTabModal .grid-typography-row { grid-template-columns: 58px minmax(104px, 1fr) minmax(112px, .8fr) 64px; }
   }
 
 </style>
@@ -3676,16 +3725,24 @@
       <div class="grid-typography-editor">
         <div class="color-rule-title">Grid Typography</div>
         <div class="grid-typography-controls" id="gridTypographyControls">
-          <label class="grid-typography-row">
+          <div class="grid-typography-row">
             <span class="grid-typography-label">Blocks</span>
             <select class="grid-typography-select" id="blockFontSelect" data-grid-typography="blockFont" aria-label="Font for all blocks"></select>
-            <select class="grid-typography-select" id="blockFontSizeSelect" data-grid-typography="blockSize" aria-label="Font size for all blocks"></select>
-          </label>
-          <label class="grid-typography-row">
+            <label class="grid-typography-size-control" for="blockFontSizeRange">
+              <input class="grid-typography-range" id="blockFontSizeRange" type="range" min="8" max="24" step="1" data-grid-typography="blockSize" aria-label="Block text size">
+              <output class="grid-typography-size-value" id="blockFontSizeValue" for="blockFontSizeRange">12 px</output>
+            </label>
+            <label class="grid-typography-bold"><input id="blockFontBold" type="checkbox" data-grid-typography="blockBold"><span>Bold</span></label>
+          </div>
+          <div class="grid-typography-row">
             <span class="grid-typography-label">Headers</span>
             <select class="grid-typography-select" id="headerFontSelect" data-grid-typography="headerFont" aria-label="Font for grid headers"></select>
-            <select class="grid-typography-select" id="headerFontSizeSelect" data-grid-typography="headerSize" aria-label="Font size for grid headers"></select>
-          </label>
+            <label class="grid-typography-size-control" for="headerFontSizeRange">
+              <input class="grid-typography-range" id="headerFontSizeRange" type="range" min="8" max="24" step="1" data-grid-typography="headerSize" aria-label="Header text size">
+              <output class="grid-typography-size-value" id="headerFontSizeValue" for="headerFontSizeRange">11 px</output>
+            </label>
+            <label class="grid-typography-bold"><input id="headerFontBold" type="checkbox" data-grid-typography="headerBold"><span>Bold</span></label>
+          </div>
         </div>
       </div>
       <div class="color-rule-editor">
@@ -3869,21 +3926,37 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   const GRID_FONT_OPTIONS = Object.freeze([
     {id:"aptos-narrow", label:"Aptos Narrow", stack:'"Aptos Narrow", "Arial Narrow", "Roboto Condensed", Arial, sans-serif'},
     {id:"arial-narrow", label:"Arial Narrow", stack:'"Arial Narrow", "Aptos Narrow", Arial, sans-serif'},
+    {id:"roboto-condensed", label:"Roboto Condensed", stack:'"Roboto Condensed", "Arial Narrow", Arial, sans-serif'},
     {id:"aptos", label:"Aptos", stack:'Aptos, Calibri, "Segoe UI", sans-serif'},
     {id:"calibri", label:"Calibri", stack:'Calibri, Aptos, "Segoe UI", sans-serif'},
     {id:"segoe", label:"Segoe UI", stack:'"Segoe UI", Arial, sans-serif'},
+    {id:"system", label:"System UI", stack:'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'},
     {id:"arial", label:"Arial", stack:'Arial, Helvetica, sans-serif'},
+    {id:"helvetica", label:"Helvetica", stack:'Helvetica, Arial, sans-serif'},
+    {id:"verdana", label:"Verdana", stack:'Verdana, Geneva, sans-serif'},
     {id:"tahoma", label:"Tahoma", stack:'Tahoma, Verdana, sans-serif'},
     {id:"trebuchet", label:"Trebuchet MS", stack:'"Trebuchet MS", Arial, sans-serif'},
+    {id:"franklin", label:"Franklin Gothic", stack:'"Franklin Gothic Medium", "Arial Narrow", Arial, sans-serif'},
+    {id:"century-gothic", label:"Century Gothic", stack:'"Century Gothic", Futura, Arial, sans-serif'},
+    {id:"gill-sans", label:"Gill Sans", stack:'"Gill Sans", "Gill Sans MT", Calibri, sans-serif'},
+    {id:"impact", label:"Impact", stack:'Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif'},
     {id:"consolas", label:"Consolas", stack:'Consolas, "Courier New", monospace'},
-    {id:"georgia", label:"Georgia", stack:'Georgia, "Times New Roman", serif'}
+    {id:"courier", label:"Courier New", stack:'"Courier New", Courier, monospace'},
+    {id:"lucida-console", label:"Lucida Console", stack:'"Lucida Console", Monaco, monospace'},
+    {id:"georgia", label:"Georgia", stack:'Georgia, "Times New Roman", serif'},
+    {id:"times", label:"Times New Roman", stack:'"Times New Roman", Times, serif'},
+    {id:"cambria", label:"Cambria", stack:'Cambria, Georgia, serif'},
+    {id:"garamond", label:"Garamond", stack:'Garamond, Georgia, serif'}
   ]);
-  const GRID_FONT_SIZES = Object.freeze([8,9,10,11,12,13,14,15,16,18,20]);
+  const GRID_FONT_SIZE_MIN = 8;
+  const GRID_FONT_SIZE_MAX = 24;
   const DEFAULT_GRID_TYPOGRAPHY = Object.freeze({
     blockFont:"georgia",
     blockSize:12,
+    blockBold:true,
     headerFont:"aptos-narrow",
-    headerSize:11
+    headerSize:11,
+    headerBold:true
   });
   const GRID_SERIF_MIGRATION_KEY = "settegast-excel-grid-serif-blocks-v1";
 
@@ -3892,13 +3965,16 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     const fontIds = new Set(GRID_FONT_OPTIONS.map(font => font.id));
     const numberOrDefault = (candidate, fallback) => {
       const size = Number(candidate);
-      return GRID_FONT_SIZES.includes(size) ? size : fallback;
+      return Number.isFinite(size) ? Math.max(GRID_FONT_SIZE_MIN, Math.min(GRID_FONT_SIZE_MAX, Math.round(size))) : fallback;
     };
+    const booleanOrDefault = (candidate, fallback) => typeof candidate === "boolean" ? candidate : fallback;
     return {
       blockFont:fontIds.has(source.blockFont) ? source.blockFont : DEFAULT_GRID_TYPOGRAPHY.blockFont,
       blockSize:numberOrDefault(source.blockSize, DEFAULT_GRID_TYPOGRAPHY.blockSize),
+      blockBold:booleanOrDefault(source.blockBold, DEFAULT_GRID_TYPOGRAPHY.blockBold),
       headerFont:fontIds.has(source.headerFont) ? source.headerFont : DEFAULT_GRID_TYPOGRAPHY.headerFont,
-      headerSize:numberOrDefault(source.headerSize, DEFAULT_GRID_TYPOGRAPHY.headerSize)
+      headerSize:numberOrDefault(source.headerSize, DEFAULT_GRID_TYPOGRAPHY.headerSize),
+      headerBold:booleanOrDefault(source.headerBold, DEFAULT_GRID_TYPOGRAPHY.headerBold)
     };
   }
 
@@ -7582,8 +7658,10 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     const root = document.documentElement;
     root.style.setProperty("--grid-block-font", blockFont.stack);
     root.style.setProperty("--grid-block-size", `${state.gridTypography.blockSize}px`);
+    root.style.setProperty("--grid-block-weight", state.gridTypography.blockBold ? "700" : "400");
     root.style.setProperty("--grid-header-font", headerFont.stack);
     root.style.setProperty("--grid-header-size", `${state.gridTypography.headerSize}px`);
+    root.style.setProperty("--grid-header-weight", state.gridTypography.headerBold ? "700" : "400");
   }
 
   function renderGridTypographyControls() {
@@ -7591,17 +7669,22 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     const fontOptions = selected => GRID_FONT_OPTIONS.map(font =>
       `<option value="${escapeAttr(font.id)}" ${font.id === selected ? "selected" : ""}>${escapeHtml(font.label)}</option>`
     ).join("");
-    const sizeOptions = selected => GRID_FONT_SIZES.map(size =>
-      `<option value="${size}" ${size === selected ? "selected" : ""}>${size} px</option>`
-    ).join("");
     const blockFontSelect = $("#blockFontSelect");
-    const blockSizeSelect = $("#blockFontSizeSelect");
+    const blockSizeRange = $("#blockFontSizeRange");
+    const blockSizeValue = $("#blockFontSizeValue");
+    const blockBold = $("#blockFontBold");
     const headerFontSelect = $("#headerFontSelect");
-    const headerSizeSelect = $("#headerFontSizeSelect");
+    const headerSizeRange = $("#headerFontSizeRange");
+    const headerSizeValue = $("#headerFontSizeValue");
+    const headerBold = $("#headerFontBold");
     if (blockFontSelect) blockFontSelect.innerHTML = fontOptions(state.gridTypography.blockFont);
-    if (blockSizeSelect) blockSizeSelect.innerHTML = sizeOptions(state.gridTypography.blockSize);
+    if (blockSizeRange) blockSizeRange.value = String(state.gridTypography.blockSize);
+    if (blockSizeValue) blockSizeValue.textContent = `${state.gridTypography.blockSize} px`;
+    if (blockBold) blockBold.checked = state.gridTypography.blockBold;
     if (headerFontSelect) headerFontSelect.innerHTML = fontOptions(state.gridTypography.headerFont);
-    if (headerSizeSelect) headerSizeSelect.innerHTML = sizeOptions(state.gridTypography.headerSize);
+    if (headerSizeRange) headerSizeRange.value = String(state.gridTypography.headerSize);
+    if (headerSizeValue) headerSizeValue.textContent = `${state.gridTypography.headerSize} px`;
+    if (headerBold) headerBold.checked = state.gridTypography.headerBold;
   }
 
   function dwellCellText(value, decimals=1) {
@@ -8750,17 +8833,26 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     state.colorRules = DEFAULT_COLOR_RULES.map(rule => ({...rule}));
     renderAll();
   });
-  $("#gridTypographyControls").addEventListener("change", event => {
-    const field = event.target.closest("[data-grid-typography]");
+  function updateGridTypographyFromControl(field, rerenderControls=false) {
     if (!field) return;
     const key = field.dataset.gridTypography;
-    state.gridTypography = normalizeGridTypography({
-      ...state.gridTypography,
-      [key]: key.endsWith("Size") ? Number(field.value) : field.value
-    });
+    const value = field.type === "checkbox"
+      ? field.checked
+      : key.endsWith("Size") ? Number(field.value) : field.value;
+    state.gridTypography = normalizeGridTypography({...state.gridTypography, [key]:value});
     applyGridTypography();
-    renderGridTypographyControls();
+    const valueLabel = key === "blockSize" ? $("#blockFontSizeValue") : key === "headerSize" ? $("#headerFontSizeValue") : null;
+    if (valueLabel) valueLabel.textContent = `${state.gridTypography[key]} px`;
+    if (rerenderControls) renderGridTypographyControls();
     saveState();
+  }
+  $("#gridTypographyControls").addEventListener("input", event => {
+    const field = event.target.closest('input[type="range"][data-grid-typography]');
+    if (field) updateGridTypographyFromControl(field);
+  });
+  $("#gridTypographyControls").addEventListener("change", event => {
+    const field = event.target.closest("[data-grid-typography]");
+    if (field) updateGridTypographyFromControl(field, field.type !== "range");
   });
   $("#colorRuleRows").addEventListener("input", e => {
     const field = e.target.closest("[data-color-rule]");

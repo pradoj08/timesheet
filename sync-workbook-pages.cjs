@@ -148,7 +148,7 @@ function buildAmReportWorkspace(sheetHtml, rosterPageHtml) {
   html,body{min-height:100%;margin:0;background:#e9eef5;color:#132238;font-family:Calibri,"Aptos Narrow",Arial,sans-serif}
   body{padding:8px;overflow-x:hidden}
   .am-three-day-workspace{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:start;gap:0;width:100%;max-width:none;margin:0 auto}
-  .am-day-panel{min-width:0;overflow:hidden;border:1px solid #a9b8cc;border-radius:12px;background:#fff;box-shadow:0 8px 24px rgba(15,23,42,.09)}
+  .am-day-panel{min-width:0;overflow:hidden;border:0;border-radius:0;background:#fff;box-shadow:none}
   .am-day-frame{display:block;width:100%;min-width:0;height:900px;border:0;background:#eef2f6;overflow:hidden}
   .am-roster-float{position:fixed;z-index:1000;top:76px;left:50%;width:min(500px,calc(100vw - 24px));max-height:calc(100vh - 92px);transform:translateX(-50%);overflow:hidden;border:2px solid #22344d;border-radius:8px;background:#f8fafc;box-shadow:0 20px 55px rgba(15,23,42,.38)}
   .am-roster-float[hidden]{display:none!important}
@@ -675,6 +675,10 @@ function buildAmReportWorkspace(sheetHtml, rosterPageHtml) {
   window.addEventListener("message", event => {
     if (event.source === rosterFrame.contentWindow && event.data && event.data.type === "conglobal-current-roster-modal-state") return;
     if (event.source === rosterFrame.contentWindow && event.data && event.data.type === "conglobal-current-roster-ready") return;
+    if (event.source === window.parent && event.data && event.data.type === "conglobal-toggle-todays-roster") {
+      if (rosterFloat.hidden) openRoster(); else closeRoster();
+      return;
+    }
     if (!frames.some(frame => frame.contentWindow === event.source)) return;
     if (event.data && event.data.type === "conglobal-open-todays-roster") {
       if (rosterFloat.hidden) openRoster(); else closeRoster();

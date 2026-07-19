@@ -20,11 +20,20 @@
     blocks: EMPTY_LIST
   });
 
+  const switchingShared = Object.freeze({
+    ...shared,
+    source: "Switching Bot Master Operating Specification v2.0",
+    sourceDocument: "Switching_Bot_Master_Specification_v2.md",
+    sourceVersion: "2.0",
+    reviewStatus: "imported",
+    lastReview: "2026-07-19"
+  });
+
   window.CONGLOBAL_OPS_KNOWLEDGE = {
     id: "settegast-operations-knowledge",
     title: "Settegast Operations Knowledge",
-    version: "2026.07.18-foundation.2",
-    reviewedAt: "2026-07-18",
+    version: "2026.07.19-foundation.3",
+    reviewedAt: "2026-07-19",
     scope: "Local operational guidance for the all-in-one Settegast workbook",
     limitations: [
       "The local knowledge base can explain established rules and workflows without an AI provider.",
@@ -112,6 +121,199 @@
         fields: ["track", "capacityFt", "currentFt", "remainingFt", "visualCars"],
         metrics: ["feet", "railcars"],
         keywords: ["track", "capacity", "801", "802", "803", "804", "805", "806", "807", "808", "809", "77 feet", "cars", "remaining"]
+      },
+      {
+        ...switchingShared,
+        id: "switching-authority-and-objective",
+        title: "Switching planner authority and controlling objective",
+        category: "switching operations",
+        pages: ["excelView", "matrix", "matrixWide"],
+        summary: "YardMate may advise on building IHOSA with fewer legal moves and fewer fragments, but every move remains subject to railroad rules, job briefings, local authority, dispatcher instructions, physical verification, and qualified human approval.",
+        rules: [
+          "Treat IHOSA as the controlling outbound train and preserve its block integrity while protecting track access and capacity.",
+          "Consolidate IHOSA into the fewest practical tracks, normally using storage tracks 805 through 807 first.",
+          "Prevent non-IHOSA traffic from obstructing IHOSA and minimize rehandling without inventing access or ignoring restrictions.",
+          "YardMate is an advisory planning tool; it does not authorize a move or replace railroad operating rules, job briefings, dispatcher instructions, local instructions, or physical verification.",
+          "A qualified human must validate access, protection, capacity, equipment condition, and authority before every move."
+        ],
+        keywords: ["switching", "ihosa", "authority", "advisory", "job briefing", "dispatcher", "human validation", "block integrity", "fewest tracks"]
+      },
+      {
+        ...switchingShared,
+        id: "switching-orientation-access-and-legality",
+        title: "Switching orientation, north-end access, and move legality",
+        category: "switching operations",
+        pages: ["excelView", "matrix", "matrixWide"],
+        summary: "All diagrams read north/rear to south/head to engine, and every switch must be physically reachable from the north end without imaginary access or descriptive reordering.",
+        rules: [
+          "Print every track and outbound string as NORTH / REAR -> SOUTH / HEAD -> ENGINE; the leftmost block is north/rear and the engine is at the far right.",
+          "Switching access is from the north end only, and departure is southbound toward the engine.",
+          "STRICT operational head-to-rear A-B-C therefore prints as C | B | A | ENGINE.",
+          "Identify the exact accessible north-end cut, the remainder left in place, the staging or destination track, the access created, and whether the placement is temporary or final.",
+          "Never imply south-end access, magical access to a buried block, or an in-track reorder that no described move creates.",
+          "Use move language such as Pull the north-end cut, Footboard ICTF plus LTDS, Shove the cut into Track 805, and Stage BBCT north-out.",
+          "Label each proposed move North-end access, South-Out Integrity, and Capacity legal; add Storage-first, CU untouched, BBCT north-out, or temporary-must-clear when applicable."
+        ],
+        keywords: ["north end", "north-end", "south-out integrity", "engine", "rear", "head", "orientation", "buried", "legal move", "footboard", "shove", "pull"]
+      },
+      {
+        ...switchingShared,
+        id: "switching-track-roles-and-capacity",
+        title: "Switching track roles, capacity checks, and temporary limits",
+        category: "switching operations",
+        pages: ["excelView", "matrix", "matrixWide"],
+        summary: "Storage-first planning prefers 805 through 807, working tracks remain 801 through 804 and 808 through 809, and capacity is recalculated after every move.",
+        rules: [
+          "Preferred IHOSA storage tracks are 805, 806, and 807; this preference is not a permanent block-to-track assignment and is not absolute.",
+          "Working tracks are 801, 802, 803, 804, 808, and 809.",
+          "IHOSA footage at or below 2,500 ft normally uses one suitable storage track; 2,501 through 2,750 ft may use a track with sufficient capacity and approval.",
+          "A temporary overage of no more than 350 ft may exist only during switching and must never remain in the final plan.",
+          "A footboard cut may not exceed 3,200 ft.",
+          "Recalculate occupied and available footage after every move and identify any temporary condition that must clear.",
+          "Track 803 is a temporary switch pad for staging, quick-foot work, fork-and-return work, or last-resort BBCT handling and should clear before departure unless the user changes the plan."
+        ],
+        metrics: ["feet", "occupied footage", "available footage", "footboard footage"],
+        keywords: ["switching capacity", "storage first", "805", "806", "807", "working track", "temporary overage", "350 feet", "3200", "footboard", "track 803"]
+      },
+      {
+        ...switchingShared,
+        id: "switching-block-tiers-and-train-ownership",
+        title: "IHOSA block tiers and train ownership",
+        category: "switching operations",
+        pages: ["excelView", "matrix", "matrixWide"],
+        summary: "Switching guidance classifies IHOSA blocks into head, middle, and rear tiers while keeping BBCT, AVDS, CU, and empties under their documented handling rules.",
+        rules: [
+          "Tier A yellow/head blocks are YTDS, PCDS, PTDS, TUDS, TSDS, TCDS, and PFDS.",
+          "Tier B green/middle blocks are ICTF, ICDS, LTDS, DADS, PHNX, KCSM, LBDS, and LDDS.",
+          "Tier C purple/rear blocks are FXSI, SIDS, SADS, SANT, MXFE, and EWGD; EWGD is IHOSA and must ride.",
+          "BBCT belongs to MHOBC, not IHOSA, and must remain separate and nonobstructive.",
+          "AVDS follows MHOAS, not CU, and may be staged or moved when it obstructs IHOSA.",
+          "CU is live ramp/customer work and remains untouched unless it directly obstructs IHOSA; never move CU merely for convenience.",
+          "Empty blocks SS, SL, and MTP1 remain unless they block access, violate capacity, are needed for final assembly, or are explicitly reassigned."
+        ],
+        blocks: ["YTDS", "PCDS", "PTDS", "TUDS", "TSDS", "TCDS", "PFDS", "ICTF", "ICDS", "LTDS", "DADS", "PHNX", "KCSM", "LBDS", "LDDS", "FXSI", "SIDS", "SADS", "SANT", "MXFE", "EWGD", "BBCT", "AVDS", "CU", "SS", "SL", "MTP1"],
+        keywords: ["tier a", "tier b", "tier c", "yellow", "green", "purple", "ihosa blocks", "bbct", "mhobc", "avds", "mhoas", "cu", "empties", "ewgd", "mxfe"]
+      },
+      {
+        ...switchingShared,
+        id: "switching-blocking-modes-and-priorities",
+        title: "LOOSE and STRICT blocking modes with decision priority",
+        category: "switching operations",
+        pages: ["excelView", "matrix", "matrixWide"],
+        summary: "LOOSE is the default and optimizes integrity and move count; STRICT enforces A-B-C from head to rear, which prints C-B-A toward the engine.",
+        rules: [
+          "LOOSE mode preserves IHOSA integrity, trails Tier C purple, keeps MXFE rearmost when practical, and reduces fragmentation and moves while permitting explainable intra-tier and limited A/B imperfections.",
+          "STRICT mode requires head-to-rear A-B-C: Tier A ahead of Tier B, Tier B ahead of Tier C, YTDS ahead of LTDS, purple trailing, MXFE rearmost when practical, and similar families grouped.",
+          "In north-to-south printed orientation, STRICT appears as C | B | A | ENGINE.",
+          "Within a tier, order remains flexible unless an explicit user rule, access condition, capacity constraint, or move limit controls it.",
+          "Apply priorities in order: safety/legal authority; north access and South-Out Integrity; IHOSA; capacity; prevent non-IHOSA obstruction; CU restriction; reduce fragmentation; storage-first/minimum tracks; blocking mode; minimize moves/rehandling; BBCT or secondary consolidation.",
+          "Do not consolidate BBCT while avoidable IHOSA fragmentation remains."
+        ],
+        keywords: ["loose", "strict", "blocking mode", "a b c", "c b a engine", "priority", "south-out", "fragmentation", "mxfe", "ytds", "ltds"]
+      },
+      {
+        ...switchingShared,
+        id: "switching-buried-blocks-and-special-handling",
+        title: "Buried blocks, non-IHOSA obstruction, and special handling",
+        category: "switching operations",
+        pages: ["excelView", "matrix", "matrixWide"],
+        summary: "Buried work is exposed by legal north-end cuts, with partial tactics preferred and full-track pulls reserved for justified last resort use.",
+        rules: [
+          "To reach a buried IHOSA block, stage accessible blockers, footboard the named north partial cut, use Fork + Return when it avoids a full pull, and use a full-track pull only as a justified last resort.",
+          "A full-track pull is appropriate only when the whole cut is intended for final placement/storage or no legal partial movement exists; explain why.",
+          "A non-IHOSA blocker may be replaced, staged north-out, relocated, or held temporarily on Track 803.",
+          "Mark BBCT as BBCT - DO NOT LIFT WITH IHOSA; if BBCT is buried between CU or ramp work, ask for direction before disturbing the work.",
+          "Non-IHOSA may remain beside IHOSA only when the plan explains why it is nonobstructive; otherwise stage it north-out.",
+          "Account for every temporary piece and identify the move that clears it."
+        ],
+        keywords: ["buried block", "fork return", "full track pull", "last resort", "north-out", "do not lift", "bbct", "non-ihosa", "temporary piece", "track 803"]
+      },
+      {
+        ...switchingShared,
+        id: "switching-tactical-patterns",
+        title: "Named switching tactics and completion requirements",
+        category: "switching operations",
+        pages: ["excelView", "matrix", "matrixWide"],
+        summary: "Named tactics are planning patterns, not shortcuts around access or capacity; each tactic must finish with every temporary cut accounted for.",
+        rules: [
+          "T1 Quick Foot / Yank-Split-Rejoin handles X | Y | X by legally isolating Y and rejoining X.",
+          "T1-EXC handles X | Y | X | CU while leaving CU untouched.",
+          "T2 2-Cup Stack consolidates two accessible cups into a legal destination.",
+          "T3 3-Cup Stack consolidates three accessible cups into a legal destination.",
+          "T4 Fork + Return temporarily stages an accessible blocker, works the newly exposed cut, and returns or finishes the staged cut.",
+          "T5 Cup-Stack to Storage consolidates an accessible IHOSA cup into a preferred storage track.",
+          "T8 Non-IHOSA Isolation removes or stages non-IHOSA north-out so it cannot obstruct IHOSA.",
+          "Before using any tactic, verify north-end access, footboard and destination capacity, South-Out Integrity, and the final disposition of every temporary piece."
+        ],
+        keywords: ["tactic", "quick foot", "yank split rejoin", "2 cup", "3 cup", "fork return", "cup stack", "non-ihosa isolation", "t1", "t2", "t3", "t4", "t5", "t8"]
+      },
+      {
+        ...switchingShared,
+        id: "switching-planning-workflow",
+        title: "Switching planning workflow and three-option gate",
+        category: "switching operations",
+        pages: ["excelView", "matrix", "matrixWide"],
+        summary: "YardMate normalizes the yard, calculates the controlling workload, surfaces constraints, and presents three options before creating a detailed switching plan.",
+        rules: [
+          "Normalize Yard View for tracks 801 through 809, including empty tracks, north-to-south block order, occupied footage, available footage, and the source state of every block.",
+          "For each block retain symbol, length, cars/platforms, train assignment, IHOSA/BBCT/AVDS/CU/empty identity, fragmentation, obstruction, and staged/final/temporary state.",
+          "Collect operating conditions including expected inbound work, switching time, maximum moves, LOOSE or STRICT mode, Track 803 availability, permitted tier imperfections, family grouping, and clear-track priorities.",
+          "Calculate total IHOSA including EWGD, footage by tier, fragmentation, minimum feasible tracks, and available storage capacity before proposing work.",
+          "Present Option A minimal moves, Option B balanced, and Option C strict; each includes estimated moves, strategy, execution summary, track use, north-to-south-to-engine preview, and tradeoffs.",
+          "Wait for the user to select A, B, or C; do not issue the final detailed switching plan before selection.",
+          "After selection, repeat a fact check before producing moves."
+        ],
+        keywords: ["switching workflow", "option a", "option b", "option c", "minimal moves", "balanced", "strict option", "yard view", "normalize", "wait for selection"]
+      },
+      {
+        ...switchingShared,
+        id: "switching-plan-output-and-audit",
+        title: "Switching plan output, yard diagrams, and final audit",
+        category: "switching operations",
+        pages: ["excelView", "matrix", "matrixWide", "audits"],
+        summary: "A selected switching option produces a traceable before/after plan for all nine tracks, a final outbound string, and explicit legality, capacity, blocking, and unfinished-work audits.",
+        rules: [
+          "The final plan includes the selected strategy, before diagram for 801 through 809, blocking intention in both orientations, detailed moves, after diagram for 801 through 809, final outbound string, temporary items still open, blocking-flaw audit, and safety/capacity audit.",
+          "Always show tracks 801 through 809, including EMPTY tracks, occupied and available footage, UNKNOWN source values, and temporary tags.",
+          "A track line may read 06-804 : ICTF | LTDS | YTDS [occupied 1743 ft | available 757 ft].",
+          "Do not silently estimate missing footage, cars, block identity, track order, access, authority, or capacity.",
+          "State assumptions, missing inputs, legal-access dependencies, estimated move counts, and temporary versus final status.",
+          "Surface flaws decisively; never hide a violation, move CU for convenience, mix BBCT with IHOSA, skip the three-option menu, or present advisory guidance as operating authority."
+        ],
+        keywords: ["switching plan", "before diagram", "after diagram", "outbound string", "audit", "unfinished", "temporary open", "801 through 809", "unknown", "occupied", "available"]
+      },
+      {
+        ...switchingShared,
+        id: "switching-default-checklist",
+        title: "Default switching checklist values",
+        category: "switching operations",
+        pages: ["excelView", "matrix", "matrixWide"],
+        summary: "When the user has not supplied a switching preference, YardMate uses the specification defaults while leaving calculated and unknown values visibly unresolved.",
+        rules: [
+          "Additional inbound: YES; perfect-time assumption: YES; small imperfections: NO; worst case: NO; effort scale: NOT PROVIDED.",
+          "Empties move: NO unless blocking; Track 803 temporary use: YES; group similar families: YES; clear-track priority: NONE.",
+          "IHOSA footage and minimum required tracks: CALCULATE; outbound train: IHOSA; consolidation priority: NONE; blocking mode: LOOSE.",
+          "CU move: NO unless directly blocking; determine BBCT disposition from the current Yard View.",
+          "Do not convert NOT PROVIDED, NONE, CALCULATE, or current-yard dependencies into invented values."
+        ],
+        keywords: ["default checklist", "additional inbound", "effort scale", "empties", "803 temporary", "group families", "clear track", "calculate", "loose default"]
+      },
+      {
+        ...switchingShared,
+        id: "switching-track-803-capacity-conflict",
+        title: "Track 803 capacity conflict requiring authorization",
+        category: "unresolved questions",
+        pages: ["excelView", "matrix", "matrixWide"],
+        status: "unresolved",
+        confidence: "high",
+        verificationRequired: true,
+        summary: "The switching specification states Track 803 capacity is 1,750 ft, while the currently confirmed project capacity rule states 2,200 ft; YardMate must not silently choose between them.",
+        rules: [
+          "Display the conflict whenever a plan depends on Track 803 capacity.",
+          "Do not certify a move, temporary hold, or final placement above 1,750 ft on Track 803 until an authorized user confirms the controlling physical capacity.",
+          "After authorization, update the canonical rail-track-capacity entry and retain the superseded value for traceability."
+        ],
+        keywords: ["track 803", "803 capacity conflict", "1750", "2200", "unresolved", "verify capacity", "authorized"]
       },
       {
         ...shared,

@@ -364,23 +364,354 @@
     .editor-shell.preview-only .preview-pane { display: block; }
     #noteBody, .markdown-preview { padding: 25px 22px 70px; }
   }
+
+  /* Soft Paper 1.2.2 compatibility layer for this standalone Obsidian workspace. */
+  :root {
+    --bg: #303446;
+    --panel: #292c3c;
+    --panel-2: #232634;
+    --panel-3: #414559;
+    --line: #51576d;
+    --line-soft: #414559;
+    --text: #c6d0f5;
+    --muted: #a5adce;
+    --faint: #838ba7;
+    --accent: #1a9caa;
+    --accent-2: #0ad1d0;
+    --accent-soft: rgba(10,209,208,.14);
+    --danger: #e78284;
+    --success: #81c8be;
+    --shadow: rgba(9,12,20,.32);
+    --chrome: #224b5d;
+    --chrome-2: #2b6173;
+    --paper: #303446;
+    --paper-raised: #292c3c;
+    --paper-soft: #232634;
+    --selection: rgba(10,209,208,.17);
+    --heading: #81c8be;
+  }
+  body.light-theme {
+    --bg: #eee6dd;
+    --panel: #e6dbd1;
+    --panel-2: #ddd0c6;
+    --panel-3: #d7c7ba;
+    --line: #c6b5a9;
+    --line-soft: #d6c8be;
+    --text: #575279;
+    --muted: #6e6a86;
+    --faint: #8f889e;
+    --accent: #286983;
+    --accent-2: #1a9caa;
+    --accent-soft: rgba(26,156,170,.13);
+    --danger: #b4637a;
+    --success: #56949f;
+    --shadow: rgba(87,82,121,.15);
+    --chrome: #286983;
+    --chrome-2: #4b8fab;
+    --paper: #eee6dd;
+    --paper-raised: #f7f0e9;
+    --paper-soft: #e6dbd1;
+    --selection: rgba(40,105,131,.13);
+    --heading: #286983;
+  }
+  body.soft-paper-theme {
+    background: var(--paper-soft);
+    font-family: "Segoe UI Variable Text", "Segoe UI", Arial, sans-serif;
+  }
+  .obsidian-titlebar {
+    display: grid;
+    grid-template-columns: 43px 54px minmax(0,1fr) auto 138px;
+    width: 100%;
+    height: 30px;
+    align-items: center;
+    border-bottom: 1px solid rgba(0,0,0,.36);
+    background: #17191f;
+    color: #d8dce6;
+    font-size: 11px;
+    user-select: none;
+  }
+  .window-mark { display: grid; height: 100%; place-items: center; color: #9a7af0; font-size: 17px; }
+  .history-actions { display: flex; gap: 12px; color: #858997; font-size: 20px; }
+  .obsidian-titlebar > strong { overflow: hidden; text-align: center; text-overflow: ellipsis; white-space: nowrap; }
+  .application-name { padding-left: 10px; color: #858997; }
+  .window-actions { display: grid; height: 100%; grid-template-columns: repeat(3,1fr); }
+  .window-actions span { display: grid; place-items: center; }
+  .window-actions span:last-child:hover { background: #c42b1c; color: white; }
+  .notes-app {
+    grid-template-columns: 43px minmax(220px,270px) minmax(420px,1fr) minmax(210px,250px);
+    height: calc(100% - 30px);
+    padding: 4px;
+    gap: 4px;
+    background: var(--paper-soft);
+  }
+  .workspace-ribbon {
+    display: flex;
+    min-height: 0;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: 6px 4px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--chrome);
+    box-shadow: 0 2px 7px var(--shadow);
+  }
+  .ribbon-button {
+    display: grid;
+    width: 33px;
+    height: 33px;
+    place-items: center;
+    padding: 0;
+    border: 0;
+    border-radius: 7px;
+    background: transparent;
+    color: rgba(255,255,255,.72);
+    cursor: pointer;
+    font-size: 16px;
+  }
+  .ribbon-button:hover, .ribbon-button.active { background: rgba(255,255,255,.16); color: #fff; }
+  .ribbon-spacer { flex: 1 1 auto; }
+  .sidebar, .workspace, .right-sidebar {
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--paper-raised);
+    box-shadow: 0 2px 8px var(--shadow);
+  }
+  .sidebar { border-right: 1px solid var(--line); }
+  .vault-head {
+    min-height: 48px;
+    padding: 7px 9px;
+    border-bottom-color: rgba(255,255,255,.15);
+    background: var(--chrome);
+    color: #fff;
+  }
+  .vault-mark {
+    width: 30px;
+    height: 30px;
+    border-color: rgba(255,255,255,.32);
+    background: rgba(255,255,255,.12);
+    box-shadow: none;
+    font-size: 15px;
+  }
+  .vault-title { flex: 1 1 auto; }
+  .vault-title span { color: rgba(255,255,255,.66); }
+  .pane-action {
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    border: 0;
+    border-radius: 5px;
+    background: transparent;
+    color: rgba(255,255,255,.75);
+    cursor: pointer;
+  }
+  .pane-action:hover { background: rgba(255,255,255,.14); color: #fff; }
+  .primary-button {
+    border-color: var(--chrome);
+    background: linear-gradient(180deg,var(--chrome-2),var(--chrome));
+    box-shadow: 0 4px 10px rgba(28,81,99,.24);
+  }
+  .search-wrap::before { content: "⌕"; }
+  .folder-list-head, .note-list-head { color: var(--accent); }
+  .folder-select.active, .note-item.active { border-color: color-mix(in srgb,var(--accent) 48%,transparent); background: var(--selection); }
+  .note-item-icon { color: var(--accent); }
+  body.sp-rainbow-folders .folder-row:nth-child(3n+1) .folder-select b { color: #e49b5d; }
+  body.sp-rainbow-folders .folder-row:nth-child(3n+2) .folder-select b { color: #1a9caa; }
+  body.sp-rainbow-folders .folder-row:nth-child(3n+3) .folder-select b { color: #8e7cc3; }
+  body.sp-rainbow-folders .note-item:nth-child(5n+1) .note-item-icon { color: #b4637a; }
+  body.sp-rainbow-folders .note-item:nth-child(5n+2) .note-item-icon { color: #ea9d34; }
+  body.sp-rainbow-folders .note-item:nth-child(5n+3) .note-item-icon { color: #56949f; }
+  body.sp-rainbow-folders .note-item:nth-child(5n+4) .note-item-icon { color: #907aa9; }
+  body.sp-rainbow-folders .note-item:nth-child(5n+5) .note-item-icon { color: #286983; }
+  .workspace { background: var(--paper); }
+  .workspace-tabbar {
+    display: flex;
+    min-height: 34px;
+    align-items: end;
+    gap: 3px;
+    padding: 4px 6px 0;
+    border-bottom: 1px solid rgba(0,0,0,.16);
+    background: var(--chrome);
+  }
+  .workspace-tab {
+    display: flex;
+    max-width: 300px;
+    min-width: 160px;
+    height: 29px;
+    align-items: center;
+    gap: 7px;
+    padding: 5px 8px;
+    border: 1px solid rgba(0,0,0,.2);
+    border-bottom: 0;
+    border-radius: 7px 7px 0 0;
+    background: var(--paper-raised);
+    color: var(--text);
+    cursor: default;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  #activeTabTitle { overflow: hidden; flex: 1 1 auto; text-overflow: ellipsis; white-space: nowrap; }
+  .tab-icon { color: var(--accent); }
+  .tab-close { color: var(--muted); font-size: 15px; }
+  .new-tab-button {
+    width: 28px;
+    height: 26px;
+    margin-bottom: 2px;
+    border: 0;
+    border-radius: 5px;
+    background: transparent;
+    color: rgba(255,255,255,.8);
+    cursor: pointer;
+    font-size: 18px;
+  }
+  .new-tab-button:hover { background: rgba(255,255,255,.14); }
+  .tabbar-spacer { flex: 1 1 auto; }
+  .soft-paper-badge { align-self: center; padding: 0 6px 4px; color: rgba(255,255,255,.68); font-size: 8px; font-weight: 800; letter-spacing: .09em; }
+  .topbar { min-height: 46px; padding: 5px 9px; background: var(--paper-raised); }
+  .editor-shell { gap: 5px; padding: 5px; background: var(--paper-soft); }
+  .editor-pane, .preview-pane {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--paper-raised);
+    box-shadow: 0 1px 5px var(--shadow);
+  }
+  .editor-pane { border-right: 1px solid var(--line); }
+  #noteBody, .markdown-preview { width: min(880px,100%); padding: 30px 40px 70px; }
+  #noteBody { color: var(--text); font-size: 14px; line-height: 1.65; }
+  .markdown-preview {
+    color: var(--text);
+    font-family: "Source Serif 4", "Iowan Old Style", Georgia, serif;
+    font-size: 16px;
+    line-height: 1.66;
+  }
+  .markdown-preview h1, .markdown-preview h2, .markdown-preview h3 { color: var(--heading); font-family: "Segoe UI Variable Display", "Segoe UI", sans-serif; }
+  .markdown-preview a, .wikilink { color: var(--accent); font-weight: 650; }
+  .markdown-preview code { color: var(--accent); }
+  .statusbar { min-height: 23px; border-radius: 0 0 7px 7px; }
+  body.sp-blue-status .statusbar { border-top-color: rgba(0,0,0,.12); background: var(--chrome); color: rgba(255,255,255,.78); }
+  .right-sidebar { display: flex; min-width: 0; min-height: 0; flex-direction: column; }
+  .right-tabbar { display: flex; min-height: 36px; gap: 2px; padding: 4px 5px 0; background: var(--chrome); }
+  .right-tab {
+    min-width: 66px;
+    padding: 6px 8px;
+    border: 0;
+    border-radius: 6px 6px 0 0;
+    background: transparent;
+    color: rgba(255,255,255,.7);
+    cursor: pointer;
+    font-size: 10px;
+    font-weight: 800;
+  }
+  .right-tab.active { background: var(--paper-raised); color: var(--text); }
+  .right-pane { padding: 10px; border-bottom: 1px solid var(--line-soft); }
+  .right-pane > header { display: flex; align-items: center; justify-content: space-between; color: var(--accent); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; }
+  .right-pane > header span { color: var(--faint); font-size: 9px; }
+  .right-pane p { color: var(--muted); font-size: 11px; line-height: 1.5; }
+  .outline-list { margin-top: 8px; }
+  .outline-link { display: block; width: 100%; overflow: hidden; padding: 5px 6px; border: 0; border-radius: 5px; background: transparent; color: var(--muted); cursor: pointer; text-align: left; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; }
+  .outline-link:hover { background: var(--selection); color: var(--text); }
+  .outline-link.level-2 { padding-left: 15px; }
+  .outline-link.level-3 { padding-left: 24px; }
+  .properties-pane { margin-top: auto; }
+  .properties-pane dl { display: grid; grid-template-columns: 60px 1fr; gap: 5px; margin: 9px 0 0; font-size: 10px; }
+  .properties-pane dt { color: var(--faint); }
+  .properties-pane dd { margin: 0; color: var(--muted); }
+  .style-settings-overlay {
+    position: fixed;
+    z-index: 200;
+    inset: 0;
+    display: grid;
+    place-items: start center;
+    padding: min(8vh,70px) 18px 18px;
+    background: rgba(12,16,23,.58);
+    backdrop-filter: blur(5px);
+  }
+  .style-settings-overlay[hidden] { display: none; }
+  .style-settings-modal {
+    width: min(720px,100%);
+    max-height: calc(100vh - min(8vh,70px) - 24px);
+    overflow: auto;
+    border: 1px solid var(--accent);
+    border-radius: 12px;
+    background: var(--paper-raised);
+    color: var(--text);
+    box-shadow: 0 24px 70px rgba(0,0,0,.38);
+  }
+  .style-settings-head { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 19px 21px; border-bottom: 1px solid var(--line); background: var(--chrome); color: #fff; }
+  .settings-kicker { color: #8ee8df; font-size: 9px; font-weight: 850; letter-spacing: .13em; text-transform: uppercase; }
+  .style-settings-head h2 { margin: 3px 0 1px; font-size: 24px; }
+  .style-settings-head p { margin: 0; color: rgba(255,255,255,.68); font-size: 10px; }
+  .settings-close { width: 36px; height: 36px; border: 1px solid rgba(255,255,255,.28); border-radius: 50%; background: rgba(255,255,255,.1); color: white; cursor: pointer; font-size: 21px; }
+  .style-settings-body { padding: 10px 20px; }
+  .setting-group + .setting-group { border-top: 1px solid var(--line); }
+  .setting-group h3 { margin: 15px 0 4px; color: var(--accent); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
+  .setting-row { display: flex; min-height: 54px; align-items: center; justify-content: space-between; gap: 18px; padding: 8px 2px; border-bottom: 1px solid var(--line-soft); }
+  .setting-row span { min-width: 0; }
+  .setting-row strong, .setting-row small { display: block; }
+  .setting-row strong { font-size: 12px; }
+  .setting-row small { margin-top: 3px; color: var(--muted); font-size: 10px; }
+  .setting-row select { min-width: 170px; padding: 7px 9px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel-2); color: var(--text); }
+  .setting-row input[type="checkbox"] { width: 34px; height: 19px; flex: 0 0 auto; accent-color: var(--accent); cursor: pointer; }
+  .style-settings-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 20px; border-top: 1px solid var(--line); color: var(--muted); font-size: 10px; }
+  body.sp-compact-explorer .folder-row { min-height: 25px; }
+  body.sp-compact-explorer .folder-select { height: 25px; padding-block: 2px; }
+  body.sp-compact-explorer .note-item { min-height: 35px; padding-block: 4px; }
+  body.sp-compact-explorer .note-item-preview { margin-top: 1px; }
+  body.sp-compact-body #noteBody, body.sp-compact-body .markdown-preview { font-size: 13px; line-height: 1.42; }
+  body.sp-compact-all .topbar { min-height: 39px; }
+  body.sp-compact-all .workspace-tabbar { min-height: 30px; }
+  body.sp-compact-all .workspace-tab { height: 25px; }
+  body.sp-compact-all .right-pane { padding: 7px; }
+  body.sp-hide-scrollbars * { scrollbar-width: none; }
+  body.sp-hide-scrollbars *::-webkit-scrollbar { width: 0; height: 0; }
+  @media (max-width: 1180px) {
+    .notes-app { grid-template-columns: 43px minmax(220px,260px) minmax(420px,1fr); }
+    .right-sidebar { display: none; }
+  }
+  @media (max-width: 820px) {
+    .obsidian-titlebar { grid-template-columns: 54px 1fr 110px; }
+    .history-actions, .application-name { display: none; }
+    .notes-app { grid-template-columns: 43px minmax(0,1fr); }
+    .workspace-ribbon { grid-column: 1; }
+    .workspace { grid-column: 2; }
+    .sidebar { inset: 34px auto 4px 47px; }
+    .soft-paper-badge, .note-folder-select { display: none; }
+  }
 </style>
 </head>
-<body>
+<body class="soft-paper-theme sp-rainbow-folders sp-hide-scrollbars sp-blue-status">
+<header class="obsidian-titlebar" aria-label="Application title bar">
+  <div class="window-mark" aria-hidden="true">&#9670;</div>
+  <div class="history-actions" aria-hidden="true"><span>&lsaquo;</span><span>&rsaquo;</span></div>
+  <strong>CONGLOBAL Vault</strong>
+  <span class="application-name">Obsidian</span>
+  <div class="window-actions" aria-hidden="true"><span>&minus;</span><span>&square;</span><span>&times;</span></div>
+</header>
 <main class="notes-app">
-  <aside class="sidebar" aria-label="Notes sidebar">
+  <aside class="workspace-ribbon" aria-label="Obsidian ribbon">
+    <button class="ribbon-button active" type="button" title="File explorer" aria-label="File explorer">&#128196;</button>
+    <button class="ribbon-button" type="button" title="Search" aria-label="Search">&#8981;</button>
+    <button class="ribbon-button" type="button" title="Graph view" aria-label="Graph view">&#9672;</button>
+    <button class="ribbon-button" type="button" title="Canvas" aria-label="Canvas">&#9638;</button>
+    <span class="ribbon-spacer"></span>
+    <button class="ribbon-button" id="styleSettingsButton" type="button" title="Style Settings" aria-label="Open Style Settings">&#9881;</button>
+    <button class="ribbon-button" id="themeButton" type="button" title="Toggle color scheme" aria-label="Toggle light and dark theme">&#9680;</button>
+  </aside>
+
+  <aside class="sidebar" aria-label="File explorer">
     <header class="vault-head">
-      <div class="vault-mark" aria-hidden="true">◆</div>
-      <div class="vault-title"><strong>CONGLOBAL Vault</strong><span>Obsidian notes</span></div>
-      <button class="icon-button" id="themeButton" type="button" title="Toggle theme" aria-label="Toggle light and dark theme">☼</button>
+      <div class="vault-mark" aria-hidden="true">&#9670;</div>
+      <div class="vault-title"><strong>CONGLOBAL Vault</strong><span>Soft Paper workspace</span></div>
+      <button class="pane-action" type="button" title="Collapse all" aria-label="Collapse all folders">&#8645;</button>
     </header>
     <div class="sidebar-actions">
-      <button class="primary-button" id="newNoteButton" type="button">＋ New note</button>
+      <button class="primary-button" id="newNoteButton" type="button">+ New note</button>
       <button class="toolbar-button" id="newFolderButton" type="button">+ Folder</button>
-      <button class="icon-button" id="duplicateButton" type="button" title="Duplicate current note" aria-label="Duplicate current note">⧉</button>
+      <button class="icon-button" id="duplicateButton" type="button" title="Duplicate current note" aria-label="Duplicate current note">&#10697;</button>
     </div>
-    <label class="search-wrap"><input id="noteSearch" type="search" autocomplete="off" placeholder="Search notes"></label>
-    <div class="folder-list-head"><span>Folders</span><span id="folderCount">0</span></div>
+    <label class="search-wrap"><input id="noteSearch" type="search" autocomplete="off" placeholder="Search files"></label>
+    <div class="folder-list-head"><span>File explorer</span><span id="folderCount">0</span></div>
     <nav class="folder-list" id="folderList" aria-label="Note folders"></nav>
     <div class="note-list-head"><span id="noteListLabel">Notes</span><span id="noteCount">0</span></div>
     <nav class="note-list" id="noteList" aria-label="Saved notes"></nav>
@@ -392,15 +723,21 @@
   </aside>
 
   <section class="workspace">
+    <nav class="workspace-tabbar" aria-label="Open notes">
+      <button class="workspace-tab active" type="button"><span class="tab-icon">&#128196;</span><span id="activeTabTitle">Untitled</span><span class="tab-close">&times;</span></button>
+      <button class="new-tab-button" id="tabNewNoteButton" type="button" title="New tab" aria-label="Create a new note">+</button>
+      <span class="tabbar-spacer"></span>
+      <span class="soft-paper-badge">SOFT PAPER 1.2.2</span>
+    </nav>
     <header class="topbar">
-      <button class="icon-button sidebar-toggle" id="sidebarToggle" type="button" aria-label="Open notes sidebar">☰</button>
+      <button class="icon-button sidebar-toggle" id="sidebarToggle" type="button" aria-label="Open file explorer">&#9776;</button>
       <input class="note-title" id="noteTitle" autocomplete="off" aria-label="Note title" value="Untitled">
       <span class="save-status saved" id="saveStatus">Saved locally</span>
       <select class="note-folder-select" id="noteFolderSelect" aria-label="Move note to folder" title="Move note to folder"></select>
       <div class="view-switch" aria-label="Editor view">
-        <button class="view-button" type="button" data-view="edit">Edit</button>
+        <button class="view-button" type="button" data-view="edit">Source</button>
         <button class="view-button active" type="button" data-view="split">Split</button>
-        <button class="view-button" type="button" data-view="preview">Read</button>
+        <button class="view-button" type="button" data-view="preview">Reading</button>
       </div>
       <button class="toolbar-button danger" id="deleteButton" type="button">Delete</button>
     </header>
@@ -408,9 +745,53 @@
       <section class="editor-pane" aria-label="Markdown editor"><textarea id="noteBody" spellcheck="true" aria-label="Note contents"></textarea></section>
       <section class="preview-pane" aria-label="Rendered note"><article class="markdown-preview" id="notePreview"></article></section>
     </div>
-    <footer class="statusbar"><span id="wordCount">0 words</span><span id="characterCount">0 characters</span><span>Autosaved on this device</span></footer>
+    <footer class="statusbar"><span id="wordCount">0 words</span><span id="characterCount">0 characters</span><span>Local vault</span><span>Autosaved</span></footer>
   </section>
+
+  <aside class="right-sidebar" aria-label="Right sidebar">
+    <nav class="right-tabbar" aria-label="Right sidebar tabs">
+      <button class="right-tab active" type="button" title="Outline">Outline</button>
+      <button class="right-tab" type="button" title="Backlinks">Links</button>
+    </nav>
+    <section class="right-pane">
+      <header><strong>Outline</strong><span id="outlineCount">0</span></header>
+      <nav id="outlineList" class="outline-list" aria-label="Note outline"><p>No headings in this note.</p></nav>
+    </section>
+    <section class="right-pane linked-pane">
+      <header><strong>Linked mentions</strong><span>0</span></header>
+      <p>No backlinks found.</p>
+    </section>
+    <section class="right-pane properties-pane">
+      <header><strong>Properties</strong><span>Local</span></header>
+      <dl><dt>Vault</dt><dd>CONGLOBAL</dd><dt>Storage</dt><dd>Browser</dd><dt>Format</dt><dd>Markdown</dd></dl>
+    </section>
+  </aside>
 </main>
+
+<div class="style-settings-overlay" id="styleSettingsOverlay" hidden>
+  <section class="style-settings-modal" role="dialog" aria-modal="true" aria-labelledby="styleSettingsTitle">
+    <header class="style-settings-head">
+      <div><span class="settings-kicker">Community theme</span><h2 id="styleSettingsTitle">Soft Paper</h2><p>Version 1.2.2 &middot; Style Settings 1.0.9 compatibility</p></div>
+      <button class="settings-close" id="closeStyleSettings" type="button" aria-label="Close Style Settings">&times;</button>
+    </header>
+    <div class="style-settings-body">
+      <section class="setting-group">
+        <h3>Appearance</h3>
+        <label class="setting-row"><span><strong>Color scheme</strong><small>Use Soft Paper light or dark colors.</small></span><select id="softPaperMode"><option value="light">Soft Paper light</option><option value="dark">Soft Paper dark</option></select></label>
+        <label class="setting-row"><span><strong>Rainbow-colored folders</strong><small>Apply a different accent color to each folder group.</small></span><input id="softPaperRainbowFolders" type="checkbox"></label>
+        <label class="setting-row"><span><strong>Blue status bar</strong><small>Use the Soft Paper blue status bar.</small></span><input id="softPaperBlueStatus" type="checkbox"></label>
+      </section>
+      <section class="setting-group">
+        <h3>Condensed layout</h3>
+        <label class="setting-row"><span><strong>Condense everything</strong><small>Tighten navigation, panes, and note spacing.</small></span><input id="softPaperCompactAll" type="checkbox"></label>
+        <label class="setting-row"><span><strong>Condense file explorer</strong><small>Reduce folder and note row height.</small></span><input id="softPaperCompactExplorer" type="checkbox"></label>
+        <label class="setting-row"><span><strong>Condense body text</strong><small>Reduce editor and reading line spacing.</small></span><input id="softPaperCompactBody" type="checkbox"></label>
+        <label class="setting-row"><span><strong>Hide scrollbars</strong><small>Keep scrolling while hiding visual scrollbars.</small></span><input id="softPaperHideScrollbars" type="checkbox"></label>
+      </section>
+    </div>
+    <footer class="style-settings-foot"><span>Settings are saved on this device.</span><button class="toolbar-button" id="resetSoftPaper" type="button">Restore Soft Paper defaults</button></footer>
+  </section>
+</div>
 <input class="hidden-input" id="fileInput" type="file" accept=".md,.markdown,.txt,.json,application/json,text/markdown,text/plain">
 <div class="toast" id="toast" role="status" hidden></div>
 
@@ -420,6 +801,16 @@
   const STORAGE_KEY = "conglobal-obsidian-vault-v1";
   const THEME_KEY = "conglobal-obsidian-theme-v1";
   const VIEW_KEY = "conglobal-obsidian-view-v1";
+  const SOFT_PAPER_SETTINGS_KEY = "conglobal-obsidian-soft-paper-settings-v1";
+  const SOFT_PAPER_INSTALL_KEY = "conglobal-obsidian-soft-paper-installed-v1";
+  const SOFT_PAPER_DEFAULTS = {
+    rainbowFolders: true,
+    blueStatus: true,
+    compactAll: false,
+    compactExplorer: false,
+    compactBody: false,
+    hideScrollbars: true
+  };
   const titleInput = document.getElementById("noteTitle");
   const bodyInput = document.getElementById("noteBody");
   const preview = document.getElementById("notePreview");
@@ -431,8 +822,49 @@
   const editorShell = document.getElementById("editorShell");
   const fileInput = document.getElementById("fileInput");
   const toast = document.getElementById("toast");
+  const styleSettingsOverlay = document.getElementById("styleSettingsOverlay");
+  const outlineList = document.getElementById("outlineList");
   let saveTimer = 0;
   let toastTimer = 0;
+  let softPaperSettings = loadSoftPaperSettings();
+
+  function loadSoftPaperSettings() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(SOFT_PAPER_SETTINGS_KEY) || "null");
+      return {...SOFT_PAPER_DEFAULTS,...(saved && typeof saved === "object" ? saved : {})};
+    } catch (_) { return {...SOFT_PAPER_DEFAULTS}; }
+  }
+  function saveSoftPaperSettings() {
+    localStorage.setItem(SOFT_PAPER_SETTINGS_KEY,JSON.stringify(softPaperSettings));
+  }
+  function setSoftPaperMode(mode) {
+    const normalized = mode === "dark" ? "dark" : "light";
+    document.body.classList.toggle("light-theme",normalized === "light");
+    localStorage.setItem(THEME_KEY,normalized);
+    document.getElementById("themeButton").innerHTML = normalized === "light" ? "&#9680;" : "&#9788;";
+    const modeSelect = document.getElementById("softPaperMode");
+    if (modeSelect) modeSelect.value = normalized;
+  }
+  function applySoftPaperSettings() {
+    document.body.classList.toggle("sp-rainbow-folders",!!softPaperSettings.rainbowFolders);
+    document.body.classList.toggle("sp-blue-status",!!softPaperSettings.blueStatus);
+    document.body.classList.toggle("sp-compact-all",!!softPaperSettings.compactAll);
+    document.body.classList.toggle("sp-compact-explorer",!!softPaperSettings.compactExplorer || !!softPaperSettings.compactAll);
+    document.body.classList.toggle("sp-compact-body",!!softPaperSettings.compactBody || !!softPaperSettings.compactAll);
+    document.body.classList.toggle("sp-hide-scrollbars",!!softPaperSettings.hideScrollbars);
+    const controls = {
+      softPaperRainbowFolders:"rainbowFolders",
+      softPaperBlueStatus:"blueStatus",
+      softPaperCompactAll:"compactAll",
+      softPaperCompactExplorer:"compactExplorer",
+      softPaperCompactBody:"compactBody",
+      softPaperHideScrollbars:"hideScrollbars"
+    };
+    Object.entries(controls).forEach(([id,key]) => {
+      const input = document.getElementById(id);
+      if (input) input.checked = !!softPaperSettings[key];
+    });
+  }
 
   const nowIso = () => new Date().toISOString();
   const uid = () => "note-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2,8);
@@ -591,7 +1023,32 @@
     document.getElementById("wordCount").textContent = words + (words === 1 ? " word" : " words");
     document.getElementById("characterCount").textContent = content.length + (content.length === 1 ? " character" : " characters");
   }
-  function renderPreview() { preview.innerHTML = renderMarkdown(bodyInput.value); updateCounts(); }
+  function renderOutline() {
+    const headings = Array.from(preview.querySelectorAll("h1,h2,h3"));
+    const outlineCount = document.getElementById("outlineCount");
+    if (outlineCount) outlineCount.textContent = headings.length;
+    if (!headings.length) {
+      outlineList.innerHTML = "<p>No headings in this note.</p>";
+      return;
+    }
+    outlineList.innerHTML = headings.map((heading,index) => {
+      heading.id = "note-heading-" + index;
+      return '<button class="outline-link level-' + heading.tagName.slice(1) + '" type="button" data-outline-index="' + index + '">' + escapeHtml(heading.textContent || "Untitled heading") + "</button>";
+    }).join("");
+  }
+  function syncObsidianChrome() {
+    const note = activeNote();
+    const title = note ? (note.title || "Untitled") : "Untitled";
+    const activeTabTitle = document.getElementById("activeTabTitle");
+    if (activeTabTitle) activeTabTitle.textContent = title;
+    document.title = title + " - CONGLOBAL Vault";
+  }
+  function renderPreview() {
+    preview.innerHTML = renderMarkdown(bodyInput.value);
+    updateCounts();
+    renderOutline();
+    syncObsidianChrome();
+  }
   function folderName(id) {
     if (id === "all") return "All notes";
     if (id === "unfiled" || !id) return "Unfiled";
@@ -849,11 +1306,42 @@
   });
   document.querySelector(".view-switch").addEventListener("click", event => { const button = event.target.closest("[data-view]"); if (button) setView(button.dataset.view); });
   document.getElementById("themeButton").addEventListener("click", () => {
-    document.body.classList.toggle("light-theme");
-    const mode = document.body.classList.contains("light-theme") ? "light" : "dark";
-    localStorage.setItem(THEME_KEY, mode);
-    document.getElementById("themeButton").textContent = mode === "light" ? "◐" : "☼";
+    setSoftPaperMode(document.body.classList.contains("light-theme") ? "dark" : "light");
   });
+  document.getElementById("styleSettingsButton").addEventListener("click", () => {
+    document.getElementById("softPaperMode").value = document.body.classList.contains("light-theme") ? "light" : "dark";
+    applySoftPaperSettings();
+    styleSettingsOverlay.hidden = false;
+  });
+  document.getElementById("closeStyleSettings").addEventListener("click", () => { styleSettingsOverlay.hidden = true; });
+  styleSettingsOverlay.addEventListener("click", event => { if (event.target === styleSettingsOverlay) styleSettingsOverlay.hidden = true; });
+  document.getElementById("softPaperMode").addEventListener("change", event => setSoftPaperMode(event.target.value));
+  [
+    ["softPaperRainbowFolders","rainbowFolders"],
+    ["softPaperBlueStatus","blueStatus"],
+    ["softPaperCompactAll","compactAll"],
+    ["softPaperCompactExplorer","compactExplorer"],
+    ["softPaperCompactBody","compactBody"],
+    ["softPaperHideScrollbars","hideScrollbars"]
+  ].forEach(([id,key]) => document.getElementById(id).addEventListener("change", event => {
+    softPaperSettings[key] = event.target.checked;
+    saveSoftPaperSettings();
+    applySoftPaperSettings();
+  }));
+  document.getElementById("resetSoftPaper").addEventListener("click", () => {
+    softPaperSettings = {...SOFT_PAPER_DEFAULTS};
+    saveSoftPaperSettings();
+    setSoftPaperMode("light");
+    applySoftPaperSettings();
+    announce("Soft Paper defaults restored");
+  });
+  outlineList.addEventListener("click", event => {
+    const button = event.target.closest("[data-outline-index]");
+    if (!button) return;
+    const heading = preview.querySelectorAll("h1,h2,h3")[Number(button.dataset.outlineIndex)];
+    if (heading) heading.scrollIntoView({behavior:"smooth",block:"start"});
+  });
+  document.getElementById("tabNewNoteButton").addEventListener("click", () => createNote());
   document.getElementById("sidebarToggle").addEventListener("click", () => document.body.classList.toggle("sidebar-open"));
   document.getElementById("importButton").addEventListener("click", () => fileInput.click());
   document.getElementById("exportNoteButton").addEventListener("click", () => { const note = activeNote(); if (note) download(cleanFilename(note.title) + ".md", markdownForExport(note), "text/markdown;charset=utf-8"); });
@@ -909,7 +1397,7 @@
   document.addEventListener("keydown", event => {
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "s") { event.preventDefault(); save(); announce("Vault saved"); }
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "n") { event.preventDefault(); createNote(); }
-    if (event.key === "Escape") document.body.classList.remove("sidebar-open");
+    if (event.key === "Escape") { document.body.classList.remove("sidebar-open"); styleSettingsOverlay.hidden = true; }
   });
   window.addEventListener("storage", event => {
     if (event.key !== STORAGE_KEY || document.activeElement === bodyInput || document.activeElement === titleInput) return;
@@ -918,9 +1406,11 @@
   });
   window.addEventListener("beforeunload", () => save());
 
-  const initialTheme = localStorage.getItem(THEME_KEY) || "dark";
-  document.body.classList.toggle("light-theme", initialTheme === "light");
-  document.getElementById("themeButton").textContent = initialTheme === "light" ? "◐" : "☼";
+  const softPaperWasInstalled = localStorage.getItem(SOFT_PAPER_INSTALL_KEY) === "1";
+  const initialTheme = softPaperWasInstalled ? (localStorage.getItem(THEME_KEY) || "light") : "light";
+  localStorage.setItem(SOFT_PAPER_INSTALL_KEY,"1");
+  setSoftPaperMode(initialTheme);
+  applySoftPaperSettings();
   setView(localStorage.getItem(VIEW_KEY) || "split");
   showActiveNote();
   save();

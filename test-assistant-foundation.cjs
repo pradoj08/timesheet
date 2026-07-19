@@ -76,7 +76,7 @@ for (const entry of knowledge.entries) {
   assert(expectedStatuses.includes(entry.status), `Knowledge ${entry.id} has an unsupported status`);
 }
 
-for (const requiredId of ["rail-track-capacity", "lpmh-definition-gap", "ss-dwell-timers", "ss-hold-policy-gap", "arrival-departure-policy-gap", "pivot-indicators-inferred", "operational-glossary", "known-exceptions-and-edge-cases", "verification-register", "superseded-operating-rules"]) {
+for (const requiredId of ["rail-track-capacity", "lpmh-definition-gap", "ss-dwell-timers", "ss-hold-policy-gap", "arrival-departure-policy-gap", "pivot-indicators-inferred", "operational-glossary", "known-exceptions-and-edge-cases", "verification-register", "superseded-operating-rules", "switching-authority-and-objective", "switching-orientation-access-and-legality", "switching-track-roles-and-capacity", "switching-block-tiers-and-train-ownership", "switching-blocking-modes-and-priorities", "switching-buried-blocks-and-special-handling", "switching-tactical-patterns", "switching-planning-workflow", "switching-plan-output-and-audit", "switching-default-checklist", "switching-track-803-capacity-conflict"]) {
   assert(ids.has(requiredId), `Missing operational knowledge category: ${requiredId}`);
 }
 const trackRule = knowledge.entries.find(entry => entry.id === "rail-track-capacity");
@@ -84,6 +84,16 @@ assert(trackRule.rules.some(rule => /Track 803 capacity:\s*2,200 ft/.test(rule))
 const lpmh = knowledge.entries.find(entry => entry.id === "lpmh-definition-gap");
 assert.equal(lpmh.status, "unresolved");
 assert.equal(lpmh.verificationRequired, true);
+const switchingOrientation = knowledge.entries.find(entry => entry.id === "switching-orientation-access-and-legality");
+assert(switchingOrientation.rules.some(rule => /NORTH \/ REAR -> SOUTH \/ HEAD -> ENGINE/.test(rule)), "Switching orientation rule is missing");
+assert(switchingOrientation.rules.some(rule => /South-Out Integrity/.test(rule)), "Switching move legality labels are missing");
+const switchingWorkflow = knowledge.entries.find(entry => entry.id === "switching-planning-workflow");
+assert(switchingWorkflow.rules.some(rule => /Option A minimal moves, Option B balanced, and Option C strict/.test(rule)), "Switching three-option gate is missing");
+assert(switchingWorkflow.rules.some(rule => /do not issue the final detailed switching plan before selection/i.test(rule)), "Switching selection gate is missing");
+const switchingConflict = knowledge.entries.find(entry => entry.id === "switching-track-803-capacity-conflict");
+assert.equal(switchingConflict.status, "unresolved");
+assert.equal(switchingConflict.verificationRequired, true);
+assert(/1,750 ft/.test(switchingConflict.summary) && /2,200 ft/.test(switchingConflict.summary), "Track 803 source conflict is not preserved");
 
 const classify = evaluateIntentClassifier(runtimeFile);
 assert.deepEqual({ ...classify("What inputs are needed to forecast release?") }, { capability: "forecasting", mode: "guidance", requiresLive: false });
