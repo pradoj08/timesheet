@@ -3963,6 +3963,13 @@ function toggleInputMenu(){
   else openInputMenu();
 }
 
+window.addEventListener('message',function(event){
+  var message=event.data||{};
+  if(message.type!=='conglobal-open-lph-input-page')return;
+  var page=Math.max(1,Number(message.page)||1);
+  openInputMenu(page-1);
+});
+
 function lphInitInputMenu(){
   if(lphInputSlides.length)return;
   var source=document.querySelector('.sidebar');

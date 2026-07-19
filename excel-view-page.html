@@ -462,7 +462,7 @@
   .yard-view-footage,
   .yard-view-count,
   .yard-view-cars {
-    min-height:31px;
+    min-height:49px;
     border-right:1px solid #d9dee5;
     border-bottom:1px solid #d9dee5;
   }
@@ -479,25 +479,60 @@
   }
   .yard-view-footage { background:#fff2c8; }
   .yard-view-count { background:#d8f4dc; color:#14532d; }
-  .yard-view-cars { display:flex; flex-wrap:wrap; align-items:stretch; gap:2px; padding:2px; background:#eef1f5; }
+  .yard-view-cars { display:flex; flex-wrap:wrap; align-items:center; gap:4px; padding:4px; background:#e9edf2; }
   .yard-view-car {
-    flex:0 0 154px;
+    flex:0 0 220px;
     min-width:0;
-    min-height:25px;
+    height:40px;
     display:flex;
     flex-direction:column;
-    justify-content:center;
-    padding:3px 5px;
-    border:1px solid rgba(15,23,42,.35);
+    justify-content:stretch;
+    padding:0;
+    border:1px solid rgba(15,23,42,.55);
+    border-radius:4px;
     color:#fff;
     font-family:var(--grid-block-font,"Aptos Narrow","Arial Narrow",Arial,sans-serif);
     font-size:max(10px,var(--grid-block-size,12px));
     font-weight:850;
     line-height:1.05;
     overflow:hidden;
+    box-shadow:0 1px 2px rgba(15,23,42,.28),inset 0 1px rgba(255,255,255,.16);
   }
-  .yard-view-car strong { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .yard-view-car small { margin-top:2px; overflow:hidden; font-size:9px; font-weight:750; opacity:.9; text-overflow:ellipsis; white-space:nowrap; }
+  .yard-view-car-details {
+    min-width:0;
+    min-height:23px;
+    display:flex;
+    align-items:center;
+    gap:4px;
+    padding:3px 7px 2px;
+    overflow:hidden;
+    font-size:11px;
+    font-weight:900;
+    letter-spacing:.01em;
+    white-space:nowrap;
+  }
+  .yard-view-car-details span { min-width:0; overflow:hidden; text-overflow:ellipsis; }
+  .yard-view-car-details span + span::before { content:"\00b7"; margin-right:4px; opacity:.72; }
+  .yard-view-car-length { flex:0 0 auto; }
+  .yard-view-car-status { flex:0 1 auto; }
+  .yard-view-car-train { flex:1 1 auto; }
+  .yard-view-car-id {
+    min-width:0;
+    min-height:16px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:2px 7px 3px;
+    overflow:hidden;
+    border-top:1px solid rgba(255,255,255,.24);
+    background:rgba(3,10,20,.2);
+    font-size:10px;
+    font-weight:900;
+    letter-spacing:.04em;
+    opacity:1;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
   .yard-view-car.empty { background:#e7ebf0; color:#6b7280; }
   .yard-view-empty { padding:26px; background:#f7f8fa; color:#64748b; font:800 13px/1.3 "Aptos Narrow",Arial,sans-serif; text-align:center; }
   .today-roster-popup {
@@ -1952,6 +1987,32 @@
     font-size: var(--grid-header-size, 11px); font-weight: 700; letter-spacing: .07em; text-transform: uppercase;
     text-align: center;
   }
+  .grid-head.grid-head-action {
+    padding: 3px 4px;
+  }
+  .grid-head-button {
+    width: 100%;
+    min-height: 25px;
+    border: 1px solid #f8d568;
+    border-radius: 4px;
+    background: #fff3bd;
+    color: #7c2d12;
+    font-family: var(--grid-header-font, "Aptos Narrow", "Arial Narrow", "Roboto Condensed", Arial, sans-serif);
+    font-size: var(--grid-header-size, 11px);
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    cursor: pointer;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.65);
+  }
+  .grid-head-button:hover,
+  .grid-head-button:focus-visible {
+    background: #ffd75a;
+    color: #4a1b08;
+    outline: 2px solid #ffffff;
+    outline-offset: 1px;
+  }
   .track-label, .track-total, .track-remaining, .cut-cell {
     min-height: 23px; border-right: 0; border-bottom: 1px solid #d8e0e9;
     display: flex; align-items: center; justify-content: center; padding: 0 3px;
@@ -1962,10 +2023,15 @@
   .track-remaining { background: #c9efcf; color: #17652c; font-weight: 700; font-size: 13px; }
   .track-remaining.over { background: #a61b1b; color: #ffffff; }
   .cut-cell {
-    font-family: var(--grid-block-font, "Aptos Narrow", "Arial Narrow", "Roboto Condensed", Arial, sans-serif);
+    font-family: var(--grid-block-font, Georgia, "Times New Roman", serif);
     font-size: var(--grid-block-size, 12px); font-weight: 700; text-align: center; line-height: 1.12;
-    letter-spacing: 0; text-wrap: balance;
-    background: white; position: relative; word-break: normal;
+    letter-spacing: 0; text-wrap: balance; white-space: nowrap;
+    background: white; position: relative; word-break: normal; overflow: hidden;
+  }
+  .cut-cell.block-text-wrap {
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
   }
   .cut-cell.block-reorderable {
     cursor: pointer;
@@ -3814,11 +3880,12 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   ]);
   const GRID_FONT_SIZES = Object.freeze([8,9,10,11,12,13,14,15,16,18,20]);
   const DEFAULT_GRID_TYPOGRAPHY = Object.freeze({
-    blockFont:"aptos-narrow",
+    blockFont:"georgia",
     blockSize:12,
     headerFont:"aptos-narrow",
     headerSize:11
   });
+  const GRID_SERIF_MIGRATION_KEY = "settegast-excel-grid-serif-blocks-v1";
 
   function normalizeGridTypography(value) {
     const source = value && typeof value === "object" && !Array.isArray(value) ? value : {};
@@ -3836,6 +3903,10 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   }
 
   let state = loadState();
+  if (localStorage.getItem(GRID_SERIF_MIGRATION_KEY) !== "1") {
+    state.gridTypography = {...normalizeGridTypography(state.gridTypography), blockFont:"georgia"};
+    localStorage.setItem(GRID_SERIF_MIGRATION_KEY, "1");
+  }
   let currentWork = loadCurrentWorkState();
   let computed = null;
   const selectedBlockIds = new Set();
@@ -5081,7 +5152,12 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     const train = clean(row[10]);
     const details = [`${fmtInt(length)} FT`, status, train].filter(Boolean).join(" · ");
     const tone = classifyCell(`${status} ${train}`, "CURRENT RAMP BLOCKING");
-    return `<div class="yard-view-car cut-cell ${tone}" title="${escapeAttr(`${equipment} · ${details}`)}"><strong>${escapeHtml(details || "CAR")}</strong><small>${escapeHtml(equipment)}</small></div>`;
+    const detailParts = [
+      `<span class="yard-view-car-length">${escapeHtml(`${fmtInt(length)} FT`)}</span>`,
+      status ? `<span class="yard-view-car-status">${escapeHtml(status)}</span>` : "",
+      train ? `<span class="yard-view-car-train">${escapeHtml(train)}</span>` : ""
+    ].filter(Boolean).join("");
+    return `<div class="yard-view-car cut-cell ${tone}" title="${escapeAttr(`${equipment} · ${details}`)}"><strong class="yard-view-car-details">${detailParts}</strong><small class="yard-view-car-id">${escapeHtml(equipment)}</small></div>`;
   }
 
   function renderYardView() {
@@ -5357,11 +5433,24 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     popup.hidden ? openTodayRoster() : closeTodayRoster();
   }
 
-  function openLphInputMenu() {
+  function openLphInputMenu(inputPage) {
     const overlay = $("#excelInputMenuOverlay");
     const frame = $("#excelInputMenuFrame");
     if (!overlay || !frame) return;
-    if (!frame.getAttribute("src") && !frame.srcdoc) {
+    const requestedPage = Number(inputPage);
+    const hasRequestedPage = Number.isFinite(requestedPage) && requestedPage > 0;
+    const showRequestedPage = () => {
+      if (!hasRequestedPage || !frame.contentWindow) return;
+      frame.contentWindow.postMessage({
+        type: "conglobal-open-lph-input-page",
+        page: requestedPage
+      }, "*");
+    };
+    const needsLoad = !frame.getAttribute("src") && !frame.srcdoc;
+    if (needsLoad && hasRequestedPage) {
+      frame.addEventListener("load", showRequestedPage, { once:true });
+    }
+    if (needsLoad) {
       let embeddedHtml = "";
       try {
         const source = $("#lphInputMenuPageSource")?.textContent.trim();
@@ -5370,6 +5459,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       if (embeddedHtml) loadEmbeddedLphInputMenu(frame, embeddedHtml);
       else frame.setAttribute("src", "lph-tracker-page.html?inputMenuOnly=1");
     }
+    if (!needsLoad) showRequestedPage();
     overlay.classList.add("open");
     overlay.setAttribute("aria-hidden", "false");
   }
@@ -6968,6 +7058,30 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     return computed.futureByTrack;
   }
 
+  let rampBlockFitFrame = 0;
+  function fitRampBlockText() {
+    rampBlockFitFrame = 0;
+    const cells = document.querySelectorAll(
+      "#yardGrid .cut-cell:not(.empty), #blankYardGrid .cut-cell:not(.empty), #blankYardGridTwo .cut-cell:not(.empty), #splitViewBody .cut-cell:not(.empty)"
+    );
+    cells.forEach(cell => {
+      if (cell.clientWidth < 8 || cell.clientHeight < 8) return;
+      cell.classList.remove("block-text-wrap");
+      cell.style.fontSize = "";
+      let size = Number.parseFloat(getComputedStyle(cell).fontSize) || 12;
+      const minimumSize = 7;
+      while (size > minimumSize && cell.scrollWidth > cell.clientWidth - 4) {
+        size = Math.max(minimumSize, size - .5);
+        cell.style.fontSize = `${size}px`;
+      }
+      if (cell.scrollWidth > cell.clientWidth - 2) cell.classList.add("block-text-wrap");
+    });
+  }
+  function scheduleRampBlockTextFit() {
+    if (rampBlockFitFrame) cancelAnimationFrame(rampBlockFitFrame);
+    rampBlockFitFrame = requestAnimationFrame(fitRampBlockText);
+  }
+
   function renderSplitView() {
     const popup = $("#splitViewPopup");
     const host = $("#splitViewBody");
@@ -7002,6 +7116,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       });
       return `<section class="split-view-section ${className}"><div class="split-view-table">${cells.join("")}</div></section>`;
     }).join("");
+    scheduleRampBlockTextFit();
   }
 
   function renderGrid() {
@@ -7053,6 +7168,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     $("#viewDescription").textContent = "";
     $("#departureTime").style.display = view === "FUTURE DWELL IHOSA 2030" ? "" : "none";
     renderSplitView();
+    scheduleRampBlockTextFit();
   }
 
   function copyAboveHeaderCell(target = "two") {
@@ -7248,7 +7364,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     return [
       '<div class="grid-head">Track</div>',
       '<div class="grid-head">Current</div>',
-      ...Array.from({length:7},()=>'<div class="grid-head" aria-label="Blank cut column"></div>'),
+      '<div class="grid-head grid-head-action"><button class="grid-head-button" id="openOutboundUnits" type="button">Outbound Units</button></div>',
+      ...Array.from({length:6},()=>'<div class="grid-head" aria-label="Blank cut column"></div>'),
       copyTarget ? copyAboveHeaderCell(copyTarget) : '<div class="grid-head" aria-label="Blank cut column"></div>',
       '<div class="grid-head" title="Track capacity minus current footage">&Delta; Remaining</div>'
     ];
@@ -8016,6 +8133,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     if (e.target.closest("#currentWorkClose")) closeCurrentWorkPopup();
     if (e.target.closest("#toggleTodayRoster")) toggleTodayRoster();
     if (e.target.closest("#toggleLphInputMenu")) toggleLphInputMenu();
+    if (e.target.closest("#openOutboundUnits")) { openLphInputMenu(3); return; }
     if (e.target === $("#excelInputMenuOverlay")) closeLphInputMenu();
     if (e.target.closest("#todayRosterClose")) closeTodayRoster();
     if (e.target.closest("#inboundArchiveBtn")) openInboundArchivePage();
@@ -8751,6 +8869,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
 
   window.addEventListener("pagehide", () => { saveState(); persistColorRules(); saveCurrentWorkState(); });
   window.addEventListener("beforeunload", () => { saveState(); persistColorRules(); saveCurrentWorkState(); });
+  window.addEventListener("resize", scheduleRampBlockTextFit);
 
   setInterval(updateCurrentWorkForecast, 1000);
   window.addEventListener("storage", event => {
