@@ -5629,11 +5629,6 @@ body.forecast-view .forecast-bottom-controls {
     </div>
 
     <div class="hero-actions">
-      <button id="forceSaveBtn" class="hero-action-card force-save-card" type="button">
-        <span class="hero-action-icon">💾</span>
-        <span class="hero-action-label">Force Save</span>
-      </button>
-
       <div class="yard-card hero-yard-card">
         <label id="yardLabel" for="yardSelect">Yard checked 05/26/2026</label>
         <select id="yardSelect" autocomplete="off"></select>
@@ -7385,7 +7380,24 @@ function updateReportDateLabel(){
   if(label)label.textContent=`Yard checked ${formatReportDate()}`;
 }
 
-function render(){const e=enrich(),rows=sortRows(applyFilters(e));renderMetrics(e);renderBanner(e);renderFilters();renderSort();renderTable(rows,e.length)}
+const CHASSIS_RECONCILIATION_LIVE_KEY="chassisReconciliationCurrentState";
+function publishReconciliationActivity(){
+  try{
+    localStorage.setItem(CHASSIS_RECONCILIATION_LIVE_KEY,JSON.stringify({
+      updatedAt:new Date().toISOString(),
+      reportDate:getReportBaseDate().toISOString(),
+      tableRows:tableRows.map(row=>({
+        id:row.id,
+        chassis:row.chassis,
+        location:row.location,
+        eventDate:row.eventDate,
+        event:row.event,
+        pool:row.pool
+      }))
+    }));
+  }catch(error){console.warn("Unable to publish chassis reconciliation activity",error)}
+}
+function render(){const e=enrich();const rows=sortRows(applyFilters(e));renderMetrics(e);renderBanner(e);renderFilters();renderSort();renderTable(rows,e.length);publishReconciliationActivity()}
 function normHeader(v){return String(v||"").toLowerCase().replace(/[^a-z0-9]+/g," ").trim()}
 function pick(row,map,cands,fallback=-1){
   const h=cands.map(normHeader).find(n=>map[n]!==undefined);
@@ -24675,13 +24687,13 @@ body.forecast-view .hero-yard-card,
 body.forecast-view #calendarTopBtn{
   display:none!important;
 }
-/* Forecast hero actions: keep Save/Print and Reconciliation right-aligned. */
+/* Forecast hero actions: keep the Reconciliation switch right-aligned. */
 body.forecast-view #forecastModal .forecast-page > .hero.clean-hero{
   grid-template-columns:minmax(320px,1fr) auto!important;
 }
 body.forecast-view #forecastModal .forecast-page > .hero.clean-hero .hero-actions{
   display:grid!important;
-  grid-template-columns:150px 310px!important;
+  grid-template-columns:310px!important;
   width:auto!important;
   min-width:0!important;
   margin-left:auto!important;
@@ -24690,13 +24702,8 @@ body.forecast-view #forecastModal .forecast-page > .hero.clean-hero .hero-action
   align-items:stretch!important;
   gap:10px!important;
 }
-body.forecast-view #forecastModal .forecast-page > .hero.clean-hero #forceSaveBtn{
-  grid-column:1!important;
-  width:150px!important;
-  min-width:150px!important;
-}
 body.forecast-view #forecastModal .forecast-page > .hero.clean-hero #forecastHeroBtn{
-  grid-column:2!important;
+  grid-column:1!important;
   width:310px!important;
   min-width:310px!important;
 }
@@ -24706,9 +24713,8 @@ body.forecast-view #forecastModal .forecast-page > .hero.clean-hero #forecastHer
   }
   body.forecast-view #forecastModal .forecast-page > .hero.clean-hero .hero-actions{
     width:100%!important;
-    grid-template-columns:minmax(130px,1fr) minmax(220px,2fr)!important;
+    grid-template-columns:minmax(220px,1fr)!important;
   }
-body.forecast-view #forecastModal .forecast-page > .hero.clean-hero #forceSaveBtn,
   body.forecast-view #forecastModal .forecast-page > .hero.clean-hero #forecastHeroBtn{
     width:auto!important;
     min-width:0!important;
@@ -24726,9 +24732,13 @@ body.forecast-view.forecast-print-clean-view #forecastModal .forecast-page > .he
   justify-items:end!important;
   margin-left:auto!important;
 }
-body.forecast-view.forecast-print-clean-view #forecastModal .forecast-page > .hero.clean-hero #forceSaveBtn{
+/* Reconciliation hero: remove the obsolete fourth action column and keep the
+   three remaining controls flush against the right edge of the header. */
+body:not(.forecast-view) .app > .hero.clean-hero > .hero-actions{
+  grid-template-columns:132px 268px 146px!important;
+  width:max-content!important;
   margin-left:auto!important;
-  margin-right:0!important;
+  justify-content:end!important;
 }
 /* Editable inbound card train names. */
 #forecastStatusCards .forecast-train-edit-trigger{

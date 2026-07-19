@@ -3295,20 +3295,58 @@
   #colorTabModal .grid-typography-bold { min-height: 29px; }
   #colorTabModal .color-rule-top { margin-bottom: 6px; }
   #colorTabModal .color-rule-hint { font-size: 9px; }
-  #colorTabModal .color-rule-rows { gap: 5px; }
+  #colorTabModal .color-rule-rows { gap: 6px; }
   #colorTabModal .color-rule-row {
-    grid-template-columns: 225px minmax(110px, 1fr) 28px;
+    grid-template-columns: 126px minmax(160px, 1fr) 30px;
     gap: 6px;
+    padding: 6px;
+    border: 1px solid #d8e1ec;
+    border-radius: 8px;
+    background: linear-gradient(180deg, #ffffff, #f8fafc);
+    box-shadow: 0 1px 2px rgba(15,23,42,.05);
   }
   #colorTabModal .color-picker-grid {
-    grid-template-columns: repeat(12, 16px);
-    gap: 3px;
-    width: 225px;
+    display: none;
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(18, minmax(18px, 1fr));
+    gap: 4px;
+    width: 100%;
+    padding: 7px;
+    border: 1px solid #d8e1ec;
+    border-radius: 7px;
+    background: #eef3f8;
   }
+  #colorTabModal .color-rule-row.color-picker-open .color-picker-grid { display: grid; }
+  #colorTabModal .color-rule-color-button {
+    width: 100%;
+    min-height: 29px;
+    display: grid;
+    grid-template-columns: 18px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 7px;
+    padding: 4px 7px;
+    border: 1px solid #cbd6e3;
+    border-radius: 6px;
+    background: #fff;
+    color: var(--navy);
+    font-size: 10px;
+    font-weight: 850;
+    text-align: left;
+  }
+  #colorTabModal .color-rule-color-button:hover { border-color: #7c93b0; background: #f8fbff; }
+  #colorTabModal .color-rule-color-preview {
+    width: 18px;
+    height: 18px;
+    border: 1px solid rgba(15,23,42,.28);
+    border-radius: 5px;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.55);
+  }
+  #colorTabModal .color-rule-color-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #colorTabModal .color-rule-color-chevron { color: #64748b; font-size: 9px; }
   #colorTabModal .color-swatch {
-    width: 16px;
-    height: 16px;
-    border-radius: 3px;
+    width: 100%;
+    height: 22px;
+    border-radius: 4px;
   }
   #colorTabModal .color-swatch.selected { outline-width: 2px; }
   #colorTabModal .color-rule-row .field {
@@ -3336,8 +3374,8 @@
   @media (max-width: 620px) {
     #colorTabModal.color-tab-backdrop { right: 6px; width: calc(100vw - 12px); }
     #colorTabModal .legend-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    #colorTabModal .color-rule-row { grid-template-columns: 1fr 28px; }
-    #colorTabModal .color-picker-grid { grid-column: 1 / -1; }
+    #colorTabModal .color-rule-row { grid-template-columns: 112px minmax(0,1fr) 28px; }
+    #colorTabModal .color-picker-grid { grid-template-columns: repeat(12, minmax(18px,1fr)); }
     #colorTabModal .grid-typography-row { grid-template-columns: 58px minmax(104px, 1fr) minmax(112px, .8fr) 64px; }
   }
 
@@ -7143,13 +7181,11 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     cells.forEach(cell => {
       if (cell.clientWidth < 8 || cell.clientHeight < 8) return;
       cell.classList.remove("block-text-wrap");
-      cell.style.fontSize = "";
-      let size = Number.parseFloat(getComputedStyle(cell).fontSize) || 12;
-      const minimumSize = 7;
-      while (size > minimumSize && cell.scrollWidth > cell.clientWidth - 4) {
-        size = Math.max(minimumSize, size - .5);
-        cell.style.fontSize = `${size}px`;
-      }
+      // The typography control is authoritative. Previously this fitter wrote a
+      // progressively smaller inline font-size onto every narrow block, which
+      // made a 24 px selection look unchanged. Keep the selected size and wrap
+      // long labels instead; grid rows can grow to preserve the full text.
+      cell.style.removeProperty("font-size");
       if (cell.scrollWidth > cell.clientWidth - 2) cell.classList.add("block-text-wrap");
     });
   }
@@ -7631,6 +7667,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     $("#inventoryMeta").textContent = `${state.rows.length} source rows ? ${state.sourceName || "manual data"} ? saved locally`;
   }
 
+  let openColorRulePickerIndex = -1;
+
   function renderColorRules() {
     renderGridTypographyControls();
     const host = $("#colorRuleRows");
@@ -7641,14 +7679,23 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     })) : DEFAULT_COLOR_RULES.map(rule => ({...rule}));
     state.colorRules = rules.length ? rules : DEFAULT_COLOR_RULES.map(rule => ({...rule}));
     persistColorRules();
-    host.innerHTML = state.colorRules.map((rule, index) => `
-      <div class="color-rule-row" data-rule-index="${index}">
+    host.innerHTML = state.colorRules.map((rule, index) => {
+      const selectedColor = COLOR_PALETTE.find(color => color.id === rule.color) || COLOR_PALETTE[0];
+      const pickerOpen = index === openColorRulePickerIndex;
+      return `
+      <div class="color-rule-row ${pickerOpen ? "color-picker-open" : ""}" data-rule-index="${index}">
+        <button class="color-rule-color-button" type="button" data-color-picker-toggle="${index}" aria-expanded="${pickerOpen ? "true" : "false"}" title="Choose rule color">
+          <span class="color-rule-color-preview" style="${escapeAttr(selectedColor.style)}"></span>
+          <span class="color-rule-color-name">${escapeHtml(selectedColor.label)}</span>
+          <span class="color-rule-color-chevron" aria-hidden="true">${pickerOpen ? "-" : "+"}</span>
+        </button>
+        <input class="field" data-color-rule="terms" value="${escapeAttr(rule.terms)}" placeholder="IHOSA, SADS, ZLBHO" aria-label="Comma separated matching terms">
+        <button class="color-rule-remove" type="button" data-color-rule-remove="${index}" title="Remove rule" aria-label="Remove color rule">&times;</button>
         <div class="color-picker-grid" role="radiogroup" aria-label="Rule color">
           ${COLOR_PALETTE.map(color => `<button class="color-swatch ${rule.color === color.id ? "selected" : ""}" type="button" data-color-choice="${color.id}" title="${escapeAttr(color.label)}" aria-label="${escapeAttr(color.label)}" style="${escapeAttr(color.style)}"></button>`).join("")}
         </div>
-        <input class="field" data-color-rule="terms" value="${escapeAttr(rule.terms)}" placeholder="IHOSA, SADS, ZLBHO" aria-label="Comma separated matching terms">
-        <button class="color-rule-remove" type="button" data-color-rule-remove="${index}" title="Remove rule" aria-label="Remove color rule">?</button>
-      </div>`).join("");
+      </div>`;
+    }).join("");
   }
 
   function applyGridTypography() {
@@ -8841,6 +8888,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       : key.endsWith("Size") ? Number(field.value) : field.value;
     state.gridTypography = normalizeGridTypography({...state.gridTypography, [key]:value});
     applyGridTypography();
+    scheduleRampBlockTextFit();
     const valueLabel = key === "blockSize" ? $("#blockFontSizeValue") : key === "headerSize" ? $("#headerFontSizeValue") : null;
     if (valueLabel) valueLabel.textContent = `${state.gridTypography[key]} px`;
     if (rerenderControls) renderGridTypographyControls();
@@ -8872,6 +8920,14 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     if (e.target.closest("[data-color-rule]")) renderAll();
   });
   $("#colorRuleRows").addEventListener("click", e => {
+    const pickerToggle = e.target.closest("[data-color-picker-toggle]");
+    if (pickerToggle) {
+      const index = Number(pickerToggle.dataset.colorPickerToggle);
+      if (!Number.isInteger(index)) return;
+      openColorRulePickerIndex = openColorRulePickerIndex === index ? -1 : index;
+      renderColorRules();
+      return;
+    }
     const choice = e.target.closest("[data-color-choice]");
     if (choice) {
       const row = choice.closest(".color-rule-row");
@@ -8880,6 +8936,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       state.colorRules = Array.isArray(state.colorRules) ? state.colorRules : DEFAULT_COLOR_RULES.map(rule => ({...rule}));
       state.colorRules[index] = state.colorRules[index] || {color:"gray", terms:""};
       state.colorRules[index].color = choice.dataset.colorChoice;
+      openColorRulePickerIndex = -1;
       renderGrid();
       publishLiveSnapshot();
       persistColorRules();
@@ -8891,6 +8948,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     if (!button) return;
     state.colorRules = Array.isArray(state.colorRules) ? state.colorRules : [];
     state.colorRules.splice(Number(button.dataset.colorRuleRemove), 1);
+    openColorRulePickerIndex = -1;
     persistColorRules();
     renderAll();
   });

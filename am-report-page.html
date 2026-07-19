@@ -1675,11 +1675,11 @@ body{
   font:600 10px/1.35 Calibri,Arial,sans-serif;
 }
 .am-weather-readout{
-  width:min(100%,780px);
-  margin:0 auto 8px;
+  width:min(calc(100% - 20px),650px);
+  margin:0 auto 6px;
   overflow:hidden;
   border:1px solid #b8c7da;
-  border-radius:12px;
+  border-radius:10px;
   background:linear-gradient(135deg,#f8fbff 0%,#eef6ff 100%);
   box-shadow:0 5px 16px rgba(15,35,60,.09);
   color:#132238;
@@ -1693,34 +1693,34 @@ body{
   display:grid;
   grid-template-columns:auto auto minmax(0,1fr) auto auto;
   align-items:center;
-  gap:8px;
-  min-height:42px;
-  padding:7px 9px;
+  gap:6px;
+  min-height:36px;
+  padding:5px 7px;
   border-bottom:1px solid #263b58;
   background:#132238;
   color:#fff;
 }
 .am-weather-readout.is-alert .am-weather-head{background:#3b1420;border-bottom-color:#7f1d1d}
-.am-weather-day-label{padding-right:9px;border-right:1px solid #49617e;color:#fff;font-size:13px;font-weight:950;letter-spacing:.08em;line-height:1;text-transform:uppercase;white-space:nowrap}
-.am-weather-icon{font-size:23px;line-height:1}
+.am-weather-day-label{padding-right:7px;border-right:1px solid #49617e;color:#fff;font-size:11px;font-weight:950;letter-spacing:.07em;line-height:1;text-transform:uppercase;white-space:nowrap}
+.am-weather-icon{font-size:20px;line-height:1}
 .am-weather-title{min-width:0;flex:1;text-align:left}
-.am-weather-title strong{display:block;overflow:hidden;color:#fff;font-size:15px;font-weight:900;line-height:1.2;text-overflow:ellipsis;white-space:nowrap}
-.am-weather-title span{display:block;margin-top:2px;overflow:hidden;color:#c7d7ea;font-size:11px;font-weight:700;text-overflow:ellipsis;white-space:nowrap}
-.am-weather-date{color:#dbeafe;font-size:11px;font-weight:900;white-space:nowrap}
-.am-weather-refresh{width:27px;height:27px;border:1px solid #6f87a4;border-radius:7px;background:#fff;color:#17345a;font-size:16px;font-weight:900;cursor:pointer}
+.am-weather-title strong{display:block;overflow:hidden;color:#fff;font-size:14px;font-weight:900;line-height:1.1;text-overflow:ellipsis;white-space:nowrap}
+.am-weather-title span{display:block;margin-top:1px;overflow:hidden;color:#c7d7ea;font-size:10px;font-weight:700;text-overflow:ellipsis;white-space:nowrap}
+.am-weather-date{color:#dbeafe;font-size:9px;font-weight:900;white-space:nowrap}
+.am-weather-refresh{width:24px;height:24px;border:1px solid #6f87a4;border-radius:6px;background:#fff;color:#17345a;font-size:14px;font-weight:900;cursor:pointer}
 .am-weather-refresh:hover{background:#dbeafe}
 .am-weather-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:1px;background:#dbe4ef}
-.am-weather-metric{min-width:0;padding:7px 4px;background:#fff;text-align:center}
-.am-weather-metric b{display:block;font-size:15px;line-height:1.1;white-space:nowrap}
-.am-weather-metric span{display:block;margin-top:3px;color:#64748b;font-size:10px;font-weight:900;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap}
-.am-weather-alert{display:flex;align-items:flex-start;gap:6px;padding:7px 8px;background:#ecfdf5;color:#166534;font-size:14px;font-weight:800;line-height:1.3;text-align:left}
+.am-weather-metric{min-width:0;padding:4px 2px;background:#fff;text-align:center}
+.am-weather-metric b{display:block;font-size:13px;line-height:1.05;white-space:nowrap}
+.am-weather-metric span{display:block;margin-top:2px;color:#64748b;font-size:8px;font-weight:900;letter-spacing:.025em;line-height:1.05;text-transform:uppercase;white-space:normal}
+.am-weather-alert{display:flex;align-items:flex-start;gap:5px;padding:5px 7px;background:#ecfdf5;color:#166534;font-size:12px;font-weight:800;line-height:1.25;text-align:left}
 .am-weather-alert.warning{background:#fff7ed;color:#9a3412}
 .am-weather-alert.danger{background:#fef2f2;color:#991b1b}
 .am-weather-alert strong{font-weight:900}
-.am-weather-guidance{display:flex;align-items:flex-start;gap:6px;padding:7px 8px;border-top:1px solid #dbe4ef;background:#eff6ff;color:#1e3a5f;font-size:14px;font-weight:800;line-height:1.3;text-align:left}
+.am-weather-guidance{display:flex;align-items:flex-start;gap:5px;padding:5px 7px;border-top:1px solid #dbe4ef;background:#eff6ff;color:#1e3a5f;font-size:12px;font-weight:800;line-height:1.25;text-align:left}
 .am-weather-guidance.caution{background:#fff7ed;color:#9a3412}
 .am-weather-guidance strong{font-weight:900}
-.am-weather-foot{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:6px 8px;border-top:1px solid #e2e8f0;background:#f8fafc;color:#64748b;font-size:13px;font-weight:700}
+.am-weather-foot{display:flex;align-items:center;justify-content:space-between;gap:5px;padding:4px 7px;border-top:1px solid #e2e8f0;background:#f8fafc;color:#64748b;font-size:11px;font-weight:700}
 .am-weather-foot a{color:#1d4ed8;font-weight:900;text-decoration:none}
 .am-weather-error{padding:12px 10px;color:#991b1b;font-size:12px;font-weight:800;text-align:center}
 @media(max-width:560px){
@@ -1728,10 +1728,14 @@ body{
   #am-report{padding:18px 12px 24px;border-radius:12px}
   .sheet-save-status{width:100%;margin-left:0}
   .sheet-tool-divider{display:none}
-  .am-weather-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
-  .am-weather-head{gap:6px;padding:6px}
-  .am-weather-day-label{padding-right:6px;font-size:11px}
-  .am-weather-date{font-size:9px}
+  .am-weather-readout{width:min(calc(100% - 12px),650px)}
+  .am-weather-grid{grid-template-columns:repeat(5,minmax(0,1fr))}
+  .am-weather-head{gap:5px;padding:5px 6px}
+  .am-weather-day-label{padding-right:5px;font-size:10px}
+  .am-weather-title strong{font-size:13px}
+  .am-weather-date{font-size:8px}
+  .am-weather-metric b{font-size:12px}
+  .am-weather-metric span{font-size:7px}
 }
 @media print{
   html,body{background:#fff}
@@ -2858,7 +2862,10 @@ tags will be replaced.-->
   cellContextMenu.id = "amCellContextMenu";
   cellContextMenu.hidden = true;
   cellContextMenu.setAttribute("role", "menu");
-  cellContextMenu.innerHTML = '<button type="button" id="amContextMergeCells" role="menuitem">Merge cells</button>';
+  cellContextMenu.innerHTML = [
+    '<button type="button" id="amContextCopyCells" role="menuitem">Copy</button>',
+    '<button type="button" id="amContextMergeCells" role="menuitem">Merge cells</button>'
+  ].join("");
   report.appendChild(cellContextMenu);
 
   const modal = document.createElement("div");
@@ -2911,6 +2918,7 @@ tags will be replaced.-->
   const copyButton = document.getElementById("amCopyCells");
   const mergeButton = document.getElementById("amMergeCells");
   const dropdownButton = document.getElementById("amDropdownCells");
+  const contextCopyButton = document.getElementById("amContextCopyCells");
   const contextMergeButton = document.getElementById("amContextMergeCells");
   const dropdownOptionsInput = document.getElementById("amDropdownOptions");
   const dropdownSummary = document.getElementById("amDropdownSummary");
@@ -4294,6 +4302,7 @@ tags will be replaced.-->
     contextMergeButton.disabled = selectionHasMerge ? false : area < 2;
     contextMergeButton.textContent = selectionHasMerge ? "Unmerge cells" : "Merge cells";
     contextMergeButton.dataset.mergeAction = selectionHasMerge ? "unmerge" : "merge";
+    contextCopyButton.disabled = area === 0;
     dropdownButton.disabled = editableDropdownTargets().length === 0;
     copyButton.disabled = area === 0;
     const activeAddress = selectedCell && selectedCell.dataset.cell;
@@ -4331,7 +4340,8 @@ tags will be replaced.-->
     const top = Math.max(margin, Math.min(event.clientY, window.innerHeight - menuHeight - margin));
     cellContextMenu.style.left = left + "px";
     cellContextMenu.style.top = top + "px";
-    if (!contextMergeButton.disabled) contextMergeButton.focus({ preventScroll:true });
+    if (!contextCopyButton.disabled) contextCopyButton.focus({ preventScroll:true });
+    else if (!contextMergeButton.disabled) contextMergeButton.focus({ preventScroll:true });
   }
 
   function selectionMatrix() {
@@ -5111,6 +5121,10 @@ tags will be replaced.-->
     button.addEventListener("click", () => cycleAlignment(button.dataset.sheetAlign, button));
   });
   copyButton.addEventListener("click", copySelectedCells);
+  contextCopyButton.addEventListener("click", () => {
+    closeCellContextMenu();
+    copySelectedCells();
+  });
   gridWrap.addEventListener("copy", copySelectionFromKeyboard);
   gridWrap.addEventListener("contextmenu", event => {
     const cell = event.target instanceof Element ? event.target.closest("td.sheet-cell") : null;

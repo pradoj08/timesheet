@@ -1,142 +1,70 @@
 const fs = require("fs");
+const path = require("path");
 
-const pages = [
-  ["time", "Timesheet", "time-input.html"],
-  ["timeMd", "Timesheet MD", "timesheet-md.html"],
-  ["roster", "Schedule", "roster.html"],
-  ["dayforce", "Dayforce", "dayforce.html"],
-  ["compare", "Compare", "compare.html"],
-  ["archive", "Archive", "archive.html"],
-  ["timeOff", "Time Off", "time-off.html"],
-];
+const workbookPath = path.join("GITHUB UPLOAD - ONE FILE", "index.html");
+const pageSources = Object.freeze({
+  obsidian: "obsidian-page.html",
+  amReport: "am-report-page.html",
+  audits: "audits-page.html",
+  time: "time-input.html",
+  timeMd: "timesheet-md-page.html",
+  chassisStatus: "chassis-status-page.html",
+  checklist: "checklist-page.html",
+  performance: "performance-page.html",
+  matrixWide: "matrix-wide-page.html",
+  lphTracker: "lph-tracker-page.html",
+  roster: "roster-page.html",
+  compare: "compare.html",
+  archive: "archive-page.html",
+  timeOff: "time-off-page.html",
+  billing: "billing-page.html",
+  excelView: "excel-view-page.html"
+});
 
-function stripPageSwitcher(html) {
-  return html.replace(/<nav class="page-switcher"[\s\S]*?<\/nav>\s*/g, "");
+function escapeEmbeddedHtml(html) {
+  return JSON.stringify(html).replace(/<\/script/gi, "<\\/script");
 }
 
-function escapeScriptString(value) {
-  return JSON.stringify(value).replace(/<\/script/gi, "<\\/script");
+function replaceEmbeddedPage(workbook, id, sourceFile) {
+  const entryStartMarker = `        ${JSON.stringify(id)}: {`;
+  const entryStart = workbook.indexOf(entryStartMarker);
+  if (entryStart < 0) throw new Error(`Embedded page ${id} was not found in ${workbookPath}.`);
+
+  const entryEndMarker = "\n        },";
+  const entryEnd = workbook.indexOf(entryEndMarker, entryStart);
+  if (entryEnd < 0) throw new Error(`Embedded page ${id} has no closing marker.`);
+
+  const currentEntry = workbook.slice(entryStart, entryEnd + entryEndMarker.length);
+  const labelMatch = currentEntry.match(/\n\s*"label":\s*("(?:\\.|[^"\\])*")/);
+  if (!labelMatch) throw new Error(`Embedded page ${id} has no label.`);
+
+  const sourceHtml = fs.readFileSync(sourceFile, "utf8");
+  const replacement = [
+    entryStartMarker,
+    `                "label": ${labelMatch[1]},`,
+    `                "html": ${escapeEmbeddedHtml(sourceHtml)},`,
+    "        },"
+  ].join("\n");
+
+  return workbook.slice(0, entryStart) + replacement + workbook.slice(entryEnd + entryEndMarker.length);
 }
 
-const embedded = pages.map(([id, label, file]) => {
-  const html = stripPageSwitcher(fs.readFileSync(file, "utf8"));
-  return `      ${JSON.stringify(id)}: { label: ${JSON.stringify(label)}, html: ${escapeScriptString(html)} }`;
-}).join(",\n");
+if (!fs.existsSync(workbookPath)) {
+  throw new Error(`The modern all-in-one workbook template is missing: ${workbookPath}`);
+}
 
-const output = `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ConGlobal Timesheet Workbook</title>
-  <style>
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      background: #fff;
-      color: #000;
-      font-family: Arial, Helvetica, sans-serif;
-      overflow-x: hidden;
-    }
-    .workbook-tabs {
-      width: 100%;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 4px;
-      align-items: center;
-      padding: 6px 8px;
-      background: #111;
-      border-bottom: 2px solid #000;
-      position: sticky;
-      top: 0;
-      z-index: 20;
-    }
-    .workbook-tabs button {
-      min-width: 118px;
-      height: 28px;
-      border: 1px solid #777;
-      background: #e7e6e6;
-      color: #000;
-      font-size: 13px;
-      font-weight: 800;
-      cursor: pointer;
-    }
-    .workbook-tabs button.active {
-      background: #ffff00;
-      border-color: #ffff00;
-    }
-    .page-frame {
-      width: 100%;
-      border: 0;
-      display: block;
-      min-height: calc(100vh - 42px);
-    }
-    @media (max-width: 760px) {
-      .workbook-tabs { padding: 5px; }
-      .workbook-tabs button {
-        min-width: 96px;
-        font-size: 12px;
-      }
-    }
-  </style>
-</head>
-<body>
-  <nav class="workbook-tabs" aria-label="Workbook pages"></nav>
-  <iframe class="page-frame" id="pageFrame" title="Workbook page"></iframe>
-  <script>
-    const pages = {
-${embedded}
-    };
+const requestedPages = process.argv.slice(2);
+const pageIds = requestedPages.length ? requestedPages : Object.keys(pageSources);
+let workbook = fs.readFileSync(workbookPath, "utf8");
 
-    const tabs = document.querySelector(".workbook-tabs");
-    const frame = document.getElementById("pageFrame");
-    let activePage = localStorage.getItem("conglobal-active-page") || "time";
+pageIds.forEach((id) => {
+  const sourceFile = pageSources[id];
+  if (!sourceFile) throw new Error(`Unknown page id: ${id}`);
+  if (!fs.existsSync(sourceFile)) throw new Error(`Source page is missing: ${sourceFile}`);
+  workbook = replaceEmbeddedPage(workbook, id, sourceFile);
+  console.log(`Embedded ${id} from ${sourceFile}`);
+});
 
-    function resizeFrame() {
-      try {
-        const doc = frame.contentDocument;
-        if (!doc) return;
-        frame.style.height = Math.max(
-          doc.documentElement.scrollHeight,
-          doc.body ? doc.body.scrollHeight : 0,
-          window.innerHeight - tabs.offsetHeight
-        ) + "px";
-      } catch (error) {
-        frame.style.height = "calc(100vh - 42px)";
-      }
-    }
-
-    function selectPage(id) {
-      activePage = pages[id] ? id : "time";
-      localStorage.setItem("conglobal-active-page", activePage);
-      document.querySelectorAll(".workbook-tabs button").forEach((button) => {
-        button.classList.toggle("active", button.dataset.page === activePage);
-      });
-      frame.srcdoc = pages[activePage].html;
-    }
-
-    Object.entries(pages).forEach(([id, page]) => {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.dataset.page = id;
-      button.textContent = page.label;
-      button.addEventListener("click", () => selectPage(id));
-      tabs.appendChild(button);
-    });
-
-    frame.addEventListener("load", () => {
-      resizeFrame();
-      const doc = frame.contentDocument;
-      if (!doc) return;
-      doc.addEventListener("input", () => setTimeout(resizeFrame, 0));
-      doc.addEventListener("click", () => setTimeout(resizeFrame, 0));
-      setTimeout(resizeFrame, 100);
-    });
-    window.addEventListener("resize", resizeFrame);
-    selectPage(activePage);
-  </script>
-</body>
-</html>
-`;
-
-fs.writeFileSync("index.html", output);
+fs.writeFileSync(workbookPath, workbook);
+fs.writeFileSync("index.html", workbook);
+console.log(`Updated ${workbookPath} and index.html without replacing the workbook shell.`);
