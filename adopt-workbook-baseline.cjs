@@ -1,6 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const vm = require("vm");
+const { injectAssistantShell } = require("./assistant-shell-inject.cjs");
 
 const sourceArgument = process.argv[2];
 if (!sourceArgument) {
@@ -86,7 +87,10 @@ for (const pageId of Object.keys(pageFiles)) {
 const performanceHtml = extractPerformancePage(extractedPages.billing);
 validatePageScripts("performance", performanceHtml);
 
-fs.writeFileSync(workbookPath, workbookHtml);
+const adoptedWorkbookHtml = injectAssistantShell(workbookHtml);
+fs.writeFileSync(workbookPath, adoptedWorkbookHtml);
+const distributionWorkbookPath = path.resolve("GITHUB UPLOAD - ONE FILE/index.html");
+if (fs.existsSync(path.dirname(distributionWorkbookPath))) fs.writeFileSync(distributionWorkbookPath, adoptedWorkbookHtml);
 for (const [pageId, outputPath] of Object.entries(pageFiles)) {
   fs.writeFileSync(outputPath, extractedPages[pageId]);
 }

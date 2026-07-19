@@ -1,7 +1,9 @@
 const fs = require("fs");
 const vm = require("vm");
+const { injectAssistantShell } = require("./assistant-shell-inject.cjs");
 
 const workbookPath = "index.html";
+const distributionWorkbookPath = "GITHUB UPLOAD - ONE FILE/index.html";
 const pages = {
   obsidian: "obsidian-page.html",
   matrix: "matrix-page.html",
@@ -724,9 +726,13 @@ for (const [pageId, sourcePath] of Object.entries(pages)) {
   output = output.replace(entry, (_, prefix) => prefix + escapeScriptString(pageHtml));
 }
 
+output = injectAssistantShell(output);
+
 const outerScripts = [...output.matchAll(/^\s*<script>\s*$([\s\S]*?)^\s*<\/script>\s*$/gm)];
 if (!outerScripts.length) throw new Error("Could not find the workbook runtime for validation.");
 new vm.Script(outerScripts.at(-1)[1], { filename: workbookPath });
 
 fs.writeFileSync(workbookPath, output);
+if (fs.existsSync("GITHUB UPLOAD - ONE FILE")) fs.writeFileSync(distributionWorkbookPath, output);
 console.log(`Synced ${Object.keys(pages).join(", ")} into ${workbookPath}.`);
+if (fs.existsSync(distributionWorkbookPath)) console.log(`Updated publish mirror: ${distributionWorkbookPath}.`);
