@@ -1684,19 +1684,24 @@ body{
   box-shadow:0 0 0 2px rgba(220,38,38,.12),0 5px 16px rgba(127,29,29,.13);
 }
 .am-weather-head{
-  display:flex;
+  display:grid;
+  grid-template-columns:auto auto minmax(0,1fr) auto auto;
   align-items:center;
   gap:8px;
+  min-height:42px;
   padding:7px 9px;
-  border-bottom:1px solid #d7e1ed;
-  background:#e8f2ff;
+  border-bottom:1px solid #263b58;
+  background:#132238;
+  color:#fff;
 }
-.am-weather-readout.is-alert .am-weather-head{background:#fff1f2;border-bottom-color:#fecaca}
+.am-weather-readout.is-alert .am-weather-head{background:#3b1420;border-bottom-color:#7f1d1d}
+.am-weather-day-label{padding-right:9px;border-right:1px solid #49617e;color:#fff;font-size:13px;font-weight:950;letter-spacing:.08em;line-height:1;text-transform:uppercase;white-space:nowrap}
 .am-weather-icon{font-size:23px;line-height:1}
 .am-weather-title{min-width:0;flex:1;text-align:left}
-.am-weather-title strong{display:block;font-size:15px;font-weight:900;line-height:1.2}
-.am-weather-title span{display:block;margin-top:2px;overflow:hidden;color:#52637a;font-size:11px;font-weight:700;text-overflow:ellipsis;white-space:nowrap}
-.am-weather-refresh{width:27px;height:27px;border:1px solid #afc2d8;border-radius:7px;background:#fff;color:#17345a;font-size:16px;font-weight:900;cursor:pointer}
+.am-weather-title strong{display:block;overflow:hidden;color:#fff;font-size:15px;font-weight:900;line-height:1.2;text-overflow:ellipsis;white-space:nowrap}
+.am-weather-title span{display:block;margin-top:2px;overflow:hidden;color:#c7d7ea;font-size:11px;font-weight:700;text-overflow:ellipsis;white-space:nowrap}
+.am-weather-date{color:#dbeafe;font-size:11px;font-weight:900;white-space:nowrap}
+.am-weather-refresh{width:27px;height:27px;border:1px solid #6f87a4;border-radius:7px;background:#fff;color:#17345a;font-size:16px;font-weight:900;cursor:pointer}
 .am-weather-refresh:hover{background:#dbeafe}
 .am-weather-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:1px;background:#dbe4ef}
 .am-weather-metric{min-width:0;padding:7px 4px;background:#fff;text-align:center}
@@ -1718,6 +1723,9 @@ body{
   .sheet-save-status{width:100%;margin-left:0}
   .sheet-tool-divider{display:none}
   .am-weather-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .am-weather-head{gap:6px;padding:6px}
+  .am-weather-day-label{padding-right:6px;font-size:11px}
+  .am-weather-date{font-size:9px}
 }
 @media print{
   html,body{background:#fff}
@@ -5474,6 +5482,10 @@ tags will be replaced.-->
   const offset = Number.isFinite(Number(window.AM_REPORT_DAY_OFFSET)) ? Number(window.AM_REPORT_DAY_OFFSET) : 0;
   if (![-1, 0, 1].includes(offset)) return;
   const weatherIndex = offset + 1;
+  const dayLabel = offset === -1 ? "YESTERDAY" : offset === 0 ? "TODAY" : "TOMORROW";
+  const reportDate = new Date();
+  reportDate.setDate(reportDate.getDate() + offset);
+  const reportDateLabel = reportDate.toLocaleDateString(undefined, { month:"short", day:"numeric", year:"numeric" });
 
   const LAT = 29.824989;
   const LON = -95.290711;
@@ -5504,6 +5516,30 @@ tags will be replaced.-->
   function escapeHtml(value) {
     return String(value == null ? "" : value).replace(/[&<>"]/g, character => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[character]));
   }
+
+  function blendWeatherHeading() {
+    const head = card.querySelector(".am-weather-head");
+    if (!head) return;
+    const title = head.querySelector(".am-weather-title strong");
+    const dayPrefix = dayLabel + " · ";
+    if (title && title.textContent.toUpperCase().startsWith(dayPrefix.toUpperCase())) {
+      title.textContent = title.textContent.slice(dayPrefix.length);
+    }
+    if (!head.querySelector(".am-weather-day-label")) {
+      const day = document.createElement("span");
+      day.className = "am-weather-day-label";
+      day.textContent = dayLabel;
+      head.insertBefore(day, head.firstChild);
+    }
+    if (!head.querySelector(".am-weather-date")) {
+      const date = document.createElement("span");
+      date.className = "am-weather-date";
+      date.textContent = reportDateLabel;
+      head.insertBefore(date, head.querySelector(".am-weather-refresh"));
+    }
+  }
+
+  blendWeatherHeading();
 
   function number(value, digits) {
     const parsed = Number(value);
@@ -5787,7 +5823,7 @@ tags will be replaced.-->
       : alert
         ? '<strong>' + escapeHtml(alert.event || "Weather alert") + '</strong>' + (alert.headline ? ': ' + escapeHtml(alert.headline) : '') + (alerts.length > 1 ? ' +' + (alerts.length - 1) + ' more' : '')
         : '<strong>' + noAlertLabel + '</strong> for this day';
-    const label = offset === -1 ? "YESTERDAY" : offset === 0 ? "TODAY" : "TOMORROW";
+    const label = dayLabel;
     let high = number((daily.temperature_2m_max || [])[weatherIndex]);
     let low = number((daily.temperature_2m_min || [])[weatherIndex]);
     const modelRainChance = Number((daily.precipitation_probability_max || [])[weatherIndex]) || 0;
@@ -5849,6 +5885,7 @@ tags will be replaced.-->
       '<div class="am-weather-guidance ' + (guidanceCaution ? 'caution' : '') + '"><span>' + (guidanceCaution ? '⚠️' : 'ℹ️') + '</span><span>' + guidanceText + '</span></div>' +
       '<div class="am-weather-alert ' + (severe ? 'danger' : alert ? 'warning' : '') + '"><span>' + (alert ? '⚠️' : alertsAvailable ? '✓' : '•') + '</span><span>' + alertText + '</span></div>' +
       '<div class="am-weather-foot"><span>' + sourceLabel + ' · ' + (cached ? 'Cached ' : 'Updated ') + new Date(payload.savedAt || Date.now()).toLocaleTimeString([], { hour:"numeric", minute:"2-digit" }) + '</span><a href="' + MAP_URL + '" target="_blank" rel="noopener">Live radar ↗</a></div>';
+    blendWeatherHeading();
     card.querySelector(".am-weather-refresh").addEventListener("click", () => load(true));
     return true;
   }

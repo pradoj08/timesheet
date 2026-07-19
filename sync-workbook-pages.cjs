@@ -41,6 +41,42 @@ function inlineYardCrewSprites(html) {
   }, html);
 }
 
+function inlineMatrixWideRailcarSprites(html) {
+  const spritePaths = [
+    "assets/railcars/railcar-short.png",
+    "assets/railcars/railcar-long.png",
+    "assets/railcars/railcar-spine.png",
+  ];
+  return spritePaths.reduce((updated, spritePath) => {
+    const dataUri = `data:image/png;base64,${fs.readFileSync(spritePath).toString("base64")}`;
+    return updated.replaceAll(spritePath, dataUri);
+  }, html);
+}
+
+function replaceEmbeddedPage(workbookHtml, pageId, pageHtml) {
+  const pageMarker = `        "${pageId}": {`;
+  const pageStart = workbookHtml.indexOf(pageMarker);
+  if (pageStart < 0) throw new Error(`Could not find embedded page: ${pageId}`);
+  const htmlKey = workbookHtml.indexOf('"html"', pageStart + pageMarker.length);
+  if (htmlKey < 0) throw new Error(`Could not find embedded page HTML: ${pageId}`);
+  const colon = workbookHtml.indexOf(":", htmlKey + 6);
+  if (colon < 0) throw new Error(`Could not find embedded page value: ${pageId}`);
+  let valueStart = colon + 1;
+  while (/\s/.test(workbookHtml[valueStart] || "")) valueStart += 1;
+  if (workbookHtml[valueStart] !== '"') throw new Error(`Embedded page HTML is not a JSON string: ${pageId}`);
+  let valueEnd = valueStart + 1;
+  while (valueEnd < workbookHtml.length) {
+    if (workbookHtml[valueEnd] === "\\") {
+      valueEnd += 2;
+      continue;
+    }
+    if (workbookHtml[valueEnd] === '"') break;
+    valueEnd += 1;
+  }
+  if (valueEnd >= workbookHtml.length) throw new Error(`Embedded page HTML is unterminated: ${pageId}`);
+  return workbookHtml.slice(0, valueStart) + escapeScriptString(pageHtml) + workbookHtml.slice(valueEnd + 1);
+}
+
 function configureAmReportSheet(html, offset, label) {
   const config = `<script>window.AM_REPORT_DAY_OFFSET=${offset};window.AM_REPORT_DAY_LABEL=${JSON.stringify(label)};</script>`;
   return html.replace(/<head\b[^>]*>/i, match => match + "\n" + config);
@@ -113,9 +149,6 @@ function buildAmReportWorkspace(sheetHtml, rosterPageHtml) {
   body{padding:8px;overflow-x:hidden}
   .am-three-day-workspace{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:start;gap:0;width:100%;max-width:none;margin:0 auto}
   .am-day-panel{min-width:0;overflow:hidden;border:1px solid #a9b8cc;border-radius:12px;background:#fff;box-shadow:0 8px 24px rgba(15,23,42,.09)}
-  .am-day-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:42px;padding:8px 12px;border-bottom:1px solid #cbd5e1;background:#132238;color:#fff}
-  .am-day-heading strong{font-size:15px;font-weight:900;letter-spacing:.08em;text-transform:uppercase}
-  .am-day-heading span{color:#dbeafe;font-size:13px;font-weight:800}
   .am-day-frame{display:block;width:100%;min-width:0;height:900px;border:0;background:#eef2f6;overflow:hidden}
   .am-roster-float{position:fixed;z-index:1000;top:76px;left:50%;width:min(500px,calc(100vw - 24px));max-height:calc(100vh - 92px);transform:translateX(-50%);overflow:hidden;border:2px solid #22344d;border-radius:8px;background:#f8fafc;box-shadow:0 20px 55px rgba(15,23,42,.38)}
   .am-roster-float[hidden]{display:none!important}
@@ -143,7 +176,7 @@ function buildAmReportWorkspace(sheetHtml, rosterPageHtml) {
   .am-quick-action.here,.am-quick-action.flipline{background:#d6f7df;color:#126430}.am-quick-action.sic,.am-quick-action.calledoff,.am-quick-action.ncns{background:#ffe0e4;color:#b42336}.am-quick-action.vac{background:#f1e6ff;color:#6d28d9}.am-quick-action.out,.am-quick-action.unknown{background:#dfe7f0;color:#34445c}.am-quick-action.bnsf{background:#ffe5ea;color:#b42336}.am-quick-action.hostler,.am-quick-action.traineehostler{background:#fff2c6;color:#8a5100}.am-quick-action.groundman,.am-quick-action.traineegroundman{background:#ffead5;color:#9a3412}.am-quick-action.flipoperator{background:#eee5ff;color:#6d28d9}.am-quick-action.crane1,.am-quick-action.crane2{background:#dbeafe;color:#1d4ed8}.am-quick-action.clear{background:#f8fafc;color:#52617a}
   .am-quick-times{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;padding:0 7px 7px}.am-quick-time-card{overflow:hidden;border:1px solid #c4cfdd;border-radius:4px;background:#fff}.am-quick-time-card h3{margin:0;padding:6px 7px;background:#263950;color:#fff;font-size:10px;font-weight:950;letter-spacing:.06em;text-align:center;text-transform:uppercase}.am-quick-time-row{display:grid;grid-template-columns:minmax(46px,1fr) minmax(74px,1.35fr) minmax(46px,1fr);align-items:center;gap:4px;padding:5px}.am-quick-time-row+.am-quick-time-row{padding-top:0}.am-quick-time-value{width:100%;height:30px;min-width:0;border:1px solid #8fa1b8;border-radius:4px;background:#f8fafc;color:#14213a;font-size:13px;font-weight:900;text-align:center}.am-quick-time-step{height:28px;min-width:0;padding:0 4px;border:1px solid #94a3b8;border-radius:4px;background:#eaf0f7;color:#22344d;font-size:10px;font-weight:950;cursor:pointer}.am-quick-time-step:hover,.am-quick-time-step:focus-visible{border-color:#2563eb;background:#dbeafe;outline:2px solid #2563eb;outline-offset:-2px}.am-quick-time-hint{color:#64748b;font-size:8px;font-weight:900;line-height:1.05;text-align:center;text-transform:uppercase}
   .am-quick-message{min-height:24px;padding:5px 8px;border-top:1px solid #cbd5e1;background:#fff;color:#52617a;font-size:10px;font-weight:700}
-  @media(max-width:900px){body{padding:4px}.am-three-day-workspace{gap:0}.am-day-heading{padding:6px}.am-day-heading strong{font-size:11px}.am-day-heading span{font-size:10px}.am-roster-float{top:50px}.am-roster-body{max-height:calc(100vh - 128px)}}
+  @media(max-width:900px){body{padding:4px}.am-three-day-workspace{gap:0}.am-roster-float{top:50px}.am-roster-body{max-height:calc(100vh - 128px)}}
 </style>
 </head>
 <body>
@@ -590,17 +623,10 @@ function buildAmReportWorkspace(sheetHtml, rosterPageHtml) {
       });
     } catch (_) {}
   };
-  const formatDate = offset => {
-    const date = new Date();
-    date.setDate(date.getDate() + offset);
-    return date.toLocaleDateString(undefined, { month:"short", day:"numeric", year:"numeric" });
-  };
   days.forEach(day => {
     const panel = document.createElement("section");
     panel.className = "am-day-panel";
-    panel.innerHTML = '<header class="am-day-heading"><strong></strong><span></span></header><iframe class="am-day-frame" title=""></iframe>';
-    panel.querySelector("strong").textContent = day.label;
-    panel.querySelector("span").textContent = formatDate(day.offset);
+    panel.innerHTML = '<iframe class="am-day-frame" title=""></iframe>';
     const frame = panel.querySelector("iframe");
     frame.title = day.label + " AM Report";
     frames.push(frame);
@@ -714,16 +740,13 @@ for (const [pageId, sourcePath] of Object.entries(pages)) {
     pageHtml = pageHtml.replace(sourceTag, (_, open, _oldSource, close) => open + escapeScriptString(lphInputHtml) + close);
   }
   if (pageId === "timeOff") pageHtml = inlineYardCrewSprites(pageHtml);
+  if (pageId === "matrixWide") pageHtml = inlineMatrixWideRailcarSprites(pageHtml);
   if (pageId === "amReport") {
     validatePageScripts("amReportSheet", pageHtml);
     pageHtml = buildAmReportWorkspace(pageHtml, amRosterPageHtml);
   }
   validatePageScripts(pageId, pageHtml);
-  const entry = new RegExp(
-    `(\\"${pageId}\\"\\s*:\\s*\\{\\s*\\"?label\\"?\\s*:\\s*\\"[^\\"]+\\"\\s*,\\s*\\"?html\\"?\\s*:\\s*)(\\"(?:\\\\.|[^\\"\\\\])*\\")`
-  );
-  if (!entry.test(output)) throw new Error(`Could not find embedded page: ${pageId}`);
-  output = output.replace(entry, (_, prefix) => prefix + escapeScriptString(pageHtml));
+  output = replaceEmbeddedPage(output, pageId, pageHtml);
 }
 
 output = injectAssistantShell(output);

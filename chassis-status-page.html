@@ -10068,6 +10068,11 @@ function placeHeroForAppPage(forecast){
     marker.parentNode.insertBefore(hero,marker.nextSibling);
   }
 }
+function resetAppPageScroll(){
+  window.scrollTo({top:0,left:0,behavior:"auto"});
+  document.documentElement.scrollTop=0;
+  document.body.scrollTop=0;
+}
 function setAppPage(page,options={}){
   const forecast=page==="forecast";
   const hydrate=options.hydrate!==false;
@@ -10104,13 +10109,13 @@ function setAppPage(page,options={}){
       renderForecastArchiveList();
       forecastPageHydrated=true;
     }
-    if(scroll)$("forecastModal")?.scrollIntoView({behavior:"auto",block:"start"});
+    if(scroll)requestAnimationFrame(resetAppPageScroll);
   }else{
     if(hydrate && !reconciliationPageHydrated){
       render();
       reconciliationPageHydrated=true;
     }
-    if(scroll)document.querySelector(".table-card")?.scrollIntoView({behavior:"auto",block:"start"});
+    if(scroll)requestAnimationFrame(resetAppPageScroll);
   }
 }
 function openForecastModal(){
@@ -15125,12 +15130,15 @@ async function init(){
 
 window.addEventListener("beforeunload",()=>{try{saveCurrentSessionToCloud()}catch{}});
 window.addEventListener("DOMContentLoaded",()=>{
+  try{history.scrollRestoration="manual"}catch{}
+  resetAppPageScroll();
   setAppPage("forecast",{hydrate:false,scroll:false});
   document.documentElement.classList.remove("app-booting");
   requestAnimationFrame(()=>{
     init().catch(error=>console.error("Chassis Status initialization failed",error)).finally(()=>{
       document.body.classList.remove("app-initializing");
       document.documentElement.classList.remove("app-booting");
+      requestAnimationFrame(resetAppPageScroll);
     });
   });
 },{once:true});

@@ -399,6 +399,11 @@
     z-index: 3;
     pointer-events: auto;
   }
+  #toggleYardView {
+    position: relative;
+    z-index: 3;
+    pointer-events: auto;
+  }
   .split-view-titlebar {
     position: relative;
     min-height: 30px;
@@ -429,6 +434,72 @@
     overflow: auto;
     padding: 5px;
   }
+  .yard-view-popup { z-index: 84; width: min(1460px, calc(100vw - 28px)); }
+  .yard-view-title { display:flex; align-items:center; justify-content:center; gap:8px; }
+  .yard-view-summary { color:#9ed0ff; font-size:10px; letter-spacing:.04em; }
+  .yard-view-body { background:#d7d7d7; }
+  .yard-view-table {
+    display:grid;
+    grid-template-columns:88px 86px minmax(500px,1fr) 68px;
+    min-width:820px;
+    border:1px solid #c6cbd1;
+    background:#f4f4f4;
+  }
+  .yard-view-table .yard-view-head {
+    min-height:23px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:2px 5px;
+    background:#050505;
+    color:#fff;
+    font-family:var(--grid-header-font,"Aptos Narrow","Arial Narrow",Arial,sans-serif);
+    font-size:var(--grid-header-size,11px);
+    font-weight:800;
+    text-transform:uppercase;
+  }
+  .yard-view-track,
+  .yard-view-footage,
+  .yard-view-count,
+  .yard-view-cars {
+    min-height:31px;
+    border-right:1px solid #d9dee5;
+    border-bottom:1px solid #d9dee5;
+  }
+  .yard-view-track,
+  .yard-view-footage,
+  .yard-view-count {
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:3px 5px;
+    background:#f7f8fa;
+    color:#14213a;
+    font:800 12px/1 "Aptos Narrow","Arial Narrow",Arial,sans-serif;
+  }
+  .yard-view-footage { background:#fff2c8; }
+  .yard-view-count { background:#d8f4dc; color:#14532d; }
+  .yard-view-cars { display:flex; flex-wrap:wrap; align-items:stretch; gap:2px; padding:2px; background:#eef1f5; }
+  .yard-view-car {
+    flex:0 0 154px;
+    min-width:0;
+    min-height:25px;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    padding:3px 5px;
+    border:1px solid rgba(15,23,42,.35);
+    color:#fff;
+    font-family:var(--grid-block-font,"Aptos Narrow","Arial Narrow",Arial,sans-serif);
+    font-size:max(10px,var(--grid-block-size,12px));
+    font-weight:850;
+    line-height:1.05;
+    overflow:hidden;
+  }
+  .yard-view-car strong { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .yard-view-car small { margin-top:2px; overflow:hidden; font-size:9px; font-weight:750; opacity:.9; text-overflow:ellipsis; white-space:nowrap; }
+  .yard-view-car.empty { background:#e7ebf0; color:#6b7280; }
+  .yard-view-empty { padding:26px; background:#f7f8fa; color:#64748b; font:800 13px/1.3 "Aptos Narrow",Arial,sans-serif; text-align:center; }
   .today-roster-popup {
     position: fixed;
     top: 76px;
@@ -3246,6 +3317,14 @@
     <div class="split-view-body" id="splitViewBody"></div>
   </section>
 
+  <section class="split-view-popup yard-view-popup" id="yardViewPopup" hidden aria-label="Cars in yard tracks">
+    <div class="split-view-titlebar" id="yardViewHandle">
+      <span class="yard-view-title">YARD VIEW <span class="yard-view-summary" id="yardViewSummary"></span></span>
+      <button class="split-view-close" id="yardViewClose" type="button" aria-label="Close yard view">&times;</button>
+    </div>
+    <div class="split-view-body yard-view-body" id="yardViewBody"></div>
+  </section>
+
   <section class="today-roster-popup" id="todayRosterPopup" hidden aria-label="Current day roster">
     <div class="today-roster-titlebar" id="todayRosterHandle">
       <span>Current Day Roster</span>
@@ -3341,6 +3420,7 @@
           <div class="dashboard-controls">
             <button class="btn btn-light undo-grid-btn" id="undoExcelView" type="button" disabled title="Undo the last block move, edit, delete, or other saved change">Undo</button>
             <button class="btn btn-white btn-small" id="toggleSplitView" type="button">Split View</button>
+            <button class="btn btn-white btn-small" id="toggleYardView" type="button">Yard View</button>
             <div class="view-picker" id="viewPicker">
               <button class="view-select" id="viewSelect" type="button" aria-haspopup="listbox" aria-expanded="false">
                 <span id="viewSelectLabel">CURRENT RAMP BLOCKING</span>
@@ -4252,7 +4332,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   function normalizeRow(row) {
     const out = new Array(COLUMN_NAMES.length + 1).fill("");
     for (let i=0; i<out.length; i++) out[i] = row[i] ?? "";
-    out[0] = numberOrBlank(out[0]);
+    out[0] = normalizeTrackValue(out[0]);
     out[1] = numberOrBlank(out[1]);
     out[3] = numberOrZero(out[3]);
     out[4] = numberOrZero(out[4]);
@@ -4261,6 +4341,19 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     out[9] = numberOrZero(out[9]);
     out[11] = numericCode(out[11]);
     return out;
+  }
+
+  function normalizeTrackValue(value) {
+    const raw = clean(value).replace(/\.0+$/, "");
+    if (!raw) return "";
+    const rampMatch = raw.match(/^6\s*-\s*(80[1-9])$/i);
+    if (rampMatch) return Number(rampMatch[1]);
+    const numeric = Number(raw.replace(/,/g, ""));
+    return Number.isFinite(numeric) ? numeric : raw;
+  }
+
+  function isRampTrackValue(value) {
+    return TRACKS.includes(Number(normalizeTrackValue(value)));
   }
 
   function numberOrBlank(v) {
@@ -4593,6 +4686,14 @@ https://github.com/nodeca/pako/blob/main/LICENSE
 
   function publishLiveSnapshot() {
     if (!computed || !Array.isArray(computed.groups)) return;
+    const groupBySourceIndex = new Map();
+    computed.groups.forEach(group => {
+      (group.sourceIndexes || []).forEach(sourceIndex => groupBySourceIndex.set(sourceIndex, group));
+    });
+    const orderedRailcars = state.rows
+      .map((sourceRow, sourceIndex) => ({ row: normalizeRow(sourceRow), sourceIndex }))
+      .filter(entry => isUsableInventoryRow(entry.row))
+      .sort((a,b) => Number(a.row[0])-Number(b.row[0]) || Number(a.row[1])-Number(b.row[1]) || a.sourceIndex-b.sourceIndex);
     const tracks = {};
     TRACKS.forEach(track => {
       const blocks = computed.groups
@@ -4602,17 +4703,34 @@ https://github.com/nodeca/pako/blob/main/LICENSE
           footage: Math.max(0, Number(group.footage) || 0),
           tone: classifyCell(group.display || group.baseDisplay || "", "CURRENT RAMP BLOCKING")
         }));
+      const railcars = orderedRailcars
+        .filter(entry => Number(entry.row[0]) === track)
+        .map(entry => {
+          const group = groupBySourceIndex.get(entry.sourceIndex);
+          const lengthFt = Math.max(1, Number(entry.row[4]) || 77);
+          const display = String(group && (group.display || group.baseDisplay) || "").trim();
+          return {
+            sequence: Number(entry.row[1]) || entry.sourceIndex + 1,
+            equipmentId: clean(entry.row[2]),
+            lengthFt,
+            type: lengthFt <= 68 ? "short" : lengthFt <= 106 ? "long" : "spine",
+            display,
+            tone: classifyCell(display, "CURRENT RAMP BLOCKING")
+          };
+        });
       tracks[String(track)] = {
         footage: Math.max(0, Number(computed.trackFootage && computed.trackFootage[track]) || 0),
-        blocks
+        blocks,
+        railcars
       };
     });
     try {
       localStorage.setItem(LIVE_STORAGE_KEY, JSON.stringify({
-        version: 1,
+        version: 2,
         updatedAt: new Date().toISOString(),
         sourceName: state.sourceName || "Excel View",
         railCarFeet: 77,
+        railCarLengthRules: { shortMax: 68, longMax: 106, spineMin: 107 },
         displayReferenceFeet: 2750,
         displayRailcarLimit: 16,
         tracks
@@ -4884,6 +5002,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   function openSplitView() {
     const popup = $("#splitViewPopup");
     if (!popup) return;
+    closeYardView();
     popup.hidden = false;
     renderSplitView();
   }
@@ -4902,6 +5021,124 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   function initSplitViewPopup() {
     const popup = $("#splitViewPopup");
     const handle = $("#splitViewHandle");
+    if (!popup || !handle || handle.dataset.dragReady) return;
+    handle.dataset.dragReady = "1";
+    let drag = null;
+    handle.addEventListener("pointerdown", event => {
+      if (event.target.closest("button")) return;
+      const rect = popup.getBoundingClientRect();
+      popup.style.left = rect.left + "px";
+      popup.style.top = rect.top + "px";
+      popup.style.transform = "none";
+      drag = {x:event.clientX - rect.left, y:event.clientY - rect.top};
+      popup.classList.add("dragging");
+      handle.setPointerCapture(event.pointerId);
+    });
+    handle.addEventListener("pointermove", event => {
+      if (!drag) return;
+      const left = Math.max(4, Math.min(window.innerWidth - popup.offsetWidth - 4, event.clientX - drag.x));
+      const top = Math.max(4, Math.min(window.innerHeight - 46, event.clientY - drag.y));
+      popup.style.left = left + "px";
+      popup.style.top = top + "px";
+    });
+    const endDrag = event => {
+      if (!drag) return;
+      drag = null;
+      popup.classList.remove("dragging");
+      try { handle.releasePointerCapture(event.pointerId); } catch (error) {}
+    };
+    handle.addEventListener("pointerup", endDrag);
+    handle.addEventListener("pointercancel", endDrag);
+  }
+
+  function yardTrackLabel(value) {
+    const raw = clean(value);
+    const numeric = Number(raw);
+    if (Number.isInteger(numeric) && numeric >= 100 && numeric <= 999) return `6-${numeric}`;
+    return raw || "UNASSIGNED";
+  }
+
+  function yardTrackGroups() {
+    const groups = new Map();
+    (state.rows || []).map(normalizeRow).forEach((row, sourceIndex) => {
+      if (!clean(row[0]) || isRampTrackValue(row[0]) || !clean(row[2]) || Number(row[4]) <= 0) return;
+      const key = clean(row[0]).toUpperCase();
+      if (!groups.has(key)) groups.set(key, {track:row[0], rows:[]});
+      groups.get(key).rows.push({row, sourceIndex});
+    });
+    return [...groups.values()]
+      .map(group => {
+        group.rows.sort((a, b) => Number(a.row[1]) - Number(b.row[1]) || a.sourceIndex - b.sourceIndex);
+        return group;
+      })
+      .sort((a, b) => yardTrackLabel(a.track).localeCompare(yardTrackLabel(b.track), undefined, {numeric:true, sensitivity:"base"}));
+  }
+
+  function yardCarHtml(row) {
+    const equipment = clean(row[2]) || "UNKNOWN CAR";
+    const length = Number(row[4]) || 0;
+    const status = normalizedStatus(row);
+    const train = clean(row[10]);
+    const details = [`${fmtInt(length)} FT`, status, train].filter(Boolean).join(" · ");
+    const tone = classifyCell(`${status} ${train}`, "CURRENT RAMP BLOCKING");
+    return `<div class="yard-view-car cut-cell ${tone}" title="${escapeAttr(`${equipment} · ${details}`)}"><strong>${escapeHtml(details || "CAR")}</strong><small>${escapeHtml(equipment)}</small></div>`;
+  }
+
+  function renderYardView() {
+    const popup = $("#yardViewPopup");
+    const host = $("#yardViewBody");
+    const summary = $("#yardViewSummary");
+    const groups = yardTrackGroups();
+    const carCount = groups.reduce((total, group) => total + group.rows.length, 0);
+    const button = $("#toggleYardView");
+    if (button) {
+      button.textContent = `Yard View (${groups.length})`;
+      button.title = `${groups.length} non-ramp track${groups.length === 1 ? "" : "s"} available in Yard View`;
+    }
+    if (!popup || !host || popup.hidden) return;
+    if (summary) summary.textContent = `· ${groups.length} TRACK${groups.length === 1 ? "" : "S"} · ${carCount} CAR${carCount === 1 ? "" : "S"}`;
+    if (!groups.length) {
+      host.innerHTML = '<div class="yard-view-empty">No cars were found outside ramp tracks 6-801 through 6-809. Import the full inventory export to populate this view.</div>';
+      return;
+    }
+    const cells = [
+      '<div class="yard-view-head">Track</div>',
+      '<div class="yard-view-head">Current FT</div>',
+      '<div class="yard-view-head">Cars in Track</div>',
+      '<div class="yard-view-head">Cars</div>'
+    ];
+    groups.forEach(group => {
+      const footage = group.rows.reduce((total, entry) => total + (Number(entry.row[4]) || 0), 0);
+      cells.push(`<div class="yard-view-track">${escapeHtml(yardTrackLabel(group.track))}</div>`);
+      cells.push(`<div class="yard-view-footage">${fmtInt(footage)}</div>`);
+      cells.push(`<div class="yard-view-cars">${group.rows.map(entry => yardCarHtml(entry.row)).join("")}</div>`);
+      cells.push(`<div class="yard-view-count">${group.rows.length}</div>`);
+    });
+    host.innerHTML = `<div class="yard-view-table">${cells.join("")}</div>`;
+  }
+
+  function openYardView() {
+    const popup = $("#yardViewPopup");
+    if (!popup) return;
+    closeSplitView();
+    popup.hidden = false;
+    renderYardView();
+  }
+
+  function closeYardView() {
+    const popup = $("#yardViewPopup");
+    if (popup) popup.hidden = true;
+  }
+
+  function toggleYardView() {
+    const popup = $("#yardViewPopup");
+    if (!popup) return;
+    popup.hidden ? openYardView() : closeYardView();
+  }
+
+  function initYardViewPopup() {
+    const popup = $("#yardViewPopup");
+    const handle = $("#yardViewHandle");
     if (!popup || !handle || handle.dataset.dragReady) return;
     handle.dataset.dragReady = "1";
     let drag = null;
@@ -5201,6 +5438,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     initInboundPopup();
     initCurrentWorkPopup();
     initSplitViewPopup();
+    renderYardView();
+    initYardViewPopup();
     initTodayRosterPopup();
     updateFootageCalcTotals();
     updateCurrentWorkForecast();
@@ -7396,17 +7635,22 @@ https://github.com/nodeca/pako/blob/main/LICENSE
 
   function mapPositionalRow(row) {
     const values = Array.from(row || []);
+    const hasInventoryAt = start => {
+      const track = clean(values[start]);
+      const plausibleTrack = /^\d{1,4}(?:\.0+)?$/.test(track) || /^(?=.*\d)[A-Z0-9]+(?:\s*[-/]\s*[A-Z0-9]+)*$/i.test(track);
+      return plausibleTrack && clean(values[start + 2]) !== "" && Number(String(values[start + 4] ?? "").replace(/,/g, "")) > 0;
+    };
     // Direct DASH K:W copy: Track is the first column.
-    if (TRACKS.includes(Number(clean(values[0])))) return normalizeRow(values.slice(0,13));
+    if (hasInventoryAt(0)) return normalizeRow(values.slice(0,13));
     // Full yard export / DASH J:W: Yard precedes Track.
-    if (TRACKS.includes(Number(clean(values[1])))) return normalizeRow(values.slice(1,14));
+    if (hasInventoryAt(1)) return normalizeRow(values.slice(1,14));
     // Entire DASH worksheet matrix: Track is in Excel column K (zero-based index 10).
-    if (TRACKS.includes(Number(clean(values[10])))) return normalizeRow(values.slice(10,23));
+    if (hasInventoryAt(10)) return normalizeRow(values.slice(10,23));
     return null;
   }
 
   function isUsableInventoryRow(row) {
-    return row && TRACKS.includes(Number(row[0])) && Number(row[1]) >= 0 && clean(row[2]) !== "" && Number(row[4]) > 0;
+    return row && clean(row[0]) !== "" && Number(row[1]) >= 0 && clean(row[2]) !== "" && Number(row[4]) > 0;
   }
 
   function extractInventoryMatrix(matrix, source="Imported data", sheetName="") {
@@ -7741,6 +7985,14 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   $("#splitViewClose").addEventListener("click", event => {
     event.preventDefault();
     closeSplitView();
+  });
+  $("#toggleYardView").addEventListener("click", event => {
+    event.preventDefault();
+    toggleYardView();
+  });
+  $("#yardViewClose").addEventListener("click", event => {
+    event.preventDefault();
+    closeYardView();
   });
   $("#inboundTrainSource").addEventListener("change", event => selectInboundTrainSource(event.target.value));
   $("#inboundTrainName").addEventListener("input", renderInboundTrainPlacement);
@@ -8444,6 +8696,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     else if (!$("#inboundArchivePreview").hidden) closeInboundArchivePreview();
     else if (!$("#inboundArchivePage").hidden) closeInboundArchivePage();
     else if (!$("#todayRosterPopup").hidden) closeTodayRoster();
+    else if (!$("#yardViewPopup").hidden) closeYardView();
     else if (!$("#splitViewPopup").hidden) closeSplitView();
     else if (!$("#currentWorkPopup").hidden) closeCurrentWorkPopup();
     else if (!$("#splitBlockModal").hidden) closeSplitBlockModal();
