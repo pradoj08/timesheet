@@ -259,10 +259,97 @@
     font-size: 11px;
     font-weight: 750;
   }
+  .editing-toolbar {
+    position: relative;
+    z-index: 24;
+    display: flex;
+    min-height: 39px;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    border-bottom: 1px solid var(--line);
+    background: var(--panel-2);
+    box-shadow: 0 1px 4px var(--shadow);
+  }
+  .format-button {
+    min-width: 30px;
+    height: 29px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 4px 7px;
+    border: 1px solid transparent;
+    border-radius: 5px;
+    background: transparent;
+    color: var(--text);
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+  .format-button:hover, .format-button.active { border-color: var(--line); background: var(--paper-raised,var(--panel)); color: var(--accent); }
+  .format-button strong { font-size: 14px; }
+  .format-divider { width: 1px; height: 22px; flex: 0 0 auto; margin: 0 2px; background: var(--line); }
+  .toolbar-spacer { flex: 1 1 auto; }
+  .highlight-tool { position: relative; }
+  .highlight-palette {
+    position: absolute;
+    z-index: 120;
+    top: calc(100% + 6px);
+    left: 0;
+    width: 254px;
+    padding: 10px;
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    background: var(--paper-raised,var(--panel));
+    box-shadow: 0 16px 38px var(--shadow);
+  }
+  .highlight-palette[hidden] { display: none; }
+  .highlight-palette-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; color: var(--muted); font-size: 9px; font-weight: 850; letter-spacing: .08em; text-transform: uppercase; }
+  .highlight-swatches { display: grid; grid-template-columns: repeat(8,1fr); gap: 6px; }
+  .highlight-swatch { width: 23px; height: 23px; border: 2px solid rgba(255,255,255,.78); border-radius: 5px; box-shadow: 0 0 0 1px rgba(0,0,0,.25); cursor: pointer; }
+  .highlight-swatch:hover { transform: translateY(-1px) scale(1.06); }
+  .highlight-palette-foot { display: grid; grid-template-columns: 34px 1fr auto; gap: 6px; align-items: center; margin-top: 9px; padding-top: 8px; border-top: 1px solid var(--line-soft); }
+  .highlight-palette-foot input[type="color"] { width: 34px; height: 29px; padding: 2px; border: 1px solid var(--line); border-radius: 5px; background: var(--panel-2); cursor: pointer; }
+  .highlight-palette-foot button { height: 29px; padding: 4px 7px; border: 1px solid var(--line); border-radius: 5px; background: var(--panel-2); color: var(--text); cursor: pointer; font-size: 10px; font-weight: 800; }
+  .markdown-preview mark { padding: .08em .2em; border-radius: 3px; color: #18181b; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
   .editor-shell { display: grid; min-width: 0; min-height: 0; flex: 1 1 auto; grid-template-columns: 1fr 1fr; }
   .editor-shell.edit-only { grid-template-columns: 1fr; }
   .editor-shell.preview-only { grid-template-columns: 1fr; }
   .editor-shell.edit-only .preview-pane, .editor-shell.preview-only .editor-pane { display: none; }
+  .kanban-pane { display: none; min-width: 0; min-height: 0; overflow: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--paper-raised,var(--panel)); }
+  .editor-shell.kanban-mode { grid-template-columns: minmax(0,1fr); }
+  .editor-shell.kanban-mode .editor-pane, .editor-shell.kanban-mode .preview-pane { display: none; }
+  .editor-shell.kanban-mode .kanban-pane { display: flex; flex-direction: column; }
+  .kanban-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; border-bottom: 1px solid var(--line); background: var(--panel-2); }
+  .kanban-head-copy strong, .kanban-head-copy span { display: block; }
+  .kanban-head-copy strong { font-size: 13px; }
+  .kanban-head-copy span { margin-top: 2px; color: var(--muted); font-size: 9px; }
+  .kanban-actions { display: flex; gap: 6px; }
+  .kanban-actions button, .kanban-add-card, .kanban-empty button { border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--text); cursor: pointer; font-size: 10px; font-weight: 800; }
+  .kanban-actions button { min-height: 30px; padding: 5px 9px; }
+  .kanban-board { display: flex; flex: 1 1 auto; align-items: flex-start; gap: 10px; min-width: min-content; padding: 12px; overflow: auto; }
+  .kanban-lane { width: 270px; min-width: 270px; overflow: hidden; border: 1px solid var(--line); border-radius: 9px; background: var(--paper-soft,var(--panel-2)); box-shadow: 0 3px 10px var(--shadow); }
+  .kanban-lane.drag-over { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+  .kanban-lane-head { display: flex; min-height: 42px; align-items: center; gap: 7px; padding: 8px 9px; border-bottom: 1px solid var(--line); background: var(--panel-2); }
+  .kanban-lane-head strong { min-width: 0; flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
+  .kanban-lane-count { display: inline-grid; min-width: 21px; height: 21px; place-items: center; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-size: 9px; font-weight: 900; }
+  .kanban-lane-delete, .kanban-card-delete { border: 0; background: transparent; color: var(--muted); cursor: pointer; font-weight: 900; }
+  .kanban-card-list { min-height: 46px; padding: 7px; }
+  .kanban-card { display: grid; grid-template-columns: 20px minmax(0,1fr) 20px; align-items: start; gap: 5px; margin-bottom: 7px; padding: 9px 7px; border: 1px solid var(--line); border-radius: 7px; background: var(--paper-raised,var(--panel)); box-shadow: 0 2px 6px var(--shadow); cursor: grab; }
+  .kanban-card.dragging { opacity: .45; }
+  .kanban-card input { width: 15px; height: 15px; margin: 1px 0 0; accent-color: var(--accent); cursor: pointer; }
+  .kanban-card-copy { min-width: 0; overflow-wrap: anywhere; font-size: 11px; font-weight: 700; line-height: 1.38; }
+  .kanban-card.done .kanban-card-copy { color: var(--faint); text-decoration: line-through; }
+  .kanban-add-card { width: calc(100% - 14px); min-height: 30px; margin: 0 7px 8px; color: var(--muted); }
+  .kanban-empty { display: grid; min-height: 100%; place-items: center; padding: 28px; text-align: center; }
+  .kanban-empty-card { max-width: 430px; padding: 24px; border: 1px dashed var(--line); border-radius: 10px; background: var(--panel-2); }
+  .kanban-empty h3 { margin: 0 0 7px; }
+  .kanban-empty p { margin: 0 0 14px; color: var(--muted); line-height: 1.5; }
+  .kanban-empty button { min-height: 34px; padding: 7px 12px; border-color: var(--accent); background: var(--accent); color: #fff; }
+  .plugin-status { display: inline-flex; align-items: center; gap: 5px; margin-right: auto; color: rgba(255,255,255,.78); }
+  .plugin-status b { color: #8ee8df; }
   .editor-pane, .preview-pane { min-width: 0; min-height: 0; overflow: auto; }
   .editor-pane { position: relative; border-right: 1px solid var(--line); background: var(--bg); }
   .editor-shell.edit-only .editor-pane { border-right: 0; }
@@ -741,11 +828,43 @@
       </div>
       <button class="toolbar-button danger" id="deleteButton" type="button">Delete</button>
     </header>
+    <nav class="editing-toolbar" id="editingToolbar" aria-label="Editing Toolbar">
+      <button class="format-button" type="button" data-format="undo" title="Undo (Ctrl+Z)">&#8630;</button>
+      <button class="format-button" type="button" data-format="redo" title="Redo (Ctrl+Y)">&#8631;</button>
+      <span class="format-divider" aria-hidden="true"></span>
+      <button class="format-button" type="button" data-format="h1" title="Heading 1">H1</button>
+      <button class="format-button" type="button" data-format="h2" title="Heading 2">H2</button>
+      <button class="format-button" type="button" data-format="h3" title="Heading 3">H3</button>
+      <span class="format-divider" aria-hidden="true"></span>
+      <button class="format-button" type="button" data-format="bold" title="Bold (Ctrl+B)"><strong>B</strong></button>
+      <button class="format-button" type="button" data-format="italic" title="Italic (Ctrl+I)"><em>I</em></button>
+      <button class="format-button" type="button" data-format="strike" title="Strikethrough"><s>S</s></button>
+      <button class="format-button" type="button" data-format="code" title="Inline or fenced code">&lt;/&gt;</button>
+      <button class="format-button" type="button" data-format="link" title="Insert link">Link</button>
+      <div class="highlight-tool">
+        <button class="format-button" id="highlightButton" type="button" title="Highlightr color palette">Highlight &#9662;</button>
+        <section class="highlight-palette" id="highlightPalette" aria-label="Highlightr palette" hidden>
+          <header class="highlight-palette-head"><strong>Highlightr</strong><span>Selected text</span></header>
+          <div class="highlight-swatches" id="highlightSwatches"></div>
+          <footer class="highlight-palette-foot"><input id="customHighlightColor" type="color" value="#ffd166" aria-label="Custom highlight color"><button id="saveHighlightColor" type="button">Add color</button><button id="clearHighlight" type="button">Clear</button></footer>
+        </section>
+      </div>
+      <span class="format-divider" aria-hidden="true"></span>
+      <button class="format-button" type="button" data-format="bullet" title="Bulleted list">&#8226; List</button>
+      <button class="format-button" type="button" data-format="number" title="Numbered list">1. List</button>
+      <button class="format-button" type="button" data-format="check" title="Checklist">&#9744; Task</button>
+      <button class="format-button" type="button" data-format="quote" title="Blockquote">Quote</button>
+      <button class="format-button" type="button" data-format="callout" title="Insert callout">Callout</button>
+      <button class="format-button" type="button" data-format="hr" title="Horizontal rule">&#8212;</button>
+      <span class="toolbar-spacer"></span>
+      <button class="format-button" id="kanbanToggle" type="button" title="Open Markdown-backed Kanban board">Kanban</button>
+    </nav>
     <div class="editor-shell" id="editorShell">
       <section class="editor-pane" aria-label="Markdown editor"><textarea id="noteBody" spellcheck="true" aria-label="Note contents"></textarea></section>
       <section class="preview-pane" aria-label="Rendered note"><article class="markdown-preview" id="notePreview"></article></section>
+      <section class="kanban-pane" id="kanbanPane" aria-label="Kanban board"></section>
     </div>
-    <footer class="statusbar"><span id="wordCount">0 words</span><span id="characterCount">0 characters</span><span>Local vault</span><span>Autosaved</span></footer>
+    <footer class="statusbar"><span class="plugin-status"><b>3 plugins enabled</b><span>Highlightr</span><span>Kanban</span><span>Editing Toolbar</span></span><span id="wordCount">0 words</span><span id="characterCount">0 characters</span><span>Local vault</span><span>Autosaved</span></footer>
   </section>
 
   <aside class="right-sidebar" aria-label="Right sidebar">
@@ -824,9 +943,21 @@
   const toast = document.getElementById("toast");
   const styleSettingsOverlay = document.getElementById("styleSettingsOverlay");
   const outlineList = document.getElementById("outlineList");
+  const editingToolbar = document.getElementById("editingToolbar");
+  const highlightButton = document.getElementById("highlightButton");
+  const highlightPalette = document.getElementById("highlightPalette");
+  const highlightSwatches = document.getElementById("highlightSwatches");
+  const customHighlightColor = document.getElementById("customHighlightColor");
+  const kanbanToggle = document.getElementById("kanbanToggle");
+  const kanbanPane = document.getElementById("kanbanPane");
+  const HIGHLIGHT_COLORS_KEY = "conglobal-obsidian-highlightr-colors-v1";
+  const DEFAULT_HIGHLIGHTS = ["#ffd166","#ffadad","#fdffb6","#caffbf","#9bf6ff","#a0c4ff","#bdb2ff","#ffc6ff"];
   let saveTimer = 0;
   let toastTimer = 0;
   let softPaperSettings = loadSoftPaperSettings();
+  let highlightColors = loadHighlightColors();
+  let kanbanMode = false;
+  let kanbanDrag = null;
 
   function loadSoftPaperSettings() {
     try {
@@ -836,6 +967,12 @@
   }
   function saveSoftPaperSettings() {
     localStorage.setItem(SOFT_PAPER_SETTINGS_KEY,JSON.stringify(softPaperSettings));
+  }
+  function loadHighlightColors() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(HIGHLIGHT_COLORS_KEY) || "null");
+      return Array.isArray(saved) ? Array.from(new Set(DEFAULT_HIGHLIGHTS.concat(saved.filter(color => /^#[0-9a-f]{6}$/i.test(color))))).slice(0,24) : DEFAULT_HIGHLIGHTS.slice();
+    } catch (_) { return DEFAULT_HIGHLIGHTS.slice(); }
   }
   function setSoftPaperMode(mode) {
     const normalized = mode === "dark" ? "dark" : "light";
@@ -873,7 +1010,7 @@
   const defaultNote = () => ({
     id: uid(),
     title: "Welcome to Obsidian Notes",
-    body: "# Welcome to your CONGLOBAL vault\n\nThis notes page works offline inside the all-in-one workbook. Your notes autosave on this device.\n\n## Quick start\n\n- Create notes with **New note**.\n- Organize notes with folders and move the active note from the folder selector.\n- Paste a copied image directly into the editor with **Ctrl+V**.\n- Use Markdown for headings, lists, links, and code.\n- Link to another note with `[[Note title]]`.\n- Export one note as Markdown or back up the full vault as JSON.\n- Import `.md`, `.txt`, or a previously exported vault.\n\n> Tip: Press **Ctrl+N** for a new note and **Ctrl+S** to save immediately.\n\n- [ ] Add the first operations note\n- [x] Open the new notes workspace",
+    body: "# Welcome to your CONGLOBAL vault\n\nThis notes page works offline inside the all-in-one workbook. Your notes autosave on this device.\n\n## Quick start\n\n- Create notes with **New note**.\n- Format selected text with the editing toolbar.\n- Use **Highlightr** to apply saved or custom colors.\n- Open **Kanban** to create a Markdown-backed operations board.\n- Organize notes with folders and move the active note from the folder selector.\n- Paste a copied image directly into the editor with **Ctrl+V**.\n- Link to another note with `[[Note title]]`.\n- Export one note as Markdown or back up the full vault as JSON.\n\n> Tip: Press **Ctrl+N** for a new note and **Ctrl+S** to save immediately.\n\n- [ ] Add the first operations note\n- [x] Open the new notes workspace",
     folderId: "",
     createdAt: nowIso(),
     updatedAt: nowIso()
@@ -971,6 +1108,8 @@
   }
   function inlineMarkdown(value) {
     let text = escapeHtml(value);
+    text = text.replace(/&lt;mark style=&quot;background-color:\s*(#[0-9a-f]{3,8})&quot;&gt;([\s\S]*?)&lt;\/mark&gt;/gi,(_,color,content) => '<mark style="background-color:' + color + '">' + content + '</mark>');
+    text = text.replace(/==([^=]+)==/g,'<mark style="background-color:#ffd166">$1</mark>');
     text = text.replace(/!\[([^\]]*)\]\((asset:[^)]+)\)/g,(_,alt,reference) => renderAssetImage(alt,reference));
     text = text.replace(/`([^`]+)`/g,"<code>$1</code>");
     text = text.replace(/\[\[([^\]]+)\]\]/g,(_,name) => '<button class="wikilink" type="button" data-wikilink="' + encodeURIComponent(name.trim()) + '">' + escapeHtml(name.trim()) + '</button>');
@@ -1101,6 +1240,7 @@
     renderFolders();
     renderFolderSelect();
     renderList();
+    if (kanbanMode) renderKanban();
   }
   function syncInputs() {
     const note = activeNote();
@@ -1143,6 +1283,8 @@
   }
   function setView(view) {
     const normalized = ["edit","split","preview"].includes(view) ? view : "split";
+    kanbanMode = false;
+    if (kanbanToggle) kanbanToggle.classList.remove("active");
     editorShell.className = "editor-shell" + (normalized === "edit" ? " edit-only" : normalized === "preview" ? " preview-only" : "");
     document.querySelectorAll("[data-view]").forEach(button => button.classList.toggle("active", button.dataset.view === normalized));
     localStorage.setItem(VIEW_KEY, normalized);
@@ -1234,9 +1376,250 @@
     }
   }
 
+  function applyTextEdit(replacement,start,end,selectionStart,selectionEnd) {
+    const before = bodyInput.value.slice(0,start);
+    const after = bodyInput.value.slice(end);
+    bodyInput.value = before + replacement + after;
+    bodyInput.focus();
+    bodyInput.setSelectionRange(
+      selectionStart == null ? before.length + replacement.length : before.length + selectionStart,
+      selectionEnd == null ? before.length + replacement.length : before.length + selectionEnd
+    );
+    syncInputs();
+  }
+  function wrapSelection(prefix,suffix,placeholder) {
+    const start = bodyInput.selectionStart == null ? bodyInput.value.length : bodyInput.selectionStart;
+    const end = bodyInput.selectionEnd == null ? start : bodyInput.selectionEnd;
+    const selected = bodyInput.value.slice(start,end) || placeholder;
+    const replacement = prefix + selected + suffix;
+    applyTextEdit(replacement,start,end,prefix.length,prefix.length + selected.length);
+  }
+  function transformSelectedLines(transform) {
+    const value = bodyInput.value;
+    const start = bodyInput.selectionStart == null ? value.length : bodyInput.selectionStart;
+    const end = bodyInput.selectionEnd == null ? start : bodyInput.selectionEnd;
+    const lineStart = value.lastIndexOf("\n",Math.max(0,start - 1)) + 1;
+    const nextBreak = value.indexOf("\n",end);
+    const lineEnd = nextBreak < 0 ? value.length : nextBreak;
+    const replacement = transform(value.slice(lineStart,lineEnd).split("\n")).join("\n");
+    applyTextEdit(replacement,lineStart,lineEnd,0,replacement.length);
+  }
+  function setHeading(level) {
+    transformSelectedLines(lines => lines.map(line => "#".repeat(level) + " " + line.replace(/^#{1,6}\s+/,"")));
+  }
+  function prefixLines(prefix,numbered) {
+    transformSelectedLines(lines => lines.map((line,index) => (numbered ? (index + 1) + ". " : prefix) + line.replace(/^\s*(?:[-*+]\s+|\d+[.)]\s+|>\s?)/,"")));
+  }
+  function runFormatCommand(command) {
+    if (command === "undo" || command === "redo") {
+      bodyInput.focus();
+      document.execCommand(command);
+      setTimeout(syncInputs,0);
+      return;
+    }
+    if (/^h[1-3]$/.test(command)) return setHeading(Number(command.slice(1)));
+    if (command === "bold") return wrapSelection("**","**","bold text");
+    if (command === "italic") return wrapSelection("*","*","italic text");
+    if (command === "strike") return wrapSelection("~~","~~","struck text");
+    if (command === "link") return wrapSelection("[","](https://)","link text");
+    if (command === "bullet") return prefixLines("- ",false);
+    if (command === "number") return prefixLines("",true);
+    if (command === "check") return prefixLines("- [ ] ",false);
+    if (command === "quote") return prefixLines("> ",false);
+    if (command === "callout") {
+      const start = bodyInput.selectionStart == null ? bodyInput.value.length : bodyInput.selectionStart;
+      const end = bodyInput.selectionEnd == null ? start : bodyInput.selectionEnd;
+      const content = bodyInput.value.slice(start,end) || "Add callout details";
+      return applyTextEdit("> [!note] Note\n> " + content.replace(/\n/g,"\n> "),start,end);
+    }
+    if (command === "hr") return wrapSelection("\n\n---\n\n","","");
+    if (command === "code") {
+      const start = bodyInput.selectionStart == null ? bodyInput.value.length : bodyInput.selectionStart;
+      const end = bodyInput.selectionEnd == null ? start : bodyInput.selectionEnd;
+      const selected = bodyInput.value.slice(start,end) || "code";
+      return selected.includes("\n") ? applyTextEdit("```\n" + selected + "\n```",start,end) : wrapSelection("`","`","code");
+    }
+  }
+  function renderHighlightSwatches() {
+    highlightSwatches.innerHTML = highlightColors.map(color => '<button class="highlight-swatch" type="button" data-highlight-color="' + color + '" style="background:' + color + '" title="Highlight ' + color + '" aria-label="Highlight ' + color + '"></button>').join("");
+  }
+  function applyHighlight(color) {
+    const start = bodyInput.selectionStart == null ? bodyInput.value.length : bodyInput.selectionStart;
+    const end = bodyInput.selectionEnd == null ? start : bodyInput.selectionEnd;
+    const selected = bodyInput.value.slice(start,end) || "highlighted text";
+    applyTextEdit('<mark style="background-color:' + color + '">' + selected + "</mark>",start,end);
+    highlightPalette.hidden = true;
+  }
+  function clearHighlightAtSelection() {
+    const value = bodyInput.value;
+    const start = bodyInput.selectionStart == null ? value.length : bodyInput.selectionStart;
+    const end = bodyInput.selectionEnd == null ? start : bodyInput.selectionEnd;
+    if (end > start) {
+      const selected = value.slice(start,end);
+      const cleaned = selected.replace(/<mark\s+style="background-color:\s*#[0-9a-f]{3,8}">([\s\S]*?)<\/mark>/gi,"$1").replace(/==([^=]+)==/g,"$1");
+      applyTextEdit(cleaned,start,end,0,cleaned.length);
+      highlightPalette.hidden = true;
+      return;
+    }
+    const pattern = /<mark\s+style="background-color:\s*#[0-9a-f]{3,8}">([\s\S]*?)<\/mark>/gi;
+    let match;
+    while ((match = pattern.exec(value))) {
+      if (start >= match.index && start <= match.index + match[0].length) {
+        applyTextEdit(match[1],match.index,match.index + match[0].length,0,match[1].length);
+        highlightPalette.hidden = true;
+        return;
+      }
+    }
+    announce("Select highlighted text to clear it");
+  }
+
+  function isKanbanBody(body) { return /^---\s*\n[\s\S]*?kanban-plugin:\s*board[\s\S]*?\n---/i.test(String(body || "")); }
+  function parseKanban(body) {
+    const source = String(body || "").replace(/^---\s*\n[\s\S]*?kanban-plugin:\s*board[\s\S]*?\n---\s*/i,"");
+    const board = { lanes:[] };
+    let lane = null;
+    source.split(/\r?\n/).forEach(line => {
+      const heading = line.match(/^##\s+(.+)$/);
+      if (heading) { lane = { title:heading[1].trim(), cards:[] }; board.lanes.push(lane); return; }
+      const card = line.match(/^\s*[-*]\s+\[([ xX])\]\s+(.+)$/);
+      if (card) {
+        if (!lane) { lane = { title:"Backlog", cards:[] }; board.lanes.push(lane); }
+        lane.cards.push({ text:card[2].trim(), done:card[1].toLowerCase() === "x" });
+      }
+    });
+    return board;
+  }
+  function serializeKanban(board) {
+    const lanes = board.lanes.map(lane => "## " + String(lane.title || "Untitled").replace(/[\r\n]+/g," ") + "\n" + lane.cards.map(card => "- [" + (card.done ? "x" : " ") + "] " + String(card.text || "Untitled card").replace(/[\r\n]+/g," ")).join("\n")).join("\n\n");
+    return "---\nkanban-plugin: board\n---\n\n" + lanes + "\n";
+  }
+  function saveKanban(board,label) {
+    bodyInput.value = serializeKanban(board);
+    syncInputs();
+    renderKanban();
+    if (label) announce(label);
+  }
+  function convertToKanban() {
+    const original = bodyInput.value.trim();
+    const cards = original ? [{ text:"Review imported note content: " + original.replace(/\s+/g," ").slice(0,240), done:false }] : [];
+    bodyInput.value = serializeKanban({lanes:[{title:"Backlog",cards},{title:"In Progress",cards:[]},{title:"Done",cards:[]}]});
+    syncInputs();
+    renderKanban();
+    announce("Note converted to a Markdown Kanban board");
+  }
+  function renderKanban() {
+    const note = activeNote();
+    if (!note || !isKanbanBody(note.body)) {
+      kanbanPane.innerHTML = '<div class="kanban-empty"><div class="kanban-empty-card"><h3>Turn this note into a Kanban board</h3><p>The board stays readable as Markdown and autosaves with the rest of your local vault.</p><button type="button" data-kanban-action="convert">Create board</button></div></div>';
+      return;
+    }
+    const board = parseKanban(note.body);
+    const lanes = board.lanes.map((lane,laneIndex) => '<section class="kanban-lane" data-kanban-lane="' + laneIndex + '"><header class="kanban-lane-head"><strong>' + escapeHtml(lane.title) + '</strong><span class="kanban-lane-count">' + lane.cards.length + '</span><button class="kanban-lane-delete" type="button" data-kanban-action="delete-lane" data-lane="' + laneIndex + '" aria-label="Delete lane">&times;</button></header><div class="kanban-card-list">' + lane.cards.map((card,cardIndex) => '<article class="kanban-card' + (card.done ? " done" : "") + '" draggable="true" data-lane="' + laneIndex + '" data-card="' + cardIndex + '"><input type="checkbox" data-kanban-action="toggle-card" data-lane="' + laneIndex + '" data-card="' + cardIndex + '"' + (card.done ? " checked" : "") + '><span class="kanban-card-copy">' + escapeHtml(card.text) + '</span><button class="kanban-card-delete" type="button" data-kanban-action="delete-card" data-lane="' + laneIndex + '" data-card="' + cardIndex + '" aria-label="Delete card">&times;</button></article>').join("") + '</div><button class="kanban-add-card" type="button" data-kanban-action="add-card" data-lane="' + laneIndex + '">+ Add card</button></section>').join("");
+    kanbanPane.innerHTML = '<header class="kanban-head"><div class="kanban-head-copy"><strong>' + escapeHtml(note.title) + '</strong><span>Markdown-backed Kanban board</span></div><div class="kanban-actions"><button type="button" data-kanban-action="add-lane">+ Add lane</button><button type="button" data-kanban-action="source">View Markdown</button></div></header><div class="kanban-board">' + lanes + '</div>';
+  }
+  function setKanbanMode(enabled) {
+    kanbanMode = !!enabled;
+    kanbanToggle.classList.toggle("active",kanbanMode);
+    if (kanbanMode) {
+      editorShell.className = "editor-shell kanban-mode";
+      document.querySelectorAll("[data-view]").forEach(button => button.classList.remove("active"));
+      renderKanban();
+    } else setView(localStorage.getItem(VIEW_KEY) || "split");
+  }
+
   titleInput.addEventListener("input", syncInputs);
   bodyInput.addEventListener("input", syncInputs);
   bodyInput.addEventListener("paste", pasteImages);
+  editingToolbar.addEventListener("click", event => {
+    const button = event.target.closest("[data-format]");
+    if (button) runFormatCommand(button.dataset.format);
+  });
+  highlightButton.addEventListener("click", event => {
+    event.stopPropagation();
+    highlightPalette.hidden = !highlightPalette.hidden;
+    renderHighlightSwatches();
+  });
+  highlightPalette.addEventListener("click", event => {
+    event.stopPropagation();
+    const swatch = event.target.closest("[data-highlight-color]");
+    if (swatch) applyHighlight(swatch.dataset.highlightColor);
+  });
+  document.getElementById("saveHighlightColor").addEventListener("click", () => {
+    const color = String(customHighlightColor.value || "").toLowerCase();
+    if (!/^#[0-9a-f]{6}$/.test(color)) return;
+    highlightColors = Array.from(new Set(highlightColors.concat(color))).slice(0,24);
+    localStorage.setItem(HIGHLIGHT_COLORS_KEY,JSON.stringify(highlightColors));
+    renderHighlightSwatches();
+    applyHighlight(color);
+  });
+  document.getElementById("clearHighlight").addEventListener("click", clearHighlightAtSelection);
+  document.addEventListener("click", event => {
+    if (!event.target.closest(".highlight-tool")) highlightPalette.hidden = true;
+  });
+  kanbanToggle.addEventListener("click", () => setKanbanMode(!kanbanMode));
+  kanbanPane.addEventListener("click", event => {
+    const actionNode = event.target.closest("[data-kanban-action]");
+    if (!actionNode) return;
+    const action = actionNode.dataset.kanbanAction;
+    if (action === "convert") return convertToKanban();
+    if (action === "source") { setKanbanMode(false); setView("edit"); bodyInput.focus(); return; }
+    const board = parseKanban(activeNote().body);
+    const laneIndex = Number(actionNode.dataset.lane);
+    const cardIndex = Number(actionNode.dataset.card);
+    if (action === "add-lane") {
+      const title = prompt("Lane name","New lane");
+      if (title && title.trim()) { board.lanes.push({title:title.trim(),cards:[]}); saveKanban(board,"Lane added"); }
+    } else if (action === "delete-lane") {
+      const lane = board.lanes[laneIndex];
+      if (lane && confirm('Delete lane "' + lane.title + '" and its ' + lane.cards.length + ' cards?')) { board.lanes.splice(laneIndex,1); saveKanban(board,"Lane deleted"); }
+    } else if (action === "add-card") {
+      const text = prompt("Card text","");
+      if (text && text.trim() && board.lanes[laneIndex]) { board.lanes[laneIndex].cards.push({text:text.trim(),done:false}); saveKanban(board,"Card added"); }
+    } else if (action === "delete-card") {
+      if (board.lanes[laneIndex] && board.lanes[laneIndex].cards[cardIndex] && confirm("Delete this card?")) { board.lanes[laneIndex].cards.splice(cardIndex,1); saveKanban(board,"Card deleted"); }
+    } else if (action === "toggle-card") {
+      const card = board.lanes[laneIndex] && board.lanes[laneIndex].cards[cardIndex];
+      if (card) { card.done = actionNode.checked; saveKanban(board); }
+    }
+  });
+  kanbanPane.addEventListener("dblclick", event => {
+    const cardNode = event.target.closest(".kanban-card");
+    if (!cardNode || event.target.closest("button,input")) return;
+    const board = parseKanban(activeNote().body);
+    const card = board.lanes[Number(cardNode.dataset.lane)] && board.lanes[Number(cardNode.dataset.lane)].cards[Number(cardNode.dataset.card)];
+    if (!card) return;
+    const text = prompt("Edit card",card.text);
+    if (text && text.trim()) { card.text = text.trim(); saveKanban(board,"Card updated"); }
+  });
+  kanbanPane.addEventListener("dragstart", event => {
+    const card = event.target.closest(".kanban-card");
+    if (!card) return;
+    kanbanDrag = {lane:Number(card.dataset.lane),card:Number(card.dataset.card)};
+    card.classList.add("dragging");
+    if (event.dataTransfer) event.dataTransfer.effectAllowed = "move";
+  });
+  kanbanPane.addEventListener("dragover", event => {
+    const lane = event.target.closest(".kanban-lane");
+    if (!lane || !kanbanDrag) return;
+    event.preventDefault();
+    kanbanPane.querySelectorAll(".kanban-lane").forEach(node => node.classList.toggle("drag-over",node === lane));
+  });
+  kanbanPane.addEventListener("drop", event => {
+    const targetLane = event.target.closest(".kanban-lane");
+    if (!targetLane || !kanbanDrag) return;
+    event.preventDefault();
+    const board = parseKanban(activeNote().body);
+    const sourceLane = board.lanes[kanbanDrag.lane];
+    const destination = board.lanes[Number(targetLane.dataset.kanbanLane)];
+    const card = sourceLane && sourceLane.cards.splice(kanbanDrag.card,1)[0];
+    if (card && destination) destination.cards.push(card);
+    kanbanDrag = null;
+    saveKanban(board,"Card moved");
+  });
+  kanbanPane.addEventListener("dragend", () => {
+    kanbanDrag = null;
+    kanbanPane.querySelectorAll(".dragging,.drag-over").forEach(node => node.classList.remove("dragging","drag-over"));
+  });
   searchInput.addEventListener("input", renderList);
   noteList.addEventListener("click", event => { const button = event.target.closest("[data-note-id]"); if (button) selectNote(button.dataset.noteId); });
   folderList.addEventListener("click", event => {
@@ -1397,7 +1780,10 @@
   document.addEventListener("keydown", event => {
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "s") { event.preventDefault(); save(); announce("Vault saved"); }
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "n") { event.preventDefault(); createNote(); }
-    if (event.key === "Escape") { document.body.classList.remove("sidebar-open"); styleSettingsOverlay.hidden = true; }
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "b" && document.activeElement === bodyInput) { event.preventDefault(); runFormatCommand("bold"); }
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "i" && document.activeElement === bodyInput) { event.preventDefault(); runFormatCommand("italic"); }
+    if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key.toLowerCase() === "h" && document.activeElement === bodyInput) { event.preventDefault(); highlightPalette.hidden = false; renderHighlightSwatches(); }
+    if (event.key === "Escape") { document.body.classList.remove("sidebar-open"); styleSettingsOverlay.hidden = true; highlightPalette.hidden = true; }
   });
   window.addEventListener("storage", event => {
     if (event.key !== STORAGE_KEY || document.activeElement === bodyInput || document.activeElement === titleInput) return;
@@ -1411,6 +1797,7 @@
   localStorage.setItem(SOFT_PAPER_INSTALL_KEY,"1");
   setSoftPaperMode(initialTheme);
   applySoftPaperSettings();
+  renderHighlightSwatches();
   setView(localStorage.getItem(VIEW_KEY) || "split");
   showActiveNote();
   save();

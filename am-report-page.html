@@ -867,6 +867,12 @@ xmlns="http://www.w3.org/TR/REC-html40">
 <style id="workbook-shell-styles">
 :root{color-scheme:light}
 html{min-height:100%;background:#eef2f6}
+html,body{
+  scrollbar-width:none;
+  -ms-overflow-style:none;
+}
+html::-webkit-scrollbar,
+body::-webkit-scrollbar{width:0;height:0;display:none}
 body{
   min-height:100vh;
   margin:0;
@@ -1690,8 +1696,8 @@ body{
   box-shadow:0 0 0 2px rgba(220,38,38,.12),0 5px 16px rgba(127,29,29,.13);
 }
 .am-weather-head{
-  display:grid;
-  grid-template-columns:auto auto minmax(0,1fr) auto auto;
+  display:flex;
+  flex-wrap:nowrap;
   align-items:center;
   gap:6px;
   min-height:36px;
@@ -1706,6 +1712,10 @@ body{
 .am-weather-title{min-width:0;flex:1;text-align:left}
 .am-weather-title strong{display:block;overflow:hidden;color:#fff;font-size:14px;font-weight:900;line-height:1.1;text-overflow:ellipsis;white-space:nowrap}
 .am-weather-title span{display:block;margin-top:1px;overflow:hidden;color:#c7d7ea;font-size:10px;font-weight:700;text-overflow:ellipsis;white-space:nowrap}
+.am-weather-inline-metrics{display:flex;min-width:0;flex:0 1 auto;align-items:stretch;gap:3px;overflow:hidden;white-space:nowrap}
+.am-weather-inline-metric{display:flex;min-width:63px;flex:0 1 auto;flex-direction:column;align-items:center;justify-content:center;padding:2px 6px;border:1px solid rgba(148,163,184,.38);border-radius:5px;background:rgba(255,255,255,.08);line-height:1;white-space:nowrap}
+.am-weather-inline-metric b{color:#fff;font-size:11px;font-weight:950;white-space:nowrap}
+.am-weather-inline-metric span{margin-top:2px;color:#bfd0e5;font-size:6.5px;font-weight:900;letter-spacing:.025em;text-transform:uppercase;white-space:nowrap}
 .am-weather-date{color:#dbeafe;font-size:9px;font-weight:900;white-space:nowrap}
 .am-weather-refresh{width:24px;height:24px;border:1px solid #6f87a4;border-radius:6px;background:#fff;color:#17345a;font-size:14px;font-weight:900;cursor:pointer}
 .am-weather-refresh:hover{background:#dbeafe}
@@ -1733,6 +1743,10 @@ body{
   .am-weather-head{gap:5px;padding:5px 6px}
   .am-weather-day-label{padding-right:5px;font-size:10px}
   .am-weather-title strong{font-size:13px}
+  .am-weather-title span{display:none}
+  .am-weather-inline-metric{min-width:54px;padding-inline:4px}
+  .am-weather-inline-metric b{font-size:10px}
+  .am-weather-inline-metric span{font-size:6px}
   .am-weather-date{font-size:8px}
   .am-weather-metric b{font-size:12px}
   .am-weather-metric span{font-size:7px}
@@ -2317,7 +2331,6 @@ tags will be replaced.-->
   toolbar.className = "sheet-toolbar";
   toolbar.innerHTML = `
     <div class="sheet-actions">
-      <button type="button" class="sheet-button" id="amResetSheet">Reset Original</button>
       <span class="sheet-save-status" id="amSaveStatus"></span>
     </div>
     <div class="sheet-formula-row">
@@ -2582,7 +2595,7 @@ tags will be replaced.-->
     selectedCell.focus();
   });
 
-  document.getElementById("amResetSheet").addEventListener("click", () => {
+  document.getElementById("amResetSheet")?.addEventListener("click", () => {
     if (!confirm("Restore every AM Report input to the original Excel workbook values?")) return;
     localStorage.removeItem(STORAGE_KEY);
     Object.entries(originalValues).forEach(([address, value]) => {
@@ -2839,8 +2852,7 @@ tags will be replaced.-->
         '<button type="button" class="sheet-button sheet-format-button" data-sheet-align="vertical" title="Cycle vertical alignment">Middle</button>',
       '</div>',
       '<span class="sheet-tool-divider" aria-hidden="true"></span>',
-      '<div class="sheet-tool-group sheet-reset-group">',
-        '<button type="button" class="sheet-button sheet-format-button" id="amResetSheet">Reset Original</button>',
+      '<div class="sheet-tool-group sheet-status-group">',
         '<span class="sheet-save-status" id="amSaveStatus"></span>',
       '</div>',
     '</div>',
@@ -5200,7 +5212,7 @@ tags will be replaced.-->
     selectedCell.focus();
   });
 
-  document.getElementById("amResetSheet").addEventListener("click", () => {
+  document.getElementById("amResetSheet")?.addEventListener("click", () => {
     if (!confirm("Restore every AM Report input and cell setting to the original Excel workbook?")) return;
     localStorage.removeItem(STORAGE_KEY);
     if (DAY_OFFSET === 0) localStorage.removeItem(BASE_STORAGE_KEY);
@@ -5449,21 +5461,6 @@ tags will be replaced.-->
     drag = null;
   });
 
-  const resetGroup = document.querySelector("#am-report .sheet-reset-group");
-  if (resetGroup) {
-    const resetButton = document.createElement("button");
-    resetButton.type = "button";
-    resetButton.className = "sheet-button sheet-format-button";
-    resetButton.id = "amResetColumnWidths";
-    resetButton.textContent = "Reset Widths";
-    resetButton.addEventListener("click", () => {
-      applyWidths(defaultWidths);
-      saveWidths(defaultWidths, "Column widths reset");
-    });
-    const status = document.getElementById("amSaveStatus");
-    resetGroup.insertBefore(resetButton, status || null);
-  }
-
   restoreSavedWidths();
   window.addEventListener("message", event => {
     if (!event.data || event.data.type !== WIDTH_MESSAGE_TYPE || !Array.isArray(event.data.widths)) return;
@@ -5557,6 +5554,26 @@ tags will be replaced.-->
       date.textContent = reportDateLabel;
       head.insertBefore(date, head.querySelector(".am-weather-refresh"));
     }
+  }
+
+  function promoteWeatherMetrics() {
+    const head = card.querySelector(".am-weather-head");
+    const grid = card.querySelector(".am-weather-grid");
+    const refresh = head && head.querySelector(".am-weather-refresh");
+    if (!head || !grid || !refresh) return;
+    const inline = document.createElement("div");
+    inline.className = "am-weather-inline-metrics";
+    [...grid.querySelectorAll(".am-weather-metric")].forEach(metric => {
+      const label = metric.querySelector("span");
+      const labelText = String(label && label.textContent || "").trim();
+      if (!/(?:high\s*\/\s*low|rain chance|nws thunder)/i.test(labelText)) return;
+      metric.className = "am-weather-inline-metric";
+      inline.appendChild(metric);
+    });
+    if (inline.children.length) head.insertBefore(inline, refresh);
+    const remaining = grid.querySelectorAll(".am-weather-metric").length;
+    if (!remaining) grid.remove();
+    else grid.style.gridTemplateColumns = `repeat(${remaining}, minmax(0,1fr))`;
   }
 
   blendWeatherHeading();
@@ -5905,6 +5922,7 @@ tags will be replaced.-->
       '<div class="am-weather-guidance ' + (guidanceCaution ? 'caution' : '') + '"><span>' + (guidanceCaution ? '⚠️' : 'ℹ️') + '</span><span>' + guidanceText + '</span></div>' +
       '<div class="am-weather-alert ' + (severe ? 'danger' : alert ? 'warning' : '') + '"><span>' + (alert ? '⚠️' : alertsAvailable ? '✓' : '•') + '</span><span>' + alertText + '</span></div>' +
       '<div class="am-weather-foot"><span>' + sourceLabel + ' · ' + (cached ? 'Cached ' : 'Updated ') + new Date(payload.savedAt || Date.now()).toLocaleTimeString([], { hour:"numeric", minute:"2-digit" }) + '</span><a href="' + MAP_URL + '" target="_blank" rel="noopener">Live radar ↗</a></div>';
+    promoteWeatherMetrics();
     blendWeatherHeading();
     card.querySelector(".am-weather-refresh").addEventListener("click", () => load(true));
     return true;

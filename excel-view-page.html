@@ -2036,10 +2036,15 @@
   }
   .grid-head.grid-head-action {
     padding: 3px 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
   .grid-head-button {
-    width: 100%;
+    width: auto;
+    max-width: 100%;
     min-height: 25px;
+    padding: 3px 6px;
     border: 1px solid #f8d568;
     border-radius: 4px;
     background: #fff3bd;
@@ -2513,6 +2518,14 @@
   .cut-cell.fire { background: linear-gradient(135deg,#260505,#991b1b,#ea580c); color: #fff; }
   .cut-cell.ice { background: linear-gradient(135deg,#0f172a,#1e3a8a,#0891b2); color: #ecfeff; }
   .cut-cell.grape { background: linear-gradient(135deg,#2e1065,#581c87,#9333ea); color: #fff; }
+  .cut-cell.midnight { background: linear-gradient(135deg,#020617,#0f172a,#312e81); color: #fff; }
+  .cut-cell.copper { background: linear-gradient(135deg,#431407,#9a3412,#f59e0b); color: #fff; }
+  .cut-cell.aurora { background: linear-gradient(135deg,#052e16,#0f766e,#2563eb,#7e22ce); color: #fff; }
+  .cut-cell.storm { background: linear-gradient(135deg,#111827,#475569,#0369a1); color: #fff; }
+  .cut-cell.mint-gradient { background: linear-gradient(135deg,#064e3b,#10b981,#a7f3d0); color: #052e16; }
+  .cut-cell.lavender-gradient { background: linear-gradient(135deg,#312e81,#8b5cf6,#ddd6fe); color: #fff; }
+  .cut-cell.desert { background: linear-gradient(135deg,#78350f,#d97706,#fde68a); color: #3f2103; }
+  .cut-cell.terminal { background: linear-gradient(135deg,#02110a,#065f46,#22c55e); color: #ecfdf5; }
   .cut-cell.solid-black { background: #050505; color: #fff; }
   .cut-cell.solid-charcoal { background: #1f2937; color: #fff; }
   .cut-cell.solid-slate { background: #475569; color: #fff; }
@@ -2531,6 +2544,18 @@
   .cut-cell.solid-magenta { background: #a21caf; color: #fff; }
   .cut-cell.solid-purple { background: #6d28d9; color: #fff; }
   .cut-cell.solid-brown { background: #7c2d12; color: #fff; }
+  .cut-cell.solid-maroon { background: #7f1d1d; color: #fff; }
+  .cut-cell.solid-wine { background: #881337; color: #fff; }
+  .cut-cell.solid-forest { background: #166534; color: #fff; }
+  .cut-cell.solid-mint { background: #34d399; color: #052e16; }
+  .cut-cell.solid-aqua { background: #06b6d4; color: #083344; }
+  .cut-cell.solid-royal { background: #2563eb; color: #fff; }
+  .cut-cell.solid-indigo { background: #4338ca; color: #fff; }
+  .cut-cell.solid-violet { background: #7c3aed; color: #fff; }
+  .cut-cell.solid-rose { background: #e11d48; color: #fff; }
+  .cut-cell.solid-copper { background: #b45309; color: #fff; }
+  .cut-cell.solid-sand { background: #d6b881; color: #33220c; }
+  .cut-cell.solid-cream { background: #fef3c7; color: #422006; }
   .cut-cell.steel { background: linear-gradient(135deg,#020617,#1f2937,#64748b); color: #fff; }
   .cut-cell.zebra { background: repeating-linear-gradient(135deg,#020617 0 7px,#334155 7px 14px); color: #fff; }
   .cut-cell .overflow {
@@ -2595,7 +2620,7 @@
     background: #f8fafc;
   }
   .dwell-table {
-    width: 100%; min-width: 0; table-layout: fixed; font-size: 11px;
+    width: 100%; min-width: 0; table-layout: fixed; font-size: 14px; font-weight: 700;
   }
   .dwell-table th {
     position: sticky; top: 0; z-index: 3; padding: 7px 6px; border: 1px solid #2d343d;
@@ -2671,7 +2696,7 @@
   .dwell-table td.future-cell { background: #f3f3f3; font-weight: 900; }
   .dwell-table input {
     width: 100%; min-width: 0; border: 0; border-radius: 0; padding: 9px 8px;
-    background: transparent; color: var(--ink); outline: none; font-size: 12px;
+    background: transparent; color: var(--ink); outline: none; font-size: inherit; font-weight: 700;
   }
   .dwell-table input:focus { background: #fff7d2; box-shadow: inset 0 0 0 2px #b58900; }
   .dwell-table .ready { color: #1d6b39; }
@@ -3033,6 +3058,29 @@
     user-select: none;
   }
   .excel-urgent-notes-title { font-size: 20px; font-weight: 950; letter-spacing: .01em; }
+  .excel-urgent-notes-heading { display: flex; min-width: 0; align-items: center; gap: 14px; }
+  .excel-urgent-notes-tabs {
+    display: inline-flex;
+    align-items: center;
+    overflow: hidden;
+    border: 1px solid #9fb1c3;
+    border-radius: 9px;
+    background: #f8fbfe;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.55);
+  }
+  .excel-urgent-notes-tab {
+    min-height: 31px;
+    padding: 6px 12px;
+    border: 0;
+    border-right: 1px solid #b9c8d7;
+    background: transparent;
+    color: #40546d;
+    font-size: 10px;
+    font-weight: 950;
+    cursor: pointer;
+  }
+  .excel-urgent-notes-tab:last-child { border-right: 0; }
+  .excel-urgent-notes-tab.active { background: #122b44; color: #fff; }
   .excel-urgent-notes-close {
     min-width: 62px;
     min-height: 33px;
@@ -3084,6 +3132,9 @@
   .excel-urgent-card[data-urgent-section="urgent"] { background: #edf7f2; border-color: #b9d7c8; }
   .excel-urgent-card[data-urgent-section="norush"] { background: #f7f2e8; border-color: #dccfb8; }
   .excel-urgent-card[data-urgent-section="endweek"] { background: #f2eef8; border-color: #d3c8df; }
+  .excel-urgent-card[data-card-tone="green"] { background: #edf7f2; border-color: #b9d7c8; }
+  .excel-urgent-card[data-card-tone="tan"] { background: #f7f2e8; border-color: #dccfb8; }
+  .excel-urgent-card[data-card-tone="purple"] { background: #f2eef8; border-color: #d3c8df; }
   .excel-urgent-card-head { padding: 12px 14px 10px; border-bottom: 1px solid rgba(100, 116, 139, .22); }
   .excel-urgent-card-title { color: #172033; font-size: 17px; font-weight: 950; line-height: 1.05; text-decoration: underline; text-underline-offset: 3px; }
   .excel-urgent-card-sub { margin-top: 4px; color: #6b7280; font-size: 10px; font-weight: 850; }
@@ -3142,6 +3193,7 @@
   #toggleUrgentNotes.active { border-color: #f5c84c; background: #f5c84c; color: #172033; }
   @media (max-width: 760px) {
     .excel-urgent-notes-popup { min-width: 320px; }
+    .excel-urgent-notes-heading { align-items: flex-start; flex-direction: column; gap: 6px; }
     .excel-urgent-notes-board { min-width: 0; }
     .excel-urgent-notes-matrix { grid-template-columns: 1fr; }
   }
@@ -3307,9 +3359,10 @@
   }
   #colorTabModal .color-picker-grid {
     display: none;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    align-items: start;
     grid-column: 1 / -1;
-    grid-template-columns: repeat(18, minmax(18px, 1fr));
-    gap: 4px;
+    gap: 8px;
     width: 100%;
     padding: 7px;
     border: 1px solid #d8e1ec;
@@ -3317,6 +3370,29 @@
     background: #eef3f8;
   }
   #colorTabModal .color-rule-row.color-picker-open .color-picker-grid { display: grid; }
+  #colorTabModal .color-picker-group {
+    min-width: 0;
+    overflow: hidden;
+    padding: 7px;
+    border: 1px solid #d4dee9;
+    border-radius: 7px;
+    background: #ffffff;
+  }
+  #colorTabModal .color-picker-group-title {
+    margin-bottom: 6px;
+    color: #334155;
+    font-size: 9px;
+    font-weight: 900;
+    line-height: 1.25;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+  }
+  #colorTabModal .color-picker-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, 22px);
+    justify-content: start;
+    gap: 5px;
+  }
   #colorTabModal .color-rule-color-button {
     width: 100%;
     min-height: 29px;
@@ -3374,8 +3450,9 @@
   @media (max-width: 620px) {
     #colorTabModal.color-tab-backdrop { right: 6px; width: calc(100vw - 12px); }
     #colorTabModal .legend-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    #colorTabModal .color-picker-grid { grid-template-columns: minmax(0, 1fr); }
+    #colorTabModal .color-picker-options { grid-template-columns: repeat(auto-fill, 22px); }
     #colorTabModal .color-rule-row { grid-template-columns: 112px minmax(0,1fr) 28px; }
-    #colorTabModal .color-picker-grid { grid-template-columns: repeat(12, minmax(18px,1fr)); }
     #colorTabModal .grid-typography-row { grid-template-columns: 58px minmax(104px, 1fr) minmax(112px, .8fr) 64px; }
   }
 
@@ -3400,7 +3477,7 @@
       <button class="btn btn-light" id="toggleTodayRoster" type="button">Today's Roster</button>
       <button class="btn btn-light" id="toggleLphInputMenu" type="button">Input Menu</button>
       <button class="btn btn-light" id="toggleCompactChecklist" type="button">Checklist</button>
-      <button class="btn btn-light" id="toggleUrgentNotes" type="button" aria-pressed="false">Urgent Notes</button>
+      <button class="btn btn-light" id="toggleUrgentNotes" type="button" aria-pressed="false">Morning Meeting</button>
       <button class="btn btn-light" id="resolveSsBtn" type="button" onclick="document.getElementById('ssResolverModal').hidden=false;document.getElementById('ssResolverModal').classList.add('open');document.body.classList.add('modal-open')">Resolve SS</button>
       <button class="btn btn-light" id="toggleFootageCalc" type="button">Calculator</button>
       <button class="btn btn-light" id="toggleCurrentWork" type="button">Current Work</button>
@@ -3528,16 +3605,22 @@
     <div class="compact-checklist-resize-grip" id="compactChecklistResizeGrip" title="Drag to resize" aria-label="Resize Checklist"></div>
   </section>
 
-  <section class="excel-urgent-notes-popup" id="excelUrgentNotesPopup" hidden aria-label="Urgent Notes priority matrix">
+  <section class="excel-urgent-notes-popup" id="excelUrgentNotesPopup" hidden aria-label="Morning Meeting and Urgent Notes">
     <header class="excel-urgent-notes-head" id="excelUrgentNotesDragHandle">
-      <div class="excel-urgent-notes-title">Urgent Notes</div>
+      <div class="excel-urgent-notes-heading">
+        <div class="excel-urgent-notes-title" id="excelUrgentNotesTitle">Morning Meeting</div>
+        <div class="excel-urgent-notes-tabs" role="tablist" aria-label="Notes view">
+          <button class="excel-urgent-notes-tab active" id="excelMorningMeetingTab" type="button" role="tab" aria-selected="true" data-notes-view="morning">Morning Meeting</button>
+          <button class="excel-urgent-notes-tab" id="excelUrgentNotesTab" type="button" role="tab" aria-selected="false" data-notes-view="urgent">Urgent Notes</button>
+        </div>
+      </div>
       <button class="excel-urgent-notes-close" id="closeExcelUrgentNotes" type="button">Close</button>
     </header>
     <div class="excel-urgent-notes-scroll">
       <div class="excel-urgent-notes-board">
         <div class="excel-urgent-notes-top">
-          <div class="excel-urgent-notes-board-title">Priority Matrix</div>
-          <div class="excel-urgent-notes-status" id="excelUrgentNotesStatus">Priority board is empty</div>
+          <div class="excel-urgent-notes-board-title" id="excelUrgentNotesBoardTitle">Morning Meeting Plan</div>
+          <div class="excel-urgent-notes-status" id="excelUrgentNotesStatus">Morning meeting is empty</div>
         </div>
         <div class="excel-urgent-notes-matrix" id="excelUrgentNotesMatrix"></div>
         <div class="excel-urgent-actions">
@@ -3931,6 +4014,17 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     {id:"ocean", label:"Deep Ocean", style:"background:linear-gradient(135deg,#082f49,#0f766e,#166534)"},
     {id:"fire", label:"Dark Fire", style:"background:linear-gradient(135deg,#260505,#991b1b,#ea580c)"},
     {id:"grape", label:"Dark Grape", style:"background:linear-gradient(135deg,#2e1065,#581c87,#9333ea)"},
+    {id:"forest", label:"Deep Forest", style:"background:linear-gradient(135deg,#052e16,#166534,#365314)"},
+    {id:"ice", label:"Arctic Ice", style:"background:linear-gradient(135deg,#0f172a,#1e3a8a,#0891b2)"},
+    {id:"steel", label:"Steel", style:"background:linear-gradient(135deg,#020617,#1f2937,#64748b)"},
+    {id:"midnight", label:"Midnight", style:"background:linear-gradient(135deg,#020617,#0f172a,#312e81)"},
+    {id:"copper", label:"Copper", style:"background:linear-gradient(135deg,#431407,#9a3412,#f59e0b)"},
+    {id:"aurora", label:"Aurora", style:"background:linear-gradient(135deg,#052e16,#0f766e,#2563eb,#7e22ce)"},
+    {id:"storm", label:"Storm", style:"background:linear-gradient(135deg,#111827,#475569,#0369a1)"},
+    {id:"mint-gradient", label:"Mint Gradient", style:"background:linear-gradient(135deg,#064e3b,#10b981,#a7f3d0)"},
+    {id:"lavender-gradient", label:"Lavender Gradient", style:"background:linear-gradient(135deg,#312e81,#8b5cf6,#ddd6fe)"},
+    {id:"desert", label:"Desert", style:"background:linear-gradient(135deg,#78350f,#d97706,#fde68a)"},
+    {id:"terminal", label:"Terminal Green", style:"background:linear-gradient(135deg,#02110a,#065f46,#22c55e)"},
     {id:"solid-black", label:"Solid Black", style:"background:#050505"},
     {id:"solid-charcoal", label:"Solid Charcoal", style:"background:#1f2937"},
     {id:"solid-slate", label:"Solid Slate", style:"background:#475569"},
@@ -3948,9 +4042,27 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     {id:"solid-crimson", label:"Solid Crimson", style:"background:#be123c"},
     {id:"solid-magenta", label:"Solid Magenta", style:"background:#a21caf"},
     {id:"solid-purple", label:"Solid Purple", style:"background:#6d28d9"},
-    {id:"solid-brown", label:"Solid Brown", style:"background:#7c2d12"}
+    {id:"solid-brown", label:"Solid Brown", style:"background:#7c2d12"},
+    {id:"solid-maroon", label:"Solid Maroon", style:"background:#7f1d1d"},
+    {id:"solid-wine", label:"Solid Wine", style:"background:#881337"},
+    {id:"solid-forest", label:"Solid Forest", style:"background:#166534"},
+    {id:"solid-mint", label:"Solid Mint", style:"background:#34d399"},
+    {id:"solid-aqua", label:"Solid Aqua", style:"background:#06b6d4"},
+    {id:"solid-royal", label:"Solid Royal Blue", style:"background:#2563eb"},
+    {id:"solid-indigo", label:"Solid Indigo", style:"background:#4338ca"},
+    {id:"solid-violet", label:"Solid Violet", style:"background:#7c3aed"},
+    {id:"solid-rose", label:"Solid Rose", style:"background:#e11d48"},
+    {id:"solid-copper", label:"Solid Copper", style:"background:#b45309"},
+    {id:"solid-sand", label:"Solid Sand", style:"background:#d6b881"},
+    {id:"solid-cream", label:"Solid Cream", style:"background:#fef3c7"},
+    {id:"zebra", label:"Steel Stripes", style:"background:repeating-linear-gradient(135deg,#020617 0 7px,#334155 7px 14px)"}
   ]);
   const COLOR_CLASSES = COLOR_PALETTE.map(color => color.id);
+  const COLOR_PALETTE_GROUPS = Object.freeze([
+    {label:"Gradients", colors:COLOR_PALETTE.filter(color => !color.id.startsWith("solid-") && color.id !== "gray" && color.id !== "zebra")},
+    {label:"Solid Colors", colors:COLOR_PALETTE.filter(color => color.id.startsWith("solid-") || color.id === "gray")},
+    {label:"Patterns", colors:COLOR_PALETTE.filter(color => color.id === "zebra")}
+  ]);
   const DEFAULT_COLOR_RULES = Object.freeze([
     {color:"black", terms:"BO, ST, TH, NO"},
     {color:"darkred", terms:"AVDS"},
@@ -7692,7 +7804,13 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         <input class="field" data-color-rule="terms" value="${escapeAttr(rule.terms)}" placeholder="IHOSA, SADS, ZLBHO" aria-label="Comma separated matching terms">
         <button class="color-rule-remove" type="button" data-color-rule-remove="${index}" title="Remove rule" aria-label="Remove color rule">&times;</button>
         <div class="color-picker-grid" role="radiogroup" aria-label="Rule color">
-          ${COLOR_PALETTE.map(color => `<button class="color-swatch ${rule.color === color.id ? "selected" : ""}" type="button" data-color-choice="${color.id}" title="${escapeAttr(color.label)}" aria-label="${escapeAttr(color.label)}" style="${escapeAttr(color.style)}"></button>`).join("")}
+          ${COLOR_PALETTE_GROUPS.map(group => `
+            <div class="color-picker-group">
+              <div class="color-picker-group-title">${escapeHtml(group.label)} <span>(${group.colors.length})</span></div>
+              <div class="color-picker-options">
+                ${group.colors.map(color => `<button class="color-swatch ${rule.color === color.id ? "selected" : ""}" type="button" data-color-choice="${color.id}" title="${escapeAttr(color.label)}" aria-label="${escapeAttr(color.label)}" style="${escapeAttr(color.style)}"></button>`).join("")}
+              </div>
+            </div>`).join("")}
         </div>
       </div>`;
     }).join("");
@@ -9353,18 +9471,48 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   }
 
   const EXCEL_URGENT_NOTES_KEY = "sdt_urgent_notes_v8";
+  const EXCEL_MORNING_MEETING_KEY = "sdt_morning_meeting_v1";
   const EXCEL_URGENT_NOTES_LAYOUT_KEY = "settegast-excel-urgent-notes-layout-v1";
-  const excelUrgentNotesSections = [
-    { key: "crises", title: "Crises and Fires &lt; 1 HR", subtitle: "Immediate action / escalate now" },
-    { key: "urgent", title: "Urgent &lt; 2-3 HR", subtitle: "Needs attention this shift" },
-    { key: "norush", title: "No Rush 4-6 HR / End of Day 6-12 HR", subtitle: "Handle later today / before shift end" },
-    { key: "endweek", title: "End of the Week 24 HR+", subtitle: "Backlog / planning / nonurgent work" }
-  ];
+  const excelNotesViews = Object.freeze({
+    morning: {
+      storageKey: EXCEL_MORNING_MEETING_KEY,
+      title: "Morning Meeting",
+      boardTitle: "Morning Meeting Plan",
+      emptyStatus: "Morning meeting is empty",
+      savedStatus: "Saved morning meeting",
+      clearPrompt: "Clear every Morning Meeting entry?",
+      sections: [
+        { key: "landing", title: "Landing Plan", subtitle: "Inbound placement / track plan / ramp setup", tone: "blue" },
+        { key: "switch", title: "Switch Crew", subtitle: "Switching needs / holds / crew updates", tone: "green" },
+        { key: "loading", title: "Loading Plan", subtitle: "Loadout priorities / shortages / workload", tone: "tan" },
+        { key: "other", title: "Other Notes", subtitle: "Anything that does not fit the main field buckets", tone: "purple" }
+      ]
+    },
+    urgent: {
+      storageKey: EXCEL_URGENT_NOTES_KEY,
+      title: "Urgent Notes",
+      boardTitle: "Priority Matrix",
+      emptyStatus: "Priority board is empty",
+      savedStatus: "Saved priority board",
+      clearPrompt: "Clear every Urgent Notes entry?",
+      sections: [
+        { key: "crises", title: "Crises and Fires &lt; 1 HR", subtitle: "Immediate action / escalate now", tone: "blue" },
+        { key: "urgent", title: "Urgent &lt; 2-3 HR", subtitle: "Needs attention this shift", tone: "green" },
+        { key: "norush", title: "No Rush 4-6 HR / End of Day 6-12 HR", subtitle: "Handle later today / before shift end", tone: "tan" },
+        { key: "endweek", title: "End of the Week 24 HR+", subtitle: "Backlog / planning / nonurgent work", tone: "purple" }
+      ]
+    }
+  });
+  let excelActiveNotesView = "morning";
   const excelUrgentNotesPopup = document.getElementById("excelUrgentNotesPopup");
   const excelUrgentNotesMatrix = document.getElementById("excelUrgentNotesMatrix");
 
-  function excelUrgentNotesBlankBoard() {
-    return { crises: ["", "", "", "", ""], urgent: ["", "", "", "", ""], norush: ["", "", "", "", ""], endweek: ["", "", "", "", ""] };
+  function excelCurrentNotesView() {
+    return excelNotesViews[excelActiveNotesView] || excelNotesViews.morning;
+  }
+
+  function excelUrgentNotesBlankBoard(view = excelCurrentNotesView()) {
+    return Object.fromEntries(view.sections.map(section => [section.key, ["", "", "", "", ""]]));
   }
 
   function excelUrgentNotesNormalizeLines(value) {
@@ -9374,11 +9522,12 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   }
 
   function excelUrgentNotesRead() {
+    const view = excelCurrentNotesView();
     let saved = null;
-    try { saved = JSON.parse(localStorage.getItem(EXCEL_URGENT_NOTES_KEY) || "null"); } catch (_) {}
-    const board = excelUrgentNotesBlankBoard();
+    try { saved = JSON.parse(localStorage.getItem(view.storageKey) || "null"); } catch (_) {}
+    const board = excelUrgentNotesBlankBoard(view);
     if (!saved || typeof saved !== "object") return board;
-    excelUrgentNotesSections.forEach(section => { board[section.key] = excelUrgentNotesNormalizeLines(saved[section.key]); });
+    view.sections.forEach(section => { board[section.key] = excelUrgentNotesNormalizeLines(saved[section.key]); });
     return board;
   }
 
@@ -9389,7 +9538,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   function excelUrgentNotesUpdateStatus(board, savedLabel) {
     const status = document.getElementById("excelUrgentNotesStatus");
     if (!status) return;
-    status.textContent = excelUrgentNotesHasContent(board) ? (savedLabel || "Saved priority board") : "Priority board is empty";
+    const view = excelCurrentNotesView();
+    status.textContent = excelUrgentNotesHasContent(board) ? (savedLabel || view.savedStatus) : view.emptyStatus;
   }
 
   function excelUrgentNotesCollect() {
@@ -9403,17 +9553,26 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   }
 
   function excelUrgentNotesWrite(board, savedLabel) {
-    localStorage.setItem(EXCEL_URGENT_NOTES_KEY, JSON.stringify(board));
+    localStorage.setItem(excelCurrentNotesView().storageKey, JSON.stringify(board));
     excelUrgentNotesUpdateStatus(board, savedLabel);
   }
 
   function excelUrgentNotesRender() {
+    const view = excelCurrentNotesView();
     const board = excelUrgentNotesRead();
-    excelUrgentNotesMatrix.innerHTML = excelUrgentNotesSections.map(section => {
+    document.getElementById("excelUrgentNotesTitle").textContent = view.title;
+    document.getElementById("excelUrgentNotesBoardTitle").textContent = view.boardTitle;
+    excelUrgentNotesPopup.setAttribute("aria-label", view.title);
+    excelUrgentNotesPopup.querySelectorAll("[data-notes-view]").forEach(button => {
+      const active = button.dataset.notesView === excelActiveNotesView;
+      button.classList.toggle("active", active);
+      button.setAttribute("aria-selected", active ? "true" : "false");
+    });
+    excelUrgentNotesMatrix.innerHTML = view.sections.map(section => {
       const lines = board[section.key].map((value, index) =>
         '<label class="excel-urgent-line"><span class="excel-urgent-line-num">' + (index + 1) + '</span><input class="excel-urgent-input" data-urgent-section="' + section.key + '" data-urgent-line="' + index + '" autocomplete="off"></label>'
       ).join("");
-      return '<section class="excel-urgent-card" data-urgent-section="' + section.key + '"><header class="excel-urgent-card-head"><div class="excel-urgent-card-title">' + section.title + '</div><div class="excel-urgent-card-sub">' + section.subtitle + '</div></header><div class="excel-urgent-lines">' + lines + '</div></section>';
+      return '<section class="excel-urgent-card" data-urgent-section="' + section.key + '" data-card-tone="' + section.tone + '"><header class="excel-urgent-card-head"><div class="excel-urgent-card-title">' + section.title + '</div><div class="excel-urgent-card-sub">' + section.subtitle + '</div></header><div class="excel-urgent-lines">' + lines + '</div></section>';
     }).join("");
     excelUrgentNotesMatrix.querySelectorAll(".excel-urgent-input").forEach(input => {
       input.value = board[input.dataset.urgentSection][Number(input.dataset.urgentLine)] || "";
@@ -9422,6 +9581,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   }
 
   function excelUrgentNotesOpen() {
+    excelActiveNotesView = "morning";
     excelUrgentNotesRender();
     excelUrgentNotesPopup.hidden = false;
     document.getElementById("toggleUrgentNotes").classList.add("active");
@@ -9462,9 +9622,18 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     else excelUrgentNotesClose();
   });
   document.getElementById("closeExcelUrgentNotes").addEventListener("click", excelUrgentNotesClose);
-  document.getElementById("saveExcelUrgentNotes").addEventListener("click", () => excelUrgentNotesWrite(excelUrgentNotesCollect(), "Saved priority board"));
+  excelUrgentNotesPopup.querySelectorAll("[data-notes-view]").forEach(button => {
+    button.addEventListener("click", () => {
+      const nextView = button.dataset.notesView;
+      if (!excelNotesViews[nextView] || nextView === excelActiveNotesView) return;
+      excelUrgentNotesWrite(excelUrgentNotesCollect());
+      excelActiveNotesView = nextView;
+      excelUrgentNotesRender();
+    });
+  });
+  document.getElementById("saveExcelUrgentNotes").addEventListener("click", () => excelUrgentNotesWrite(excelUrgentNotesCollect(), excelCurrentNotesView().savedStatus));
   document.getElementById("clearExcelUrgentNotes").addEventListener("click", () => {
-    if (!confirm("Clear every Urgent Notes entry?")) return;
+    if (!confirm(excelCurrentNotesView().clearPrompt)) return;
     excelUrgentNotesWrite(excelUrgentNotesBlankBoard());
     excelUrgentNotesRender();
   });
@@ -9516,7 +9685,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   });
 
   window.addEventListener("storage", event => {
-    if (event.key === EXCEL_URGENT_NOTES_KEY && !excelUrgentNotesPopup.hidden && !excelUrgentNotesPopup.contains(document.activeElement)) excelUrgentNotesRender();
+    if ([EXCEL_URGENT_NOTES_KEY, EXCEL_MORNING_MEETING_KEY].includes(event.key) && !excelUrgentNotesPopup.hidden && !excelUrgentNotesPopup.contains(document.activeElement)) excelUrgentNotesRender();
   });
   document.addEventListener("keydown", event => {
     if (event.key === "Escape" && !excelUrgentNotesPopup.hidden) excelUrgentNotesClose();

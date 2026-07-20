@@ -25,6 +25,118 @@ function escapeEmbeddedHtml(html) {
   return JSON.stringify(html).replace(/<\/script/gi, "<\\/script");
 }
 
+function injectAmReportDayContext(html, offset, label) {
+  const dayScript = `<script>window.AM_REPORT_DAY_OFFSET=${offset};window.AM_REPORT_DAY_LABEL=${JSON.stringify(label)};</script>`;
+  if (/<head(?:\s[^>]*)?>/i.test(html)) {
+    return html.replace(/<head(?:\s[^>]*)?>/i, (headTag) => `${headTag}\n${dayScript}`);
+  }
+  return dayScript + html;
+}
+
+function buildThreeDayAmReport(sourceHtml) {
+  const days = [
+    { offset: -1, label: "Yesterday" },
+    { offset: 0, label: "Today" },
+    { offset: 1, label: "Tomorrow" }
+  ].map((day) => ({
+    ...day,
+    html: injectAmReportDayContext(sourceHtml, day.offset, day.label)
+  }));
+  const serializedDays = JSON.stringify(days).replace(/<\/script/gi, "<\\/script");
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Three-Day AM Report</title>
+<style>
+  :root{color-scheme:light}
+  *{box-sizing:border-box}
+  html,body{min-height:100%;margin:0;background:#e9eef5;color:#132238;font-family:Calibri,"Aptos Narrow",Arial,sans-serif;scrollbar-width:none;-ms-overflow-style:none}
+  html::-webkit-scrollbar,body::-webkit-scrollbar{width:0;height:0;display:none}
+  body{padding:8px;overflow-x:hidden}
+  .am-three-day-workspace{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:start;gap:0;width:100%;margin:0 auto}
+  .am-day-panel{min-width:0;overflow:hidden;border:0;background:#fff}
+  .am-day-frame{display:block;width:100%;min-width:0;height:900px;border:0;background:#eef2f6;overflow:hidden}
+  @media(max-width:760px){body{padding:4px}.am-three-day-workspace{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<main class="am-three-day-workspace" aria-label="Yesterday, today, and tomorrow AM Reports"></main>
+<script>
+(() => {
+  const days = ${serializedDays};
+  const workspace = document.querySelector(".am-three-day-workspace");
+  const frames = [];
+
+  function fitHost() {
+    const height = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight, 1);
+    try {
+      if (window.frameElement) window.frameElement.style.height = Math.ceil(height) + "px";
+    } catch (_) {}
+  }
+
+  function fitFrame(frame) {
+    try {
+      const reportDocument = frame.contentDocument;
+      if (!reportDocument) return;
+      const reportRoot = reportDocument.getElementById("am-report");
+      const contentHeight = reportRoot
+        ? reportRoot.getBoundingClientRect().bottom + reportDocument.defaultView.scrollY
+        : Math.max(reportDocument.documentElement.scrollHeight, reportDocument.body ? reportDocument.body.scrollHeight : 0);
+      frame.style.height = Math.max(1, Math.ceil(contentHeight)) + "px";
+      fitHost();
+    } catch (_) {}
+  }
+
+  function clearOtherSelections(activeFrame) {
+    frames.forEach((frame) => {
+      if (frame === activeFrame) return;
+      try {
+        frame.contentDocument.querySelectorAll(".selected-cell, .range-selected").forEach((cell) => {
+          cell.classList.remove("selected-cell", "range-selected");
+          cell.removeAttribute("aria-selected");
+        });
+      } catch (_) {}
+    });
+  }
+
+  days.forEach((day) => {
+    const panel = document.createElement("section");
+    panel.className = "am-day-panel";
+    const frame = document.createElement("iframe");
+    frame.className = "am-day-frame";
+    frame.title = day.label + " AM Report";
+    frame.setAttribute("scrolling", "no");
+    panel.appendChild(frame);
+    workspace.appendChild(panel);
+    frames.push(frame);
+    frame.addEventListener("load", () => {
+      try {
+        const reportDocument = frame.contentDocument;
+        reportDocument.addEventListener("pointerdown", () => clearOtherSelections(frame));
+        if (typeof ResizeObserver === "function") {
+          const observer = new ResizeObserver(() => fitFrame(frame));
+          observer.observe(reportDocument.documentElement);
+          if (reportDocument.body) observer.observe(reportDocument.body);
+        }
+      } catch (_) {}
+      fitFrame(frame);
+      setTimeout(() => fitFrame(frame), 80);
+      setTimeout(() => fitFrame(frame), 320);
+      setTimeout(() => fitFrame(frame), 900);
+    });
+    frame.srcdoc = day.html;
+  });
+
+  window.addEventListener("resize", () => frames.forEach(fitFrame));
+})();
+</script>
+</body>
+</html>`;
+}
+
 function replaceEmbeddedPage(workbook, id, sourceFile) {
   const entryStartMarker = `        ${JSON.stringify(id)}: {`;
   const entryStart = workbook.indexOf(entryStartMarker);
@@ -38,7 +150,8 @@ function replaceEmbeddedPage(workbook, id, sourceFile) {
   const labelMatch = currentEntry.match(/\n\s*"label":\s*("(?:\\.|[^"\\])*")/);
   if (!labelMatch) throw new Error(`Embedded page ${id} has no label.`);
 
-  const sourceHtml = fs.readFileSync(sourceFile, "utf8");
+  const rawSourceHtml = fs.readFileSync(sourceFile, "utf8");
+  const sourceHtml = id === "amReport" ? buildThreeDayAmReport(rawSourceHtml) : rawSourceHtml;
   const replacement = [
     entryStartMarker,
     `                "label": ${labelMatch[1]},`,
