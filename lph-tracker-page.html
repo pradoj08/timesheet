@@ -2279,7 +2279,7 @@ body:not(.print-mode) > .topbar .hidden-current-time-input{display:block !import
 <div class="sb-item" id="supabase-sync-status" style="font-family:var(--mono);font-size:17px;letter-spacing:.1em;color:var(--text3);white-space:nowrap;">LOCAL CACHE</div>
 <input aria-hidden="true" class="hidden-current-time-input" id="current-time" tabindex="-1" type="time"/>
 <button class="tb-btn" id="sidebar-toggle-btn" onclick="toggleSidebar()" title="Open the swipeable simulation input menu">☰ INPUT MENU</button>
-<button class="tb-btn tb-save-btn" id="manual-save-btn" onclick="rampiqManualSave()" title="Save current inputs to Supabase/global storage">💾 SAVE</button>
+<button class="tb-btn tb-save-btn" id="manual-save-btn" onclick="rampiqManualSave()" title="Save current inputs on this device">💾 SAVE</button>
 <button class="tb-btn tb-reset-btn" id="reset-inputs-btn" onclick="resetLeftInputs()" title="Reset simulation inputs to defaults">↺ RESET INPUTS</button>
 
 
@@ -8904,9 +8904,9 @@ function copyHandoff(){
 // ── SUPABASE COMPATIBILITY ───────────────────────────────────────────────
 // Client-side REST sync. LocalStorage remains the instant/offline cache; Supabase becomes the shared/global store.
 var RAMPIQ_SUPABASE = {
-  enabled: true,
-  restUrl: 'https://epthcamzzwegsdggrjgh.supabase.co/rest/v1',
-  anonKey: 'sb_publishable_f5HYn7EM12Z7V2psO_njmQ_w89WOtm1',
+  enabled: false,
+  restUrl: '',
+  anonKey: '',
   terminalId: 'settegast'
 };
 

@@ -6623,15 +6623,14 @@ let tableRows=[...INITIAL_ROWS], query="", filter="all", sortConfig={key:"id",di
 const filters=[["all","On Hand"],["yardChecked","Yard Checked"],["today","Event Today"],["missingToday","Missing Event Today"],["tenPlus","Flagged for Delete"],["notChecked","Not Yard Checked"],["ceDeleted","CE Deleted"]];
 const $=id=>document.getElementById(id);
 
-const SUPABASE_URL="https://epthcamzzwegsdggrjgh.supabase.co";
-const SUPABASE_KEY="sb_publishable_f5HYn7EM12Z7V2psO_njmQ_w89WOtm1";
+const SUPABASE_URL="";
+const SUPABASE_KEY="";
 const CONGLOBAL_SUPABASE_PIN_KEY="conglobal-supabase-sync-pin";
 const CLOUD_KEYS={current:"current_session",archives:"archive_list",recycle:"archive_recycle_bin",calendar:"yard_check_calendar",forecastRequestHistory:"forecast_request_history",forecastArchives:"forecast_archive_list"};
 let cloudReady=false, cloudLoading=false, cloudSaveTimer=null, cloudLastSavedAt=null;
 
 function cloudHasPin(){
-  try{return Boolean((localStorage.getItem(CONGLOBAL_SUPABASE_PIN_KEY)||"").trim())}
-  catch(error){return false}
+  return false;
 }
 
 function setCloudStatus(text,mode="warn"){
@@ -6651,31 +6650,7 @@ function cloudHeaders(extra={}){
   };
 }
 async function cloudRequest(path,options={}){
-  const controller=new AbortController();
-  const timeout=setTimeout(()=>controller.abort(),15000);
-  const requestOptions={...options,signal:controller.signal};
-  requestOptions.headers=cloudHeaders(options.headers||{});
-  try{
-    const res=await fetch(`${SUPABASE_URL}${path}`,requestOptions);
-    if(!res.ok){
-      let detail="";
-      try{
-        const body=await res.json();
-        detail=body.message||body.hint||body.details||JSON.stringify(body);
-      }catch(error){
-        detail=await res.text().catch(()=>"");
-      }
-      throw new Error(`Supabase request failed ${res.status}${detail?`: ${detail}`:""}`);
-    }
-    if(res.status===204) return null;
-    const contentType=res.headers.get("content-type")||"";
-    return contentType.includes("application/json")?res.json():res.text();
-  }catch(error){
-    if(error&&error.name==="AbortError") throw new Error("Supabase request timed out after 15 seconds.");
-    throw error;
-  }finally{
-    clearTimeout(timeout);
-  }
+  return null;
 }
 async function cloudSchemaStatus(){
   const status=await cloudRequest("/rest/v1/rpc/conglobal_schema_status",{
@@ -6689,6 +6664,8 @@ async function cloudSchemaStatus(){
   return status;
 }
 async function cloudUpsert(key,value,options={}){
+  return false;
+  /* Cloud integration removed. */
   const payload=JSON.stringify({state_key:key,state_value:value,updated_at:new Date().toISOString()});
   const fetchOptions={
     method:"POST",
@@ -6701,6 +6678,8 @@ async function cloudUpsert(key,value,options={}){
   return true;
 }
 async function cloudGet(key){
+  return null;
+  /* Cloud integration removed. */
   const rows=await cloudRequest(`/rest/v1/chassis_reconciliation_state?state_key=eq.${encodeURIComponent(key)}&select=state_value`,{
     method:"GET",
     headers:{}
@@ -6751,27 +6730,15 @@ function applyCurrentSessionSnapshot(snap){
   return true;
 }
 function queueCloudSave(){
-  if(!cloudHasPin()) return;
-  clearTimeout(cloudSaveTimer);
-  cloudSaveTimer=setTimeout(saveCurrentSessionToCloud,350);
+  return;
 }
 async function saveCurrentSessionToCloud(){
-  if(!cloudHasPin()){
-    setCloudStatus("Cloud: enter PIN in Cloud Setup","warn");
-    return false;
-  }
-  try{
-    await cloudUpsert(CLOUD_KEYS.current,makeCurrentSessionSnapshot(),{keepalive:true});
-    cloudReady=true;
-    cloudLastSavedAt=new Date().toISOString();
-    setCloudStatus("Cloud: saved","ok");
-  }catch(err){
-    console.error("Cloud current-session save failed",err);
-    setCloudStatus("Cloud: save failed","err");
-    if(typeof showArchiveToast==="function")showArchiveToast("Cloud save failed on this device.");
-  }
+  return false;
 }
 async function saveAllCloudState(){
+  if(typeof showArchiveToast==="function")showArchiveToast("Saved on this device.");
+  return false;
+  /* Cloud integration removed. */
   try{
     setCloudStatus("Cloud: saving","warn");
     const btn=$("forceSaveBtn");
@@ -6801,6 +6768,8 @@ async function saveAllCloudState(){
   }
 }
 async function loadCloudState(){
+  return false;
+  /* Cloud integration removed. */
   try{
     cloudLoading=true;
     setCloudStatus("Cloud: loading","warn");
@@ -15151,10 +15120,8 @@ async function init(){
   const calendarPreviewClose=$("calendarPreviewClose"); if(calendarPreviewClose)calendarPreviewClose.onclick=()=>{$("calendarReportPreview").style.display="none"};
   setAppPage("forecast",{scroll:false});
   document.body.classList.remove("app-initializing");
-  loadCloudState();
 }
 
-window.addEventListener("beforeunload",()=>{try{saveCurrentSessionToCloud()}catch{}});
 window.addEventListener("DOMContentLoaded",()=>{
   try{history.scrollRestoration="manual"}catch{}
   resetAppPageScroll();

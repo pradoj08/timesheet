@@ -11,6 +11,7 @@ const pageSources = Object.freeze({
   chassisStatus: "chassis-status-page.html",
   checklist: "checklist-page.html",
   performance: "performance-page.html",
+  matrix: "matrix-page.html",
   matrixWide: "matrix-wide-page.html",
   lphTracker: "lph-tracker-page.html",
   roster: "roster-page.html",
@@ -146,7 +147,25 @@ function buildThreeDayAmReport(sourceHtml) {
 function replaceEmbeddedPage(workbook, id, sourceFile) {
   const entryStartMarker = `        ${JSON.stringify(id)}: {`;
   const entryStart = workbook.indexOf(entryStartMarker);
-  if (entryStart < 0) throw new Error(`Embedded page ${id} was not found in ${workbookPath}.`);
+  if (entryStart < 0) {
+    const labels = { matrix: "The Matrix" };
+    const label = labels[id];
+    if (!label) throw new Error(`Embedded page ${id} was not found in ${workbookPath}.`);
+
+    const rawSourceHtml = fs.readFileSync(sourceFile, "utf8");
+    const sourceHtml = id === "amReport" ? buildThreeDayAmReport(rawSourceHtml) : rawSourceHtml;
+    const replacement = [
+      entryStartMarker,
+      `                "label": ${JSON.stringify(label)},`,
+      `                "html": ${escapeEmbeddedHtml(sourceHtml)},`,
+      "        },",
+      ""
+    ].join("\n");
+    const nextPageMarker = id === "matrix" ? `        "matrixWide": {` : "";
+    const insertionPoint = nextPageMarker ? workbook.indexOf(nextPageMarker) : -1;
+    if (insertionPoint < 0) throw new Error(`Could not find an insertion point for embedded page ${id}.`);
+    return workbook.slice(0, insertionPoint) + replacement + workbook.slice(insertionPoint);
+  }
 
   const entryEndMarker = "\n        },";
   const entryEnd = workbook.indexOf(entryEndMarker, entryStart);

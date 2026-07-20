@@ -781,6 +781,12 @@
     font-weight: 800;
   }
   .inbound-delete-undo strong { color: #172033; }
+  .inbound-delete-actions {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
   .inbound-delete-undo button {
     flex: 0 0 auto;
     min-height: 28px;
@@ -793,6 +799,12 @@
     cursor: pointer;
   }
   .inbound-delete-undo button:hover { background: #29446d; }
+  .inbound-delete-undo button[data-archive-ignore] {
+    border-color: #b88a2a;
+    background: #ffffff;
+    color: #5f3b00;
+  }
+  .inbound-delete-undo button[data-archive-ignore]:hover { background: #fff0b8; }
   .inbound-body {
     display: grid;
     gap: 12px;
@@ -4067,11 +4079,11 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     {color:"black", terms:"BO, ST, TH, NO"},
     {color:"darkred", terms:"AVDS"},
     {color:"purple", terms:"DK, BBCT"},
-    {color:"darkgreen", terms:"DB"},
-    {color:"orange", terms:"ZLBHO, ZPBHO, INBOUND, MPSHO, CU, RAMP, ISIHOX"},
-    {color:"blue", terms:"SS, SL, HC, MTY, MTP1"},
-    {color:"pink", terms:"MHOAS, OADS, SCDS, DEDS, G4DS, ALS, DUDS, SETT, MNDS, SEDS"},
-    {color:"green", terms:"IHOSA, ICDS, SADS, FXSI, EGWD, SANT, PHNX, MXFE, LTDS, DADS, ICTF, YTDS, SIDS, WBDS, PFDS, LDDS, LATC"}
+    {color:"purple", terms:"DB"},
+    {color:"solid-copper", terms:"ZLBHO, ZPBHO, INBOUND, MPSHO, CU, RAMP, ISIHOX"},
+    {color:"solid-blue", terms:"SS, SL, HC, MTY, MTP1"},
+    {color:"solid-rose", terms:"MHOAS, OADS, SCDS, DEDS, G4DS, ALS, DUDS, SETT, MNDS, SEDS"},
+    {color:"teal", terms:"IHOSA, ICDS, SADS, FXSI, EGWD, SANT, PHNX, MXFE, LTDS, DADS, ICTF, YTDS, SIDS, WBDS, PFDS, LDDS, LATC"}
   ]);
   const GRID_FONT_OPTIONS = Object.freeze([
     {id:"aptos-narrow", label:"Aptos Narrow", stack:'"Aptos Narrow", "Arial Narrow", "Roboto Condensed", Arial, sans-serif'},
@@ -4101,14 +4113,14 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   const GRID_FONT_SIZE_MIN = 8;
   const GRID_FONT_SIZE_MAX = 24;
   const DEFAULT_GRID_TYPOGRAPHY = Object.freeze({
-    blockFont:"georgia",
-    blockSize:12,
+    blockFont:"roboto-condensed",
+    blockSize:16,
     blockBold:true,
-    headerFont:"aptos-narrow",
-    headerSize:11,
+    headerFont:"roboto-condensed",
+    headerSize:13,
     headerBold:true
   });
-  const GRID_SERIF_MIGRATION_KEY = "settegast-excel-grid-serif-blocks-v1";
+  const COLOR_KEY_BASELINE_VERSION = 1;
 
   function normalizeGridTypography(value) {
     const source = value && typeof value === "object" && !Array.isArray(value) ? value : {};
@@ -4128,11 +4140,17 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     };
   }
 
-  let state = loadState();
-  if (localStorage.getItem(GRID_SERIF_MIGRATION_KEY) !== "1") {
-    state.gridTypography = {...normalizeGridTypography(state.gridTypography), blockFont:"georgia"};
-    localStorage.setItem(GRID_SERIF_MIGRATION_KEY, "1");
+  function applyColorKeyBaseline(target, savedSource) {
+    const next = target && typeof target === "object" ? target : defaultState();
+    const savedVersion = Number(savedSource && savedSource.colorKeyBaselineVersion) || 0;
+    if (savedVersion >= COLOR_KEY_BASELINE_VERSION) return next;
+    next.gridTypography = {...DEFAULT_GRID_TYPOGRAPHY};
+    next.colorRules = DEFAULT_COLOR_RULES.map(rule => ({...rule}));
+    next.colorKeyBaselineVersion = COLOR_KEY_BASELINE_VERSION;
+    return next;
   }
+
+  let state = loadState();
   let currentWork = loadCurrentWorkState();
   let computed = null;
   const selectedBlockIds = new Set();
@@ -4246,6 +4264,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       lastDeletedInboundArchiveId: "",
       colorRules: DEFAULT_COLOR_RULES.map(rule => ({...rule})),
       gridTypography: normalizeGridTypography(),
+      colorKeyBaselineVersion: COLOR_KEY_BASELINE_VERSION,
       dwellOverrides: {},
       secondaryGridTwo: null,
       secondaryGridThree: null,
@@ -4339,7 +4358,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         } else {
           merged.colorRules = savedColorRules;
         }
-        return merged;
+        return applyColorKeyBaseline(merged, saved);
       }
     } catch (error) {}
     const fallback = applyPersistedRampTables(defaultState(), persistedRampTables);
@@ -5788,7 +5807,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     const parts = [];
     const deletedRecord = state.inboundArchive.find(item => item.id === state.lastDeletedInboundArchiveId);
     if (deletedRecord) {
-      parts.push('<div class="inbound-delete-undo" role="status"><span><strong>' + escapeHtml(deletedRecord.plan.train || "Unnamed inbound") + '</strong> was deleted and saved in Inbound Archive.</span><button data-archive-restore="' + escapeAttr(deletedRecord.id) + '" type="button">Restore</button></div>');
+      parts.push('<div class="inbound-delete-undo" role="status"><span><strong>' + escapeHtml(deletedRecord.plan.train || "Unnamed inbound") + '</strong> was deleted and saved in Inbound Archive.</span><div class="inbound-delete-actions"><button data-archive-restore="' + escapeAttr(deletedRecord.id) + '" type="button">Restore</button><button data-archive-ignore="' + escapeAttr(deletedRecord.id) + '" type="button">Ignore</button></div></div>');
     }
     const primaryDays = ["TODAY", "TOMORROW", "DAY AFTER"];
     const extraDays = [...new Set(ordered.map(item => item.plan.day).filter(day => !primaryDays.includes(day)))];
@@ -8397,6 +8416,12 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     if (archiveEdit) { openInboundArchivePreview(archiveEdit.dataset.archiveEdit, true); return; }
     const archiveRestore = e.target.closest("[data-archive-restore]");
     if (archiveRestore) { restoreArchivedInbound(archiveRestore.dataset.archiveRestore); return; }
+    const archiveIgnore = e.target.closest("[data-archive-ignore]");
+    if (archiveIgnore) {
+      if (state.lastDeletedInboundArchiveId === archiveIgnore.dataset.archiveIgnore) state.lastDeletedInboundArchiveId = "";
+      renderAll();
+      return;
+    }
     const archiveDelete = e.target.closest("[data-archive-delete]");
     if (archiveDelete) { deleteArchivedInbound(archiveDelete.dataset.archiveDelete); return; }
     if (e.target.closest("[data-add-archive-edit-row]")) { addArchivedInboundEditRow(); return; }
@@ -9132,6 +9157,34 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     if (message.type === "conglobal-lph-input-drag-end") {
       lphInputDrag = null;
       overlay.classList.remove("dragging");
+    }
+  });
+
+  window.addEventListener("message", (event) => {
+    const data = event.data;
+    if (!data || data.type !== "conglobal-excel-table-state-load" || typeof data.state !== "string") return;
+    try {
+      const restored = JSON.parse(data.state);
+      if (!restored || !Array.isArray(restored.rows)) return;
+      let nextState = { ...defaultState(), ...restored };
+      if (typeof data.tables === "string" && data.tables) {
+        const tableBundle = JSON.parse(data.tables);
+        nextState = applyPersistedRampTables(nextState, tableBundle);
+      }
+      nextState.dwellOverrides = nextState.dwellOverrides && typeof nextState.dwellOverrides === "object" && !Array.isArray(nextState.dwellOverrides) ? nextState.dwellOverrides : {};
+      nextState.inboundPlans = normalizeInboundPlans(nextState.inboundPlans);
+      nextState.inboundArchive = normalizeInboundArchive(nextState.inboundArchive);
+      nextState.gridTypography = normalizeGridTypography(nextState.gridTypography);
+      nextState.colorRules = normalizeColorRules(nextState.colorRules);
+      nextState = applyColorKeyBaseline(nextState, restored);
+      state = nextState;
+      lastCommittedExcelViewState = JSON.stringify(state);
+      selectedBlockIds.clear();
+      selectedBlockGridId = "";
+      renderAll();
+      saveState();
+    } catch (error) {
+      console.warn("IndexedDB Excel View restore was skipped.", error);
     }
   });
 
