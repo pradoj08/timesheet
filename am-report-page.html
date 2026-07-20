@@ -1308,6 +1308,17 @@ body{
   border-left:5px solid transparent;
   opacity:.7;
 }
+#am-report .sheet-grid td.user-formula-cell::before{
+  content:"";
+  position:absolute;
+  top:2px;
+  right:2px;
+  width:0;
+  height:0;
+  border-top:6px solid #16a34a;
+  border-left:6px solid transparent;
+  pointer-events:none;
+}
 #am-report.report-day-previous td.day-shaded-cell{
   background:#dbeafe !important;
 }
@@ -2822,7 +2833,8 @@ tags will be replaced.-->
       window.parent.postMessage({ type: "conglobal-open-mass-export" }, "*");
     });
     todayRosterButton.addEventListener("click", () => {
-      window.parent.postMessage({ type: "conglobal-open-todays-roster" }, "*");
+      if (todayRosterPopup.hidden) openAmTodayRoster();
+      else closeAmTodayRoster();
     });
     auditsButton.addEventListener("click", () => {
       window.parent.postMessage({ type: "conglobal-open-audits-popup" }, "*");
@@ -2956,6 +2968,7 @@ tags will be replaced.-->
   let inboundCustomTypeSelections = { B6:false, B7:false };
   let inboundCustomTypeStateLoaded = false;
   let forecastInboundManualOverrides = new Set();
+  let forecastInboundPasteSuppressions = new Set();
   let sharedFormatSignature = "";
   let cellEditModeAddress = "";
   let forecastInboundPickerAddress = "";
@@ -3100,6 +3113,12 @@ tags will be replaced.-->
         forecastInboundManualOverrides = new Set(
           (Array.isArray(parsed.forecastInboundManualOverrides) ? parsed.forecastInboundManualOverrides : [])
             .filter(address => FORECAST_INBOUND_EDITABLE_CELL_SET.has(address))
+        );
+        const savedPasteSuppressions = Array.isArray(parsed.forecastInboundPasteSuppressions)
+          ? parsed.forecastInboundPasteSuppressions
+          : Array.from(forecastInboundManualOverrides);
+        forecastInboundPasteSuppressions = new Set(
+          savedPasteSuppressions.filter(address => FORECAST_INBOUND_EDITABLE_CELL_SET.has(address))
         );
         if (parsed.inboundCustomTypes && typeof parsed.inboundCustomTypes === "object") {
           inboundCustomTypeSelections = {
@@ -3384,7 +3403,13 @@ tags will be replaced.-->
       if (allowed) select.value = nextValue;
       return allowed;
     }
-    cell.textContent = nextValue;
+    if (isUserAdditionFormula(nextValue)) {
+      cell.dataset.userFormula = nextValue;
+      renderUserFormula(address);
+    } else {
+      clearUserFormula(cell);
+      cell.textContent = nextValue;
+    }
     return true;
   }
 
@@ -3392,7 +3417,13 @@ tags will be replaced.-->
     const cell = cellMap.get(address);
     if (!cell || formulas[address]) return;
     const currentValue = preferredValue === undefined ? readCell(address) : String(preferredValue);
-    cell.textContent = currentValue;
+    if (isUserAdditionFormula(currentValue)) {
+      cell.dataset.userFormula = currentValue;
+      renderUserFormula(address);
+    } else {
+      clearUserFormula(cell);
+      cell.textContent = currentValue;
+    }
     cell.setAttribute("contenteditable", "plaintext-only");
     cell.classList.remove("cell-editing");
     cell.setAttribute("spellcheck", "false");
@@ -3609,6 +3640,107 @@ tags will be replaced.-->
     });
   }
 
+  function isUserAdditionFormula(value) {
+    return /^\s*=/.test(String(value == null ? "" : value));
+  }
+
+  function clearUserFormula(cell) {
+    if (!cell) return;
+    const hadUserFormula = Boolean(cell.dataset.userFormula);
+    delete cell.dataset.userFormula;
+    cell.classList.remove("user-formula-cell");
+    cell.removeAttribute("data-formula-error");
+    if (hadUserFormula) {
+      cell.removeAttribute("title");
+      if (cell.dataset.cell) cell.setAttribute("aria-label", "Editable cell " + cell.dataset.cell);
+    }
+  }
+
+  function storedCellValue(address) {
+    const cell = cellMap.get(address);
+    return cell && cell.dataset.userFormula ? cell.dataset.userFormula : readCell(address);
+  }
+
+  function strictNumericValue(value) {
+    const normalized = String(value == null ? "" : value).replace(/,/g, "").trim();
+    if (!normalized) return 0;
+    return /^[+-]?(?:\d+(?:\.\d+)?|\.\d+)$/.test(normalized) ? Number(normalized) : null;
+  }
+
+  function evaluateUserAdditionFormula(expression, visited) {
+    const raw = String(expression == null ? "" : expression).trim();
+    if (!isUserAdditionFormula(raw)) return { ok:false, message:"Formula must begin with =" };
+    const body = raw.slice(1).trim();
+    const terms = body.split("+").map(term => term.trim());
+    if (!body || terms.some(term => !term)) return { ok:false, message:"Enter numbers or cell references separated by +" };
+    const trail = visited instanceof Set ? new Set(visited) : new Set();
+    let total = 0;
+    for (const term of terms) {
+      const direct = strictNumericValue(term);
+      if (direct !== null) {
+        total += direct;
+        continue;
+      }
+      const reference = term.replace(/\$/g, "").toUpperCase();
+      if (!/^[A-C](?:[1-9]|[1-6]\d|7[0-5])$/.test(reference) || !cellMap.has(reference)) {
+        return { ok:false, message:"Use numbers or AM Report cells such as A6" };
+      }
+      if (trail.has(reference)) return { ok:false, message:"Circular formula reference" };
+      const referencedCell = cellMap.get(reference);
+      let referencedValue;
+      if (referencedCell.dataset.userFormula) {
+        const nextTrail = new Set(trail);
+        nextTrail.add(reference);
+        const nested = evaluateUserAdditionFormula(referencedCell.dataset.userFormula, nextTrail);
+        if (!nested.ok) return nested;
+        referencedValue = nested.value;
+      } else {
+        referencedValue = strictNumericValue(readCell(reference));
+        if (referencedValue === null) referencedValue = 0;
+      }
+      total += referencedValue;
+    }
+    return Number.isFinite(total)
+      ? { ok:true, value:total }
+      : { ok:false, message:"Formula result is not a number" };
+  }
+
+  function renderUserFormula(address) {
+    const cell = cellMap.get(address);
+    if (!cell || !cell.dataset.userFormula) return false;
+    const result = evaluateUserAdditionFormula(cell.dataset.userFormula, new Set([address]));
+    cell.classList.add("user-formula-cell");
+    cell.textContent = result.ok ? formatNumber(result.value) : "#VALUE!";
+    cell.title = result.ok
+      ? cell.dataset.userFormula + " -> " + formatNumber(result.value)
+      : cell.dataset.userFormula + " — " + result.message;
+    cell.setAttribute("aria-label", address + " formula " + cell.dataset.userFormula);
+    cell.toggleAttribute("data-formula-error", !result.ok);
+    return result.ok;
+  }
+
+  function recalculateUserFormulas() {
+    cellMap.forEach((cell, address) => {
+      if (!cell.dataset.userFormula || cellEditModeAddress === address) return;
+      renderUserFormula(address);
+    });
+  }
+
+  function exposeUserFormulaForEditing(cell, address) {
+    if (!cell || !cell.dataset.userFormula) return;
+    cell.textContent = cell.dataset.userFormula;
+    cell.title = "Edit formula, then press Enter";
+  }
+
+  function commitUserFormula(address) {
+    const cell = cellMap.get(address);
+    if (!cell || formulas[address] || !cell.hasAttribute("contenteditable")) return;
+    const entered = cleanText(cell.innerText || cell.textContent);
+    if (isUserAdditionFormula(entered)) cell.dataset.userFormula = entered;
+    if (cell.dataset.userFormula) renderUserFormula(address);
+    else clearUserFormula(cell);
+  }
+
   function textFromOutboundBlock(block) {
     const holder = document.createElement("div");
     holder.innerHTML = String(block && block.content || "");
@@ -3796,6 +3928,21 @@ tags will be replaced.-->
     return cleanText(value).split(/\s*\+\s*/).map(cleanText).filter(Boolean);
   }
 
+  function forecastInboundPairAddresses(address) {
+    if (FORECAST_INBOUND_TOTAL_CELLS[address]) return [address, FORECAST_INBOUND_TOTAL_CELLS[address]];
+    const nameAddress = Object.keys(FORECAST_INBOUND_TOTAL_CELLS)
+      .find(candidate => FORECAST_INBOUND_TOTAL_CELLS[candidate] === address);
+    return nameAddress ? [nameAddress, address] : [address];
+  }
+
+  function setForecastPasteSuppression(address, suppressed) {
+    if (!FORECAST_INBOUND_EDITABLE_CELL_SET.has(address)) return;
+    forecastInboundPairAddresses(address).forEach(pairAddress => {
+      if (suppressed) forecastInboundPasteSuppressions.add(pairAddress);
+      else forecastInboundPasteSuppressions.delete(pairAddress);
+    });
+  }
+
   function updateForecastInboundPair(totalAddress, nameAddress, inboundNames, forecastTotals) {
     const requestedNames = forecastInboundManualOverrides.has(nameAddress)
       ? forecastNamesFromText(readCell(nameAddress))
@@ -3812,6 +3959,9 @@ tags will be replaced.-->
     const detail = missing.length
       ? "Missing from Chassis Forecast: " + missing.join(", ") + ". Enter or correct this cell manually."
       : pairText + " = " + formatNumber(total) + " units from Chassis Forecast";
+    const pastedPair = forecastInboundPasteSuppressions.has(nameAddress)
+      || forecastInboundPasteSuppressions.has(totalAddress);
+    const showMissingHighlight = missing.length > 0 && !pastedPair;
 
     if (!missing.length) {
       if (!forecastInboundManualOverrides.has(nameAddress)) writeCell(nameAddress, pairText);
@@ -3820,10 +3970,12 @@ tags will be replaced.-->
     [nameAddress, totalAddress].forEach(address => {
       const cell = cellMap.get(address);
       if (!cell) return;
-      cell.classList.toggle("forecast-inbound-missing", missing.length > 0);
-      cell.title = detail + (forecastInboundManualOverrides.has(address) ? " Manual override active." : "");
+      cell.classList.toggle("forecast-inbound-missing", showMissingHighlight);
+      cell.title = detail
+        + (forecastInboundManualOverrides.has(address) ? " Manual override active." : "")
+        + (pastedPair ? " Pasted values retained without warning color." : "");
     });
-    return { total:numeric(totalAddress), missing };
+    return { total:numeric(totalAddress), missing, highlightedMissing:showMissingHighlight ? missing : [] };
   }
 
   function closeForecastInboundPicker(options) {
@@ -3898,6 +4050,7 @@ tags will be replaced.-->
     }
     writeCell(address, selected.map(input => input.value).join(" + "));
     forecastInboundManualOverrides.add(address);
+    setForecastPasteSuppression(address, false);
     const totalAddress = FORECAST_INBOUND_TOTAL_CELLS[address];
     if (totalAddress) forecastInboundManualOverrides.delete(totalAddress);
     recalculate();
@@ -3910,6 +4063,7 @@ tags will be replaced.-->
     if (!FORECAST_INBOUND_NAME_CELL_SET.has(address)) return;
     writeCell(address, forecastInboundManualText.value);
     forecastInboundManualOverrides.add(address);
+    setForecastPasteSuppression(address, false);
     recalculate();
     persist("Saved custom inbound text in " + address);
     closeForecastInboundPicker();
@@ -3989,6 +4143,7 @@ tags will be replaced.-->
   }
 
   function recalculate() {
+    recalculateUserFormulas();
     const currentMoment = new Date();
     const now = new Date(currentMoment);
     now.setHours(12, 0, 0, 0);
@@ -4038,6 +4193,7 @@ tags will be replaced.-->
     setFormulaResult("A48", formatNumber(numeric("A45") + numeric("A46") + numeric("A47")));
     setFormulaResult("A55", formatNumber(numeric("A52") + numeric("A53") + numeric("A54")));
     const missingForecastNames = forecastPairs.flatMap(pair => pair.missing);
+    const highlightedMissingForecastNames = forecastPairs.flatMap(pair => pair.highlightedMissing);
     setFormulaResult(
       "A62",
       formatNumber(forecastPairs.reduce((sum, pair) => sum + pair.total, 0)) + " units next 72 hours",
@@ -4046,7 +4202,7 @@ tags will be replaced.-->
         : "All six AM Report inbounds matched the Chassis Forecast"
     );
     const total72Cell = cellMap.get("A62");
-    if (total72Cell) total72Cell.classList.toggle("forecast-inbound-missing", missingForecastNames.length > 0);
+    if (total72Cell) total72Cell.classList.toggle("forecast-inbound-missing", highlightedMissingForecastNames.length > 0);
     publishTodayZpbhoSummary();
     updateFormulaBar();
   }
@@ -4054,7 +4210,7 @@ tags will be replaced.-->
   function collectInputs() {
     const values = {};
     cellMap.forEach((cell, address) => {
-      if (!formulas[address] && !OUTBOUND_FOOTAGE_PULL_CELL_SET.has(address) && !MANPOWER_TIMESHEET_TOGGLE_CELL_SET.has(address) && !INBOUND_CUSTOM_TOGGLE_CELL_SET.has(address)) values[address] = readCell(address);
+      if (!formulas[address] && !OUTBOUND_FOOTAGE_PULL_CELL_SET.has(address) && !MANPOWER_TIMESHEET_TOGGLE_CELL_SET.has(address) && !INBOUND_CUSTOM_TOGGLE_CELL_SET.has(address)) values[address] = storedCellValue(address);
     });
     return values;
   }
@@ -4077,7 +4233,8 @@ tags will be replaced.-->
       outboundFootagePulls: outboundFootagePullSelections,
       manpowerTimesheetLinked,
       inboundCustomTypes: inboundCustomTypeSelections,
-      forecastInboundManualOverrides:Array.from(forecastInboundManualOverrides)
+      forecastInboundManualOverrides:Array.from(forecastInboundManualOverrides),
+      forecastInboundPasteSuppressions:Array.from(forecastInboundPasteSuppressions)
     }));
     announceSaved(message || "Saved");
   }
@@ -4203,9 +4360,11 @@ tags will be replaced.-->
         ? "Use the checkbox in the selected cell"
         : "Use the dropdown in the selected cell";
     } else {
-      formulaBar.value = readCell(address);
+      formulaBar.value = selectedCell.dataset.userFormula || readCell(address);
       formulaBar.readOnly = false;
-      formulaBar.title = "Edit the selected cell";
+      formulaBar.title = selectedCell.dataset.userFormula
+        ? "Addition formula; press Enter to calculate"
+        : "Edit the selected cell";
     }
   }
 
@@ -4605,6 +4764,12 @@ tags will be replaced.-->
     todayRosterButton.setAttribute("aria-expanded", "false");
   }
 
+  function toggleAmTodayRoster() {
+    if (REPORT_DAY_OFFSET !== 0) return;
+    if (todayRosterPopup.hidden) openAmTodayRoster();
+    else closeAmTodayRoster();
+  }
+
   function initAmTodayRosterPopup() {
     const handle = document.getElementById("amTodayRosterHandle");
     if (!handle || handle.dataset.dragReady) return;
@@ -4635,6 +4800,15 @@ tags will be replaced.-->
     };
     handle.addEventListener("pointerup", endDrag);
     handle.addEventListener("pointercancel", endDrag);
+  }
+
+  if (REPORT_DAY_OFFSET === 0) {
+    document.getElementById("amTodayRosterClose")?.addEventListener("click", closeAmTodayRoster);
+    initAmTodayRosterPopup();
+    window.addEventListener("message", event => {
+      if (!event.data || event.data.type !== "conglobal-toggle-todays-roster") return;
+      toggleAmTodayRoster();
+    });
   }
 
   window.addEventListener("storage", event => {
@@ -4799,7 +4973,10 @@ tags will be replaced.-->
         if (visited.has(target) || formulas[target]) return;
         visited.add(target);
         if (writeCell(target, matrix[0][0])) {
-          if (FORECAST_INBOUND_EDITABLE_CELL_SET.has(target)) forecastInboundManualOverrides.add(target);
+          if (FORECAST_INBOUND_EDITABLE_CELL_SET.has(target)) {
+            forecastInboundManualOverrides.add(target);
+            setForecastPasteSuppression(target, true);
+          }
           written += 1;
         }
       });
@@ -4819,7 +4996,10 @@ tags will be replaced.-->
           const address = addressAt(startColumn + columnOffset, startRow + rowOffset);
           if (!address || formulas[address]) return;
           if (writeCell(address, value)) {
-            if (FORECAST_INBOUND_EDITABLE_CELL_SET.has(address)) forecastInboundManualOverrides.add(address);
+            if (FORECAST_INBOUND_EDITABLE_CELL_SET.has(address)) {
+              forecastInboundManualOverrides.add(address);
+              setForecastPasteSuppression(address, true);
+            }
             written += 1;
           }
         });
@@ -4946,12 +5126,20 @@ tags will be replaced.-->
 
   function replaceSelectedCellFromTyping(cell, address, value) {
     if (!cell || !cell.hasAttribute("contenteditable") || formulas[address]) return false;
+    clearUserFormula(cell);
     cell.textContent = String(value || "");
+    if (isUserAdditionFormula(value)) {
+      cell.dataset.userFormula = String(value);
+      cell.classList.add("user-formula-cell");
+    }
     cellEditModeAddress = address;
     cell.focus({ preventScroll:true });
     placeCaretAtCellEnd(cell);
-    if (FORECAST_INBOUND_EDITABLE_CELL_SET.has(address)) forecastInboundManualOverrides.add(address);
-    formulaBar.value = readCell(address);
+    if (FORECAST_INBOUND_EDITABLE_CELL_SET.has(address)) {
+      forecastInboundManualOverrides.add(address);
+      setForecastPasteSuppression(address, false);
+    }
+    formulaBar.value = cell.dataset.userFormula || readCell(address);
     recalculate();
     persist("Saved " + address);
     return true;
@@ -4995,10 +5183,30 @@ tags will be replaced.-->
     cell.addEventListener("input", () => {
       if (formulas[address]) return;
       normalizePlainEditor(cell);
-      if (FORECAST_INBOUND_EDITABLE_CELL_SET.has(address)) forecastInboundManualOverrides.add(address);
-      if (selectedCell === cell && boundsArea(selectionBounds) === 1) formulaBar.value = readCell(address);
+      const entered = cleanText(cell.innerText || cell.textContent);
+      if (isUserAdditionFormula(entered)) {
+        cell.dataset.userFormula = entered;
+        cell.classList.add("user-formula-cell");
+      } else {
+        clearUserFormula(cell);
+      }
+      if (FORECAST_INBOUND_EDITABLE_CELL_SET.has(address)) {
+        forecastInboundManualOverrides.add(address);
+        setForecastPasteSuppression(address, false);
+      }
+      if (selectedCell === cell && boundsArea(selectionBounds) === 1) formulaBar.value = cell.dataset.userFormula || readCell(address);
       recalculate();
       persist("Saved " + address);
+    });
+
+    cell.addEventListener("blur", () => {
+      if (formulas[address]) return;
+      commitUserFormula(address);
+      cell.classList.remove("cell-editing");
+      if (cellEditModeAddress === address) cellEditModeAddress = "";
+      recalculate();
+      persist("Saved " + address);
+      updateFormulaBar();
     });
 
     cell.addEventListener("beforeinput", event => {
@@ -5062,6 +5270,7 @@ tags will be replaced.-->
       event.stopPropagation();
       cellEditModeAddress = address;
       cell.classList.add("cell-editing");
+      exposeUserFormulaForEditing(cell, address);
       placeCaretAtCellPoint(cell, event.clientX, event.clientY);
     });
 
@@ -5087,6 +5296,7 @@ tags will be replaced.-->
         event.preventDefault();
         cellEditModeAddress = address;
         cell.classList.add("cell-editing");
+        exposeUserFormulaForEditing(cell, address);
         placeCaretAtCellEnd(cell);
         return;
       }
@@ -5112,6 +5322,11 @@ tags will be replaced.-->
       }
       if (event.key !== "Enter" && event.key !== "Tab") return;
       event.preventDefault();
+      commitUserFormula(address);
+      cell.classList.remove("cell-editing");
+      if (cellEditModeAddress === address) cellEditModeAddress = "";
+      recalculate();
+      persist("Saved " + address);
       const direction = event.shiftKey ? -1 : 1;
       const target = event.key === "Tab"
         ? nextVisibleCell(address, direction, "cell")
@@ -5201,7 +5416,10 @@ tags will be replaced.-->
     const address = selectedCell.dataset.cell;
     if (formulas[address] || dropdownDefinitions[address] || (INBOUND_ARCHIVE_CELL_SET.has(address) && !inboundCustomTypeSelections[address]) || OUTBOUND_FOOTAGE_PULL_CELL_SET.has(address) || MANPOWER_TIMESHEET_TOGGLE_CELL_SET.has(address) || INBOUND_CUSTOM_TOGGLE_CELL_SET.has(address)) return;
     writeCell(address, formulaBar.value);
-    if (FORECAST_INBOUND_EDITABLE_CELL_SET.has(address)) forecastInboundManualOverrides.add(address);
+    if (FORECAST_INBOUND_EDITABLE_CELL_SET.has(address)) {
+      forecastInboundManualOverrides.add(address);
+      setForecastPasteSuppression(address, false);
+    }
     recalculate();
     persist("Saved " + address);
   });
@@ -5223,6 +5441,7 @@ tags will be replaced.-->
     manpowerTimesheetLinked = false;
     inboundCustomTypeSelections = { B6:false, B7:false };
     forecastInboundManualOverrides.clear();
+    forecastInboundPasteSuppressions.clear();
     applyMerges();
     applyStoredAlignments();
     Object.entries(originalValues).forEach(([address, value]) => {

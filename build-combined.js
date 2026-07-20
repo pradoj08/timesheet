@@ -130,6 +130,12 @@ function buildThreeDayAmReport(sourceHtml) {
     frame.srcdoc = day.html;
   });
 
+  window.addEventListener("message", (event) => {
+    if (!event.data || event.data.type !== "conglobal-toggle-todays-roster") return;
+    const todayFrame = frames[1];
+    if (todayFrame && todayFrame.contentWindow) todayFrame.contentWindow.postMessage(event.data, "*");
+  });
+
   window.addEventListener("resize", () => frames.forEach(fitFrame));
 })();
 </script>
