@@ -1206,13 +1206,17 @@
   .dashboard-title-row { display: flex; align-items: baseline; gap: 10px; min-width: 0; white-space: nowrap; }
   .dashboard-title-row .panel-subtitle { overflow: hidden; text-overflow: ellipsis; }
   .dashboard-title-row .grid-color-tab-btn {
-    min-height: 27px;
+    min-height: 26px;
     padding: 4px 9px;
     align-self: center;
-    border-color: #cbd5e1;
-    background: #eef2f7;
-    color: #16243a;
-    font-size: 11px;
+    border: 1px solid #d4a017;
+    border-radius: 6px;
+    background: #fff8d6;
+    color: #755300;
+    font-size: 9px;
+    font-weight: 950;
+    letter-spacing: .045em;
+    text-transform: uppercase;
   }
   .panel-title { font-size: 12px; text-transform: uppercase; letter-spacing: .085em; font-weight: 850; }
   .panel-subtitle { font-size: 10px; color: var(--muted); margin-top: 2px; }
@@ -1494,6 +1498,16 @@
     user-select: none; white-space: nowrap;
   }
   .track-id-toggle input { width: 14px; height: 14px; margin: 0; accent-color: #254f7c; }
+  #yardGrid .hide-track-ids-header {
+    position: relative; z-index: 8; padding: 0 2px; overflow: visible; display: flex; align-items: center; justify-content: center;
+  }
+  #yardGrid .grid-display-toggles { width: 100%; display: flex; align-items: center; justify-content: center; gap: 3px; }
+  #yardGrid .hide-track-ids-header .track-id-toggle {
+    width: auto; min-height: 17px; height: 17px; padding: 0 4px; justify-content: center; gap: 4px;
+    border-color: rgba(255,255,255,.32); border-radius: 4px; background: rgba(255,255,255,.16); color: rgba(255,255,255,.92);
+    font-size: 6.5px; font-weight: 800; letter-spacing: 0; text-transform: uppercase;
+  }
+  #yardGrid .hide-track-ids-header .track-id-toggle input { width: 10px; height: 10px; accent-color: #94a3b8; }
   .live-chip {
     display: inline-flex; align-items: center; gap: 5px; background: #e8f6ec; color: #1f6c38;
     border: 1px solid #bfe2c9; border-radius: 999px; padding: 5px 8px;
@@ -3698,6 +3712,10 @@
               <input id="hideTrackIdsToggle" type="checkbox" checked>
               Hide track IDs
             </label>
+            <label class="track-id-toggle" title="Hide dwell tags inside ramp block labels">
+              <input id="hideDwellToggle" type="checkbox">
+              Hide dwell
+            </label>
             <input class="field" id="departureTime" type="datetime-local" title="Projected departure time" style="width:178px;max-width:178px">
           </div>
         </div>
@@ -4281,6 +4299,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       mhoasTarget: 4700,
       trackTarget: 2500,
       hideTrackIds: true,
+      hideDwell: false,
       inboundPlannerVisible: false,
       inboundPlannerPopupMigrated: true,
       inboundPlans: defaultInboundPlans(),
@@ -4476,15 +4495,24 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       .replace(/\s{2,}/g, " ")
       .trim();
   }
+  function stripBlockDwell(value) {
+    return String(value || "").replace(/\s*\((?:\?\?|\d+(?:\.\d+)?H?)\)/gi, "").replace(/\s{2,}/g, " ").trim();
+  }
+  function blockTextForDisplay(value) {
+    let text = String(value || "");
+    if (state.hideTrackIds) text = stripBlockTrackIds(text);
+    if (state.hideDwell) text = stripBlockDwell(text);
+    return text;
+  }
   function blockContentForDisplay(value) {
     const html = String(value || "");
-    if (!state.hideTrackIds || !html) return html;
+    if ((!state.hideTrackIds && !state.hideDwell) || !html) return html;
     const host = document.createElement("div");
     host.innerHTML = html;
     const walker = document.createTreeWalker(host, NodeFilter.SHOW_TEXT);
     const textNodes = [];
     while (walker.nextNode()) textNodes.push(walker.currentNode);
-    textNodes.forEach(node => { node.nodeValue = stripBlockTrackIds(node.nodeValue); });
+    textNodes.forEach(node => { node.nodeValue = blockTextForDisplay(node.nodeValue); });
     return host.innerHTML;
   }
 
@@ -5023,6 +5051,16 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     const activeRules = rules.length ? rules : DEFAULT_COLOR_RULES.map(rule => ({...rule}));
     const match = activeRules.find(rule => ruleMatchesText(rule, raw, t));
     return match ? match.color : "gray";
+  }
+
+  function classNameWithCurrentColor(className, text) {
+    const structuralClasses = String(className || "cut-cell")
+      .split(/\s+/)
+      .filter(Boolean)
+      .filter(name => !COLOR_CLASSES.includes(name));
+    if (!structuralClasses.includes("cut-cell")) structuralClasses.unshift("cut-cell");
+    structuralClasses.push(classifyCell(text, "CURRENT RAMP BLOCKING"));
+    return [...new Set(structuralClasses)].join(" ");
   }
 
   function publishLiveSnapshot() {
@@ -7377,7 +7415,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         cells.push(`<div class="track-total">${fmtInt(total)}</div>`);
         for (let index=0; index<8; index++) {
           const text = values[index] || "";
-          const display = state.hideTrackIds ? stripBlockTrackIds(text) : text;
+          const display = blockTextForDisplay(text);
           cells.push(`<div class="cut-cell ${classifyCell(text, view)}" title="${escapeHtml(display)}">${display ? escapeHtml(display) : "0"}${index===7 && overflow ? `<span class="overflow">+${overflow}</span>` : ""}</div>`);
         }
         cells.push(`<div class="track-remaining ${remaining < 0 ? "over" : ""}">${fmtInt(remaining)}</div>`);
@@ -7388,6 +7426,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   }
 
   function renderGrid() {
+    const hideTrackIdsControl = $("#hideTrackIdsToggle")?.closest("label");
+    const hideDwellControl = $("#hideDwellToggle")?.closest("label");
     const view = state.view;
     const source = view === "CURRENT RAMP BLOCKING" ? computed.currentByTrack
       : view === "LONG SHORT / BREAKDOWN" ? computed.longShortByTrack
@@ -7412,7 +7452,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       for (let i=0;i<8;i++) {
         const text = values[i] || "";
         const cls = classifyCell(text, view);
-        const displayText = state.hideTrackIds ? stripBlockTrackIds(text) : text;
+        const displayText = blockTextForDisplay(text);
         const group = trackGroups[i] || null;
         const interactiveClass = group
           ? " block-reorderable"
@@ -7430,6 +7470,15 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       cells.push(`<div class="track-remaining ${remaining < 0 ? "over" : ""}${blockReorderingAvailable() ? " block-drop-end" : ""}" data-track="${track}"${blockReorderingAvailable() ? ` data-drop-end-track="${track}"` : ""} title="${fmtInt(capacity)} ft capacity - ${fmtInt(total)} ft current${blockReorderingAvailable() ? "; click to place selected blocks at track end" : ""}">${fmtInt(remaining)}</div>`);
     });
     $("#yardGrid").innerHTML = cells.join("");
+    const deltaRemainingHeader = $("#yardGrid").querySelector('.grid-head[title="Track capacity minus current footage"]');
+    const hideTrackIdsHeader = deltaRemainingHeader?.previousElementSibling;
+    if (hideTrackIdsControl && hideDwellControl && hideTrackIdsHeader) {
+      hideTrackIdsHeader.classList.add("hide-track-ids-header");
+      const toggles = document.createElement("div");
+      toggles.className = "grid-display-toggles";
+      toggles.append(hideTrackIdsControl, hideDwellControl);
+      hideTrackIdsHeader.replaceChildren(toggles);
+    }
     renderBlankGrid();
     syncBlockSelectionUi();
     syncBlockPasteTargetUi();
@@ -7706,7 +7755,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       ? items.map(block => {
           const displayContent = blockContentForDisplay(block.content);
           const displayTitle = state.hideTrackIds ? stripBlockTrackIds(block.title) : block.title;
-          return `<div class="${escapeAttr(block.className)}" data-final-block-id="${escapeAttr(block.id)}" data-footage="${Number(block.footage) || 0}" title="${escapeAttr(displayTitle)}">${displayContent}</div>`;
+          const currentClassName = classNameWithCurrentColor(block.className, block.title || textFromCellHtml(`<div>${block.content}</div>`));
+          return `<div class="${escapeAttr(currentClassName)}" data-final-block-id="${escapeAttr(block.id)}" data-footage="${Number(block.footage) || 0}" title="${escapeAttr(displayTitle)}">${displayContent}</div>`;
         }).join("")
       : '<span class="final-paste-hint">Click here, then press Ctrl+V to paste blocks</span>';
     return `<div class="third-summary-blank third-summary-span final-paste-zone" data-summary-paste-zone="${zone}" tabindex="0" title="Paste copied blocks into ${zone.toUpperCase()} Final"><div class="final-block-list">${content}</div></div>`;
@@ -7764,7 +7814,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
           const shoveOrder = Math.max(0, Number(block.shoveOrder) || 0);
           const displayContent = blockContentForDisplay(block.content);
           const displayTitle = state.hideTrackIds ? stripBlockTrackIds(block.title) : block.title;
-          cells.push(`<div class="${escapeAttr(block.className)}" data-block-id="${escapeAttr(block.id)}" data-track="${track}" data-footage="${Number(block.footage) || 0}"${shoveOrder ? ` data-shove-order="${shoveOrder}"` : ""} role="button" aria-selected="false" title="${escapeAttr(displayTitle)}">${displayContent}${shoveOrder ? `<span class="inbound-shove-flag" aria-label="Shove ${shoveOrder}">${shoveOrder}</span>` : ""}${i === 7 && blocks.length > 8 ? `<span class="overflow">+${blocks.length - 8}</span>` : ""}</div>`);
+          const currentClassName = classNameWithCurrentColor(block.className, block.title || textFromCellHtml(`<div>${block.content}</div>`));
+          cells.push(`<div class="${escapeAttr(currentClassName)}" data-block-id="${escapeAttr(block.id)}" data-track="${track}" data-footage="${Number(block.footage) || 0}"${shoveOrder ? ` data-shove-order="${shoveOrder}"` : ""} role="button" aria-selected="false" title="${escapeAttr(displayTitle)}">${displayContent}${shoveOrder ? `<span class="inbound-shove-flag" aria-label="Shove ${shoveOrder}">${shoveOrder}</span>` : ""}${i === 7 && blocks.length > 8 ? `<span class="overflow">+${blocks.length - 8}</span>` : ""}</div>`);
         } else {
           cells.push(`<div class="cut-cell empty block-drop-end" data-drop-end-track="${track}" title="Place selected blocks at end of Track ${track}">0</div>`);
         }
@@ -7820,6 +7871,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     $("#departureTime").value = state.departure;
     const hideToggle = $("#hideTrackIdsToggle");
     if (hideToggle) hideToggle.checked = Boolean(state.hideTrackIds);
+    const hideDwellToggle = $("#hideDwellToggle");
+    if (hideDwellToggle) hideDwellToggle.checked = Boolean(state.hideDwell);
     $("#inventoryMeta").textContent = `${state.rows.length} source rows ? ${state.sourceName || "manual data"} ? saved locally`;
   }
 
@@ -8556,6 +8609,12 @@ https://github.com/nodeca/pako/blob/main/LICENSE
 
   $("#hideTrackIdsToggle").addEventListener("change", e => {
     state.hideTrackIds = e.target.checked;
+    renderAll();
+  });
+
+  $("#hideDwellToggle").addEventListener("change", e => {
+    state.hideDwell = e.target.checked;
+    saveState();
     renderAll();
   });
 

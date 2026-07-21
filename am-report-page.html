@@ -6071,8 +6071,14 @@ tags will be replaced.-->
     const grid = payload.grid;
     const alertsAvailable = payload.alerts && Array.isArray(payload.alerts.features);
     const alerts = alertsForDay(payload.alerts);
-    const alert = alerts[0] && alerts[0].properties ? alerts[0].properties : null;
-    const severe = alert && (alert.severity === "Extreme" || alert.severity === "Severe");
+    const forecastHigh = Number((daily.temperature_2m_max || [])[weatherIndex]);
+    const importantHeatFeature = forecastHigh >= 96
+      ? alerts.find(feature => /(?:heat advisory|excessive heat)/i.test(String((feature.properties || {}).event || "")))
+      : null;
+    const primaryAlertFeature = importantHeatFeature || alerts[0];
+    const alert = primaryAlertFeature && primaryAlertFeature.properties ? primaryAlertFeature.properties : null;
+    const importantHeatAlert = Boolean(importantHeatFeature);
+    const severe = importantHeatAlert || (alert && (alert.severity === "Extreme" || alert.severity === "Severe"));
     const noAlertLabel = offset === -1 ? "No archived NWS alerts" : "No active NWS alerts";
     const alertText = !alertsAvailable
       ? '<strong>NWS alert feed unavailable</strong>'
@@ -6110,7 +6116,7 @@ tags will be replaced.-->
     } else {
       const rainChanceValue = Math.max(modelRainChance, grid ? Number(grid.precipitationProbability || 0) : 0, hourly ? Number(hourly.precipitationProbability || 0) : 0);
       const thunderProbability = grid ? Number(grid.thunderProbability || 0) : 0;
-      const stormRisk = Boolean((grid && grid.hasThunder) || (hourly && hourly.thunderCode) || (hourly && hourly.cape >= 1000 && rainChanceValue >= 30));
+      const stormRisk = Boolean((grid && grid.hasThunder && thunderProbability >= 10) || (hourly && hourly.thunderCode) || (hourly && hourly.cape >= 1000 && rainChanceValue >= 30));
       if (stormRisk && thunderProbability >= 30) summary = ["Thunderstorms likely", "⛈️"];
       else if (stormRisk) summary = ["Thunderstorm potential", "⛈️"];
       const nwsRain = grid ? Number(grid.qpfInches || 0) : null;
