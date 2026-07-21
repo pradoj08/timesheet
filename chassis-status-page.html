@@ -5928,37 +5928,6 @@ body.forecast-view .forecast-bottom-controls {
       </div>
     </div>
 
-    <div class="forecast-import-card">
-      <div class="forecast-table-head">
-        <div>
-          <h3>Imported Forecast Units</h3>
-          <p>Extracted from uploaded train forecast files using the Consignee → Pool bank.</p>
-        </div>
-        <div id="forecastImportSummary" class="forecast-import-summary">No imported units yet.</div>
-
-
-      </div>
-      <div class="forecast-table-wrap">
-        <table class="forecast-table forecast-import-table">
-          <thead>
-            <tr>
-              <th>Train ID</th>
-              <th>ETA Day</th>
-              <th>ETA Hour</th>
-              <th>Unit ID</th>
-              <th>Car Type</th>
-              <th>Size</th>
-              <th>Consignee</th>
-              <th>Pool</th>
-              <th>Rule</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody id="forecastImportRows"></tbody>
-        </table>
-      </div>
-    </div>
-
   </div>
 </section>
 
@@ -9948,8 +9917,15 @@ function saveForecastState(){
     hiddenTrainDays:[...forecastHiddenTrainDays],
     savedAt:new Date().toISOString()
   };
-  localStorage.setItem("chassisForecastReport",JSON.stringify(state));
-  if(typeof showArchiveToast==="function")showArchiveToast("Chassis Forecast saved.");
+  try{
+    localStorage.setItem("chassisForecastReport",JSON.stringify(state));
+    if(typeof showArchiveToast==="function")showArchiveToast("Chassis Forecast saved.");
+    return true;
+  }catch(error){
+    console.error("Chassis Forecast save failed",error);
+    if(typeof showArchiveToast==="function")showArchiveToast("Forecast updated for this session, but browser storage could not save it.");
+    return false;
+  }
 }
 function loadForecastState(){
   loadForecastConsigneePoolBank();
@@ -11057,7 +11033,7 @@ function openForecastTracklistImportModal(){
   renderForecastTracklistPastePreview();
   modal.classList.add("open");
   modal.setAttribute("aria-hidden","false");
-  setTimeout(()=>$("forecastTracklistName")?.focus(),50);
+  setTimeout(()=>$("forecastTracklistName1")?.focus(),50);
 }
 function closeForecastTracklistImportModal(){
   const modal=$("forecastTracklistImportModal");
@@ -11325,10 +11301,12 @@ function importForecastTracklistFromModal(){
     return;
   }
   forecastImportedUnits=[...forecastImportedUnits,...units];
-  saveForecastState();
+  const saved=saveForecastState();
   renderForecastImportedUnits();
   closeForecastTracklistImportModal();
-  if(typeof showArchiveToast==="function")showArchiveToast(`${units.length} tracklist units imported.`);
+  if(typeof showArchiveToast==="function")showArchiveToast(saved
+    ? `${units.length} tracklist units imported.`
+    : `${units.length} tracklist units imported for this session; browser storage is unavailable.`);
 }
 
 async function importForecastFiles(files){

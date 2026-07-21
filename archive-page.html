@@ -1404,30 +1404,46 @@
       return (row || []).map((cell) => String(cell || "").trim()).find(Boolean) || "";
     }
 
+    function validImportDateKey(year, month, day) {
+      const date = new Date(Number(year), Number(month) - 1, Number(day));
+      if (
+        !Number.isFinite(date.getTime()) ||
+        date.getFullYear() !== Number(year) ||
+        date.getMonth() !== Number(month) - 1 ||
+        date.getDate() !== Number(day)
+      ) return "";
+      return isoDate(date);
+    }
+
+    function importYearFromSourceName(sourceName = "") {
+      const match = String(sourceName || "").match(/(?:^|[^\d])((?:19|20)\d{2})(?:[^\d]|$)/);
+      return match ? Number(match[1]) : viewDate.getFullYear();
+    }
+
     function importDateKey(value, sourceName = "") {
       if (value instanceof Date && !Number.isNaN(value.getTime())) return isoDate(value);
       const text = String(value || "").trim();
       const monthNames = { jan: 1, january: 1, feb: 2, february: 2, mar: 3, march: 3, apr: 4, april: 4, may: 5, jun: 6, june: 6, jul: 7, july: 7, aug: 8, august: 8, sep: 9, sept: 9, september: 9, oct: 10, october: 10, nov: 11, november: 11, dec: 12, december: 12 };
-      let match = text.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
-      if (match) return match[1] + "-" + String(Number(match[2])).padStart(2, "0") + "-" + String(Number(match[3])).padStart(2, "0");
+      let match = text.match(/(?:^|[^\d])((?:19|20)\d{2})-(\d{1,2})-(\d{1,2})(?:[^\d]|$)/);
+      if (match) return validImportDateKey(match[1], match[2], match[3]);
       match = text.match(/(?:[A-Za-z]{3,9},?\s*)?([A-Za-z]{3,9})\s+(\d{1,2})(?:,\s*(\d{4}))?/);
       if (match && monthNames[match[1].toLowerCase()]) {
-        const year = match[3] ? Number(match[3]) : viewDate.getFullYear();
-        return year + "-" + String(monthNames[match[1].toLowerCase()]).padStart(2, "0") + "-" + String(Number(match[2])).padStart(2, "0");
+        const year = match[3] ? Number(match[3]) : importYearFromSourceName(sourceName);
+        return validImportDateKey(year, monthNames[match[1].toLowerCase()], match[2]);
       }
-      match = text.match(/^(\d{1,2})[\/.-](\d{1,2})(?:[\/.-](\d{2,4}))?/);
+      match = text.match(/(?:^|[^\d])(\d{1,2})[\/.-](\d{1,2})(?:[\/.-](\d{2,4}))?(?:[^\d]|$)/);
       if (match) {
-        const year = match[3] ? Number(match[3].length === 2 ? "20" + match[3] : match[3]) : viewDate.getFullYear();
-        return year + "-" + String(Number(match[1])).padStart(2, "0") + "-" + String(Number(match[2])).padStart(2, "0");
+        const year = match[3] ? Number(match[3].length === 2 ? "20" + match[3] : match[3]) : importYearFromSourceName(sourceName);
+        return validImportDateKey(year, match[1], match[2]);
       }
       const name = String(sourceName || "");
       match = name.match(/(?:^|[^\d])(\d{1,2})[._ -](\d{1,2})[._ -](\d{2,4})(?:[^\d]|$)/);
       if (match) {
         const year = Number(match[3].length === 2 ? "20" + match[3] : match[3]);
-        return year + "-" + String(Number(match[1])).padStart(2, "0") + "-" + String(Number(match[2])).padStart(2, "0");
+        return validImportDateKey(year, match[1], match[2]);
       }
       match = name.match(/(?:^|[^\d])(\d{1,2})[._ -](\d{1,2})(?:[^\d]|$)/);
-      if (match) return viewDate.getFullYear() + "-" + String(Number(match[1])).padStart(2, "0") + "-" + String(Number(match[2])).padStart(2, "0");
+      if (match) return validImportDateKey(importYearFromSourceName(name), match[1], match[2]);
       return "";
     }
 
@@ -1602,6 +1618,7 @@
     function parseDayforceTimeEntryRows(rows, sourceName) {
       const lookup = rosterImportLookup();
       const recordsByDate = new Map();
+      const reportDateKey = rows.slice(0, 15).map((row) => row.map((cell) => String(cell || "").trim()).find((cell) => /date\s*range/i.test(cell)) || "").map((value) => importDateKey(value, sourceName)).find(Boolean) || importDateKey("", sourceName);
       for (let index = 0; index < rows.length - 1; index += 1) {
         const header = rows[index] || [];
         const startIndex = dayforceHeaderIndex(header, "Start Shift");
@@ -1615,7 +1632,8 @@
         if (!cleanedName) continue;
         const rosterEntry = lookup.get(normalizeName(cleanedName));
         const row = rows[index + 1] || [];
-        const dateKey = importDateKey(row[1] || firstFilledCell(row), sourceName);
+        const rowDateValue = row.map((cell) => String(cell || "").trim()).find((cell) => /(?:mon|tue|wed|thu|fri|sat|sun)[a-z]*,?\s*[a-z]{3,9}\s+\d{1,2}|\d{1,2}[\/.-]\d{1,2}/i.test(cell)) || firstFilledCell(row);
+        const dateKey = reportDateKey || importDateKey(rowDateValue, sourceName);
         if (!dateKey) continue;
 
         const start = toMilitaryTime(row[startIndex]);
