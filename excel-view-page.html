@@ -61,21 +61,6 @@
     box-shadow: 0 5px 20px rgba(10, 22, 39, .22);
   }
   .brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
-  .brand-quick-actions {
-    display: flex;
-    align-items: center;
-    gap: 7px;
-    flex-wrap: wrap;
-    margin-left: 8px;
-  }
-  .brand-quick-actions .btn {
-    min-height: 31px;
-    padding: 5px 10px;
-    border-color: rgba(255,255,255,.32);
-    background: rgba(255,255,255,.12);
-    font-size: 11px;
-  }
-  .brand-quick-actions .btn:hover { background: rgba(255,255,255,.20); }
   .brand-mark {
     width: 42px; height: 42px; border: 2px solid rgba(255,255,255,.75);
     border-radius: 9px; position: relative; flex: 0 0 auto;
@@ -89,7 +74,17 @@
   .brand-mark::after { bottom: 9px; }
   .brand h1 { margin: 0; font-size: 18px; letter-spacing: .075em; line-height: 1.1; }
   .brand p { margin: 3px 0 0; color: #c8d4e4; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; }
-  .top-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+  .top-actions { margin-left: auto; display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; align-items: center; }
+  .top-action-group { display: inline-flex; align-items: center; gap: 7px; }
+  .top-action-group .btn { min-height: 34px; }
+  .top-action-group-yellow .btn { color: #fff4be; border-color: rgba(250,204,21,.58); background: rgba(202,138,4,.25); }
+  .top-action-group-yellow .btn:hover { background: rgba(202,138,4,.42); }
+  .top-action-group-green .btn { color: #d1fae5; border-color: rgba(52,211,153,.56); background: rgba(5,150,105,.24); }
+  .top-action-group-green .btn:hover { background: rgba(5,150,105,.42); }
+  .top-action-group-orange .btn { color: #ffedd5; border-color: rgba(251,146,60,.60); background: rgba(234,88,12,.25); }
+  .top-action-group-orange .btn:hover { background: rgba(234,88,12,.43); }
+  .top-action-group-purple .btn { color: #f3e8ff; border-color: rgba(192,132,252,.60); background: rgba(126,34,206,.27); }
+  .top-action-group-purple .btn:hover { background: rgba(126,34,206,.45); }
   .btn {
     border: 1px solid transparent; border-radius: 7px; min-height: 34px;
     padding: 7px 11px; font-weight: 750; font-size: 12px;
@@ -2769,7 +2764,7 @@
     .topbar { position: sticky; align-items: flex-start; }
     .top-actions { display: none; }
     .brand { flex-wrap: wrap; }
-    .brand-quick-actions { width: 100%; margin-left: 54px; }
+    .top-action-group { flex-wrap: wrap; }
     .main { padding: 10px; }
     .side-column { grid-template-columns: 1fr; }
     .paste-layout, .status-strip { grid-template-columns: 1fr; }
@@ -3491,20 +3486,26 @@
         <h1>SETTEGAST FORECASTOR</h1>
         <p>Created by Jacob Prado</p>
       </div>
-      <div class="brand-quick-actions" aria-label="Inbound tools">
-        <button class="btn btn-light" id="toggleInboundPlanner" type="button" aria-pressed="false">Inbounds</button>
-        <button class="btn btn-light" id="inboundArchiveBtn" type="button">Inbound Archive</button>
-      </div>
     </div>
     <div class="top-actions">
       <input id="inventoryFileTop" type="file" accept=".xlsx,.csv,.txt,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" hidden>
-      <button class="btn btn-light" id="toggleTodayRoster" type="button">Today's Roster</button>
-      <button class="btn btn-light" id="toggleLphInputMenu" type="button">Input Menu</button>
-      <button class="btn btn-light" id="toggleCompactChecklist" type="button">Checklist</button>
-      <button class="btn btn-light" id="toggleUrgentNotes" type="button" aria-pressed="false">Morning Meeting</button>
-      <button class="btn btn-light" id="resolveSsBtn" type="button" onclick="document.getElementById('ssResolverModal').hidden=false;document.getElementById('ssResolverModal').classList.add('open');document.body.classList.add('modal-open')">Resolve SS</button>
-      <button class="btn btn-light" id="toggleFootageCalc" type="button">Calculator</button>
-      <button class="btn btn-light" id="toggleCurrentWork" type="button">Current Work</button>
+      <div class="top-action-group top-action-group-yellow" aria-label="Inbound tools">
+        <button class="btn btn-light" id="toggleInboundPlanner" type="button" aria-pressed="false">Inbounds</button>
+        <button class="btn btn-light" id="inboundArchiveBtn" type="button">Inbound Archive</button>
+      </div>
+      <div class="top-action-group top-action-group-green" aria-label="Daily coordination tools">
+        <button class="btn btn-light" id="toggleTodayRoster" type="button">Today's Roster</button>
+        <button class="btn btn-light" id="toggleCompactChecklist" type="button">Checklist</button>
+        <button class="btn btn-light" id="toggleUrgentNotes" type="button" aria-pressed="false">Morning Meeting</button>
+      </div>
+      <div class="top-action-group top-action-group-orange" aria-label="Work calculation tools">
+        <button class="btn btn-light" id="toggleFootageCalc" type="button">Calculator</button>
+        <button class="btn btn-light" id="toggleCurrentWork" type="button">Current Work</button>
+      </div>
+      <div class="top-action-group top-action-group-purple" aria-label="Input and resolution tools">
+        <button class="btn btn-light" id="resolveSsBtn" type="button" onclick="document.getElementById('ssResolverModal').hidden=false;document.getElementById('ssResolverModal').classList.add('open');document.body.classList.add('modal-open')">Resolve SS</button>
+        <button class="btn btn-light" id="toggleLphInputMenu" type="button">Input Menu</button>
+      </div>
     </div>
   </header>
 

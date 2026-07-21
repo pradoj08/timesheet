@@ -12175,10 +12175,12 @@ function moveForecastTrainToDay(train,oldDay,newDay){
   }
   if(forecastHiddenTrainDays && forecastHiddenTrainDays instanceof Set){
     const oldKey=getForecastTrainDayKey(train,oldDay);
-    if(forecastHiddenTrainDays.has(oldKey)){
-      forecastHiddenTrainDays.delete(oldKey);
-      forecastHiddenTrainDays.add(getForecastTrainDayKey(train,newDay));
-    }
+    const newKey=getForecastTrainDayKey(train,newDay);
+    // Rescheduling is an explicit request to keep this inbound active. Clear
+    // both keys so a stale hidden entry for the destination date cannot make
+    // the moved inbound disappear immediately after the date is confirmed.
+    forecastHiddenTrainDays.delete(oldKey);
+    forecastHiddenTrainDays.delete(newKey);
   }
   saveForecastState();
   renderForecastImportedUnits();
