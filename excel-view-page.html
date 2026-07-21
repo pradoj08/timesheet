@@ -25,7 +25,11 @@
     --red-soft: #ffd9dd;
     --gray-soft: #edf1f5;
     --shadow: 0 12px 35px rgba(17, 34, 61, .10);
+    --grid-block-font: "Roboto Condensed", "Arial Narrow", Arial, sans-serif;
+    --grid-block-size: 13px;
     --grid-block-weight: 700;
+    --grid-header-font: "Roboto Condensed", "Arial Narrow", Arial, sans-serif;
+    --grid-header-size: 11px;
     --grid-header-weight: 700;
   }
   * { box-sizing: border-box; }
@@ -3690,7 +3694,7 @@
               </div>
             </div>
             <label class="track-id-toggle" title="Hide bracketed track IDs like [805] inside block labels">
-              <input id="hideTrackIdsToggle" type="checkbox">
+              <input id="hideTrackIdsToggle" type="checkbox" checked>
               Hide track IDs
             </label>
             <input class="field" id="departureTime" type="datetime-local" title="Projected departure time" style="width:178px;max-width:178px">
@@ -3871,7 +3875,7 @@
             <select class="grid-typography-select" id="blockFontSelect" data-grid-typography="blockFont" aria-label="Font for all blocks"></select>
             <label class="grid-typography-size-control" for="blockFontSizeRange">
               <input class="grid-typography-range" id="blockFontSizeRange" type="range" min="8" max="24" step="1" data-grid-typography="blockSize" aria-label="Block text size">
-              <output class="grid-typography-size-value" id="blockFontSizeValue" for="blockFontSizeRange">12 px</output>
+              <output class="grid-typography-size-value" id="blockFontSizeValue" for="blockFontSizeRange">13 px</output>
             </label>
             <label class="grid-typography-bold"><input id="blockFontBold" type="checkbox" data-grid-typography="blockBold"><span>Bold</span></label>
           </div>
@@ -4122,12 +4126,13 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   const GRID_FONT_SIZE_MAX = 24;
   const DEFAULT_GRID_TYPOGRAPHY = Object.freeze({
     blockFont:"roboto-condensed",
-    blockSize:16,
+    blockSize:13,
     blockBold:true,
     headerFont:"roboto-condensed",
-    headerSize:13,
+    headerSize:11,
     headerBold:true
   });
+  const GRID_DISPLAY_BASELINE_VERSION = 1;
   const COLOR_KEY_BASELINE_VERSION = 1;
 
   function normalizeGridTypography(value) {
@@ -4146,6 +4151,16 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       headerSize:numberOrDefault(source.headerSize, DEFAULT_GRID_TYPOGRAPHY.headerSize),
       headerBold:booleanOrDefault(source.headerBold, DEFAULT_GRID_TYPOGRAPHY.headerBold)
     };
+  }
+
+  function applyGridDisplayBaseline(target, savedSource) {
+    const next = target && typeof target === "object" ? target : defaultState();
+    const savedVersion = Number(savedSource && savedSource.gridDisplayBaselineVersion) || 0;
+    if (savedVersion >= GRID_DISPLAY_BASELINE_VERSION) return next;
+    next.hideTrackIds = true;
+    next.gridTypography = {...DEFAULT_GRID_TYPOGRAPHY};
+    next.gridDisplayBaselineVersion = GRID_DISPLAY_BASELINE_VERSION;
+    return next;
   }
 
   function applyColorKeyBaseline(target, savedSource) {
@@ -4264,7 +4279,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       ihosaTarget: 3850,
       mhoasTarget: 4700,
       trackTarget: 2500,
-      hideTrackIds: false,
+      hideTrackIds: true,
       inboundPlannerVisible: false,
       inboundPlannerPopupMigrated: true,
       inboundPlans: defaultInboundPlans(),
@@ -4272,6 +4287,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       lastDeletedInboundArchiveId: "",
       colorRules: DEFAULT_COLOR_RULES.map(rule => ({...rule})),
       gridTypography: normalizeGridTypography(),
+      gridDisplayBaselineVersion: GRID_DISPLAY_BASELINE_VERSION,
       colorKeyBaselineVersion: COLOR_KEY_BASELINE_VERSION,
       dwellOverrides: {},
       secondaryGridTwo: null,
@@ -4366,7 +4382,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         } else {
           merged.colorRules = savedColorRules;
         }
-        return applyColorKeyBaseline(merged, saved);
+        return applyGridDisplayBaseline(applyColorKeyBaseline(merged, saved), saved);
       }
     } catch (error) {}
     const fallback = applyPersistedRampTables(defaultState(), persistedRampTables);
@@ -9184,7 +9200,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       nextState.inboundArchive = normalizeInboundArchive(nextState.inboundArchive);
       nextState.gridTypography = normalizeGridTypography(nextState.gridTypography);
       nextState.colorRules = normalizeColorRules(nextState.colorRules);
-      nextState = applyColorKeyBaseline(nextState, restored);
+      nextState = applyGridDisplayBaseline(applyColorKeyBaseline(nextState, restored), restored);
       state = nextState;
       lastCommittedExcelViewState = JSON.stringify(state);
       selectedBlockIds.clear();
