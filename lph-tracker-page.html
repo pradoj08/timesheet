@@ -10776,5 +10776,34 @@ document.addEventListener('click', function(e){
 </div>
 <!-- MILESTONE TOASTS -->
 <div class="milestone-toast-stack" id="milestone-toast-stack"></div>
-<div class="rampiq-sync-callout" id="rampiq-sync-callout"></div></body>
+<div class="rampiq-sync-callout" id="rampiq-sync-callout"></div>
+<style id="lph-control-stack-theme">
+  .input-menu-dialog{width:min(560px,calc(100vw - 20px));height:min(860px,calc(100vh - 20px));background:#031619;border:1px solid rgba(45,212,191,.42);border-radius:15px;box-shadow:0 28px 90px rgba(0,0,0,.72),0 0 42px rgba(20,184,166,.12)}
+  .input-menu-head{min-height:64px;padding:11px 16px 11px 19px;background:linear-gradient(90deg,rgba(13,148,136,.30),rgba(3,22,25,.98) 46%,rgba(6,38,41,.98));border-bottom:1px solid rgba(45,212,191,.34)}
+  .input-menu-kicker{color:#5eead4;letter-spacing:.18em}.input-menu-title{font-size:20px;color:#ecfeff;letter-spacing:.075em}.input-menu-count{color:#99f6e4;font-size:10px;letter-spacing:.09em}
+  .input-menu-close{border-color:rgba(45,212,191,.42);background:#082f33;color:#ccfbf1}.input-menu-close:hover{border-color:#fbbf24;color:#fef3c7;background:#3a2a08}
+  .input-menu-viewport{overflow:auto;touch-action:auto;background-color:#021114;background-image:linear-gradient(rgba(45,212,191,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(45,212,191,.035) 1px,transparent 1px);background-size:28px 28px;scrollbar-color:#176b69 #031619}
+  .input-menu-track{height:auto!important;min-height:100%;display:grid!important;grid-template-columns:1fr!important;grid-template-rows:none!important;align-items:start;gap:10px;padding:10px;transform:none!important;transition:none!important;will-change:auto}
+  .input-menu-slide{position:relative;display:grid;grid-template-rows:auto minmax(0,1fr);min-width:0;width:auto!important;height:auto!important;min-height:220px;padding:0!important;overflow:visible;border:1px solid rgba(45,212,191,.34);border-radius:10px;background:linear-gradient(155deg,rgba(13,148,136,.15),rgba(2,18,21,.96) 38%);box-shadow:inset 0 1px 0 rgba(153,246,228,.08),0 10px 24px rgba(0,0,0,.25)}
+  .input-menu-slide::before{content:attr(data-stack-title);display:block;padding:11px 12px;border-bottom:1px solid rgba(45,212,191,.28);background:linear-gradient(90deg,rgba(15,118,110,.50),rgba(4,35,38,.97));color:#d5fffa;font:700 13px/1.15 var(--cond);letter-spacing:.09em;text-transform:uppercase;text-shadow:0 0 12px rgba(45,212,191,.28)}
+  .input-menu-slide>.sb-card{min-height:0!important;margin:0!important;border:0!important;border-radius:0!important;background:rgba(1,12,15,.62)!important;box-shadow:none!important}
+  .input-menu-slide .section-label,.input-menu-slide .sb-cap{color:#5eead4;border-color:rgba(45,212,191,.20);background:rgba(5,46,50,.62)}
+  .input-menu-slide .ctrl-group,.input-menu-slide .commit-card,.input-menu-slide .sw-info-bar,.input-menu-slide .coh-stat{border-color:rgba(45,212,191,.22)}.input-menu-slide input[type=range]{accent-color:#2dd4bf}
+  .input-menu-foot{display:none!important}
+  body.input-menu-embed .input-menu-dialog{width:100vw;height:100vh;max-width:none;max-height:none;border:0;border-radius:0}
+  @media(max-width:620px){.input-menu-overlay{padding:0}.input-menu-dialog{width:100vw;height:100vh;border-radius:0}.input-menu-track{padding:8px}.input-menu-slide{min-height:200px}.input-menu-head{min-height:58px}.input-menu-title{font-size:17px}}
+</style>
+<script id="lph-control-stack-behavior">
+(function(){
+  if(window.__lphControlStackInstalled)return;window.__lphControlStackInstalled=true;
+  var track=document.getElementById('input-menu-track');if(!track)return;
+  var slides=Array.prototype.slice.call(track.querySelectorAll('.input-menu-slide'));
+  slides.forEach(function(slide){var card=slide.querySelector('.sb-card');slide.dataset.stackTitle=card&&card.dataset.inputMenuTitle||'Control Module';slide.removeAttribute('inert');slide.setAttribute('aria-hidden','false')});
+  lphInputSlides=slides;lphInputSlideIndex=0;
+  lphRenderInputMenu=function(){track.style.transform='none';slides.forEach(function(slide){slide.removeAttribute('inert');slide.setAttribute('aria-hidden','false')});var titleNode=document.getElementById('input-menu-current-title');var countNode=document.getElementById('input-menu-count');if(titleNode)titleNode.textContent='Operations Control Stack';if(countNode)countNode.textContent='1 × 8'};
+  lphGoInputSlide=function(index){var slide=slides[Math.max(0,Math.min(slides.length-1,Number(index)||0))];if(slide&&slide.scrollIntoView)slide.scrollIntoView({block:'start'});lphRenderInputMenu()};
+  var kicker=document.querySelector('.input-menu-kicker');if(kicker)kicker.textContent='Settegast Input Menu';lphRenderInputMenu();
+})();
+</script>
+</body>
 </html>
