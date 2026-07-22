@@ -4999,6 +4999,13 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   }
 
   function loadPersistedColorRules() {
+    const bootstrapRules = Array.isArray(window.__CONGLOBAL_BOOTSTRAP_COLOR_RULES__)
+      ? window.__CONGLOBAL_BOOTSTRAP_COLOR_RULES__.map(rule => ({
+          color: COLOR_CLASSES.includes(rule && rule.color) ? rule.color : "gray",
+          terms: String(rule && rule.terms || "").trim()
+        })).filter(rule => rule.terms)
+      : [];
+    if (bootstrapRules.length) return bootstrapRules;
     let selected = null;
     let selectedAt = -1;
     [COLOR_RULES_STORAGE_KEY, COLOR_RULES_LEGACY_STORAGE_KEY].forEach((key, keyIndex) => {
@@ -5031,6 +5038,36 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       }
     } catch (error) {}
   }
+
+  window.conglobalFlushColorRules = function() {
+    persistColorRules();
+    return normalizeColorRules(state.colorRules);
+  };
+
+  window.addEventListener("message", (event) => {
+    if (!event.data) return;
+    if (event.data.type === "conglobal-excel-color-rules-restore") {
+      const rules = normalizeColorRules(event.data.rules);
+      if (!rules.length) return;
+      state.colorRules = rules;
+      persistColorRules();
+      renderAll();
+      try {
+        window.parent.postMessage({ type:"conglobal-excel-color-rules-restored", rules }, "*");
+      } catch (error) {}
+      return;
+    }
+    if (event.data.type !== "conglobal-excel-color-rules-flush-request") return;
+    const rules = normalizeColorRules(state.colorRules);
+    persistColorRules();
+    try {
+      window.parent.postMessage({
+        type: "conglobal-excel-color-rules-flush-response",
+        requestId: String(event.data.requestId || ""),
+        rules
+      }, "*");
+    } catch (error) {}
+  });
 
   function escapeRegex(value) {
     return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
