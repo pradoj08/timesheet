@@ -5723,10 +5723,11 @@ tags will be replaced.-->
   reportDate.setDate(reportDate.getDate() + offset);
   const reportDateLabel = reportDate.toLocaleDateString(undefined, { month:"short", day:"numeric", year:"numeric" });
 
-  const LAT = 29.824989;
-  const LON = -95.290711;
-  const CACHE_KEY = "conglobal-am-weather-v3-" + offset;
-  const MAP_URL = "https://app.tomorrow.io/map?lat=29.8157&lon=-95.2771&zoom=13.95";
+  const LAT = 29.5328;
+  const LON = -95.1164;
+  const CACHE_KEY = "conglobal-am-weather-v4-webster-" + offset;
+  const NWS_FORECAST_URL = "https://forecast.weather.gov/MapClick.php?CityName=Webster&state=TX&site=HGX&lat=29.5328&lon=-95.1164";
+  const TOMORROW_MAP_URL = "https://app.tomorrow.io/map?lat=29.5328&lon=-95.1164&zoom=13.95";
   const FORECAST_URL = "https://api.open-meteo.com/v1/forecast?latitude=" + LAT + "&longitude=" + LON + "&models=ncep_hrrr_conus&daily=weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_max,precipitation_probability_max,precipitation_sum,wind_speed_10m_max,wind_gusts_10m_max,sunrise,sunset&hourly=weather_code,precipitation_probability,precipitation,rain,showers,wind_gusts_10m,cape&temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch&timezone=America%2FChicago&past_days=1&forecast_days=2";
   const NWS_POINT_URL = "https://api.weather.gov/points/" + LAT + "," + LON;
   const ACTIVE_ALERTS_URL = "https://api.weather.gov/alerts/active?point=" + LAT + "," + LON;
@@ -5746,7 +5747,7 @@ tags will be replaced.-->
   const card = document.createElement("section");
   card.className = "am-weather-readout";
   card.setAttribute("aria-live", "polite");
-  card.innerHTML = '<div class="am-weather-head"><span class="am-weather-icon">🌤️</span><div class="am-weather-title"><strong>Loading weather...</strong><span>Settegast · Houston, Texas</span></div><button type="button" class="am-weather-refresh" title="Refresh weather" aria-label="Refresh weather">↻</button></div><div class="am-weather-error">Connecting to live weather...</div>';
+  card.innerHTML = '<div class="am-weather-head"><span class="am-weather-icon">🌤️</span><div class="am-weather-title"><strong>Loading weather...</strong><span>Webster · Texas</span></div><button type="button" class="am-weather-refresh" title="Refresh weather" aria-label="Refresh weather">↻</button></div><div class="am-weather-error">Connecting to live weather...</div>';
   report.parentNode.insertBefore(card, report);
 
   function escapeHtml(value) {
@@ -6142,11 +6143,11 @@ tags will be replaced.-->
         : noAlertLabel;
     setWeatherText(label + ": " + summary[0] + " | High " + high + "F / Low " + low + "F | " + String(guidanceText).replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim() + " | " + alertPlainText);
     card.classList.toggle("is-alert", Boolean(alert));
-    card.innerHTML = '<div class="am-weather-head"><span class="am-weather-icon">' + summary[1] + '</span><div class="am-weather-title"><strong>' + label + ' · ' + summary[0] + '</strong><span>Settegast · Houston, Texas</span></div><button type="button" class="am-weather-refresh" title="Refresh weather" aria-label="Refresh weather">↻</button></div>' +
+    card.innerHTML = '<div class="am-weather-head"><span class="am-weather-icon">' + summary[1] + '</span><div class="am-weather-title"><strong>' + label + ' · ' + summary[0] + '</strong><span>Webster · Texas</span></div><button type="button" class="am-weather-refresh" title="Refresh weather" aria-label="Refresh weather">↻</button></div>' +
       '<div class="am-weather-grid">' + metricsHtml + '</div>' +
       '<div class="am-weather-guidance ' + (guidanceCaution ? 'caution' : '') + '"><span>' + (guidanceCaution ? '⚠️' : 'ℹ️') + '</span><span>' + guidanceText + '</span></div>' +
       '<div class="am-weather-alert ' + (severe ? 'danger' : alert ? 'warning' : '') + '"><span>' + (alert ? '⚠️' : alertsAvailable ? '✓' : '•') + '</span><span>' + alertText + '</span></div>' +
-      '<div class="am-weather-foot"><span>' + sourceLabel + ' · ' + (cached ? 'Cached ' : 'Updated ') + new Date(payload.savedAt || Date.now()).toLocaleTimeString([], { hour:"numeric", minute:"2-digit" }) + '</span><a href="' + MAP_URL + '" target="_blank" rel="noopener">Live radar ↗</a></div>';
+      '<div class="am-weather-foot"><span>' + sourceLabel + ' · ' + (cached ? 'Cached ' : 'Updated ') + new Date(payload.savedAt || Date.now()).toLocaleTimeString([], { hour:"numeric", minute:"2-digit" }) + '</span><span><a href="' + NWS_FORECAST_URL + '" target="_blank" rel="noopener">NWS Webster ↗</a> · <a href="' + TOMORROW_MAP_URL + '" target="_blank" rel="noopener">Tomorrow.io ↗</a></span></div>';
     promoteWeatherMetrics();
     blendWeatherHeading();
     card.querySelector(".am-weather-refresh").addEventListener("click", () => load(true));

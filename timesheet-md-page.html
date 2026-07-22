@@ -99,7 +99,9 @@
     }
 
     .panel {
-      width: min(1060px, 100%);
+      width: fit-content;
+      min-width: min(1060px, 100%);
+      max-width: 100%;
       min-height: 0;
       display: flex;
       flex-direction: column;
@@ -1032,6 +1034,14 @@
     body.inline-tool-open .inline-tool-panel {
       margin: 0;
     }
+
+    body.inline-tool-open .canvas,
+    body.inline-tool-open .panel,
+    body.inline-tool-open .inline-tool-frame {
+      width: 100%;
+      max-width: none;
+    }
+    body.inline-tool-open .canvas { padding: 12px clamp(8px, 1vw, 16px) 16px; }
 
     @media (max-width: 860px) {
       .canvas {

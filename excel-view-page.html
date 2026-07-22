@@ -4185,7 +4185,10 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   function applyColorKeyBaseline(target, savedSource) {
     const next = target && typeof target === "object" ? target : defaultState();
     const savedVersion = Number(savedSource && savedSource.colorKeyBaselineVersion) || 0;
-    if (savedVersion >= COLOR_KEY_BASELINE_VERSION) return next;
+    if (savedVersion >= COLOR_KEY_BASELINE_VERSION || loadPersistedColorRules()) {
+      next.colorKeyBaselineVersion = COLOR_KEY_BASELINE_VERSION;
+      return next;
+    }
     next.gridTypography = {...DEFAULT_GRID_TYPOGRAPHY};
     next.colorRules = DEFAULT_COLOR_RULES.map(rule => ({...rule}));
     next.colorKeyBaselineVersion = COLOR_KEY_BASELINE_VERSION;
@@ -4985,22 +4988,33 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     try {
       const parsed = JSON.parse(raw);
       const rules = normalizeColorRules(Array.isArray(parsed) ? parsed : parsed.rules);
-      return rules.length ? rules : null;
+      if (!rules.length) return null;
+      return {
+        rules,
+        updatedAt: Array.isArray(parsed) ? 0 : (Date.parse(parsed.updatedAt || "") || 0)
+      };
     } catch (error) {
       return null;
     }
   }
 
   function loadPersistedColorRules() {
-    for (const key of [COLOR_RULES_STORAGE_KEY, COLOR_RULES_LEGACY_STORAGE_KEY]) {
-      for (const store of storageCandidates()) {
+    let selected = null;
+    let selectedAt = -1;
+    [COLOR_RULES_STORAGE_KEY, COLOR_RULES_LEGACY_STORAGE_KEY].forEach((key, keyIndex) => {
+      storageCandidates().forEach((store) => {
         try {
-          const rules = parsePersistedColorRules(store.getItem(key));
-          if (rules) return rules;
+          const candidate = parsePersistedColorRules(store.getItem(key));
+          if (!candidate) return;
+          const candidateAt = candidate.updatedAt || (keyIndex === 0 ? 1 : 0);
+          if (!selected || candidateAt >= selectedAt) {
+            selected = candidate.rules;
+            selectedAt = candidateAt;
+          }
         } catch (error) {}
-      }
-    }
-    return null;
+      });
+    });
+    return selected;
   }
 
   function persistColorRules() {
