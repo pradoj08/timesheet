@@ -2812,6 +2812,19 @@
         doc.addEventListener("input", () => setTimeout(resizeInlineToolFrame, 0));
         doc.addEventListener("click", () => setTimeout(resizeInlineToolFrame, 0));
         doc.addEventListener("change", () => setTimeout(resizeInlineToolFrame, 0));
+        if (inlineToolFrame._contentResizeObserver) inlineToolFrame._contentResizeObserver.disconnect();
+        if (typeof ResizeObserver === "function" && doc.body) {
+          let resizeQueued = false;
+          inlineToolFrame._contentResizeObserver = new ResizeObserver(() => {
+            if (resizeQueued) return;
+            resizeQueued = true;
+            requestAnimationFrame(() => {
+              resizeQueued = false;
+              resizeInlineToolFrame();
+            });
+          });
+          inlineToolFrame._contentResizeObserver.observe(doc.body);
+        }
       } catch (error) {}
     }
 

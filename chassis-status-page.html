@@ -92,6 +92,19 @@ button:hover{transform:translateY(-1px);border-color:#64748b}button.active{color
   box-shadow: 0 0 0 3px rgba(251,113,133,.18), 0 10px 24px rgba(251,113,133,.18) !important;
 }
 
+.clear-confirm-pending {
+  background:#f59e0b!important;
+  border-color:#fde68a!important;
+  color:#1f1300!important;
+  box-shadow:0 0 0 3px rgba(245,158,11,.18)!important;
+}
+.clear-confirm-success {
+  background:#059669!important;
+  border-color:#6ee7b7!important;
+  color:#ecfdf5!important;
+  box-shadow:0 0 0 3px rgba(16,185,129,.18)!important;
+}
+
 
 .btn-archive{background:rgba(168,85,247,.20)!important;border-color:rgba(216,180,254,.42)!important;color:#f5d0fe!important}
 .btn-restore{background:rgba(245,158,11,.18)!important;border-color:rgba(251,191,36,.42)!important;color:#fef3c7!important}
@@ -11816,6 +11829,40 @@ function clearForecastImportedUnits(){
   if(typeof showArchiveToast==="function")showArchiveToast("Inbound imports cleared.");
 }
 
+function setupForecastClearConfirmation(button, action){
+  if(!button || typeof action!=="function")return;
+  const originalLabel=button.textContent.trim();
+  let state="idle";
+  let timer=null;
+  const reset=()=>{
+    clearTimeout(timer);
+    timer=null;
+    state="idle";
+    button.textContent=originalLabel;
+    button.classList.remove("clear-confirm-pending","clear-confirm-success");
+    button.disabled=false;
+  };
+  button.onclick=()=>{
+    if(state==="success")return;
+    if(state!=="confirm"){
+      state="confirm";
+      button.textContent="Confirm";
+      button.classList.add("clear-confirm-pending");
+      clearTimeout(timer);
+      timer=setTimeout(reset,4000);
+      return;
+    }
+    clearTimeout(timer);
+    action();
+    state="success";
+    button.textContent="Success ✓";
+    button.classList.remove("clear-confirm-pending");
+    button.classList.add("clear-confirm-success");
+    button.disabled=true;
+    timer=setTimeout(reset,1400);
+  };
+}
+
 
 
 function forecastDateFromEtaDay(day){
@@ -14956,7 +15003,7 @@ async function init(){
   const forecastArchiveSortSelect=$("forecastArchiveSortSelect"); if(forecastArchiveSortSelect)forecastArchiveSortSelect.onchange=()=>{forecastArchiveSortMode=forecastArchiveSortSelect.value||"newest";renderForecastArchiveList();};
   const forecastArchivePopupCloseBtn=$("forecastArchivePopupCloseBtn"); if(forecastArchivePopupCloseBtn)forecastArchivePopupCloseBtn.onclick=closeForecastArchivePopup;
   const forecastArchivePopup=$("forecastArchivePopup"); if(forecastArchivePopup)forecastArchivePopup.addEventListener("click",e=>{if(e.target===forecastArchivePopup)closeForecastArchivePopup();});
-  const forecastClearBtn=$("forecastClearBtn"); if(forecastClearBtn)forecastClearBtn.onclick=clearForecastImportedUnits;
+  const forecastClearBtn=$("forecastClearBtn"); setupForecastClearConfirmation(forecastClearBtn,clearForecastImportedUnits);
   const forecastStartingOnHand=$("forecastStartingOnHand"); if(forecastStartingOnHand)forecastStartingOnHand.oninput=renderForecast;
   const forecastNoTrainName=$("forecastNoTrainName"); if(forecastNoTrainName)forecastNoTrainName.oninput=()=>{renderForecastImportedUnits();saveForecastState()};
   const forecastImportBtn=$("forecastImportBtn"); if(forecastImportBtn)forecastImportBtn.onclick=()=>$("forecastFileInput")?.click();
@@ -14986,7 +15033,7 @@ async function init(){
   const forecastInventoryFileInput=$("forecastInventoryFileInput"); if(forecastInventoryFileInput)forecastInventoryFileInput.onchange=e=>{if(e.target.files?.length)importChassisInventoryFiles(e.target.files);e.target.value=""};
   const forecastMismatchImportBtn=$("forecastMismatchImportBtn"); if(forecastMismatchImportBtn)forecastMismatchImportBtn.onclick=openForecastMismatchManager;
   const forecastMismatchFileInput=$("forecastMismatchFileInput"); if(forecastMismatchFileInput)forecastMismatchFileInput.onchange=e=>{if(e.target.files?.length)importForecastMismatchFiles(e.target.files);e.target.value=""};
-  const forecastMismatchClearBtn=$("forecastMismatchClearBtn"); if(forecastMismatchClearBtn)forecastMismatchClearBtn.onclick=clearForecastMismatchUnits;
+  const forecastMismatchClearBtn=$("forecastMismatchClearBtn"); setupForecastClearConfirmation(forecastMismatchClearBtn,clearForecastMismatchUnits);
   const forecastMismatchPreviewCloseBtn=$("forecastMismatchPreviewCloseBtn"); if(forecastMismatchPreviewCloseBtn)forecastMismatchPreviewCloseBtn.onclick=closeForecastMismatchPreview;
   const forecastMismatchPreviewCancelBtn=$("forecastMismatchPreviewCancelBtn"); if(forecastMismatchPreviewCancelBtn)forecastMismatchPreviewCancelBtn.onclick=closeForecastMismatchPreview;
   const forecastMismatchPreviewConfirmBtn=$("forecastMismatchPreviewConfirmBtn"); if(forecastMismatchPreviewConfirmBtn)forecastMismatchPreviewConfirmBtn.onclick=confirmForecastMismatchImport;
@@ -14998,10 +15045,10 @@ async function init(){
   const forecastAuthorizedPreviewCancelBtn=$("forecastAuthorizedPreviewCancelBtn"); if(forecastAuthorizedPreviewCancelBtn)forecastAuthorizedPreviewCancelBtn.onclick=closeForecastAuthorizedPreview;
   const forecastAuthorizedPreviewConfirmBtn=$("forecastAuthorizedPreviewConfirmBtn"); if(forecastAuthorizedPreviewConfirmBtn)forecastAuthorizedPreviewConfirmBtn.onclick=confirmForecastAuthorizedImport;
   const forecastAuthorizedPreviewModal=$("forecastAuthorizedPreviewModal"); if(forecastAuthorizedPreviewModal)forecastAuthorizedPreviewModal.addEventListener("click",e=>{if(e.target===forecastAuthorizedPreviewModal)closeForecastAuthorizedPreview()});
-  const forecastInventoryClearBtn=$("forecastInventoryClearBtn"); if(forecastInventoryClearBtn)forecastInventoryClearBtn.onclick=clearChassisInventoryRows;
+  const forecastInventoryClearBtn=$("forecastInventoryClearBtn"); setupForecastClearConfirmation(forecastInventoryClearBtn,clearChassisInventoryRows);
   setupForecastInventorySection();
   arrangeForecastLowerSections();
-  const forecastClearImportBtn=$("forecastClearImportBtn"); if(forecastClearImportBtn)forecastClearImportBtn.onclick=clearChassisInventoryRows;
+  const forecastClearImportBtn=$("forecastClearImportBtn"); setupForecastClearConfirmation(forecastClearImportBtn,clearChassisInventoryRows);
   const forecastResolvePoolsBtn=$("forecastResolvePoolsBtn"); if(forecastResolvePoolsBtn)forecastResolvePoolsBtn.onclick=toggleForecastPoolResolver;
   const forecastPoolResolverModeBtn=$("forecastPoolResolverModeBtn"); if(forecastPoolResolverModeBtn)forecastPoolResolverModeBtn.onclick=()=>{forecastPoolResolverShowAll=!forecastPoolResolverShowAll;forecastPoolResolverOpen=true;renderForecastPoolResolver();};
   const forecastResolverSelectAllBtn=$("forecastResolverSelectAllBtn"); if(forecastResolverSelectAllBtn)forecastResolverSelectAllBtn.onclick=selectAllVisibleResolverUnits;
@@ -15115,7 +15162,7 @@ async function init(){
     }
   };
   const forecastRequestHistoryToggleBtn=$("forecastRequestHistoryToggleBtn"); if(forecastRequestHistoryToggleBtn)forecastRequestHistoryToggleBtn.onclick=toggleForecastRequestHistoryPreview;
-  const forecastClearChassisRequestsBtn=$("forecastClearChassisRequestsBtn"); if(forecastClearChassisRequestsBtn)forecastClearChassisRequestsBtn.onclick=clearForecastChassisRequests;
+  const forecastClearChassisRequestsBtn=$("forecastClearChassisRequestsBtn"); setupForecastClearConfirmation(forecastClearChassisRequestsBtn,clearForecastChassisRequests);
   const forecastInventoryPreviewClose=$("forecastInventoryPreviewClose"); if(forecastInventoryPreviewClose)forecastInventoryPreviewClose.onclick=closeForecastInventoryPreview;
   const forecastInventoryPreviewModal=$("forecastInventoryPreviewModal"); if(forecastInventoryPreviewModal)forecastInventoryPreviewModal.addEventListener("click",e=>{if(e.target===forecastInventoryPreviewModal)closeForecastInventoryPreview()});
   const archiveConfirmClose=$("archiveConfirmClose"); if(archiveConfirmClose)archiveConfirmClose.onclick=closeArchiveConfirmModal;

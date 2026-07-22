@@ -873,8 +873,12 @@
 
     .off-schedule-dialog { width: min(520px, 100%); }
     .off-schedule-summary { padding: 10px 12px 0; color: #475569; font-size: 12px; font-weight: 800; }
-    .off-schedule-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; padding: 12px; }
-    .off-schedule-name { min-width: 0; padding: 7px 9px; overflow: hidden; border: 1px solid #cbd5e1; border-radius: 5px; background: #f8fafc; color: #0f172a; font-size: 12px; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
+    .off-schedule-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding: 12px; }
+    .off-schedule-name { min-width: 0; display: grid; gap: 7px; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; background: #f8fafc; color: #0f172a; }
+    .off-schedule-name strong { min-width: 0; overflow: hidden; font-size: 12px; font-weight: 900; text-overflow: ellipsis; white-space: nowrap; }
+    .off-schedule-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; }
+    .off-schedule-add { min-width: 0; padding: 6px 5px; border: 1px solid #94a3b8; border-radius: 5px; background: #fff; color: #334155; font-size: 9px; font-weight: 900; line-height: 1.15; cursor: pointer; }
+    .off-schedule-add:hover, .off-schedule-add:focus-visible { border-color: #16a34a; background: #dcfce7; color: #166534; outline: 0; }
     .off-schedule-empty { grid-column: 1 / -1; padding: 14px; color: #64748b; font-size: 12px; font-weight: 800; text-align: center; }
 
     .employee-bank-form {
@@ -1134,12 +1138,16 @@
     #employeeStatusBackdrop .employee-bank-dialog {
       position: fixed;
       width: min(382px, calc(100vw - 12px));
+      max-height: calc(100vh - 12px);
+      overflow-x: hidden;
+      overflow-y: auto;
+      overscroll-behavior: contain;
       border-radius: 5px;
       pointer-events: auto;
       box-shadow: 0 9px 24px rgba(15, 23, 42, .24);
     }
 
-    #employeeStatusBackdrop .employee-bank-dialog header { padding: 7px 8px; }
+    #employeeStatusBackdrop .employee-bank-dialog header { position: sticky; top: 0; z-index: 2; padding: 7px 8px; }
     #employeeStatusBackdrop .employee-bank-dialog h2 { font-size: 12px; }
     #employeeStatusBackdrop .employee-bank-dialog header button { width: 22px; height: 22px; }
     #employeeStatusBackdrop .employee-status-name { padding: 8px 9px 5px; font-size: 11px; }
@@ -1208,7 +1216,7 @@
     .staff-day-total b { color: #0f7a46; }
     .staff-day-total .has-away { color: #b42338; }
 
-    /* The two-week board is intentionally denser than the monthly staff list. */
+    /* Monthly and weekly staffing boards share the same dense operational layout. */
     .calendar-shell.two-week-list-mode {
       width: calc(100% - 14px);
       max-width: none;
@@ -3244,9 +3252,25 @@
 
     function offScheduleEmployees(dateKey, shift) {
       const date = dateFromKey(dateKey);
+      const addedNames = new Set((readEmployeeDayAdditions()[dateKey] || []).map((employee) => normalizeName(employee.name)));
       return currentRosterEmployees()
-        .filter((employee) => employee.shift === shift && !isEmployeeScheduled(employee, date))
+        .filter((employee) => employee.shift === shift && !isEmployeeScheduled(employee, date) && !addedNames.has(normalizeName(employee.name)))
         .sort((left, right) => String(left.name || "").localeCompare(String(right.name || ""), undefined, { sensitivity: "base" }));
+    }
+
+    function addOffScheduleEmployeeToShift(name, dateKey, shift) {
+      if (!name || !dateKey || !["first", "second"].includes(shift)) return;
+      const additions = readEmployeeDayAdditions();
+      const rows = Array.isArray(additions[dateKey]) ? additions[dateKey] : [];
+      const existingIndex = rows.findIndex((employee) => normalizeName(employee.name) === normalizeName(name));
+      const addition = { name, shift };
+      if (existingIndex >= 0) rows[existingIndex] = addition;
+      else rows.push(addition);
+      additions[dateKey] = rows;
+      writeEmployeeDayAdditions(additions);
+      saveEmployeeStatus(name, dateKey, "camein");
+      localStorage.removeItem("conglobal-current-day-roster-snapshot-v1");
+      renderCalendar();
     }
 
     function openOffSchedule(dateKey, shift) {
@@ -3255,8 +3279,15 @@
       const employees = offScheduleEmployees(dateKey, shift);
       document.getElementById("offScheduleTitle").textContent = `${label} - Not Scheduled`;
       document.getElementById("offScheduleSummary").textContent = `${friendlyDate(dateKey)} - ${employees.length} employee${employees.length === 1 ? "" : "s"}`;
+      const dayLabel = dateKey === isoDate(today) ? "Current Day" : "Selected Day";
       document.getElementById("offScheduleList").innerHTML = employees.length
-        ? employees.map((employee) => `<div class="off-schedule-name" title="${escapeHtml(employee.name)}">${escapeHtml(employee.name)}</div>`).join("")
+        ? employees.map((employee) => `<div class="off-schedule-name" title="${escapeHtml(employee.name)}">
+            <strong>${escapeHtml(employee.name)}</strong>
+            <div class="off-schedule-actions">
+              <button class="off-schedule-add" type="button" data-add-off-schedule-name="${escapeHtml(employee.name)}" data-add-off-schedule-date="${escapeHtml(dateKey)}" data-add-off-schedule-shift="first">Add to ${dayLabel}<br>1st Shift</button>
+              <button class="off-schedule-add" type="button" data-add-off-schedule-name="${escapeHtml(employee.name)}" data-add-off-schedule-date="${escapeHtml(dateKey)}" data-add-off-schedule-shift="second">Add to ${dayLabel}<br>2nd Shift</button>
+            </div>
+          </div>`).join("")
         : '<div class="off-schedule-empty">Everyone on this shift is scheduled.</div>';
       const backdrop = document.getElementById("offScheduleBackdrop");
       backdrop.classList.add("open");
@@ -3803,7 +3834,7 @@
       const employeeDayAdditions = readEmployeeDayAdditions();
       const twoWeekView = listRange === "two-week";
       const threeDayView = listRange === "three-day";
-      list.classList.toggle("two-week-mode", twoWeekView);
+      list.classList.toggle("two-week-mode", !threeDayView);
       list.classList.toggle("three-day-mode", threeDayView);
       const start = threeDayView ? new Date(today) : (twoWeekView ? new Date(today) : new Date(monthFirst));
       start.setHours(0, 0, 0, 0);
@@ -4141,7 +4172,7 @@
       document.getElementById("yardCrewPanel").hidden = !threeDayActive;
       const shell = document.querySelector(".calendar-shell");
       shell.classList.toggle("list-mode", !calendarActive);
-      shell.classList.toggle("two-week-list-mode", twoWeekActive);
+      shell.classList.toggle("two-week-list-mode", !calendarActive && !threeDayActive);
       shell.classList.toggle("three-day-list-mode", threeDayActive);
       document.getElementById("calendarViewToggle").classList.toggle("active", calendarActive);
       document.getElementById("listViewToggle").classList.toggle("active", monthActive);
@@ -4459,6 +4490,16 @@
       }
       renderCalendar();
       renderDayEditor();
+    });
+    document.getElementById("offScheduleList").addEventListener("click", (event) => {
+      const button = event.target.closest("[data-add-off-schedule-name]");
+      if (!button) return;
+      addOffScheduleEmployeeToShift(button.dataset.addOffScheduleName, button.dataset.addOffScheduleDate, button.dataset.addOffScheduleShift);
+      const card = button.closest(".off-schedule-name");
+      if (card) card.remove();
+      const remaining = document.querySelectorAll("#offScheduleList .off-schedule-name").length;
+      document.getElementById("offScheduleSummary").textContent = `${friendlyDate(button.dataset.addOffScheduleDate)} - ${remaining} employee${remaining === 1 ? "" : "s"}`;
+      if (!remaining) document.getElementById("offScheduleList").innerHTML = '<div class="off-schedule-empty">Everyone on this shift is scheduled.</div>';
     });
     document.getElementById("addDayEmployeeForm").addEventListener("submit", (event) => {
       event.preventDefault();
