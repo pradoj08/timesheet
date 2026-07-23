@@ -160,6 +160,7 @@
     .export-button,
     .timesheet-tab-button,
     .schedule-button,
+    .sign-off-button,
     .compare-button,
     .archive-button,
     .time-off-button,
@@ -235,6 +236,12 @@
       color: #fff;
     }
 
+    .sign-off-button {
+      min-width: 82px;
+      background: #fff;
+      color: #000;
+    }
+
     .timesheet-view-switch {
       display: inline-flex;
       align-items: stretch;
@@ -286,6 +293,8 @@
     .timesheet-tab-button:focus,
     .schedule-button:hover,
     .schedule-button:focus,
+    .sign-off-button:hover,
+    .sign-off-button:focus,
     .compare-button:hover,
     .compare-button:focus,
     .archive-button:hover,
@@ -300,6 +309,193 @@
       color: #000;
       outline: 2px solid #f6c85f;
       outline-offset: 1px;
+    }
+
+    .sign-off-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 80;
+      display: none;
+      overflow: auto;
+      padding: 24px;
+      background: rgba(0, 0, 0, .72);
+    }
+
+    .sign-off-backdrop.open {
+      display: block;
+    }
+
+    .sign-off-sheet {
+      width: min(1100px, 100%);
+      min-height: calc(100vh - 48px);
+      margin: 0 auto;
+      padding: 24px;
+      border: 1px solid #94a3b8;
+      border-radius: 10px;
+      background: #fff;
+      color: #111827;
+      box-shadow: 0 24px 70px rgba(0, 0, 0, .45);
+    }
+
+    .sign-off-head,
+    .sign-off-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .sign-off-head h2 {
+      margin: 0;
+      font-size: 24px;
+    }
+
+    .sign-off-actions button {
+      min-height: 34px;
+      padding: 6px 13px;
+      border: 1px solid #94a3b8;
+      border-radius: 5px;
+      background: #fff;
+      color: #172033;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .sign-off-actions .primary {
+      border-color: #d59b00;
+      background: #ffd21a;
+      color: #111;
+    }
+
+    .sign-off-manager-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr;
+      gap: 10px;
+      margin: 18px 0;
+      padding: 14px;
+      border: 2px solid #111827;
+      background: #f8fafc;
+    }
+
+    .sign-off-field {
+      display: grid;
+      gap: 4px;
+    }
+
+    .sign-off-field.wide {
+      grid-column: 1 / -1;
+    }
+
+    .sign-off-field label {
+      color: #475569;
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+
+    .sign-off-field input,
+    .sign-off-field textarea {
+      width: 100%;
+      min-height: 34px;
+      padding: 6px 8px;
+      border: 0;
+      border-bottom: 1px solid #64748b;
+      outline: 0;
+      background: #fff;
+      color: #111827;
+      font: inherit;
+      font-weight: 700;
+    }
+
+    .sign-off-field textarea {
+      min-height: 58px;
+      resize: vertical;
+    }
+
+    .sign-off-shift {
+      margin-top: 18px;
+      break-inside: avoid;
+    }
+
+    .sign-off-shift h3 {
+      margin: 0;
+      padding: 7px 10px;
+      background: #111827;
+      color: #fff;
+      font-size: 13px;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+
+    .sign-off-table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+
+    .sign-off-table th,
+    .sign-off-table td {
+      height: 38px;
+      padding: 5px 7px;
+      border: 1px solid #94a3b8;
+      text-align: left;
+    }
+
+    .sign-off-table th {
+      background: #e2e8f0;
+      color: #334155;
+      font-size: 10px;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+
+    .sign-off-table th:nth-child(1) { width: 28%; }
+    .sign-off-table th:nth-child(2) { width: 16%; }
+    .sign-off-table th:nth-child(3) { width: 36%; }
+    .sign-off-table th:nth-child(4) { width: 20%; }
+
+    .sign-off-table input,
+    .sign-off-table select {
+      width: 100%;
+      height: 28px;
+      padding: 3px 5px;
+      border: 0;
+      border-bottom: 1px solid #64748b;
+      outline: 0;
+      background: transparent;
+      color: #111827;
+      font: inherit;
+      font-weight: 700;
+    }
+
+    @media (max-width: 760px) {
+      .sign-off-backdrop { padding: 8px; }
+      .sign-off-sheet { padding: 14px; }
+      .sign-off-head { align-items: flex-start; flex-direction: column; }
+      .sign-off-manager-grid { grid-template-columns: 1fr; }
+      .sign-off-field.wide { grid-column: auto; }
+      .sign-off-table { min-width: 720px; }
+      .sign-off-shift { overflow-x: auto; }
+    }
+
+    @media print {
+      body.sign-off-printing > *:not(#signOffBackdrop) { display: none !important; }
+      body.sign-off-printing #signOffBackdrop {
+        position: static;
+        display: block;
+        padding: 0;
+        background: #fff;
+      }
+      body.sign-off-printing .sign-off-sheet {
+        width: 100%;
+        min-height: 0;
+        padding: 0;
+        border: 0;
+        box-shadow: none;
+      }
+      body.sign-off-printing .sign-off-actions { display: none; }
+      body.sign-off-printing .sign-off-manager-grid { margin-top: 12px; }
     }
 
     .header-date-input {
@@ -1532,6 +1728,7 @@
           <div class="hero-actions">
             <button type="button" class="schedule-button" id="schedulePopupButton" aria-pressed="false">Schedule</button>
             <button type="button" class="archive-button" id="archivePopupButton" aria-pressed="false">Archive</button>
+            <button type="button" class="sign-off-button" id="signOffButton" aria-haspopup="dialog">Sign-Off</button>
             <button type="button" class="time-off-button active" id="timeOffPopupButton" aria-pressed="true">FULL VIEW</button>
             <div class="timesheet-view-switch" role="group" aria-label="Timesheet view">
               <button type="button" class="timesheet-tab-button" id="timesheetTabButton" aria-pressed="false">Timesheet</button>
@@ -1543,6 +1740,40 @@
           </div>
         </div>
       </header>
+
+      <div class="sign-off-backdrop" id="signOffBackdrop" aria-hidden="true">
+        <section class="sign-off-sheet" role="dialog" aria-modal="true" aria-labelledby="signOffTitle">
+          <header class="sign-off-head">
+            <div>
+              <h2 id="signOffTitle">Employee Sign-Off</h2>
+              <div id="signOffRosterSummary">Employee acknowledgement by shift</div>
+            </div>
+            <div class="sign-off-actions">
+              <button type="button" class="primary" id="printSignOff">Print</button>
+              <button type="button" id="closeSignOff">Close</button>
+            </div>
+          </header>
+          <div class="sign-off-manager-grid">
+            <div class="sign-off-field">
+              <label for="signOffSubject">Subject / item</label>
+              <input id="signOffSubject" type="text" placeholder="What employees are receiving or completing" />
+            </div>
+            <div class="sign-off-field">
+              <label for="signOffManager">Manager</label>
+              <input id="signOffManager" type="text" placeholder="Manager name" />
+            </div>
+            <div class="sign-off-field">
+              <label for="signOffDate">Date</label>
+              <input id="signOffDate" type="date" />
+            </div>
+            <div class="sign-off-field wide">
+              <label for="signOffInstructions">Details / instructions</label>
+              <textarea id="signOffInstructions" placeholder="Enter the acknowledgement, assignment, training, equipment, or task details"></textarea>
+            </div>
+          </div>
+          <div id="signOffRoster"></div>
+        </section>
+      </div>
 
       <section class="inline-tool-panel" id="inlineToolPanel" aria-live="polite">
         <header class="inline-tool-header">
@@ -2012,6 +2243,95 @@
       });
 
       return roster;
+    }
+
+    const signOffStorageKey = "conglobal-timesheet-sign-off";
+
+    function readSignOffState() {
+      try {
+        const state = JSON.parse(localStorage.getItem(signOffStorageKey) || "{}");
+        return state && typeof state === "object" && !Array.isArray(state) ? state : {};
+      } catch (error) {
+        return {};
+      }
+    }
+
+    function saveSignOffState() {
+      const entries = {};
+      document.querySelectorAll("#signOffRoster [data-signoff-name]").forEach((input) => {
+        const name = input.dataset.signoffName;
+        if (!entries[name]) entries[name] = {};
+        entries[name][input.dataset.signoffField] = input.value;
+      });
+      localStorage.setItem(signOffStorageKey, JSON.stringify({
+        subject: document.getElementById("signOffSubject").value,
+        manager: document.getElementById("signOffManager").value,
+        date: document.getElementById("signOffDate").value,
+        instructions: document.getElementById("signOffInstructions").value,
+        entries
+      }));
+    }
+
+    function renderSignOffRoster() {
+      const state = readSignOffState();
+      const roster = buildRoster();
+      const shiftOrder = ["first", "second", "gate", "mechanics", "managers"];
+      const sections = shiftOrder.map((shiftKey) => {
+        const employees = (roster[shiftKey] || [])
+          .slice()
+          .sort((a, b) => String(a.name).localeCompare(String(b.name), undefined, { sensitivity: "base" }));
+        if (!employees.length) return "";
+        const rows = employees.map((employee) => {
+          const saved = state.entries && state.entries[employee.name] || {};
+          return `<tr>
+            <td><strong>${escapeHtml(employee.name)}</strong></td>
+            <td><select data-signoff-name="${escapeHtml(employee.name)}" data-signoff-field="status" aria-label="${escapeHtml(employee.name)} status">
+              <option value=""></option>
+              <option value="Received"${saved.status === "Received" ? " selected" : ""}>Received</option>
+              <option value="Completed"${saved.status === "Completed" ? " selected" : ""}>Completed</option>
+            </select></td>
+            <td><input type="text" value="${escapeHtml(saved.signature || "")}" data-signoff-name="${escapeHtml(employee.name)}" data-signoff-field="signature" aria-label="${escapeHtml(employee.name)} signature" placeholder="Sign name" /></td>
+            <td><input type="datetime-local" value="${escapeHtml(saved.signedAt || "")}" data-signoff-name="${escapeHtml(employee.name)}" data-signoff-field="signedAt" aria-label="${escapeHtml(employee.name)} signed date and time" /></td>
+          </tr>`;
+        }).join("");
+        return `<section class="sign-off-shift">
+          <h3>${escapeHtml(shiftLabels[shiftKey] || shiftKey)} · ${employees.length} employees</h3>
+          <table class="sign-off-table">
+            <thead><tr><th>Employee</th><th>Received / completed</th><th>Signature</th><th>Date / time</th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </section>`;
+      }).join("");
+      document.getElementById("signOffRoster").innerHTML = sections;
+      const employeeCount = shiftOrder.reduce((sum, key) => sum + (roster[key] || []).length, 0);
+      document.getElementById("signOffRosterSummary").textContent = `${employeeCount} employees · alphabetized within each shift`;
+      document.getElementById("signOffSubject").value = state.subject || "";
+      document.getElementById("signOffManager").value = state.manager || "";
+      document.getElementById("signOffDate").value = state.date || document.getElementById("sheetDateInput").value || localInputDate();
+      document.getElementById("signOffInstructions").value = state.instructions || "";
+    }
+
+    function openSignOff() {
+      renderSignOffRoster();
+      const backdrop = document.getElementById("signOffBackdrop");
+      backdrop.classList.add("open");
+      backdrop.setAttribute("aria-hidden", "false");
+      document.getElementById("signOffSubject").focus();
+    }
+
+    function closeSignOff() {
+      saveSignOffState();
+      const backdrop = document.getElementById("signOffBackdrop");
+      backdrop.classList.remove("open");
+      backdrop.setAttribute("aria-hidden", "true");
+      document.getElementById("signOffButton").focus();
+    }
+
+    function printSignOff() {
+      saveSignOffState();
+      document.body.classList.add("sign-off-printing");
+      window.print();
+      window.setTimeout(() => document.body.classList.remove("sign-off-printing"), 0);
     }
 
     function toMilitaryTime(value) {
@@ -2907,6 +3227,11 @@
     document.getElementById("currentLpmhButton").addEventListener("click", showCurrentLpmhModal);
     document.getElementById("schedulePopupButton").addEventListener("click", openSchedulePopup);
     document.getElementById("archivePopupButton").addEventListener("click", openArchivePopup);
+    document.getElementById("signOffButton").addEventListener("click", openSignOff);
+    document.getElementById("closeSignOff").addEventListener("click", closeSignOff);
+    document.getElementById("printSignOff").addEventListener("click", printSignOff);
+    document.getElementById("signOffBackdrop").addEventListener("input", saveSignOffState);
+    document.getElementById("signOffBackdrop").addEventListener("change", saveSignOffState);
     document.getElementById("timeOffPopupButton").addEventListener("click", openTimeOffPopup);
     document.getElementById("oldViewButton").addEventListener("click", openOldTimesheetView);
     document.getElementById("closeLpmhModal").addEventListener("click", closeCurrentLpmhModal);
