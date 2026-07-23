@@ -3,6 +3,7 @@ const path = require("path");
 
 const workbookPath = path.join("GITHUB UPLOAD - ONE FILE", "index.html");
 const pageSources = Object.freeze({
+  pearl: "pearl-page.html",
   obsidian: "obsidian-page.html",
   amReport: "am-report-page.html",
   audits: "audits-page.html",

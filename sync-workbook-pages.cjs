@@ -5,6 +5,7 @@ const { injectAssistantShell } = require("./assistant-shell-inject.cjs");
 const workbookPath = "index.html";
 const distributionWorkbookPath = "GITHUB UPLOAD - ONE FILE/index.html";
 const pages = {
+  pearl: "pearl-page.html",
   obsidian: "obsidian-page.html",
   matrix: "matrix-page.html",
   matrixWide: "matrix-wide-page.html",

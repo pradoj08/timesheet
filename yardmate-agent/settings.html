@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>YardMate Agent</title>
+  <style>
+    :root{color-scheme:dark;font-family:Inter,"Segoe UI",sans-serif;background:#06131f;color:#f4f9fc}
+    *{box-sizing:border-box}body{margin:0;min-height:100vh;padding:26px;background:radial-gradient(circle at 85% 0,#194058,#06131f 52%)}
+    main{width:min(720px,100%);margin:auto}.brand{display:flex;gap:14px;align-items:center;margin-bottom:20px}
+    .mark{width:54px;height:54px;display:grid;place-items:center;border-radius:15px;background:linear-gradient(145deg,#ffd85c,#ef9c17);color:#08131d;font-weight:1000}
+    h1{margin:0;font-size:27px}.sub{margin:3px 0 0;color:#a9bfd0}.card{margin:14px 0;padding:18px;border:1px solid #345a74;border-radius:15px;background:#0b2030;box-shadow:0 16px 38px rgba(0,0,0,.25)}
+    .status{display:flex;justify-content:space-between;gap:16px;align-items:center}.badge{padding:6px 10px;border-radius:99px;background:#49361a;color:#ffdd78;font-weight:900}.badge.on{background:#123c34;color:#7ce7c6}
+    label{display:block;margin:14px 0 6px;font-weight:800}input[type=password],input[type=text]{width:100%;padding:11px;border:1px solid #476a82;border-radius:8px;background:#061522;color:#fff;font:inherit}
+    .toggle{display:flex;gap:9px;align-items:center;margin:4px 0 10px}.toggle label{margin:0}.row{display:flex;gap:10px}.row input{flex:1}.row button{flex:0 0 auto}
+    button{border:1px solid #42aaa5;border-radius:8px;padding:10px 14px;background:#197a75;color:white;font-weight:900;cursor:pointer}.secondary{background:#18374d;border-color:#54768e}
+    .actions{display:flex;gap:10px;margin-top:18px}.note{color:#a9bfd0;font-size:12px;line-height:1.5}.result{min-height:22px;margin-top:12px;color:#80e7d2;font-weight:800}
+    code{color:#d8e8f2}
+  </style>
+</head>
+<body>
+<main>
+  <div class="brand"><div class="mark">YM</div><div><h1>YardMate Agent</h1><p class="sub">Local Excel watcher and phone alerts</p></div></div>
+  <section class="card status"><div><strong>Agent status</strong><p class="sub" id="lastStatus">Loading…</p></div><span class="badge" id="watchBadge">OFF</span></section>
+  <section class="card">
+    <div class="toggle"><input id="enabled" type="checkbox"><label for="enabled">Watch for new mismatch exports</label></div>
+    <label for="downloadFolder">Download folder</label>
+    <div class="row"><input id="downloadFolder" type="text" readonly><button id="chooseFolder" class="secondary" type="button">Choose</button></div>
+    <label for="appToken">Pushover application token</label><input id="appToken" type="password" autocomplete="off">
+    <label for="userKey">Pushover user or group key</label><input id="userKey" type="password" autocomplete="off">
+    <div class="actions"><button id="save" type="button">Save settings</button><button id="test" class="secondary" type="button">Send test alert</button></div>
+    <div class="result" id="result"></div>
+  </section>
+  <section class="card note">YardMate processes only newly created files named <code>Mismatched Equipments*.xls</code> or <code>.xlsx</code>. Parsing and image creation happen locally. The approved table image is sent to Pushover only when monitoring is enabled.</section>
+</main>
+<script src="renderer.js"></script>
+</body>
+</html>

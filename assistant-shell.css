@@ -1169,6 +1169,34 @@
   color: #073149;
 }
 
+#conglobalOpsAssistant[data-theme="light"] .oa-context-strip {
+  border-bottom-color: #9fb7c8;
+  background: #d9e7f0;
+  color: #233f55;
+}
+
+#conglobalOpsAssistant[data-theme="light"] .oa-welcome {
+  border-color: #9eb7c9;
+  background: #ffffff;
+  box-shadow: 0 5px 16px rgba(31, 65, 88, .1);
+}
+
+#conglobalOpsAssistant[data-theme="light"] .oa-welcome p {
+  color: #345268;
+}
+
+#conglobalOpsAssistant[data-theme="light"] .oa-status-pill {
+  border-color: #8eabbf;
+  background: #edf5f9;
+  color: #26465d;
+}
+
+#conglobalOpsAssistant[data-theme="light"] .oa-chip {
+  border-color: #315b78;
+  background: #173b55;
+  color: #f7fbfe;
+}
+
 #conglobalOpsAssistant[data-animation="off"] *,
 #conglobalOpsAssistant[data-animation="off"] *::before,
 #conglobalOpsAssistant[data-animation="off"] *::after {
@@ -1241,6 +1269,34 @@
     border-color: #167597;
     background: #c7eaf5;
     color: #073149;
+  }
+
+  #conglobalOpsAssistant[data-theme="system"] .oa-context-strip {
+    border-bottom-color: #9fb7c8;
+    background: #d9e7f0;
+    color: #233f55;
+  }
+
+  #conglobalOpsAssistant[data-theme="system"] .oa-welcome {
+    border-color: #9eb7c9;
+    background: #ffffff;
+    box-shadow: 0 5px 16px rgba(31, 65, 88, .1);
+  }
+
+  #conglobalOpsAssistant[data-theme="system"] .oa-welcome p {
+    color: #345268;
+  }
+
+  #conglobalOpsAssistant[data-theme="system"] .oa-status-pill {
+    border-color: #8eabbf;
+    background: #edf5f9;
+    color: #26465d;
+  }
+
+  #conglobalOpsAssistant[data-theme="system"] .oa-chip {
+    border-color: #315b78;
+    background: #173b55;
+    color: #f7fbfe;
   }
 }
 

@@ -1,0 +1,39 @@
+{
+  "name": "yardmate-agent",
+  "version": "1.1.2",
+  "private": true,
+  "description": "Local YardMate Excel watcher and phone alert agent.",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "check": "node --check main.js && node --check preload.js && node --check renderer.js",
+    "dist": "npm run check && electron-builder"
+  },
+  "dependencies": {
+    "sharp": "^0.35.3",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
+  },
+  "devDependencies": {
+    "electron": "43.1.1",
+    "electron-builder": "26.15.3"
+  },
+  "build": {
+    "appId": "com.yardmate.agent",
+    "productName": "YardMate Agent",
+    "asar": true,
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer.js",
+      "settings.html",
+      "assets/**/*",
+      "package.json"
+    ],
+    "directories": {
+      "output": "release"
+    },
+    "win": {
+      "target": "nsis"
+    }
+  }
+}

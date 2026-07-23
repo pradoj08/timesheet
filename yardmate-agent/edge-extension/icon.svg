@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Mori, GitPet's branch-tailed repository guardian">
+  <defs>
+    <linearGradient id="bg" x1="80" y1="40" x2="440" y2="480" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#173d31"/>
+      <stop offset="1" stop-color="#0d201a"/>
+    </linearGradient>
+    <linearGradient id="fur" x1="256" y1="105" x2="256" y2="389" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#f4dda9"/>
+      <stop offset="1" stop-color="#d7a35f"/>
+    </linearGradient>
+    <linearGradient id="robe" x1="174" y1="308" x2="354" y2="472" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#42ad82"/>
+      <stop offset="1" stop-color="#1d6c53"/>
+    </linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="180%">
+      <feDropShadow dx="0" dy="16" stdDeviation="16" flood-color="#030806" flood-opacity=".4"/>
+    </filter>
+  </defs>
+  <rect x="16" y="16" width="480" height="480" rx="112" fill="url(#bg)"/>
+  <path d="M154 380c-70 10-100-32-75-72 19-31 62-27 70 7 6 27-18 46-42 34" fill="none" stroke="#b87d43" stroke-linecap="round" stroke-width="30"/>
+  <path d="M85 302c-20-25-17-50 9-71" fill="none" stroke="#77c597" stroke-linecap="round" stroke-width="12"/>
+  <path d="M94 235c-22-1-37-13-42-35 23-2 41 7 53 27" fill="#77c597" stroke="#326c51" stroke-linejoin="round" stroke-width="8"/>
+  <g filter="url(#shadow)">
+    <path d="M156 475c7-101 35-151 101-151 67 0 97 53 101 151Z" fill="url(#robe)" stroke="#102e25" stroke-width="10"/>
+    <path d="m202 340 54 52 56-52M256 392v83" fill="none" stroke="#c6ead6" stroke-width="10"/>
+    <path d="M162 191 176 78l78 78M351 191 337 78l-78 78" fill="#d8a461" stroke="#704929" stroke-linejoin="round" stroke-width="12"/>
+    <path d="m184 151 5-42 35 43M329 151l-6-42-34 43" fill="#875a3e"/>
+    <path d="M142 210c0-90 49-137 114-137s116 49 116 137c0 94-47 142-116 142-68 0-114-48-114-142Z" fill="url(#fur)" stroke="#704929" stroke-width="12"/>
+    <path d="M157 174c55-39 145-39 199 0" fill="none" stroke="#287557" stroke-width="28"/>
+    <path d="M210 143c27-16 66-16 93 0l-10 34c-24-12-49-12-73 0Z" fill="#efc46f" stroke="#704929" stroke-width="8"/>
+    <ellipse cx="210" cy="219" rx="16" ry="22" fill="#14211c"/>
+    <ellipse cx="304" cy="219" rx="16" ry="22" fill="#14211c"/>
+    <circle cx="216" cy="212" r="5" fill="#fff"/>
+    <circle cx="310" cy="212" r="5" fill="#fff"/>
+    <path d="m247 252 10 9 10-9" fill="#704929"/>
+    <path d="M237 272q20 17 40 0" fill="none" stroke="#704929" stroke-linecap="round" stroke-width="9"/>
+    <circle cx="181" cy="264" r="15" fill="#df8d70" opacity=".32"/>
+    <circle cx="333" cy="264" r="15" fill="#df8d70" opacity=".32"/>
+  </g>
+  <circle cx="404" cy="107" r="44" fill="#f2c86e" stroke="#102e25" stroke-width="10"/>
+  <path d="m382 107 15 15 30-33" fill="none" stroke="#173d31" stroke-linecap="round" stroke-linejoin="round" stroke-width="13"/>
+</svg>

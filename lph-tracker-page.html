@@ -2273,7 +2273,22 @@ body:not(.print-mode) > .topbar .hidden-current-time-input{display:block !import
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
-<body>
+<body class="lph-hydrating">
+<style id="lph-hydration-guard">
+body.lph-hydrating .app-body{visibility:hidden}
+body.lph-hydrating::after{
+  content:"LOADING CURRENT LPH TRACKER...";
+  position:fixed;
+  z-index:99999;
+  inset:0;
+  display:grid;
+  place-items:center;
+  background:#05070b;
+  color:#2ecfa8;
+  font:900 13px/1.2 var(--mono,monospace);
+  letter-spacing:.14em;
+}
+</style>
 
 <!-- TOPBAR -->
 <div class="topbar">
@@ -8477,7 +8492,7 @@ if(window.LPH_INPUT_MENU_ONLY===true || new URLSearchParams(window.location.sear
   })();
 }
 lphInitRosterShiftTimeLink();
-initTime();buildTrains();lphInitTodayInboundLink();simulate();
+initTime();buildTrains();lphInitTodayInboundLink();
 window.addEventListener('focus',function(){
   var todayInboundToggle=document.getElementById('use-today-inbounds');
   if(todayInboundToggle&&todayInboundToggle.checked)lphApplyTodayInbounds(true);
@@ -9125,6 +9140,10 @@ async function rampiqRefreshLiveSettingsFromSupabase(){
 async function rampiqInitLiveSettings(){
   if(rampiqLiveSettingsReady) return;
   var local=rampiqReadLiveSettingsCache();
+  if(local&&local.payload){
+    rampiqApplyLiveSettings(local.payload);
+    document.body.classList.remove('lph-hydrating');
+  }
   try{
     var remote=await rampiqLoadLiveSettingsRemote();
     if(local&&local.dirty){
@@ -9152,6 +9171,8 @@ async function rampiqInitLiveSettings(){
     rampiqLiveSettingsReady=true;
     rampiqHandleLiveSettingsError(error);
   }
+  if(!local||!local.payload) simulate();
+  document.body.classList.remove('lph-hydrating');
   clearInterval(rampiqLiveSettingsRefreshTimer);
   rampiqLiveSettingsRefreshTimer=setInterval(function(){
     rampiqRefreshLiveSettingsFromSupabase().catch(rampiqHandleLiveSettingsError);
@@ -9739,11 +9760,10 @@ function toggleAutoload(){
   var p=arr.find(function(x){ return String(x.id)===autoId; });
   if(p){
     document.getElementById('profile-select').value=p.id;
-    // Slight delay so the rest of the app initializes first
-    setTimeout(function(){ applyProfile(p); },80);
+    updateProfileLoadedBar(p);
   }
   rampiqRefreshProfilesFromSupabase(false);
-  setTimeout(function(){ rampiqInitLiveSettings(); },160);
+  rampiqInitLiveSettings();
 })();
 
 // ── END PROFILE SYSTEM ──────────────────────────────────────────────

@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+  body{width:330px;margin:0;padding:14px;background:#09131d;color:#edf8ff;font:13px/1.4 system-ui,sans-serif}
+  h1{margin:0 0 5px;font-size:17px}p{margin:0 0 12px;color:#9fb4c4}
+  button{width:100%;min-height:40px;border:1px solid #2ea6a1;border-radius:8px;background:#17736f;color:#fff;font-weight:900;cursor:pointer}
+  button:disabled{cursor:not-allowed;opacity:.55}
+  label{display:flex;align-items:center;gap:9px;margin:11px 0;padding:10px;border:1px solid #294358;border-radius:8px;background:#102231;font-weight:800}
+  input{width:19px;height:19px;accent-color:#25b990}
+  #status{margin-top:10px;color:#8ee8df;font-size:11px;font-weight:700}
+</style>
+</head>
+<body>
+<h1>Mori · UP Mismatches</h1>
+<p>Uses the official Excel export. YardMate Agent parses the download and sends the alert.</p>
+<button id="run">Export Now</button>
+<label><input id="automatic" type="checkbox"> Export automatically every 15 minutes</label>
+<div id="status">Checking export status…</div>
+<script src="popup.js"></script>
+</body>
+</html>

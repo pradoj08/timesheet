@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mori · YardMate Agent</title>
+<style>
+  :root{color-scheme:light;--ink:#152238;--muted:#607089;--line:#cbd5e1;--panel:#fff;--soft:#eef2f6;--navy:#0d1b2a;--cyan:#0e91b8;--green:#08775a;--red:#c8102e;--gold:#d99500}
+  *{box-sizing:border-box}
+  html,body{min-height:100%;margin:0;background:#e9eef4;color:var(--ink);font-family:Inter,"Segoe UI",Arial,sans-serif}
+  button{font:inherit}
+  body{padding:18px}
+  .shell{max-width:1180px;margin:0 auto}
+  .hero{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:19px 22px;border-radius:16px 16px 0 0;background:var(--navy);color:#fff}
+  .brand{display:flex;align-items:center;gap:13px}.orb{width:43px;height:43px;border-radius:50%;background:radial-gradient(circle at 30% 24%,#fff 0 9%,#bafcff 20%,#23b6c5 56%,#10445e 100%);box-shadow:0 0 22px #18b9d577}.brand h1{margin:0;font-size:25px}.brand p{margin:3px 0 0;color:#a9bdd0;font-size:11px;font-weight:800;letter-spacing:.11em;text-transform:uppercase}
+  .connection{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:900}.dot{width:10px;height:10px;border-radius:50%;background:#8794a5;box-shadow:0 0 0 4px #ffffff12}.connection.online .dot{background:#2fe0a4;box-shadow:0 0 0 4px #2fe0a422}.connection.offline .dot{background:#ff5a68}
+  .content{padding:18px;border:1px solid var(--line);border-top:0;border-radius:0 0 16px 16px;background:#f8fafc}
+  .status-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:14px}.status-card{min-width:0;padding:13px;border:1px solid var(--line);border-radius:11px;background:var(--panel)}.status-card span{display:block;color:var(--muted);font-size:10px;font-weight:900;letter-spacing:.08em;text-transform:uppercase}.status-card strong{display:block;margin-top:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:16px}.status-card strong.good{color:var(--green)}.status-card strong.bad{color:var(--red)}
+  .toolbar{display:flex;flex-wrap:wrap;gap:8px;padding:12px;border:1px solid var(--line);border-radius:11px;background:var(--panel)}.btn{min-height:39px;padding:8px 13px;border:1px solid #aeb9c7;border-radius:8px;background:#fff;color:var(--ink);font-weight:900;cursor:pointer}.btn:hover,.btn:focus-visible{border-color:var(--cyan);outline:3px solid #0e91b820}.btn.primary{border-color:#08775a;background:var(--green);color:#fff}.btn.dark{border-color:#111827;background:#111827;color:#fff}.btn.warn{border-color:#b77900;background:#fff6d6;color:#734b00}.btn:disabled{opacity:.55;cursor:wait}.watch{display:inline-flex;align-items:center;gap:8px;min-height:39px;padding:7px 11px;border:1px solid var(--line);border-radius:8px;background:var(--soft);font-size:12px;font-weight:900}.watch input{width:19px;height:19px;accent-color:var(--green)}
+  .message{min-height:42px;margin:12px 0;padding:12px 14px;border-left:5px solid var(--cyan);border-radius:7px;background:#e8f6fb;color:#17445c;font-size:13px;font-weight:750}.message.error{border-color:var(--red);background:#fff0f2;color:#8b1529}
+  .preview-card{overflow:hidden;border:1px solid var(--line);border-radius:12px;background:#fff}.preview-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 14px;border-bottom:1px solid var(--line);background:var(--soft)}.preview-head strong{font-size:13px;letter-spacing:.06em;text-transform:uppercase}.preview-head span{color:var(--muted);font-size:11px}.preview-body{display:flex;min-height:260px;align-items:flex-start;justify-content:center;padding:14px;overflow:auto;background:#fff}.preview-body img{display:block;max-width:100%;height:auto;box-shadow:0 5px 20px #0f172a20}.empty{align-self:center;color:var(--muted);font-weight:700;text-align:center}
+  .help{margin:12px 2px 0;color:var(--muted);font-size:11px;line-height:1.5}
+  @media(max-width:800px){body{padding:8px}.hero{align-items:flex-start;flex-direction:column}.status-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.content{padding:10px}}
+</style>
+</head>
+<body>
+<main class="shell">
+  <header class="hero">
+    <div class="brand"><div class="orb" aria-hidden="true"></div><div><h1>Mori · YardMate Agent</h1><p>Mismatch alert control center</p></div></div>
+    <div class="connection offline" id="connection"><span class="dot"></span><span id="connectionText">Connecting to agent…</span></div>
+  </header>
+  <section class="content">
+    <div class="status-grid">
+      <article class="status-card"><span>Automatic watching</span><strong id="watchStatus">Checking…</strong></article>
+      <article class="status-card"><span>Latest Excel</span><strong id="latestFile">—</strong></article>
+      <article class="status-card"><span>No mates</span><strong id="noMateCount">0</strong></article>
+      <article class="status-card"><span>Pool mismatches</span><strong id="mismatchCount">0</strong></article>
+    </div>
+    <div class="toolbar">
+      <label class="watch"><input id="watchToggle" type="checkbox"> Watch Downloads automatically</label>
+      <button class="btn dark" id="previewLatest" type="button">Preview Latest Excel</button>
+      <button class="btn primary" id="sendLatest" type="button">Process &amp; Send Alert</button>
+      <button class="btn warn" id="testPush" type="button">Send Test Alert</button>
+      <button class="btn" id="openSettings" type="button">Agent Settings</button>
+      <button class="btn" id="refreshStatus" type="button">Refresh</button>
+    </div>
+    <div class="message" id="message">Start YardMate Agent to connect this page.</div>
+    <section class="preview-card">
+      <header class="preview-head"><strong>Alert preview</strong><span id="previewCaption">No preview loaded</span></header>
+      <div class="preview-body" id="previewBody"><div class="empty">Click “Preview Latest Excel” to display the newest mismatch report.</div></div>
+    </section>
+    <p class="help">The desktop agent reads only matching Excel exports from your selected Downloads folder. Pushover keys remain encrypted inside YardMate Agent and are never exposed to this workbook.</p>
+  </section>
+</main>
+<script>
+(() => {
+  const api = "http://127.0.0.1:43127/api";
+  const connection = document.getElementById("connection");
+  const connectionText = document.getElementById("connectionText");
+  const watchStatus = document.getElementById("watchStatus");
+  const latestFile = document.getElementById("latestFile");
+  const noMateCount = document.getElementById("noMateCount");
+  const mismatchCount = document.getElementById("mismatchCount");
+  const watchToggle = document.getElementById("watchToggle");
+  const message = document.getElementById("message");
+  const previewBody = document.getElementById("previewBody");
+  const previewCaption = document.getElementById("previewCaption");
+  const controls = [...document.querySelectorAll("button"), watchToggle];
+  let connected = false;
+
+  function setBusy(busy) { controls.forEach(control => { control.disabled = busy; }); }
+  function showMessage(text, error) {
+    message.textContent = text || "Ready.";
+    message.classList.toggle("error", Boolean(error));
+  }
+  function render(state) {
+    connected = true;
+    connection.className = "connection online";
+    connectionText.textContent = "Agent online";
+    watchToggle.checked = Boolean(state.settings.enabled);
+    watchStatus.textContent = state.settings.enabled ? "ON" : "PAUSED";
+    watchStatus.className = state.settings.enabled ? "good" : "bad";
+    latestFile.textContent = state.lastFile || "Not processed yet";
+    noMateCount.textContent = state.counts.noMates;
+    mismatchCount.textContent = state.counts.mismatches;
+    showMessage(state.lastMessage || "Ready.", false);
+    if (state.previewAvailable) previewCaption.textContent = `${state.counts.total} parsed rows · ${state.lastFile || "latest export"}`;
+  }
+  function disconnected(error) {
+    connected = false;
+    connection.className = "connection offline";
+    connectionText.textContent = "Agent offline";
+    watchStatus.textContent = "OFFLINE";
+    watchStatus.className = "bad";
+    showMessage(error || "YardMate Agent is not running. Start it from the Windows Start menu, then click Refresh.", true);
+  }
+  async function request(path, options) {
+    const response = await fetch(api + path, { cache:"no-store", ...options });
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.error || "Agent request failed.");
+    render(payload);
+    return payload;
+  }
+  async function refresh() {
+    try { await request("/state"); }
+    catch (error) { disconnected(error.message); }
+  }
+  async function action(path, workingText, showPreview) {
+    if (!connected) return refresh();
+    setBusy(true);
+    showMessage(workingText, false);
+    try {
+      const state = await request(path, { method:"POST", headers:{ "Content-Type":"application/json" }, body:"{}" });
+      if (showPreview) {
+        previewBody.innerHTML = `<img alt="Mori mismatch alert preview" src="${api}/preview?t=${Date.now()}">`;
+        previewCaption.textContent = `${state.counts.total} parsed rows · ${state.lastFile}`;
+      }
+    } catch (error) { showMessage(error.message, true); }
+    finally { setBusy(false); }
+  }
+
+  watchToggle.addEventListener("change", async () => {
+    setBusy(true);
+    try {
+      await request("/watch", { method:"POST", headers:{ "Content-Type":"application/json" }, body:JSON.stringify({ enabled:watchToggle.checked }) });
+    } catch (error) { showMessage(error.message, true); watchToggle.checked = !watchToggle.checked; }
+    finally { setBusy(false); }
+  });
+  document.getElementById("previewLatest").addEventListener("click", () => action("/preview-latest", "Parsing the newest Excel…", true));
+  document.getElementById("sendLatest").addEventListener("click", () => action("/process-latest", "Parsing and sending the newest Excel…", true));
+  document.getElementById("testPush").addEventListener("click", () => action("/test-push", "Sending a test alert…", false));
+  document.getElementById("openSettings").addEventListener("click", () => action("/open-settings", "Opening YardMate Agent settings…", false));
+  document.getElementById("refreshStatus").addEventListener("click", refresh);
+  refresh();
+  setInterval(refresh, 10000);
+})();
+</script>
+</body>
+</html>
