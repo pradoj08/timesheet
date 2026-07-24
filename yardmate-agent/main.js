@@ -17,11 +17,32 @@ let lastMessage = 'Ready';
 let lastFile = '';
 let lastPreview = Buffer.alloc(0);
 let lastRows = [];
+let sourceRefresh = { timestamp: '', observedAt: '', ageMinutes: null, verified: false, changed: false };
 const queued = new Map();
 const processed = new Set();
 
 function text(value) {
   return String(value ?? '').replace(/\s+/g, ' ').trim();
+}
+
+function mismatchDurationMinutes(value, now = new Date()) {
+  const raw = text(value);
+  if (!raw) return '';
+  const match = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})[,\s]+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)?$/i);
+  let started;
+  if (match) {
+    let year = Number(match[3]);
+    if (year < 100) year += 2000;
+    let hour = Number(match[4]);
+    const meridiem = String(match[7] || '').toUpperCase();
+    if (meridiem === 'PM' && hour < 12) hour += 12;
+    if (meridiem === 'AM' && hour === 12) hour = 0;
+    started = new Date(year, Number(match[1]) - 1, Number(match[2]), hour, Number(match[5]), Number(match[6] || 0));
+  } else {
+    started = new Date(raw);
+  }
+  if (Number.isNaN(started.getTime())) return '';
+  return String(Math.max(0, Math.floor((now.getTime() - started.getTime()) / 60000)));
 }
 
 function encrypt(value) {
@@ -77,6 +98,7 @@ function publicState() {
     lastMessage,
     lastFile: lastFile ? path.basename(lastFile) : '',
     previewAvailable: Boolean(lastPreview.length),
+    sourceRefresh,
     counts: { total: lastRows.length, noMates, mismatches: lastRows.length - noMates },
   };
 }
@@ -98,6 +120,7 @@ function parseWorkbook(buffer) {
       chassisPool: text(row.get('chassis pool id')),
       size: text(row.get('car kind')),
       location: text(row.get('location')),
+      mismatchTime: text(row.get('mismatch time') || row.get('mismatch')),
     };
   }).filter((row) => row.container);
 }
@@ -149,17 +172,19 @@ async function renderCompactPng(rows) {
   const compare = (left, right) => String(left || '').localeCompare(String(right || ''), undefined, { numeric: true, sensitivity: 'base' });
   const noMates = rows
     .filter((row) => !row.chassis)
+    .map((row) => ({ ...row, durationMinutes: mismatchDurationMinutes(row.mismatchTime) }))
     .sort((left, right) => compare(left.location, right.location) || compare(left.container, right.container));
   const mismatches = rows
     .filter((row) => row.chassis)
     .sort((left, right) => compare(left.requiredPool, right.requiredPool) || compare(left.location, right.location) || compare(left.container, right.container));
   const reportTime = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
   const noMateColumns = [
-    ['LOCATION', 'location', 150],
-    ['CONTAINER', 'container', 160],
-    ['CHASSIS', 'chassis', 155],
-    ['REQUIRED POOL', 'requiredPool', 150],
-    ['SIZE', 'size', 120],
+    ['LOCATION', 'location', 135],
+    ['CONTAINER', 'container', 145],
+    ['CHASSIS', 'chassis', 125],
+    ['REQUIRED POOL', 'requiredPool', 125],
+    ['SIZE', 'size', 70],
+    ['DURATION (MIN)', 'durationMinutes', 135],
   ];
   const mismatchColumns = [
     ['LOCATION', 'location', 140],
@@ -173,7 +198,8 @@ async function renderCompactPng(rows) {
   const tableWidth = mismatchColumns.reduce((total, column) => total + column[2], 0);
   const sectionHeight = (sectionRows) => 70 + Math.max(sectionRows.length, 1) * 38;
   const noMateHeight = sectionHeight(noMates);
-  const mismatchY = 94 + noMateHeight + 16;
+  const sectionStartY = 112;
+  const mismatchY = sectionStartY + noMateHeight + 16;
   const height = mismatchY + sectionHeight(mismatches) + 24;
 
   function section(title, sectionRows, startY, accent, noMateSection, sectionColumns) {
@@ -210,10 +236,75 @@ async function renderCompactPng(rows) {
     <rect width="100%" height="100%" fill="#ffffff"/><rect width="100%" height="6" fill="#c8102e"/>
     <text x="${margin}" y="40" class="title">Settegast Inbound Equipment Status [${xml(reportTime)}]</text>
     <text x="${margin}" y="67" class="summary">${noMates.length} no mates | ${mismatches.length} pool mismatches</text>
-    ${section('NO MATES', noMates, 94, '#c8102e', true, noMateColumns)}
+    <text x="${margin}" y="88" class="summary">UP refresh: ${xml(sourceRefresh.timestamp || 'Not verified')} ${sourceRefresh.verified ? '| VERIFIED CURRENT' : '| NOT VERIFIED'}</text>
+    ${section('NO MATES', noMates, sectionStartY, '#c8102e', true, noMateColumns)}
     ${section('POOL MISMATCHES', mismatches, mismatchY, '#111111', false, mismatchColumns)}
   </svg>`;
   return sharp(Buffer.from(svg), { failOn: 'warning' }).png().toBuffer();
+}
+
+async function renderMeetingPng(payload) {
+  const tones = { blue: '#eaf3fb', green: '#edf8f2', tan: '#fbf5e9', purple: '#f5effb' };
+  const title = text(payload.title || 'Morning Meeting').slice(0, 80);
+  const boardTitle = text(payload.boardTitle || `${title} Plan`).slice(0, 100);
+  const incoming = Array.isArray(payload.sections) ? payload.sections.slice(0, 4) : [];
+  const sections = incoming.map((section, index) => ({
+    title: text(section?.title || `Section ${index + 1}`).slice(0, 60),
+    subtitle: text(section?.subtitle || '').slice(0, 100),
+    tone: tones[section?.tone] || Object.values(tones)[index] || '#f4f6f8',
+    lines: (Array.isArray(section?.lines) ? section.lines : []).slice(0, 5).map((line) => text(line).slice(0, 130)),
+  }));
+  while (sections.length < 4) sections.push({ title: 'Notes', subtitle: '', tone: '#f4f6f8', lines: [] });
+  const width = 1200;
+  const height = 760;
+  const margin = 28;
+  const gap = 18;
+  const cardWidth = (width - margin * 2 - gap) / 2;
+  const cardHeight = 292;
+  const card = (section, index) => {
+    const x = margin + (index % 2) * (cardWidth + gap);
+    const y = 118 + Math.floor(index / 2) * (cardHeight + gap);
+    let rows = '';
+    for (let lineIndex = 0; lineIndex < 5; lineIndex += 1) {
+      const rowY = y + 94 + lineIndex * 36;
+      const value = section.lines[lineIndex] || '';
+      rows += `<rect x="${x + 14}" y="${rowY}" width="${cardWidth - 28}" height="36" fill="${lineIndex % 2 ? '#fbfcfd' : '#ffffff'}" stroke="#cad4df"/>`;
+      rows += `<rect x="${x + 14}" y="${rowY}" width="38" height="36" fill="#e6edf4" stroke="#cad4df"/>`;
+      rows += `<text x="${x + 33}" y="${rowY + 23}" text-anchor="middle" class="number">${lineIndex + 1}</text>`;
+      rows += `<text x="${x + 62}" y="${rowY + 23}" class="line">${xml(value.length > 82 ? `${value.slice(0, 79)}...` : value)}</text>`;
+    }
+    return `<rect x="${x}" y="${y}" width="${cardWidth}" height="${cardHeight}" rx="16" fill="${section.tone}" stroke="#c9d3df"/>
+      <text x="${x + 16}" y="${y + 31}" class="card-title">${xml(section.title)}</text>
+      <text x="${x + 16}" y="${y + 53}" class="subtitle">${xml(section.subtitle)}</text>${rows}`;
+  };
+  const reportTime = new Date().toLocaleString([], { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
+    <style>text{font-family:Segoe UI,Arial}.title{font-size:28px;font-weight:900;fill:#17324d}.meta{font-size:13px;font-weight:700;fill:#60748a}.card-title{font-size:20px;font-weight:900;fill:#172033;text-decoration:underline}.subtitle{font-size:11px;font-weight:800;fill:#667085}.number{font-size:12px;font-weight:900;fill:#213047}.line{font-size:13px;font-weight:750;fill:#172033}</style>
+    <rect width="100%" height="100%" fill="#eef4f8"/><rect width="100%" height="7" fill="#17324d"/>
+    <text x="${margin}" y="48" class="title">${xml(boardTitle)}</text>
+    <text x="${margin}" y="76" class="meta">${xml(reportTime)}</text>
+    ${sections.map(card).join('')}
+  </svg>`;
+  return sharp(Buffer.from(svg), { failOn: 'warning' }).png().toBuffer();
+}
+
+async function pushMeeting(payload, png) {
+  if (!settings.appToken || !settings.userKey) throw new Error('Enter both Pushover keys in YardMate Agent.');
+  const title = text(payload.title || 'Morning Meeting').slice(0, 80);
+  const response = await fetch('https://api.pushover.net/1/messages.json', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      token: settings.appToken,
+      user: settings.userKey,
+      title: `Settegast ${title}`,
+      message: `${title} board attached.`,
+      attachment_base64: png.toString('base64'),
+      attachment_type: 'image/png',
+    }),
+  });
+  const result = await response.json();
+  if (!response.ok || result.status !== 1) throw new Error(result.errors?.join(' ') || `Pushover returned ${response.status}.`);
 }
 
 async function push(rows, png) {
@@ -338,6 +429,21 @@ function startControlServer() {
         });
         return response.end(lastPreview);
       }
+      if (request.method === 'POST' && url.pathname === '/api/source-refresh') {
+        const body = await readJsonBody(request);
+        sourceRefresh = {
+          timestamp: text(body.timestamp).slice(0, 40),
+          observedAt: text(body.observedAt).slice(0, 40),
+          ageMinutes: Number.isFinite(Number(body.ageMinutes)) ? Number(body.ageMinutes) : null,
+          verified: Boolean(body.verified),
+          changed: Boolean(body.changed),
+        };
+        lastMessage = sourceRefresh.verified
+          ? `UP refresh verified: ${sourceRefresh.timestamp}.`
+          : `UP refresh timestamp could not be verified: ${sourceRefresh.timestamp || 'not found'}.`;
+        publishState();
+        return sendJson(response, 200, publicState());
+      }
       if (request.method === 'POST' && url.pathname === '/api/watch') {
         const body = await readJsonBody(request);
         settings.enabled = Boolean(body.enabled);
@@ -358,6 +464,14 @@ function startControlServer() {
         lastMessage = `Test alert sent at ${new Date().toLocaleTimeString()}.`;
         publishState();
         return sendJson(response, 200, publicState());
+      }
+      if (request.method === 'POST' && url.pathname === '/api/push-morning-meeting') {
+        const body = await readJsonBody(request);
+        const png = await renderMeetingPng(body);
+        await pushMeeting(body, png);
+        lastMessage = `Sent ${text(body.title || 'Morning Meeting')} alert at ${new Date().toLocaleTimeString()}.`;
+        publishState();
+        return sendJson(response, 200, { ok: true, state: publicState() });
       }
       if (request.method === 'POST' && url.pathname === '/api/open-settings') {
         createWindow();

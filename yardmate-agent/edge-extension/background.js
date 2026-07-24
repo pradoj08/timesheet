@@ -40,6 +40,34 @@ async function requestExport(tabId) {
   return sendToPage(tabId, 'mori-run-mismatch-export');
 }
 
+async function readRefreshTimestamp(tabId) {
+  const response = await sendToPage(tabId, 'mori-read-refresh-timestamp');
+  return String(response?.refreshTimestamp || '');
+}
+
+function parseRefreshTimestamp(value) {
+  const match = String(value || '').match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})\s+(\d{2})(\d{2})\s+(CDT|CST)$/i);
+  if (!match) return NaN;
+  let year = Number(match[3]);
+  if (year < 100) year += 2000;
+  const offsetHours = match[6].toUpperCase() === 'CDT' ? 5 : 6;
+  return Date.UTC(year, Number(match[1]) - 1, Number(match[2]), Number(match[4]), Number(match[5])) + offsetHours * 3600000;
+}
+
+async function reportRefreshVerification(timestamp, previousTimestamp) {
+  const parsed = parseRefreshTimestamp(timestamp);
+  const ageMinutes = Number.isFinite(parsed) ? Math.round((Date.now() - parsed) / 60000) : null;
+  const verified = ageMinutes !== null && ageMinutes >= -2 && ageMinutes <= 5;
+  const changed = Boolean(previousTimestamp && timestamp && previousTimestamp !== timestamp);
+  const payload = { timestamp, previousTimestamp, observedAt: new Date().toISOString(), ageMinutes, verified, changed };
+  await fetch('http://127.0.0.1:43127/api/source-refresh', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  }).catch(() => {});
+  return payload;
+}
+
 async function waitForPage(tabId, timeoutMs = 20000) {
   const existing = await chrome.tabs.get(tabId);
   if (existing.status === 'complete') return existing;
@@ -122,12 +150,16 @@ async function runExport(source = 'manual') {
   try {
     const selected = await chooseOrOpenPage();
     openedTab = selected.opened ? selected.tab : null;
+    const previousTimestamp = await readRefreshTimestamp(selected.tab.id).catch(() => '');
     await reloadPage(selected.tab.id);
     const refreshedTab = await waitForMismatchReport(selected.tab.id);
+    const refreshTimestamp = await readRefreshTimestamp(refreshedTab.id);
+    const freshness = await reportRefreshVerification(refreshTimestamp, previousTimestamp);
+    if (!freshness.verified) throw new Error(`UP page refreshed, but its footer timestamp is not current (${refreshTimestamp || 'not found'}).`);
     await chrome.storage.local.set({ mismatchPageUrl: refreshedTab.url });
     const response = await requestExport(refreshedTab.id);
     if (!response?.ok) throw new Error(response?.error || 'Export to Excel was not found.');
-    const label = source === 'automatic' ? 'Automatic export started.' : 'Manual export started.';
+    const label = `${source === 'automatic' ? 'Automatic' : 'Manual'} export started · UP refreshed ${refreshTimestamp}.`;
     await setStatus(label, true);
     if (openedTab) setTimeout(() => chrome.tabs.remove(openedTab.id).catch(() => {}), 5000);
     return { ok: true, message: label };

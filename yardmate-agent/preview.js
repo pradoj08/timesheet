@@ -7,12 +7,32 @@ const target = process.argv[3];
 const workbook = XLSX.readFile(source);
 const records = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { defval: '', raw: false });
 const clean = (value) => String(value ?? '').replace(/\s+/g, ' ').trim();
+const mismatchDurationMinutes = (value, now = new Date()) => {
+  const raw = clean(value);
+  if (!raw) return '';
+  const match = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})[,\s]+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)?$/i);
+  let started;
+  if (match) {
+    let year = Number(match[3]);
+    if (year < 100) year += 2000;
+    let hour = Number(match[4]);
+    const meridiem = String(match[7] || '').toUpperCase();
+    if (meridiem === 'PM' && hour < 12) hour += 12;
+    if (meridiem === 'AM' && hour === 12) hour = 0;
+    started = new Date(year, Number(match[1]) - 1, Number(match[2]), hour, Number(match[5]), Number(match[6] || 0));
+  } else {
+    started = new Date(raw);
+  }
+  if (Number.isNaN(started.getTime())) return '';
+  return String(Math.max(0, Math.floor((now.getTime() - started.getTime()) / 60000)));
+};
 const rows = records.map((record) => {
   const row = new Map(Object.entries(record).map(([key, value]) => [clean(key).toLowerCase(), value]));
   return {
     container: clean(row.get('container id')), chassis: clean(row.get('chassis id')),
     requiredPool: clean(row.get('eqmt pool id')), chassisPool: clean(row.get('chassis pool id')),
     size: clean(row.get('car kind')), location: clean(row.get('location')),
+    mismatchTime: clean(row.get('mismatch time') || row.get('mismatch')),
   };
 }).filter((row) => row.container);
 const xml = (value) => String(value).replace(/[&<>"']/g, (character) => ({
@@ -21,15 +41,16 @@ const xml = (value) => String(value).replace(/[&<>"']/g, (character) => ({
 const compare = (left, right) => String(left || '').localeCompare(String(right || ''), undefined, { numeric: true, sensitivity: 'base' });
 const noMates = rows
   .filter((row) => !row.chassis)
+  .map((row) => ({ ...row, durationMinutes: mismatchDurationMinutes(row.mismatchTime) }))
   .sort((left, right) => compare(left.location, right.location) || compare(left.container, right.container));
 const mismatches = rows
   .filter((row) => row.chassis)
   .sort((left, right) => compare(left.requiredPool, right.requiredPool) || compare(left.location, right.location) || compare(left.container, right.container));
 const reportTime = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 const noMateColumns = [
-  ['LOCATION', 'location', 150], ['CONTAINER', 'container', 160],
-  ['CHASSIS', 'chassis', 155], ['REQUIRED POOL', 'requiredPool', 150],
-  ['SIZE', 'size', 120],
+  ['LOCATION', 'location', 135], ['CONTAINER', 'container', 145],
+  ['CHASSIS', 'chassis', 125], ['REQUIRED POOL', 'requiredPool', 125],
+  ['SIZE', 'size', 70], ['DURATION (MIN)', 'durationMinutes', 135],
 ];
 const mismatchColumns = [
   ['LOCATION', 'location', 140], ['CONTAINER', 'container', 145],

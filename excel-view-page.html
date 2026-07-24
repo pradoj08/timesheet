@@ -3663,7 +3663,7 @@
         </div>
         <div class="excel-urgent-notes-matrix" id="excelUrgentNotesMatrix"></div>
         <div class="excel-urgent-actions">
-          <button class="btn btn-white btn-small" id="saveExcelUrgentNotes" type="button">Save Board</button>
+          <button class="btn btn-white btn-small" id="saveExcelUrgentNotes" type="button">Push Alert</button>
           <button class="btn btn-small excel-urgent-clear" id="clearExcelUrgentNotes" type="button">Clear Board</button>
         </div>
       </div>
@@ -9819,7 +9819,41 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       excelUrgentNotesRender();
     });
   });
-  document.getElementById("saveExcelUrgentNotes").addEventListener("click", () => excelUrgentNotesWrite(excelUrgentNotesCollect(), excelCurrentNotesView().savedStatus));
+  async function pushExcelUrgentNotesAlert() {
+    const button = document.getElementById("saveExcelUrgentNotes");
+    const view = excelCurrentNotesView();
+    const board = excelUrgentNotesCollect();
+    excelUrgentNotesWrite(board, "Preparing push alert...");
+    button.disabled = true;
+    button.textContent = "Sending...";
+    try {
+      const response = await fetch("http://127.0.0.1:43127/api/push-morning-meeting", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: view.title,
+          boardTitle: view.boardTitle,
+          sections: view.sections.map(section => ({
+            title: section.title.replace(/&lt;/g, "<").replace(/&gt;/g, ">"),
+            subtitle: section.subtitle,
+            tone: section.tone,
+            lines: board[section.key]
+          }))
+        })
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "YardMate could not send the alert.");
+      excelUrgentNotesUpdateStatus(board, "Push alert sent");
+      button.textContent = "Sent";
+    } catch (error) {
+      excelUrgentNotesUpdateStatus(board, error instanceof Error ? error.message : "Push alert failed");
+      button.textContent = "Try Again";
+    } finally {
+      button.disabled = false;
+      setTimeout(() => { button.textContent = "Push Alert"; }, 1800);
+    }
+  }
+  document.getElementById("saveExcelUrgentNotes").addEventListener("click", pushExcelUrgentNotesAlert);
   document.getElementById("clearExcelUrgentNotes").addEventListener("click", () => {
     if (!confirm(excelCurrentNotesView().clearPrompt)) return;
     excelUrgentNotesWrite(excelUrgentNotesBlankBoard());

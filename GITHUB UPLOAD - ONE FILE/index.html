@@ -41,6 +41,33 @@
       background: #ffff00;
       border-color: #ffff00;
     }
+    .matrix-nav-group {
+      position: relative;
+      display: inline-flex;
+    }
+    .matrix-nav-group > button::after {
+      content: " \25BE";
+      font-size: 11px;
+    }
+    .matrix-nav-menu {
+      position: absolute;
+      z-index: 30;
+      top: calc(100% + 4px);
+      left: 0;
+      display: none;
+      min-width: 174px;
+      padding: 4px;
+      border: 1px solid #777;
+      background: #111;
+      box-shadow: 0 8px 20px rgba(0,0,0,.3);
+    }
+    .matrix-nav-group.open .matrix-nav-menu,
+    .matrix-nav-group:focus-within .matrix-nav-menu { display: grid; gap: 4px; }
+    .workbook-tabs .matrix-nav-menu button {
+      width: 100%;
+      min-width: 164px;
+      text-align: left;
+    }
     .am-report-actions[hidden] { display: none !important; }
     .am-report-actions {
       width: 100%;
@@ -4589,6 +4616,7 @@
     let frame = primaryFrame;
     const bridgedPageHtml = new Map();
     let matrixControlsNav = null;
+    let matrixMenuButton = null;
     function pageFromHash() {
       const id = window.location.hash.replace(/^#/, "");
       return pages[id] && !["compare", "time", "dayforce", "archive", "roster", "timeOff"].includes(id) ? id : "";
@@ -4704,6 +4732,7 @@
       document.querySelectorAll(".workbook-tabs button").forEach((button) => {
         button.classList.toggle("active", button.dataset.page === activePage);
       });
+      if (matrixMenuButton) matrixMenuButton.classList.toggle("active", ["matrix", "matrixWide"].includes(activePage));
       amReportActions.hidden = activePage !== "amReport";
       if (matrixControlsNav) matrixControlsNav.classList.toggle("visible", ["matrix", "matrixWide"].includes(activePage));
       const nextFrame = activePage === "chassisStatus" ? chassisFrame : primaryFrame;
@@ -4953,7 +4982,7 @@
     window.openSchedulePopup = openSchedulePopup;
     window.openOldViewPopup = openOldViewPopup;
 
-    const tabOrder = ["pearl", "amReport", "chassisStatus", "timeMd", "billing", "excelView", "lphTracker", "matrix", "matrixWide", "obsidian"];
+    const tabOrder = ["amReport", "chassisStatus", "timeMd", "billing", "excelView", "lphTracker", "matrix", "obsidian", "pearl"];
     matrixControlsNav = document.createElement("button");
     matrixControlsNav.type = "button";
     matrixControlsNav.className = "matrix-controls-nav";
@@ -4965,13 +4994,52 @@
     tabOrder.forEach((id) => {
       const page = pages[id];
       if (!page) return;
-      if (id === "matrix") tabs.appendChild(matrixControlsNav);
+      if (id === "matrix") {
+        tabs.appendChild(matrixControlsNav);
+        const group = document.createElement("div");
+        group.className = "matrix-nav-group";
+        matrixMenuButton = document.createElement("button");
+        matrixMenuButton.type = "button";
+        matrixMenuButton.textContent = "Matrix";
+        matrixMenuButton.setAttribute("aria-haspopup", "menu");
+        matrixMenuButton.setAttribute("aria-expanded", "false");
+        const menu = document.createElement("div");
+        menu.className = "matrix-nav-menu";
+        menu.setAttribute("role", "menu");
+        [["matrix", "Matrix"], ["matrixWide", "Matrix Reloaded"]].forEach(([pageId, label]) => {
+          if (!pages[pageId]) return;
+          const option = document.createElement("button");
+          option.type = "button";
+          option.dataset.page = pageId;
+          option.textContent = label;
+          option.setAttribute("role", "menuitem");
+          option.addEventListener("click", () => {
+            group.classList.remove("open");
+            matrixMenuButton.setAttribute("aria-expanded", "false");
+            selectPage(pageId);
+          });
+          menu.appendChild(option);
+        });
+        matrixMenuButton.addEventListener("click", () => {
+          const open = group.classList.toggle("open");
+          matrixMenuButton.setAttribute("aria-expanded", String(open));
+        });
+        group.append(matrixMenuButton, menu);
+        tabs.appendChild(group);
+        return;
+      }
       const button = document.createElement("button");
       button.type = "button";
       button.dataset.page = id;
       button.textContent = page.label;
       button.addEventListener("click", () => selectPage(id));
       tabs.appendChild(button);
+    });
+    document.addEventListener("click", (event) => {
+      const group = matrixMenuButton && matrixMenuButton.closest(".matrix-nav-group");
+      if (!group || group.contains(event.target)) return;
+      group.classList.remove("open");
+      matrixMenuButton.setAttribute("aria-expanded", "false");
     });
 
     document.getElementById("amHeaderMassExport").addEventListener("click", openMassExportModal);

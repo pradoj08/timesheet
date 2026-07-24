@@ -47,9 +47,18 @@
     return hasHeading && hasEquipmentColumns && Boolean(findExcelExport());
   }
 
+  function pageRefreshTimestamp() {
+    const matches = String(document.body?.innerText || '').match(/\b\d{1,2}\/\d{1,2}\/\d{2,4}\s+\d{4}\s+(?:CDT|CST)\b/gi);
+    return matches?.length ? matches[matches.length - 1].replace(/\s+/g, ' ').trim().toUpperCase() : '';
+  }
+
   chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     if (message?.type === 'mori-identify-mismatch-page') {
-      sendResponse({ ok: true, isMismatchReport: isMismatchReport() });
+      sendResponse({ ok: true, isMismatchReport: isMismatchReport(), refreshTimestamp: pageRefreshTimestamp() });
+      return;
+    }
+    if (message?.type === 'mori-read-refresh-timestamp') {
+      sendResponse({ ok: true, refreshTimestamp: pageRefreshTimestamp() });
       return;
     }
     if (message?.type !== 'mori-run-mismatch-export') return;
@@ -58,7 +67,7 @@
       const exportControl = findExcelExport();
       if (!exportControl) throw new Error('Export to Excel was not found on this page.');
       (exportControl.closest('a,button,input') || exportControl).click();
-      sendResponse({ ok: true });
+      sendResponse({ ok: true, refreshTimestamp: pageRefreshTimestamp() });
     } catch (error) {
       sendResponse({ ok: false, error: error instanceof Error ? error.message : String(error) });
     }

@@ -15,7 +15,7 @@
   .brand{display:flex;align-items:center;gap:13px}.orb{width:43px;height:43px;border-radius:50%;background:radial-gradient(circle at 30% 24%,#fff 0 9%,#bafcff 20%,#23b6c5 56%,#10445e 100%);box-shadow:0 0 22px #18b9d577}.brand h1{margin:0;font-size:25px}.brand p{margin:3px 0 0;color:#a9bdd0;font-size:11px;font-weight:800;letter-spacing:.11em;text-transform:uppercase}
   .connection{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:900}.dot{width:10px;height:10px;border-radius:50%;background:#8794a5;box-shadow:0 0 0 4px #ffffff12}.connection.online .dot{background:#2fe0a4;box-shadow:0 0 0 4px #2fe0a422}.connection.offline .dot{background:#ff5a68}
   .content{padding:18px;border:1px solid var(--line);border-top:0;border-radius:0 0 16px 16px;background:#f8fafc}
-  .status-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:14px}.status-card{min-width:0;padding:13px;border:1px solid var(--line);border-radius:11px;background:var(--panel)}.status-card span{display:block;color:var(--muted);font-size:10px;font-weight:900;letter-spacing:.08em;text-transform:uppercase}.status-card strong{display:block;margin-top:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:16px}.status-card strong.good{color:var(--green)}.status-card strong.bad{color:var(--red)}
+  .status-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-bottom:14px}.status-card{min-width:0;padding:13px;border:1px solid var(--line);border-radius:11px;background:var(--panel)}.status-card span{display:block;color:var(--muted);font-size:10px;font-weight:900;letter-spacing:.08em;text-transform:uppercase}.status-card strong{display:block;margin-top:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:16px}.status-card strong.good{color:var(--green)}.status-card strong.bad{color:var(--red)}
   .toolbar{display:flex;flex-wrap:wrap;gap:8px;padding:12px;border:1px solid var(--line);border-radius:11px;background:var(--panel)}.btn{min-height:39px;padding:8px 13px;border:1px solid #aeb9c7;border-radius:8px;background:#fff;color:var(--ink);font-weight:900;cursor:pointer}.btn:hover,.btn:focus-visible{border-color:var(--cyan);outline:3px solid #0e91b820}.btn.primary{border-color:#08775a;background:var(--green);color:#fff}.btn.dark{border-color:#111827;background:#111827;color:#fff}.btn.warn{border-color:#b77900;background:#fff6d6;color:#734b00}.btn:disabled{opacity:.55;cursor:wait}.watch{display:inline-flex;align-items:center;gap:8px;min-height:39px;padding:7px 11px;border:1px solid var(--line);border-radius:8px;background:var(--soft);font-size:12px;font-weight:900}.watch input{width:19px;height:19px;accent-color:var(--green)}
   .message{min-height:42px;margin:12px 0;padding:12px 14px;border-left:5px solid var(--cyan);border-radius:7px;background:#e8f6fb;color:#17445c;font-size:13px;font-weight:750}.message.error{border-color:var(--red);background:#fff0f2;color:#8b1529}
   .preview-card{overflow:hidden;border:1px solid var(--line);border-radius:12px;background:#fff}.preview-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 14px;border-bottom:1px solid var(--line);background:var(--soft)}.preview-head strong{font-size:13px;letter-spacing:.06em;text-transform:uppercase}.preview-head span{color:var(--muted);font-size:11px}.preview-body{display:flex;min-height:260px;align-items:flex-start;justify-content:center;padding:14px;overflow:auto;background:#fff}.preview-body img{display:block;max-width:100%;height:auto;box-shadow:0 5px 20px #0f172a20}.empty{align-self:center;color:var(--muted);font-weight:700;text-align:center}
@@ -35,6 +35,7 @@
       <article class="status-card"><span>Latest Excel</span><strong id="latestFile">—</strong></article>
       <article class="status-card"><span>No mates</span><strong id="noMateCount">0</strong></article>
       <article class="status-card"><span>Pool mismatches</span><strong id="mismatchCount">0</strong></article>
+      <article class="status-card"><span>UP page refreshed</span><strong id="sourceRefresh">Not verified</strong></article>
     </div>
     <div class="toolbar">
       <label class="watch"><input id="watchToggle" type="checkbox"> Watch Downloads automatically</label>
@@ -61,6 +62,7 @@
   const latestFile = document.getElementById("latestFile");
   const noMateCount = document.getElementById("noMateCount");
   const mismatchCount = document.getElementById("mismatchCount");
+  const sourceRefresh = document.getElementById("sourceRefresh");
   const watchToggle = document.getElementById("watchToggle");
   const message = document.getElementById("message");
   const previewBody = document.getElementById("previewBody");
@@ -83,6 +85,8 @@
     latestFile.textContent = state.lastFile || "Not processed yet";
     noMateCount.textContent = state.counts.noMates;
     mismatchCount.textContent = state.counts.mismatches;
+    sourceRefresh.textContent = state.sourceRefresh?.timestamp || "Not verified";
+    sourceRefresh.className = state.sourceRefresh?.verified ? "good" : "bad";
     showMessage(state.lastMessage || "Ready.", false);
     if (state.previewAvailable) previewCaption.textContent = `${state.counts.total} parsed rows · ${state.lastFile || "latest export"}`;
   }
