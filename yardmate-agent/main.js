@@ -307,6 +307,113 @@ async function pushMeeting(payload, png) {
   if (!response.ok || result.status !== 1) throw new Error(result.errors?.join(' ') || `Pushover returned ${response.status}.`);
 }
 
+async function pushWeather(payload) {
+  if (!settings.appToken || !settings.userKey) throw new Error('Enter both Pushover keys in YardMate Agent.');
+  const postTitle = text(payload.title || 'Latest weather update').slice(0, 240);
+  const published = text(payload.date);
+  const link = text(payload.link);
+  const weatherPng = await renderWeatherPostPng(payload);
+  const pushPayload = {
+    token: settings.appToken,
+    user: settings.userKey,
+    title: `Space City Weather [${new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}]`,
+    message: `${postTitle}\n\nFull latest post attached.`.slice(0, 1024),
+    attachment_base64: weatherPng.toString('base64'),
+    attachment_type: 'image/png',
+  };
+  if (/^https?:\/\//i.test(link)) {
+    pushPayload.url = link.slice(0, 512);
+    pushPayload.url_title = 'Read the full weather update';
+  }
+  const response = await fetch('https://api.pushover.net/1/messages.json', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(pushPayload),
+  });
+  const result = await response.json();
+  if (!response.ok || result.status !== 1) throw new Error(result.errors?.join(' ') || `Pushover returned ${response.status}.`);
+}
+
+function weatherLines(value, limit = 74) {
+  const lines = [];
+  String(value || '').split(/\n+/).forEach((paragraph) => {
+    const words = text(paragraph).split(' ').filter(Boolean);
+    let line = '';
+    words.forEach((word) => {
+      if (line && `${line} ${word}`.length > limit) {
+        lines.push(line);
+        line = word;
+      } else {
+        line = line ? `${line} ${word}` : word;
+      }
+    });
+    if (line) lines.push(line);
+    if (words.length) lines.push('');
+  });
+  while (lines.length && !lines[lines.length - 1]) lines.pop();
+  return lines;
+}
+
+async function renderWeatherPostPng(payload) {
+  const width = 900;
+  const margin = 38;
+  const titleLines = weatherLines(payload.title, 42).slice(0, 4);
+  const beforeLines = weatherLines(payload.beforeImage || payload.summary, 70);
+  const afterLines = weatherLines(payload.afterImage, 70);
+  let image = null;
+  const imageUrl = text(payload.imageUrl);
+  if (/^https?:\/\//i.test(imageUrl)) {
+    try {
+      const response = await fetch(imageUrl);
+      if (response.ok) {
+        const source = Buffer.from(await response.arrayBuffer());
+        if (source.length <= 12 * 1024 * 1024) {
+          image = await sharp(source).resize({ width: width - margin * 2, height: 620, fit: 'inside', withoutEnlargement: true }).jpeg({ quality: 84 }).toBuffer();
+        }
+      }
+    } catch {}
+  }
+  const maxBodyLines = image ? 48 : 68;
+  const bodyLines = beforeLines.concat(afterLines).slice(0, maxBodyLines);
+  const imageMeta = image ? await sharp(image).metadata() : null;
+  const imageHeight = imageMeta?.height || 0;
+  const titleHeight = titleLines.length * 43;
+  const bodyHeight = bodyLines.length * 28;
+  const naturalHeight = 144 + titleHeight + 42 + bodyHeight + (imageHeight ? imageHeight + 34 : 0) + 70;
+  const height = Math.min(2450, Math.max(620, naturalHeight));
+  let y = 76;
+  const titleSvg = titleLines.map((line) => {
+    const row = `<text x="${margin}" y="${y}" class="title">${xml(line)}</text>`;
+    y += 43;
+    return row;
+  }).join('');
+  const dateLabel = payload.date ? new Date(payload.date).toLocaleString([], { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
+  const beforeCount = Math.min(beforeLines.length, maxBodyLines);
+  y += 8;
+  const metaSvg = `<text x="${margin}" y="${y}" class="meta">${xml(dateLabel)}</text>`;
+  y += 42;
+  const bodySvg = [];
+  let imageY = 0;
+  bodyLines.forEach((line, index) => {
+    if (image && index === beforeCount) {
+      imageY = y + 8;
+      y += imageHeight + 34;
+    }
+    if (y < height - 34) bodySvg.push(`<text x="${margin}" y="${y}" class="body">${xml(line || ' ')}</text>`);
+    y += 28;
+  });
+  const imageTag = image
+    ? `<image x="${margin}" y="${imageY}" width="${imageMeta.width}" height="${imageHeight}" href="data:image/jpeg;base64,${image.toString('base64')}"/>`
+    : '';
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
+    <style>.source{font:900 17px Segoe UI,Arial;letter-spacing:1px;fill:#087f75}.title{font:900 34px Segoe UI,Arial;fill:#172033}.meta{font:800 17px Segoe UI,Arial;fill:#64748b}.body{font:700 20px Segoe UI,Arial;fill:#334155}</style>
+    <rect width="100%" height="100%" fill="#ffffff"/><rect width="100%" height="7" fill="#0f172a"/>
+    <text x="${margin}" y="28" class="source">SPACE CITY WEATHER</text>
+    ${titleSvg}${metaSvg}${imageTag}${bodySvg.join('')}
+  </svg>`;
+  return sharp(Buffer.from(svg)).png({ compressionLevel: 9 }).toBuffer();
+}
+
 async function push(rows, png) {
   if (!settings.appToken || !settings.userKey) throw new Error('Enter both Pushover keys in YardMate Agent.');
   const noMates = rows.filter((row) => !row.chassis).length;
@@ -470,6 +577,13 @@ function startControlServer() {
         const png = await renderMeetingPng(body);
         await pushMeeting(body, png);
         lastMessage = `Sent ${text(body.title || 'Morning Meeting')} alert at ${new Date().toLocaleTimeString()}.`;
+        publishState();
+        return sendJson(response, 200, { ok: true, state: publicState() });
+      }
+      if (request.method === 'POST' && url.pathname === '/api/push-weather') {
+        const body = await readJsonBody(request);
+        await pushWeather(body);
+        lastMessage = `Sent Space City Weather alert at ${new Date().toLocaleTimeString()}.`;
         publishState();
         return sendJson(response, 200, { ok: true, state: publicState() });
       }

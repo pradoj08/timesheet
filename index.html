@@ -162,6 +162,16 @@
       font-weight: 900;
       cursor: pointer;
     }
+    .scw-popup-head button.scw-push-alert {
+      width: auto;
+      min-width: 48px;
+      padding: 0 7px;
+      border-color: #0d9488;
+      background: #0f766e;
+      font-size: 10px;
+      letter-spacing: .03em;
+    }
+    .scw-popup-head button.scw-push-alert:disabled { cursor: wait; opacity: .78; }
     .scw-popup-body { max-height: calc(100vh - 190px); padding: 15px 16px 14px; overflow: auto; background: #fff; }
     .scw-popup-source { margin-bottom: 7px; color: #0f766e; font-size: 10px; font-weight: 950; letter-spacing: .08em; text-transform: uppercase; }
     .scw-popup-title { margin: 0; font-size: 20px; line-height: 1.18; }
@@ -1818,6 +1828,7 @@
     <header class="scw-popup-head" id="scwLatestHandle">
       <strong id="scwLatestHeading">Space City Weather · Latest Post</strong>
       <span class="scw-popup-head-actions">
+        <button type="button" class="scw-push-alert" id="scwLatestPush" title="Push the latest post to your phone" aria-label="Push latest Space City Weather post">Push</button>
         <button type="button" id="scwLatestRefresh" title="Refresh latest post" aria-label="Refresh latest Space City Weather post">↻</button>
         <button type="button" id="scwLatestClose" title="Close" aria-label="Close Space City Weather popup">&times;</button>
       </span>
@@ -4207,9 +4218,14 @@
       }
       var popup = frame.contentDocument.getElementById("amTodayRosterPopup");
       var button = frame.contentDocument.getElementById("amTodayRosterButton");
+      var sourceCard = frame.contentDocument.getElementById("amTodayRosterCard");
+      if (sourceCard && !sourceCard.querySelector(".am-today-roster-columns") && button) {
+        frame.contentDocument.__amFloatingRosterPriming = true;
+        try { button.click(); } catch (_) {}
+        frame.contentDocument.__amFloatingRosterPriming = false;
+      }
       if (popup) popup.hidden = true;
       if (button) button.setAttribute("aria-expanded", "false");
-      var sourceCard = frame.contentDocument.getElementById("amTodayRosterCard");
       if (!sourceCard || !sourceCard.querySelector(".am-today-roster-columns")) return false;
       card.innerHTML = sourceCard.innerHTML;
       observeSource(sourceCard);
@@ -4294,6 +4310,7 @@
       doc.addEventListener("click", function(event){
         var button = event.target.closest && event.target.closest("#amTodayRosterButton");
         if (!button) return;
+        if (doc.__amFloatingRosterPriming) return;
         event.preventDefault();
         event.stopImmediatePropagation();
         toggleFloatingRoster();
@@ -6313,6 +6330,7 @@ document.addEventListener('click',function(event){
     let matrixControlsNav = null;
     let matrixMenuButton = null;
     let reportMenuButton = null;
+    let pearlMenuButton = null;
     function pageFromHash() {
       const id = window.location.hash.replace(/^#/, "");
       return pages[id] && !["compare", "time", "dayforce", "archive", "roster", "timeOff"].includes(id) ? id : "";
@@ -6499,6 +6517,62 @@ document.addEventListener('click',function(event){
       renderScwPost(post);
     }
 
+    async function pushScwLatestPost() {
+      const button = document.getElementById("scwLatestPush");
+      const originalText = "Push";
+      button.disabled = true;
+      button.textContent = "Sending";
+      try {
+        let cached = readScwCache();
+        if (!cached || !cached.post) {
+          await fetchScwLatest(true);
+          cached = readScwCache();
+        }
+        if (!cached || !cached.post) throw new Error("Load the latest weather post before sending.");
+        const post = cached.post;
+        if (!scwLatestContent.querySelector(".scw-popup-article")) renderScwPost(post);
+        const article = scwLatestContent.querySelector(".scw-popup-article");
+        const articleNodes = article ? Array.from(article.childNodes) : [];
+        const imageNodeIndex = articleNodes.findIndex((node) =>
+          node.nodeType === 1 && (node.matches("img") || node.querySelector("img"))
+        );
+        const articleText = (nodes) => nodes
+          .map((node) => (node.textContent || "").replace(/\s+/g, " ").trim())
+          .filter(Boolean)
+          .join("\n\n");
+        const image = article && article.querySelector("img");
+        const beforeImage = imageNodeIndex >= 0 ? articleText(articleNodes.slice(0, imageNodeIndex)) : articleText(articleNodes);
+        const afterImage = imageNodeIndex >= 0 ? articleText(articleNodes.slice(imageNodeIndex + 1)) : "";
+        const response = await fetch("http://127.0.0.1:43127/api/push-weather", {
+          method: "POST",
+          cache: "no-store",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: post.title,
+            summary: post.summary,
+            beforeImage,
+            afterImage,
+            imageUrl: image ? image.currentSrc || image.src : "",
+            date: post.date,
+            link: post.link
+          })
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(result.error || "YardMate could not send the weather alert.");
+        button.textContent = "Sent ✓";
+        button.title = "Latest Space City Weather post sent";
+      } catch (error) {
+        button.textContent = "Failed";
+        button.title = error && error.message ? error.message : "Start YardMate Agent and try again.";
+      } finally {
+        window.setTimeout(() => {
+          button.disabled = false;
+          button.textContent = originalText;
+          button.title = "Push the latest post to your phone";
+        }, 3000);
+      }
+    }
+
     function openScwLatest(force = false) {
       sessionStorage.removeItem(SCW_DISMISSED_KEY);
       setScwColumnMode(true);
@@ -6680,6 +6754,88 @@ document.addEventListener('click',function(event){
       return bodyClose >= 0 ? html.slice(0, bodyClose) + patch + "\n" + html.slice(bodyClose) : html + patch;
     }
 
+    function withChassisForecastSupplyWarnings(html) {
+      if (!html || typeof html !== "string" || html.includes("chassis-forecast-supply-warnings-v1")) return html;
+      const patch = `
+<style id="chassis-forecast-supply-warnings-v1">
+  #forecastExcelView .forecast-supply-shortage-mark {
+    position: absolute;
+    right: 5px;
+    top: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    color: #ef0000 !important;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: .92em;
+    font-weight: 1000;
+    line-height: 1;
+    text-shadow: 0 0 1px #ffffff, 0 0 2px rgba(239, 0, 0, .35) !important;
+    transform: translateY(-50%);
+    pointer-events: none;
+  }
+  #forecastExcelView td.forecast-supply-shortage,
+  #forecastExcelView th.forecast-supply-shortage {
+    position: relative;
+    color: #991b1b !important;
+  }
+</style>
+<scr${""}ipt>
+(() => {
+  const pools = ["TRAC", "FGCP", "SNCZ", "DCLI"];
+  const markSupplyShortages = () => {
+    const table = document.querySelector("#forecastExcelView .forecast-excel-main-table");
+    if (!table || typeof getForecastRequestOnHandCount !== "function") return;
+    const used = new Map();
+    table.querySelectorAll("tbody tr").forEach(row => {
+      const cells = Array.from(row.children);
+      const sizeCell = cells.find(cell => cell.tagName === "TH" && /^\\s*(53|45|40|20)\\s*$/.test(cell.textContent || ""));
+      if (!sizeCell) return;
+      const size = String(sizeCell.textContent || "").trim();
+      const totalRow = row.classList.contains("excel-total-row");
+      const dataCells = cells.filter(cell => cell.tagName === "TD");
+      pools.forEach((pool, index) => {
+        const cell = dataCells[index];
+        if (!cell) return;
+        const value = Number(String(cell.textContent || "").replace(/[^0-9.-]/g, "")) || 0;
+        const key = pool + "|" + size;
+        const demand = totalRow ? value : (used.get(key) || 0) + value;
+        if (!totalRow) used.set(key, demand);
+        const inventoryPool = pool === "TRAC" ? "TGRP" : pool;
+        const available = Number(getForecastRequestOnHandCount(inventoryPool, size)) || 0;
+        if (value > 0 && demand > available) {
+          cell.classList.add("forecast-supply-shortage");
+          const content = cell.querySelector(".forecast-excel-cell-content") || cell;
+          if (!content.querySelector(".forecast-supply-shortage-mark")) {
+            const mark = document.createElement("span");
+            mark.className = "forecast-supply-shortage-mark";
+            mark.textContent = "\u2715";
+            mark.title = pool + " " + size + "' demand exceeds current inventory (" + demand + " needed / " + available + " available)";
+            mark.setAttribute("aria-label", mark.title);
+            content.appendChild(mark);
+          }
+        }
+      });
+    });
+  };
+  const originalRender = window.renderForecastExcelView;
+  if (typeof originalRender === "function" && !originalRender.__supplyWarningsWrapped) {
+    const wrappedRender = function() {
+      const result = originalRender.apply(this, arguments);
+      markSupplyShortages();
+      return result;
+    };
+    wrappedRender.__supplyWarningsWrapped = true;
+    window.renderForecastExcelView = wrappedRender;
+  }
+  markSupplyShortages();
+})();
+</scr${""}ipt>`;
+      const bodyClose = html.toLowerCase().lastIndexOf("</body>");
+      return bodyClose >= 0 ? html.slice(0, bodyClose) + patch + "\n" + html.slice(bodyClose) : html + patch;
+    }
+
     function bridgedHtmlForPage(id) {
       if (!bridgedPageHtml.has(id)) {
         let pageHtml = pages[id].html;
@@ -6720,6 +6876,7 @@ document.addEventListener('click',function(event){
           pageHtml = withChassisFloatingEditorEnhancements(pageHtml);
           pageHtml = withChassisFlatPoolSummary(pageHtml);
           pageHtml = withChassisClearConfirmation(pageHtml);
+          pageHtml = withChassisForecastSupplyWarnings(pageHtml);
         }
         bridgedPageHtml.set(id, withWorkbookSyncBridge(pageHtml));
       }
@@ -6826,6 +6983,7 @@ document.addEventListener('click',function(event){
       });
       if (reportMenuButton) reportMenuButton.classList.toggle("active", ["amReport", "chassisStatus"].includes(activePage));
       if (matrixMenuButton) matrixMenuButton.classList.toggle("active", ["matrix", "matrixWide"].includes(activePage));
+      if (pearlMenuButton) pearlMenuButton.classList.toggle("active", activePage === "pearl");
       amReportActions.hidden = activePage !== "amReport";
       syncScwColumnMode(activePage === "amReport");
       if (matrixControlsNav) matrixControlsNav.classList.toggle("visible", ["matrix", "matrixWide"].includes(activePage));
@@ -7167,6 +7325,36 @@ document.addEventListener('click',function(event){
         tabs.appendChild(group);
         return;
       }
+      if (id === "pearl") {
+        const group = document.createElement("div");
+        group.className = "matrix-nav-group pearl-nav-group";
+        pearlMenuButton = document.createElement("button");
+        pearlMenuButton.type = "button";
+        pearlMenuButton.textContent = "Pearl.io";
+        pearlMenuButton.setAttribute("aria-haspopup", "menu");
+        pearlMenuButton.setAttribute("aria-expanded", "false");
+        const menu = document.createElement("div");
+        menu.className = "matrix-nav-menu pearl-nav-menu";
+        menu.setAttribute("role", "menu");
+        const pearlOption = document.createElement("button");
+        pearlOption.type = "button";
+        pearlOption.dataset.page = "pearl";
+        pearlOption.textContent = "Pearl.io";
+        pearlOption.setAttribute("role", "menuitem");
+        pearlOption.addEventListener("click", () => {
+          group.classList.remove("open");
+          pearlMenuButton.setAttribute("aria-expanded", "false");
+          selectPage("pearl");
+        });
+        menu.appendChild(pearlOption);
+        pearlMenuButton.addEventListener("click", () => {
+          const open = group.classList.toggle("open");
+          pearlMenuButton.setAttribute("aria-expanded", String(open));
+        });
+        group.append(pearlMenuButton, menu);
+        tabs.appendChild(group);
+        return;
+      }
       const button = document.createElement("button");
       button.type = "button";
       button.dataset.page = id;
@@ -7175,7 +7363,7 @@ document.addEventListener('click',function(event){
       tabs.appendChild(button);
     });
     document.addEventListener("click", (event) => {
-      [reportMenuButton, matrixMenuButton].forEach((menuButton) => {
+      [reportMenuButton, matrixMenuButton, pearlMenuButton].forEach((menuButton) => {
         const group = menuButton && menuButton.closest(".matrix-nav-group");
         if (!group || group.contains(event.target)) return;
         group.classList.remove("open");
@@ -7195,6 +7383,7 @@ document.addEventListener('click',function(event){
     document.getElementById("amHeaderThirdColumn").addEventListener("click", () => {
       setScwColumnMode(!weatherUsesThirdColumn());
     });
+    document.getElementById("scwLatestPush").addEventListener("click", pushScwLatestPost);
     document.getElementById("scwLatestRefresh").addEventListener("click", () => fetchScwLatest(true));
     document.getElementById("scwLatestClose").addEventListener("click", () => {
       setScwColumnMode(false);
@@ -7213,11 +7402,20 @@ document.addEventListener('click',function(event){
     workbookSupabaseButton.className = "cloud-sync-nav";
     workbookSupabaseButton.textContent = "Cloud Setup";
     workbookSupabaseButton.addEventListener("click", () => {
+      const pearlGroup = workbookSupabaseButton.closest(".pearl-nav-group");
+      if (pearlGroup) pearlGroup.classList.remove("open");
+      if (pearlMenuButton) pearlMenuButton.setAttribute("aria-expanded", "false");
       populateWorkbookSupabaseFields();
       const modal = document.getElementById("cloudSyncModal");
       if (modal) modal.hidden = false;
     });
-    tabs.appendChild(workbookSupabaseButton);
+    const pearlMenu = tabs.querySelector(".pearl-nav-menu");
+    if (pearlMenu) {
+      workbookSupabaseButton.setAttribute("role", "menuitem");
+      pearlMenu.appendChild(workbookSupabaseButton);
+    } else {
+      tabs.appendChild(workbookSupabaseButton);
+    }
 
     document.getElementById("closeCloudSyncBtn").addEventListener("click", () => {
       document.getElementById("cloudSyncModal").hidden = true;
