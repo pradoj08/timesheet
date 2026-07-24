@@ -41,6 +41,7 @@
       <label class="watch"><input id="watchToggle" type="checkbox"> Watch Downloads automatically</label>
       <button class="btn dark" id="previewLatest" type="button">Preview Latest Excel</button>
       <button class="btn primary" id="sendLatest" type="button">Process &amp; Send Alert</button>
+      <button class="btn primary" id="openAlertMeter" type="button">AlertMeter Snapshot</button>
       <button class="btn warn" id="testPush" type="button">Send Test Alert</button>
       <button class="btn" id="openSettings" type="button">Agent Settings</button>
       <button class="btn" id="refreshStatus" type="button">Refresh</button>
@@ -132,6 +133,14 @@
   });
   document.getElementById("previewLatest").addEventListener("click", () => action("/preview-latest", "Parsing the newest Excel…", true));
   document.getElementById("sendLatest").addEventListener("click", () => action("/process-latest", "Parsing and sending the newest Excel…", true));
+  document.getElementById("openAlertMeter").addEventListener("click", () => {
+    const dashboard = window.open("https://app.alertmeter.com/Admin/Dashboard/Index", "_blank", "noopener");
+    if (!dashboard) {
+      showMessage("Edge blocked the AlertMeter tab. Allow pop-ups for this workbook and try again.", true);
+      return;
+    }
+    showMessage("AlertMeter opened. On that dashboard tab, open Settegast Alerts v1.0.0 and click Run AlertMeter Now.", false);
+  });
   document.getElementById("testPush").addEventListener("click", () => action("/test-push", "Sending a test alert…", false));
   document.getElementById("openSettings").addEventListener("click", () => action("/open-settings", "Opening YardMate Agent settings…", false));
   document.getElementById("refreshStatus").addEventListener("click", refresh);

@@ -1,12 +1,13 @@
 {
   "manifest_version": 3,
-  "name": "Mori UP Mismatch Export",
-  "version": "0.7.0",
-  "description": "Manually or every 15 minutes uses the official UP control to download the mismatch Excel for Mori desktop.",
+  "name": "Settegast Alerts",
+  "version": "1.0.0",
+  "description": "Exports UP mismatch Excel files and captures the AlertMeter dashboard for YardMate push alerts.",
   "permissions": ["activeTab", "alarms", "scripting", "storage", "tabs"],
-  "host_permissions": ["https://employees.www.uprr.com/*", "http://127.0.0.1:43127/*"],
+  "optional_host_permissions": ["<all_urls>"],
+  "host_permissions": ["https://employees.www.uprr.com/*", "https://app.alertmeter.com/*", "http://127.0.0.1:43127/*"],
   "action": {
-    "default_title": "Mori mismatch export",
+    "default_title": "Settegast Alerts",
     "default_popup": "popup.html",
     "default_icon": "icon.svg"
   },
@@ -17,6 +18,11 @@
     {
       "matches": ["https://employees.www.uprr.com/*"],
       "js": ["content.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://app.alertmeter.com/*"],
+      "js": ["alertmeter-content.js"],
       "run_at": "document_idle"
     }
   ]

@@ -1,6 +1,9 @@
 const runButton = document.getElementById('run');
-const automatic = document.getElementById('automatic');
+const alertMeterButton = document.getElementById('alertMeter');
+const mismatchSchedule = document.getElementById('mismatchSchedule');
+const alertMeterSchedule = document.getElementById('alertMeterSchedule');
 const status = document.getElementById('status');
+document.getElementById('version').textContent = `v${chrome.runtime.getManifest().version}`;
 
 function timeLabel(timestamp) {
   return timestamp ? ` · ${new Date(timestamp).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}` : '';
@@ -20,23 +23,48 @@ runButton.addEventListener('click', async () => {
   }
 });
 
-automatic.addEventListener('change', async () => {
-  automatic.disabled = true;
-  const response = await chrome.runtime.sendMessage({ type: 'mori-set-automatic', enabled: automatic.checked });
-  automatic.disabled = false;
+alertMeterButton.addEventListener('click', async () => {
+  alertMeterButton.disabled = true;
+  status.textContent = 'Refreshing AlertMeter and preparing the snapshot…';
+  try {
+    const response = await chrome.runtime.sendMessage({ type: 'mori-push-alertmeter' });
+    if (!response?.ok) throw new Error(response?.error || 'The AlertMeter snapshot could not be sent.');
+    status.textContent = response.message;
+  } catch (error) {
+    status.textContent = error instanceof Error ? error.message : String(error);
+  } finally {
+    alertMeterButton.disabled = false;
+  }
+});
+
+async function updateSchedule(kind, control) {
+  control.disabled = true;
+  if (kind === 'alertmeter' && control.checked) {
+    const granted = await chrome.permissions.request({ origins: ['<all_urls>'] });
+    if (!granted) {
+      control.checked = false;
+      control.disabled = false;
+      status.textContent = 'AlertMeter scheduling needs permission to capture its tab automatically.';
+      return;
+    }
+  }
+  const response = await chrome.runtime.sendMessage({ type: 'mori-set-schedule', kind, enabled: control.checked });
+  control.disabled = false;
   if (!response?.ok) {
-    automatic.checked = !automatic.checked;
+    control.checked = !control.checked;
     status.textContent = response?.error || 'Could not update the schedule.';
     return;
   }
-  status.textContent = automatic.checked
-    ? 'Automatic export enabled. Next run is in 15 minutes.'
-    : 'Automatic export paused.';
-});
+  status.textContent = response.message;
+}
+
+mismatchSchedule.addEventListener('change', () => updateSchedule('mismatch', mismatchSchedule));
+alertMeterSchedule.addEventListener('change', () => updateSchedule('alertmeter', alertMeterSchedule));
 
 chrome.runtime.sendMessage({ type: 'mori-get-settings' }).then((saved) => {
-  automatic.checked = Boolean(saved?.automaticEnabled);
+  mismatchSchedule.checked = Boolean(saved?.mismatchScheduleEnabled);
+  alertMeterSchedule.checked = Boolean(saved?.alertMeterScheduleEnabled);
   status.textContent = saved?.lastStatus
     ? `${saved.lastStatus}${timeLabel(saved.lastStatusAt)}`
-    : 'Ready. Run a manual export or enable the 15-minute schedule.';
+    : 'Ready. Use either manual alert or enable its schedule.';
 });

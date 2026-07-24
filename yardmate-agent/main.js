@@ -311,6 +311,69 @@ async function pushMeeting(payload, png) {
   if (!response.ok || result.status !== 1) throw new Error(result.errors?.join(' ') || `Pushover returned ${response.status}.`);
 }
 
+async function pushAlertMeterSnapshot(payload) {
+  if (!settings.appToken || !settings.userKey) throw new Error('Enter both Pushover keys in YardMate Agent.');
+  const match = text(payload.imageDataUrl).match(/^data:image\/(?:png|jpeg);base64,(.+)$/i);
+  if (!match) throw new Error('The AlertMeter snapshot was missing or invalid.');
+  const screenshot = Buffer.from(match[1], 'base64');
+  const source = sharp(screenshot, { failOn: 'warning' });
+  const metadata = await source.metadata();
+  const viewportWidth = Math.max(1, Number(payload.viewportWidth) || metadata.width || 1);
+  const viewportHeight = Math.max(1, Number(payload.viewportHeight) || metadata.height || 1);
+  const crop = payload.crop && typeof payload.crop === 'object' ? payload.crop : {};
+  const scaleX = (metadata.width || viewportWidth) / viewportWidth;
+  const scaleY = (metadata.height || viewportHeight) / viewportHeight;
+  const left = Math.max(0, Math.min(Math.round((Number(crop.left) || 0) * scaleX), (metadata.width || 1) - 1));
+  const top = Math.max(0, Math.min(Math.round((Number(crop.top) || 0) * scaleY), (metadata.height || 1) - 1));
+  const width = Math.max(1, Math.min(Math.round((Number(crop.width) || viewportWidth) * scaleX), (metadata.width || 1) - left));
+  const height = Math.max(1, Math.min(Math.round((Number(crop.height) || viewportHeight) * scaleY), (metadata.height || 1) - top));
+  const cropped = await source
+    .extract({ left, top, width, height })
+    .resize({ width: 1400, height: 1800, fit: 'inside', withoutEnlargement: true })
+    .png()
+    .toBuffer();
+  const croppedMetadata = await sharp(cropped).metadata();
+  const participation = Math.max(0, Math.min(100, Number(payload.participation)));
+  if (!Number.isFinite(participation)) throw new Error('Mori could not read the AlertMeter participation percentage.');
+  const compliant = participation === 100;
+  const badgeSize = Math.max(118, Math.min(176, Math.round((croppedMetadata.width || 1200) * 0.13)));
+  const badgeX = Math.max(12, (croppedMetadata.width || 1200) - badgeSize - 22);
+  const badgeY = 18;
+  const badgeColor = compliant ? '#138a42' : '#c8102e';
+  const badgeLabel = compliant
+    ? `<text x="${badgeX + badgeSize / 2}" y="${badgeY + badgeSize * 0.43}" text-anchor="middle" class="big">100%</text><text x="${badgeX + badgeSize / 2}" y="${badgeY + badgeSize * 0.66}" text-anchor="middle" class="small">COMPLIANT</text>`
+    : `<text x="${badgeX + badgeSize / 2}" y="${badgeY + badgeSize * 0.36}" text-anchor="middle" class="big">${participation}%</text><text x="${badgeX + badgeSize / 2}" y="${badgeY + badgeSize * 0.56}" text-anchor="middle" class="small">OUT OF</text><text x="${badgeX + badgeSize / 2}" y="${badgeY + badgeSize * 0.72}" text-anchor="middle" class="small">COMPLIANCE</text>`;
+  const badge = Buffer.from(`<svg width="${croppedMetadata.width}" height="${croppedMetadata.height}" xmlns="http://www.w3.org/2000/svg">
+    <style>.big{font:900 ${Math.round(badgeSize * 0.22)}px Segoe UI,Arial;fill:#fff}.small{font:900 ${Math.round(badgeSize * 0.095)}px Segoe UI,Arial;fill:#fff;letter-spacing:.5px}</style>
+    <circle cx="${badgeX + badgeSize / 2}" cy="${badgeY + badgeSize / 2}" r="${badgeSize / 2 - 5}" fill="${badgeColor}" stroke="#fff" stroke-width="8"/>
+    ${badgeLabel}
+  </svg>`);
+  const attachment = await sharp(cropped)
+    .composite([{ input: badge, top: 0, left: 0 }])
+    .jpeg({ quality: 82, mozjpeg: true })
+    .toBuffer();
+  const capturedAt = payload.capturedAt ? new Date(payload.capturedAt) : new Date();
+  const timeLabel = Number.isNaN(capturedAt.getTime())
+    ? new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+    : capturedAt.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  const response = await fetch('https://api.pushover.net/1/messages.json', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      token: settings.appToken,
+      user: settings.userKey,
+      title: `AlertMeter ${compliant ? '100% Participation' : 'Out of Compliance'} [${timeLabel}]`,
+      message: compliant
+        ? 'Participation verified at 100%. Cropped dashboard snapshot attached.'
+        : `OUT OF COMPLIANCE: participation is ${participation}%. Cropped dashboard snapshot attached.`,
+      attachment_base64: attachment.toString('base64'),
+      attachment_type: 'image/jpeg',
+    }),
+  });
+  const result = await response.json();
+  if (!response.ok || result.status !== 1) throw new Error(result.errors?.join(' ') || `Pushover returned ${response.status}.`);
+}
+
 async function pushWeather(payload) {
   if (!settings.appToken || !settings.userKey) throw new Error('Enter both Pushover keys in YardMate Agent.');
   const postTitle = text(payload.title || 'Latest weather update').slice(0, 240);
@@ -562,11 +625,11 @@ function isAllowedControlOrigin(origin) {
     || origin.startsWith('chrome-extension://');
 }
 
-async function readJsonBody(request) {
+async function readJsonBody(request, maxLength = 16384) {
   let body = '';
   for await (const chunk of request) {
     body += chunk;
-    if (body.length > 16384) throw new Error('Request is too large.');
+    if (body.length > maxLength) throw new Error('Request is too large.');
   }
   return body ? JSON.parse(body) : {};
 }
@@ -647,6 +710,13 @@ function startControlServer() {
         const png = await renderMeetingPng(body);
         await pushMeeting(body, png);
         lastMessage = `Sent ${text(body.title || 'Morning Meeting')} alert at ${new Date().toLocaleTimeString()}.`;
+        publishState();
+        return sendJson(response, 200, { ok: true, state: publicState() });
+      }
+      if (request.method === 'POST' && url.pathname === '/api/push-alertmeter') {
+        const body = await readJsonBody(request, 12 * 1024 * 1024);
+        await pushAlertMeterSnapshot(body);
+        lastMessage = `Sent AlertMeter dashboard snapshot at ${new Date().toLocaleTimeString()}.`;
         publishState();
         return sendJson(response, 200, { ok: true, state: publicState() });
       }

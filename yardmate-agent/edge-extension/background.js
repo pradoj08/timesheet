@@ -1,4 +1,8 @@
-const ALARM_NAME = 'mori-mismatch-export-15m';
+const LEGACY_ALARM_NAME = 'mori-mismatch-export-15m';
+const MISMATCH_ALARM_NAME = 'settegast-mismatch-schedule';
+const ALERTMETER_ALARM_NAME = 'settegast-alertmeter-schedule';
+const MISMATCH_TIMES = ['0100', '0300', '0600', '0900', '1100', '1300', '1500', '1800', '2100', '2300'];
+const ALERTMETER_TIMES = ['0345', '0900', '1545', '2000'];
 const UP_ROOT = 'https://employees.www.uprr.com/';
 const DEFAULT_PAGE = 'https://employees.www.uprr.com/tos/secure/jas/mismatchedEquipmentPage.jas?wicket:pageMapName=wicket-0';
 let exportInProgress = false;
@@ -38,6 +42,17 @@ async function identifyTab(tab) {
 
 async function requestExport(tabId) {
   return sendToPage(tabId, 'mori-run-mismatch-export');
+}
+
+async function readAlertMeterDashboard(tabId) {
+  try {
+    return await chrome.tabs.sendMessage(tabId, { type: 'mori-read-alertmeter-dashboard' });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (!/receiving end does not exist|could not establish connection/i.test(message)) throw error;
+    await chrome.scripting.executeScript({ target: { tabId }, files: ['alertmeter-content.js'] });
+    return chrome.tabs.sendMessage(tabId, { type: 'mori-read-alertmeter-dashboard' });
+  }
 }
 
 async function readRefreshTimestamp(tabId) {
@@ -196,24 +211,127 @@ async function runExport(source = 'manual') {
   }
 }
 
-async function configureAlarm(enabled) {
-  await chrome.alarms.clear(ALARM_NAME);
-  if (enabled) await chrome.alarms.create(ALARM_NAME, { delayInMinutes: 15, periodInMinutes: 15 });
+async function activeAlertMeterDashboard() {
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (!tab?.id || !/^https:\/\/app\.alertmeter\.com\/Admin\/Dashboard\/Index/i.test(String(tab.url || ''))) {
+    throw new Error('Open the AlertMeter Dashboard tab first, then click Mori and choose Refresh + Push AlertMeter.');
+  }
+  return tab;
+}
+
+async function chooseOrOpenAlertMeterDashboard() {
+  const tabs = await chrome.tabs.query({ url: 'https://app.alertmeter.com/*' });
+  const dashboard = tabs.find((tab) => /\/Admin\/Dashboard\/Index/i.test(String(tab.url || '')));
+  if (dashboard) return dashboard;
+  const tab = await chrome.tabs.create({ url: 'https://app.alertmeter.com/Admin/Dashboard/Index', active: false });
+  return waitForPage(tab.id, 30000);
+}
+
+async function refreshCaptureAndPushAlertMeter(source = 'manual') {
+  const priorActive = source === 'automatic'
+    ? (await chrome.tabs.query({ active: true, currentWindow: true }))[0]
+    : null;
+  const tab = source === 'automatic'
+    ? await chooseOrOpenAlertMeterDashboard()
+    : await activeAlertMeterDashboard();
+  if (source === 'automatic') {
+    const hasPermission = await chrome.permissions.contains({ origins: ['<all_urls>'] });
+    if (!hasPermission) throw new Error('AlertMeter schedule needs automatic screenshot permission. Re-enable it in Settegast Alerts.');
+    await chrome.tabs.update(tab.id, { active: true });
+    await chrome.windows.update(tab.windowId, { focused: true });
+  }
+  const refreshed = await reloadPage(tab.id, 30000);
+  if (!/^https:\/\/app\.alertmeter\.com\/Admin\/Dashboard\/Index/i.test(String(refreshed.url || ''))) {
+    throw new Error('AlertMeter opened a different page. Sign in and open the dashboard, then try again.');
+  }
+  await new Promise((resolve) => setTimeout(resolve, 2500));
+  const dashboardInfo = await readAlertMeterDashboard(tab.id);
+  if (!dashboardInfo?.ok || !Number.isFinite(Number(dashboardInfo.participation))) {
+    throw new Error('Mori could not read the AlertMeter participation percentage. Wait for the dashboard to finish loading and try again.');
+  }
+  const imageDataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'png' });
+  if (!imageDataUrl?.startsWith('data:image/')) throw new Error('Edge could not capture the AlertMeter dashboard.');
+  const response = await fetch('http://127.0.0.1:43127/api/push-alertmeter', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      imageDataUrl,
+      pageUrl: refreshed.url,
+      capturedAt: new Date().toISOString(),
+      participation: Number(dashboardInfo.participation),
+      participationText: dashboardInfo.participationText,
+      viewportWidth: dashboardInfo.viewportWidth,
+      viewportHeight: dashboardInfo.viewportHeight,
+      crop: dashboardInfo.crop,
+    }),
+  });
+  const result = await response.json();
+  if (!response.ok || !result.ok) throw new Error(result.error || 'YardMate could not send the AlertMeter snapshot.');
+  if (priorActive?.id && priorActive.id !== tab.id) {
+    await chrome.tabs.update(priorActive.id, { active: true }).catch(() => {});
+    await chrome.windows.update(priorActive.windowId, { focused: true }).catch(() => {});
+  }
+  const message = `AlertMeter dashboard pushed at ${new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}.`;
+  await setStatus(message, true);
+  return { ok: true, message };
+}
+
+function nextScheduledTime(times, now = new Date()) {
+  for (const value of times) {
+    const candidate = new Date(now);
+    candidate.setHours(Number(value.slice(0, 2)), Number(value.slice(2)), 0, 0);
+    if (candidate.getTime() > now.getTime() + 5000) return candidate;
+  }
+  const nextDay = new Date(now);
+  nextDay.setDate(nextDay.getDate() + 1);
+  nextDay.setHours(Number(times[0].slice(0, 2)), Number(times[0].slice(2)), 0, 0);
+  return nextDay;
+}
+
+async function scheduleNext(alarmName, times, enabled) {
+  await chrome.alarms.clear(alarmName);
+  if (!enabled) return null;
+  const next = nextScheduledTime(times);
+  await chrome.alarms.create(alarmName, { when: next.getTime() });
+  return next;
+}
+
+async function restoreSchedules() {
+  await chrome.alarms.clear(LEGACY_ALARM_NAME);
+  const saved = await chrome.storage.local.get(['mismatchScheduleEnabled', 'alertMeterScheduleEnabled', 'automaticEnabled']);
+  const mismatchEnabled = saved.mismatchScheduleEnabled ?? Boolean(saved.automaticEnabled);
+  const alertMeterEnabled = Boolean(saved.alertMeterScheduleEnabled);
+  await chrome.storage.local.set({
+    mismatchScheduleEnabled: Boolean(mismatchEnabled),
+    alertMeterScheduleEnabled: alertMeterEnabled,
+    automaticEnabled: false,
+  });
+  await scheduleNext(MISMATCH_ALARM_NAME, MISMATCH_TIMES, Boolean(mismatchEnabled));
+  await scheduleNext(ALERTMETER_ALARM_NAME, ALERTMETER_TIMES, alertMeterEnabled);
 }
 
 chrome.runtime.onInstalled.addListener(async () => {
-  const saved = await chrome.storage.local.get('automaticEnabled');
-  await configureAlarm(Boolean(saved.automaticEnabled));
+  await restoreSchedules();
   await chrome.action.setBadgeText({ text: '' });
 });
 
 chrome.runtime.onStartup.addListener(async () => {
-  const saved = await chrome.storage.local.get('automaticEnabled');
-  await configureAlarm(Boolean(saved.automaticEnabled));
+  await restoreSchedules();
 });
 
-chrome.alarms.onAlarm.addListener((alarm) => {
-  if (alarm.name === ALARM_NAME) runExport('automatic').catch(() => {});
+chrome.alarms.onAlarm.addListener(async (alarm) => {
+  if (alarm.name === MISMATCH_ALARM_NAME) {
+    const saved = await chrome.storage.local.get('mismatchScheduleEnabled');
+    try { await runExport('automatic'); } catch (_) {}
+    await scheduleNext(MISMATCH_ALARM_NAME, MISMATCH_TIMES, Boolean(saved.mismatchScheduleEnabled));
+  }
+  if (alarm.name === ALERTMETER_ALARM_NAME) {
+    const saved = await chrome.storage.local.get('alertMeterScheduleEnabled');
+    try { await refreshCaptureAndPushAlertMeter('automatic'); } catch (error) {
+      await setStatus(error instanceof Error ? error.message : String(error), false);
+    }
+    await scheduleNext(ALERTMETER_ALARM_NAME, ALERTMETER_TIMES, Boolean(saved.alertMeterScheduleEnabled));
+  }
 });
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
@@ -223,16 +341,34 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     });
     return true;
   }
-  if (message?.type === 'mori-set-automatic') {
+  if (message?.type === 'mori-push-alertmeter') {
+    refreshCaptureAndPushAlertMeter('manual').then(sendResponse).catch(async (error) => {
+      const message = error instanceof Error ? error.message : String(error);
+      await setStatus(message, false);
+      sendResponse({ ok: false, error: message });
+    });
+    return true;
+  }
+  if (message?.type === 'mori-set-schedule') {
+    const kind = message.kind === 'alertmeter' ? 'alertmeter' : 'mismatch';
     const enabled = Boolean(message.enabled);
-    chrome.storage.local.set({ automaticEnabled: enabled })
-      .then(() => configureAlarm(enabled))
-      .then(() => sendResponse({ ok: true, enabled }))
+    const storageKey = kind === 'alertmeter' ? 'alertMeterScheduleEnabled' : 'mismatchScheduleEnabled';
+    const alarmName = kind === 'alertmeter' ? ALERTMETER_ALARM_NAME : MISMATCH_ALARM_NAME;
+    const times = kind === 'alertmeter' ? ALERTMETER_TIMES : MISMATCH_TIMES;
+    chrome.storage.local.set({ [storageKey]: enabled })
+      .then(() => scheduleNext(alarmName, times, enabled))
+      .then((next) => sendResponse({
+        ok: true,
+        enabled,
+        message: enabled
+          ? `${kind === 'alertmeter' ? 'AlertMeter' : 'Mismatch'} schedule enabled. Next run ${next.toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' })}.`
+          : `${kind === 'alertmeter' ? 'AlertMeter' : 'Mismatch'} schedule paused.`,
+      }))
       .catch((error) => sendResponse({ ok: false, error: error instanceof Error ? error.message : String(error) }));
     return true;
   }
   if (message?.type === 'mori-get-settings') {
-    chrome.storage.local.get(['automaticEnabled', 'lastStatus', 'lastStatusOk', 'lastStatusAt'])
+    chrome.storage.local.get(['mismatchScheduleEnabled', 'alertMeterScheduleEnabled', 'lastStatus', 'lastStatusOk', 'lastStatusAt'])
       .then((saved) => sendResponse({ ok: true, ...saved }))
       .catch((error) => sendResponse({ ok: false, error: error instanceof Error ? error.message : String(error) }));
     return true;

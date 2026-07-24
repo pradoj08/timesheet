@@ -3650,6 +3650,7 @@
         <div class="excel-urgent-notes-title" id="excelUrgentNotesTitle">Morning Meeting</div>
         <div class="excel-urgent-notes-tabs" role="tablist" aria-label="Notes view">
           <button class="excel-urgent-notes-tab active" id="excelMorningMeetingTab" type="button" role="tab" aria-selected="true" data-notes-view="morning">Morning Meeting</button>
+          <button class="excel-urgent-notes-tab" id="excelAfternoonMeetingTab" type="button" role="tab" aria-selected="false" data-notes-view="afternoon">Afternoon Meeting</button>
           <button class="excel-urgent-notes-tab" id="excelUrgentNotesTab" type="button" role="tab" aria-selected="false" data-notes-view="urgent">Urgent Notes</button>
         </div>
       </div>
@@ -9660,6 +9661,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
 
   const EXCEL_URGENT_NOTES_KEY = "sdt_urgent_notes_v8";
   const EXCEL_MORNING_MEETING_KEY = "sdt_morning_meeting_v1";
+  const EXCEL_AFTERNOON_MEETING_KEY = "sdt_afternoon_meeting_v1";
   const EXCEL_URGENT_NOTES_LAYOUT_KEY = "settegast-excel-urgent-notes-layout-v1";
   const excelNotesViews = Object.freeze({
     morning: {
@@ -9669,6 +9671,20 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       emptyStatus: "Morning meeting is empty",
       savedStatus: "Saved morning meeting",
       clearPrompt: "Clear every Morning Meeting entry?",
+      sections: [
+        { key: "landing", title: "Landing Plan", subtitle: "Inbound placement / track plan / ramp setup", tone: "blue" },
+        { key: "switch", title: "Switch Crew", subtitle: "Switching needs / holds / crew updates", tone: "green" },
+        { key: "loading", title: "Loading Plan", subtitle: "Loadout priorities / shortages / workload", tone: "tan" },
+        { key: "other", title: "Other Notes", subtitle: "Anything that does not fit the main field buckets", tone: "purple" }
+      ]
+    },
+    afternoon: {
+      storageKey: EXCEL_AFTERNOON_MEETING_KEY,
+      title: "Afternoon Meeting",
+      boardTitle: "Afternoon Meeting Plan",
+      emptyStatus: "Afternoon meeting is empty",
+      savedStatus: "Saved afternoon meeting",
+      clearPrompt: "Clear every Afternoon Meeting entry?",
       sections: [
         { key: "landing", title: "Landing Plan", subtitle: "Inbound placement / track plan / ramp setup", tone: "blue" },
         { key: "switch", title: "Switch Crew", subtitle: "Switching needs / holds / crew updates", tone: "green" },
@@ -9826,10 +9842,13 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     excelUrgentNotesWrite(board, "Preparing push alert...");
     button.disabled = true;
     button.textContent = "Sending...";
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
     try {
       const response = await fetch("http://127.0.0.1:43127/api/push-morning-meeting", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "text/plain;charset=UTF-8" },
+        signal: controller.signal,
         body: JSON.stringify({
           title: view.title,
           boardTitle: view.boardTitle,
@@ -9846,9 +9865,13 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       excelUrgentNotesUpdateStatus(board, "Push alert sent");
       button.textContent = "Sent";
     } catch (error) {
-      excelUrgentNotesUpdateStatus(board, error instanceof Error ? error.message : "Push alert failed");
+      const message = error && error.name === "AbortError"
+        ? "YardMate did not respond. Open YardMate Agent and try again."
+        : error instanceof Error ? error.message : "Push alert failed";
+      excelUrgentNotesUpdateStatus(board, message);
       button.textContent = "Try Again";
     } finally {
+      clearTimeout(timeout);
       button.disabled = false;
       setTimeout(() => { button.textContent = "Push Alert"; }, 1800);
     }
@@ -9907,7 +9930,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   });
 
   window.addEventListener("storage", event => {
-    if ([EXCEL_URGENT_NOTES_KEY, EXCEL_MORNING_MEETING_KEY].includes(event.key) && !excelUrgentNotesPopup.hidden && !excelUrgentNotesPopup.contains(document.activeElement)) excelUrgentNotesRender();
+    if ([EXCEL_URGENT_NOTES_KEY, EXCEL_MORNING_MEETING_KEY, EXCEL_AFTERNOON_MEETING_KEY].includes(event.key) && !excelUrgentNotesPopup.hidden && !excelUrgentNotesPopup.contains(document.activeElement)) excelUrgentNotesRender();
   });
   document.addEventListener("keydown", event => {
     if (event.key === "Escape" && !excelUrgentNotesPopup.hidden) excelUrgentNotesClose();
