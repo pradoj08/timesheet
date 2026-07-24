@@ -6788,20 +6788,29 @@ document.addEventListener('click',function(event){
     const table = document.querySelector("#forecastExcelView .forecast-excel-main-table");
     if (!table || typeof getForecastRequestOnHandCount !== "function") return;
     const used = new Map();
-    table.querySelectorAll("tbody tr").forEach(row => {
+    const rows = Array.from(table.querySelectorAll("tbody tr"));
+    rows.forEach(row => {
+      row.querySelectorAll(".forecast-supply-shortage").forEach(cell => cell.classList.remove("forecast-supply-shortage"));
+      row.querySelectorAll(".forecast-supply-shortage-mark").forEach(mark => mark.remove());
+    });
+    const demandRows = rows.filter(row => !row.classList.contains("excel-total-row"));
+    const orderedRows = [
+      ...demandRows.filter(row => row.classList.contains("excel-mismatch-row")),
+      ...demandRows.filter(row => !row.classList.contains("excel-mismatch-row"))
+    ];
+    orderedRows.forEach(row => {
       const cells = Array.from(row.children);
       const sizeCell = cells.find(cell => cell.tagName === "TH" && /^\\s*(53|45|40|20)\\s*$/.test(cell.textContent || ""));
       if (!sizeCell) return;
       const size = String(sizeCell.textContent || "").trim();
-      const totalRow = row.classList.contains("excel-total-row");
       const dataCells = cells.filter(cell => cell.tagName === "TD");
       pools.forEach((pool, index) => {
         const cell = dataCells[index];
         if (!cell) return;
         const value = Number(String(cell.textContent || "").replace(/[^0-9.-]/g, "")) || 0;
         const key = pool + "|" + size;
-        const demand = totalRow ? value : (used.get(key) || 0) + value;
-        if (!totalRow) used.set(key, demand);
+        const demand = (used.get(key) || 0) + value;
+        used.set(key, demand);
         const inventoryPool = pool === "TRAC" ? "TGRP" : pool;
         const available = Number(getForecastRequestOnHandCount(inventoryPool, size)) || 0;
         if (value > 0 && demand > available) {
@@ -6811,7 +6820,7 @@ document.addEventListener('click',function(event){
             const mark = document.createElement("span");
             mark.className = "forecast-supply-shortage-mark";
             mark.textContent = "\u2715";
-            mark.title = pool + " " + size + "' demand exceeds current inventory (" + demand + " needed / " + available + " available)";
+            mark.title = pool + " " + size + " demand exceeds current inventory (" + demand + " needed / " + available + " available)";
             mark.setAttribute("aria-label", mark.title);
             content.appendChild(mark);
           }
