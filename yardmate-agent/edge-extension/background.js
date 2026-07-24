@@ -46,20 +46,29 @@ async function readRefreshTimestamp(tabId) {
 }
 
 function parseRefreshTimestamp(value) {
-  const match = String(value || '').match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})\s+(\d{2})(\d{2})\s+(CDT|CST)$/i);
+  const match = String(value || '').match(
+    /^(\d{1,2})\/(\d{1,2})\/(\d{2,4})\s+(\d{1,2})(?::?(\d{2}))\s*(AM|PM)?\s+(CDT|CST)$/i,
+  );
   if (!match) return NaN;
   let year = Number(match[3]);
   if (year < 100) year += 2000;
-  const offsetHours = match[6].toUpperCase() === 'CDT' ? 5 : 6;
-  return Date.UTC(year, Number(match[1]) - 1, Number(match[2]), Number(match[4]), Number(match[5])) + offsetHours * 3600000;
+  let hour = Number(match[4]);
+  const meridiem = String(match[6] || '').toUpperCase();
+  if (meridiem === 'PM' && hour < 12) hour += 12;
+  if (meridiem === 'AM' && hour === 12) hour = 0;
+  const offsetHours = match[7].toUpperCase() === 'CDT' ? 5 : 6;
+  return Date.UTC(year, Number(match[1]) - 1, Number(match[2]), hour, Number(match[5])) + offsetHours * 3600000;
 }
 
-async function reportRefreshVerification(timestamp, previousTimestamp) {
+function refreshVerification(timestamp, previousTimestamp) {
   const parsed = parseRefreshTimestamp(timestamp);
   const ageMinutes = Number.isFinite(parsed) ? Math.round((Date.now() - parsed) / 60000) : null;
   const verified = ageMinutes !== null && ageMinutes >= -2 && ageMinutes <= 5;
   const changed = Boolean(previousTimestamp && timestamp && previousTimestamp !== timestamp);
-  const payload = { timestamp, previousTimestamp, observedAt: new Date().toISOString(), ageMinutes, verified, changed };
+  return { timestamp, previousTimestamp, observedAt: new Date().toISOString(), ageMinutes, verified, changed };
+}
+
+async function reportRefreshVerification(payload) {
   await fetch('http://127.0.0.1:43127/api/source-refresh', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -99,7 +108,7 @@ async function reloadPage(tabId, timeoutMs = 30000) {
       resolve(tab);
     }
     chrome.tabs.onUpdated.addListener(listener);
-    chrome.tabs.reload(tabId).catch((error) => {
+    chrome.tabs.reload(tabId, { bypassCache: true }).catch((error) => {
       clearTimeout(timeout);
       chrome.tabs.onUpdated.removeListener(listener);
       reject(error);
@@ -115,6 +124,18 @@ async function waitForMismatchReport(tabId, timeoutMs = 15000) {
     await new Promise((resolve) => setTimeout(resolve, 500));
   }
   throw new Error('The refreshed page loaded, but the Mismatches equipment table was not found.');
+}
+
+async function waitForCurrentRefresh(tabId, previousTimestamp, timeoutMs = 30000) {
+  const deadline = Date.now() + timeoutMs;
+  let latest = refreshVerification('', previousTimestamp);
+  while (Date.now() < deadline) {
+    const timestamp = await readRefreshTimestamp(tabId).catch(() => '');
+    latest = refreshVerification(timestamp, previousTimestamp);
+    if (latest.verified) return latest;
+    await new Promise((resolve) => setTimeout(resolve, 750));
+  }
+  return latest;
 }
 
 async function chooseOrOpenPage() {
@@ -153,9 +174,12 @@ async function runExport(source = 'manual') {
     const previousTimestamp = await readRefreshTimestamp(selected.tab.id).catch(() => '');
     await reloadPage(selected.tab.id);
     const refreshedTab = await waitForMismatchReport(selected.tab.id);
-    const refreshTimestamp = await readRefreshTimestamp(refreshedTab.id);
-    const freshness = await reportRefreshVerification(refreshTimestamp, previousTimestamp);
-    if (!freshness.verified) throw new Error(`UP page refreshed, but its footer timestamp is not current (${refreshTimestamp || 'not found'}).`);
+    const freshness = await waitForCurrentRefresh(refreshedTab.id, previousTimestamp);
+    await reportRefreshVerification(freshness);
+    if (!freshness.verified) {
+      throw new Error(`UP page refreshed, but its footer timestamp is not current (${freshness.timestamp || 'not found'}). No Excel was exported.`);
+    }
+    const refreshTimestamp = freshness.timestamp;
     await chrome.storage.local.set({ mismatchPageUrl: refreshedTab.url });
     const response = await requestExport(refreshedTab.id);
     if (!response?.ok) throw new Error(response?.error || 'Export to Excel was not found.');

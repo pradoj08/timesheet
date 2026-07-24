@@ -48,7 +48,9 @@
   }
 
   function pageRefreshTimestamp() {
-    const matches = String(document.body?.innerText || '').match(/\b\d{1,2}\/\d{1,2}\/\d{2,4}\s+\d{4}\s+(?:CDT|CST)\b/gi);
+    const matches = String(document.body?.innerText || '').match(
+      /\b\d{1,2}\/\d{1,2}\/\d{2,4}\s+(?:\d{4}|\d{1,2}:\d{2}\s*(?:AM|PM))\s+(?:CDT|CST)\b/gi,
+    );
     return matches?.length ? matches[matches.length - 1].replace(/\s+/g, ' ').trim().toUpperCase() : '';
   }
 

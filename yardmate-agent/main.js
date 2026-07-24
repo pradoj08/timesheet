@@ -7,6 +7,9 @@ const sharp = require('sharp');
 const XLSX = require('xlsx');
 
 const EXPORT_PATTERN = /^Mismatched Equipments(?: \(\d+\))?\.(?:xls|xlsx)$/i;
+const MAX_SOURCE_REFRESH_AGE_MS = 10 * 60 * 1000;
+const MAX_EXPORT_AGE_MS = 10 * 60 * 1000;
+const EXPORT_REFRESH_TOLERANCE_MS = 5000;
 let settingsWindow;
 let tray;
 let watcher;
@@ -20,6 +23,7 @@ let lastRows = [];
 let sourceRefresh = { timestamp: '', observedAt: '', ageMinutes: null, verified: false, changed: false };
 const queued = new Map();
 const processed = new Set();
+const processing = new Set();
 
 function text(value) {
   return String(value ?? '').replace(/\s+/g, ' ').trim();
@@ -334,6 +338,31 @@ async function pushWeather(payload) {
   if (!response.ok || result.status !== 1) throw new Error(result.errors?.join(' ') || `Pushover returned ${response.status}.`);
 }
 
+async function fetchLatestSpaceCityWeatherPost() {
+  const response = await fetch(
+    'https://spacecityweather.com/wp-json/wp/v2/posts?per_page=1&_fields=link,date,title,excerpt,content',
+    {
+      cache: 'no-store',
+      headers: {
+        Accept: 'application/json',
+        'User-Agent': 'YardMate/1.1 (local operations dashboard)',
+      },
+    },
+  );
+  if (!response.ok) throw new Error(`Space City Weather returned ${response.status}.`);
+  const rows = await response.json();
+  const row = rows?.[0];
+  if (!row) throw new Error('Space City Weather returned no posts.');
+  return {
+    title: text(row.title?.rendered),
+    summary: text(row.excerpt?.rendered),
+    content: String(row.content?.rendered || ''),
+    date: text(row.date),
+    link: text(row.link),
+    retrievedAt: new Date().toISOString(),
+  };
+}
+
 function weatherLines(value, limit = 74) {
   const lines = [];
   String(value || '').split(/\n+/).forEach((paragraph) => {
@@ -458,11 +487,28 @@ async function findLatestExport() {
     }));
   candidates.sort((left, right) => right.info.mtimeMs - left.info.mtimeMs);
   if (!candidates.length) throw new Error('No Mismatched Equipments Excel file was found in Downloads.');
-  return candidates[0].filePath;
+  return candidates[0];
+}
+
+function verifyCurrentExport(candidate) {
+  if (!sourceRefresh.verified) {
+    throw new Error('The UP page refresh is not verified. Run Mori Export Now before processing or sending an alert.');
+  }
+  const observedAt = Date.parse(sourceRefresh.observedAt);
+  if (!Number.isFinite(observedAt) || Date.now() - observedAt > MAX_SOURCE_REFRESH_AGE_MS) {
+    throw new Error('The verified UP refresh has expired. Run Mori Export Now again.');
+  }
+  if (Date.now() - candidate.info.mtimeMs > MAX_EXPORT_AGE_MS) {
+    throw new Error(`The newest Excel is stale (${path.basename(candidate.filePath)}). No alert was sent.`);
+  }
+  if (candidate.info.mtimeMs + EXPORT_REFRESH_TOLERANCE_MS < observedAt) {
+    throw new Error(`The newest Excel predates the verified UP refresh (${path.basename(candidate.filePath)}). Wait for the new download; no alert was sent.`);
+  }
+  return candidate.filePath;
 }
 
 async function processLatestExport(sendAlert) {
-  const filePath = await findLatestExport();
+  const filePath = verifyCurrentExport(await findLatestExport());
   const { rows, png } = await prepareExport(filePath);
   if (sendAlert) {
     await push(rows, png);
@@ -477,10 +523,13 @@ async function processLatestExport(sendAlert) {
 
 async function processExport(filePath) {
   queued.delete(filePath);
+  if (processing.has(filePath)) return;
+  processing.add(filePath);
   try {
     const info = await stat(filePath);
     const identity = `${filePath}:${info.size}:${info.mtimeMs}`;
     if (!info.size || processed.has(identity)) return;
+    verifyCurrentExport({ filePath, info });
     const { rows, png } = await prepareExport(filePath);
     await push(rows, png);
     processed.add(identity);
@@ -491,16 +540,26 @@ async function processExport(filePath) {
     lastMessage = error instanceof Error ? error.message : String(error);
     new Notification({ title: 'YardMate could not process the Excel', body: lastMessage }).show();
   }
+  finally {
+    processing.delete(filePath);
+  }
   publishState();
 }
 
 function sendJson(response, status, payload) {
   response.writeHead(status, {
-    'Access-Control-Allow-Origin': 'null',
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Private-Network': 'true',
     'Cache-Control': 'no-store',
     'Content-Type': 'application/json; charset=utf-8',
   });
   response.end(JSON.stringify(payload));
+}
+
+function isAllowedControlOrigin(origin) {
+  return !origin
+    || origin === 'null'
+    || origin.startsWith('chrome-extension://');
 }
 
 async function readJsonBody(request) {
@@ -516,17 +575,23 @@ function startControlServer() {
   controlServer = createServer(async (request, response) => {
     const url = new URL(request.url, 'http://127.0.0.1:43127');
     const origin = request.headers.origin;
-    if (origin && origin !== 'null') return sendJson(response, 403, { error: 'This connection is only available to the local YardMate workbook.' });
+    if (!isAllowedControlOrigin(origin)) {
+      return sendJson(response, 403, { error: 'This connection is only available to the local YardMate workbook and Mori extension.' });
+    }
     if (request.method === 'OPTIONS') {
       response.writeHead(204, {
         'Access-Control-Allow-Headers': 'Content-Type',
         'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-        'Access-Control-Allow-Origin': 'null',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Private-Network': 'true',
       });
       return response.end();
     }
     try {
       if (request.method === 'GET' && url.pathname === '/api/state') return sendJson(response, 200, publicState());
+      if (request.method === 'GET' && url.pathname === '/api/weather-latest') {
+        return sendJson(response, 200, { ok: true, post: await fetchLatestSpaceCityWeatherPost() });
+      }
       if (request.method === 'GET' && url.pathname === '/api/preview') {
         if (!lastPreview.length) await processLatestExport(false);
         response.writeHead(200, {
@@ -545,8 +610,13 @@ function startControlServer() {
           verified: Boolean(body.verified),
           changed: Boolean(body.changed),
         };
+        if (sourceRefresh.verified) {
+          lastFile = '';
+          lastRows = [];
+          lastPreview = Buffer.alloc(0);
+        }
         lastMessage = sourceRefresh.verified
-          ? `UP refresh verified: ${sourceRefresh.timestamp}.`
+          ? `UP refresh verified: ${sourceRefresh.timestamp}. Waiting for its new Excel download.`
           : `UP refresh timestamp could not be verified: ${sourceRefresh.timestamp || 'not found'}.`;
         publishState();
         return sendJson(response, 200, publicState());

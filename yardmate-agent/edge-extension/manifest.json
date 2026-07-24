@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Mori UP Mismatch Export",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Manually or every 15 minutes uses the official UP control to download the mismatch Excel for Mori desktop.",
   "permissions": ["activeTab", "alarms", "scripting", "storage", "tabs"],
   "host_permissions": ["https://employees.www.uprr.com/*", "http://127.0.0.1:43127/*"],
