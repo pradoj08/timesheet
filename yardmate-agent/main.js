@@ -236,11 +236,11 @@ async function renderCompactPng(rows) {
   }
 
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${tableWidth + margin * 2}" height="${height}">
-    <style>text{font-family:Segoe UI,Arial}.title{font-size:25px;font-weight:900;fill:#111827}.summary{font-size:13px;font-weight:700;fill:#5b6573}.header{font-size:9px;font-weight:900;letter-spacing:.55px;fill:#27313f}.cell{font-size:12px;font-weight:700;fill:#17202c}.warning{font-size:12px;font-weight:900;fill:#c8102e}.section{font-size:13px;font-weight:900;letter-spacing:1px;fill:#ffffff}.empty{font-size:12px;font-weight:700;fill:#657080}</style>
+    <style>text{font-family:Segoe UI,Arial}.title{font-size:25px;font-weight:900;fill:#111827}.summary{font-size:13px;font-weight:700;fill:#5b6573}.refresh-good{font-size:13px;font-weight:900;fill:#16803a}.refresh-bad{font-size:13px;font-weight:900;fill:#c8102e}.header{font-size:9px;font-weight:900;letter-spacing:.55px;fill:#27313f}.cell{font-size:12px;font-weight:700;fill:#17202c}.warning{font-size:12px;font-weight:900;fill:#c8102e}.section{font-size:13px;font-weight:900;letter-spacing:1px;fill:#ffffff}.empty{font-size:12px;font-weight:700;fill:#657080}</style>
     <rect width="100%" height="100%" fill="#ffffff"/><rect width="100%" height="6" fill="#c8102e"/>
     <text x="${margin}" y="40" class="title">Settegast Inbound Equipment Status [${xml(reportTime)}]</text>
     <text x="${margin}" y="67" class="summary">${noMates.length} no mates | ${mismatches.length} pool mismatches</text>
-    <text x="${margin}" y="88" class="summary">UP refresh: ${xml(sourceRefresh.timestamp || 'Not verified')} ${sourceRefresh.verified ? '| VERIFIED CURRENT' : '| NOT VERIFIED'}</text>
+    <text x="${margin}" y="88" class="${sourceRefresh.verified ? 'refresh-good' : 'refresh-bad'}">UP refresh: ${xml(sourceRefresh.timestamp || 'Not verified')} ${sourceRefresh.verified ? '| VERIFIED CURRENT' : '| NOT VERIFIED'}</text>
     ${section('NO MATES', noMates, sectionStartY, '#c8102e', true, noMateColumns)}
     ${section('POOL MISMATCHES', mismatches, mismatchY, '#111111', false, mismatchColumns)}
   </svg>`;
