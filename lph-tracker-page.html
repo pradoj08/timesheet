@@ -882,6 +882,10 @@ input[type=range]::-webkit-slider-thumb{
 .lpmh-brow-time{color:#10B981;font-family:var(--mono);flex-shrink:0;font-size:11px;min-width:70px;text-align:left;white-space:nowrap;}
 .lpmh-brow-lifts{font-weight:700;color:#fff;font-family:var(--mono);min-width:28px;text-align:right;flex-shrink:0;font-size:12px;}
 .lpmh-brow-lifts-manual{color:var(--amber);}
+.lpmh-brow-manual{display:flex!important;align-items:center;gap:7px;padding:5px 0 5px 12px;}
+.lpmh-brow-manual .lpmh-brow-label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--amber);}
+.lpmh-brow-manual .lpmh-brow-time{display:none;}
+.lpmh-brow-manual .lpmh-brow-lifts{min-width:34px;}
 
 .lpmh-brow-downtime{
   display:grid !important;
@@ -5419,7 +5423,12 @@ function renderBreakdown(sources,manualItems,totalLabel,totalValue,downtimeItems
   manualItems.filter(function(m){return m.from!=null&&m.to!=null;}).forEach(function(m){
     rows.push({type:'manual',from:m.from,to:m.to,label:m.label,lifts:m.lifts});
   });
-  rows.sort(function(a,b){return a.from-b.from;});
+  rows.sort(function(a,b){
+    if(a.from!==b.from)return a.from-b.from;
+    if(a.type==='lift'&&b.type==='manual')return -1;
+    if(a.type==='manual'&&b.type==='lift')return 1;
+    return 0;
+  });
 
   rows.forEach(function(r){
     if(r.type==='manual'){
@@ -5772,9 +5781,11 @@ function reviseForecastBucketsWithActuals(buckets,activeKeys,trainLabelMap){
       hour:bucket.hour,
       total:Math.round(actualValue),
       plannedTotal:bucket.total,
+      plannedSources:bucket.sources||[],
       detail:revisedSources.map(function(source){return source.label+': '+source.lifts;}),
       sources:revisedSources,
       isBreak:false,
+      lunchLabels:bucket.lunchLabels||[],
       realityAdjusted:true
     };
   });
@@ -5823,16 +5834,25 @@ function buildHourlyLiftLog(segs,activeKeys,rate,trainLabelMap,paceCtx){
       }
     });
 
-    buckets.push({hour:h,total:total,detail:detail,sources:sources});
+    var absorbedLunchLabels=[];
+    ['lunch','lunch2'].forEach(function(key){
+      (segs[key]||[]).forEach(function(seg){
+        if(!seg.absorbedDuringDowntime)return;
+        var overlap=Math.max(0,Math.min(seg.end,h+1)-Math.max(seg.start,h));
+        if(overlap>0.01)absorbedLunchLabels.push(key==='lunch'?'Day lunch':'Night lunch');
+      });
+    });
+
+    buckets.push({hour:h,total:total,detail:detail,sources:sources,lunchLabels:absorbedLunchLabels});
 
     if(total>0){
-      renderedBuckets.push({hour:h,total:total,detail:detail,sources:sources,isBreak:false});
+      renderedBuckets.push({hour:h,total:total,detail:detail,sources:sources,isBreak:false,lunchLabels:absorbedLunchLabels});
     } else {
       // No lift activity this hour — note why, if it's covered by a scheduled break.
       var breakOverlaps=getDelayIntervals(segs,h,h+1);
       if(breakOverlaps.length>0){
         var breakLabels=breakOverlaps.map(function(d){return d.label;}).join(' + ');
-        renderedBuckets.push({hour:h,total:0,detail:[],sources:[],isBreak:true,breakLabels:breakLabels});
+        renderedBuckets.push({hour:h,total:0,detail:[],sources:[],isBreak:true,breakLabels:breakLabels,lunchLabels:absorbedLunchLabels});
       }
     }
   }
@@ -6943,9 +6963,10 @@ function groupLiftBuckets(buckets,opts){
         last0.lastHour=b.hour;
         if(b.isBreak) last0.breakLabels=(last0.breakLabels||[]).concat(b.breakLabels?[b.breakLabels]:[]);
         else last0.hasUnlogged=true;
+        last0.lunchLabels=(last0.lunchLabels||[]).concat(b.lunchLabels||[]);
       } else {
         groups.push({key:'__gap__',color:'#EF4444',firstHour:b.hour,lastHour:b.hour,total:0,sourceTotals:{},isGap:true,
-          breakLabels:b.isBreak&&b.breakLabels?[b.breakLabels]:[], hasUnlogged:!b.isBreak});
+          breakLabels:b.isBreak&&b.breakLabels?[b.breakLabels]:[], lunchLabels:(b.lunchLabels||[]).slice(), hasUnlogged:!b.isBreak});
       }
       return;
     }
@@ -7034,10 +7055,12 @@ function renderTimeMap(elId, buckets, opts){
     var color=g.color;
     if(g.isGap){
       var hours=g.lastHour-g.firstHour+1;
+      var lunchLabels=(g.lunchLabels||[]).filter(function(label,index,all){return all.indexOf(label)===index;});
+      var lunchSuffix=lunchLabels.length?' · '+lunchLabels.join(' + ')+' taken':'';
       return '<div class="timemap-card timemap-card-gap">'
         +'<div class="timemap-range" style="color:'+color+';border-color:'+color+'55;background:'+color+'1a;">'+rangeLabel(g)+'</div>'
-        +'<div class="timemap-gap-label">'+gapLabel+'</div>'
-        +'<div class="timemap-srcs"><div class="timemap-src" style="color:'+color+';">'+gapText(hours)+'</div></div>'
+        +'<div class="timemap-gap-label">'+gapLabel+(lunchLabels.length?' · LUNCH TAKEN':'')+'</div>'
+        +'<div class="timemap-srcs"><div class="timemap-src" style="color:'+color+';">'+gapText(hours)+escHtml(lunchSuffix)+'</div></div>'
         +'</div>';
     }
     var breakdown=Object.keys(g.sourceTotals).map(function(k){
@@ -7949,7 +7972,7 @@ function simulate(skipPrestigeXP){
   // The upcoming 0000-0300 window (hours 24-26) remains forecast-only.
   var realityActuals=loadHourlyActuals();
   function realityAdjustedLifts(baseLifts,fromHour,toHour){
-    var modeledLogged=0,actualLogged=0,loggedHours=0,adjustments=[];
+    var modeledLogged=0,actualLogged=0,loggedHours=0;
     hourlyBuckets.forEach(function(bucket){
       if(bucket.isBreak||bucket.hour<fromHour||bucket.hour>=toHour)return;
       var entry=normalizeActualEntry(realityActuals[bucket.hour]);
@@ -7957,17 +7980,43 @@ function simulate(skipPrestigeXP){
       modeledLogged+=bucket.plannedTotal!=null?bucket.plannedTotal:bucket.total;
       actualLogged+=entry.value;
       loggedHours+=1;
-      var planned=bucket.plannedTotal!=null?bucket.plannedTotal:bucket.total;
-      var sourceLabel=(bucket.sources||[]).map(function(source){return source.label;}).join(' + ')||'Logged actual';
-      adjustments.push({from:bucket.hour,to:bucket.hour+1,label:'Imported actual · '+sourceLabel,lifts:Math.round(entry.value-planned)});
     });
     return {
       lifts:Math.max(0,Math.round(baseLifts-modeledLogged+actualLogged)),
       delta:Math.round(actualLogged-modeledLogged),
       actual:Math.round(actualLogged),
-      hours:loggedHours,
-      adjustments:adjustments
+      hours:loggedHours
     };
+  }
+  function importedComparisonsForSegments(sources){
+    var comparisons=[];
+    sources.forEach(function(source){
+      var imported=0,forecast=0,hasActual=false,typeLabels=[];
+      hourlyBuckets.forEach(function(bucket){
+        var overlap=Math.max(0,Math.min(source.to,bucket.hour+1)-Math.max(source.from,bucket.hour));
+        if(overlap<=0)return;
+        var entry=normalizeActualEntry(realityActuals[bucket.hour]);
+        if(entry.value==null||!Number.isFinite(entry.value))return;
+        hasActual=true;
+        imported+=entry.value*overlap;
+        forecast+=source.lifts*(overlap/Math.max(0.001,source.to-source.from));
+        (bucket.sources||[]).forEach(function(actualSource){
+          if(typeLabels.indexOf(actualSource.label)===-1)typeLabels.push(actualSource.label);
+        });
+      });
+      if(!hasActual)return;
+      var importedRounded=Math.round(imported);
+      var forecastRounded=Math.round(forecast);
+      var delta=importedRounded-forecastRounded;
+      var performance=delta>0?'OVER':(delta<0?'UNDER':'ON PLAN');
+      comparisons.push({
+        from:source.from,
+        to:source.to,
+        label:'Imported '+importedRounded+' lifts · '+(typeLabels.join(' + ')||'Logged actual')+' · '+performance,
+        lifts:delta
+      });
+    });
+    return comparisons;
   }
   var previousReality=realityAdjustedLifts(previousShiftLifts,0,3);
   if(previousReality.hours>0)previousReality.lifts=previousReality.actual;
@@ -7976,8 +8025,8 @@ function simulate(skipPrestigeXP){
   previousShiftLifts=previousReality.lifts;
   s1Lifts=dayReality.lifts;
   s2Lifts=nightReality.lifts;
-  Array.prototype.push.apply(s1Manual,dayReality.adjustments);
-  Array.prototype.push.apply(s2Manual,nightReality.adjustments);
+  Array.prototype.push.apply(s1Manual,importedComparisonsForSegments(s1Sources));
+  Array.prototype.push.apply(s2Manual,importedComparisonsForSegments(nightSources));
 
   var previousShiftLPMH=preShiftManHours>0?previousShiftLifts/preShiftManHours:0;
   var s1LPMH=s1ManHours>0?s1Lifts/s1ManHours:0;
