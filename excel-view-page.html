@@ -2129,9 +2129,28 @@
     box-shadow: inset 0 0 0 2px #facc15;
   }
   .cut-cell.block-selected {
-    z-index: 3;
-    box-shadow: inset 0 0 0 3px #22d3ee, 0 0 0 2px #082f49;
-    transform: translateY(-1px);
+    z-index: 6;
+    outline: 3px solid #107c41;
+    outline-offset: -3px;
+    box-shadow:
+      inset 0 0 0 1px rgba(255,255,255,.92),
+      inset 0 0 0 999px rgba(33,115,70,.16),
+      0 0 0 1px #fff,
+      0 2px 7px rgba(16,124,65,.45);
+    filter: saturate(1.08) contrast(1.04);
+    transform: none;
+  }
+  .cut-cell.block-selected::after {
+    content: "";
+    position: absolute;
+    right: -1px;
+    bottom: -1px;
+    width: 7px;
+    height: 7px;
+    border: 1px solid #fff;
+    background: #107c41;
+    box-shadow: 0 0 0 1px #107c41;
+    pointer-events: none;
   }
   .cut-cell.block-paste-target,
   .track-label.block-paste-target,

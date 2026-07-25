@@ -4428,10 +4428,14 @@
     }
     function rowHtml(row) {
       row=row||{};
-      var flag=String(row.flag||"").replace(/[()]/g,"").trim();
+      var flags=Array.isArray(row.flags)?row.flags:[row.flag];
+      var flagsHtml=flags.map(function(value){
+        var flag=String(value||"").replace(/[()]/g,"").trim();
+        return flag?'<span class="am-today-roster-status">('+escapeHtml(flag)+')</span>':"";
+      }).join("");
       return '<div class="am-today-roster-row '+escapeHtml(row.className||"")+'">' +
         '<span class="am-today-roster-name" title="'+escapeHtml(row.name||"")+'">'+escapeHtml(row.name||"")+'</span>' +
-        '<span class="am-today-roster-statuses">'+(flag?'<span class="am-today-roster-status">('+escapeHtml(flag)+')</span>':"")+'</span></div>';
+        '<span class="am-today-roster-statuses">'+flagsHtml+'</span></div>';
     }
     function shiftHtml(key,label) {
       var rows=Array.isArray(snapshot.shifts[key])?snapshot.shifts[key]:[];
@@ -4687,6 +4691,11 @@
   window.addEventListener("message", function(event){
     if (!event.data || event.data.type !== "conglobal-open-todays-roster") return;
     openFloatingRoster();
+  });
+  window.addEventListener("message", function(event){
+    if (!event.data || event.data.type !== "conglobal-current-day-roster-snapshot" || !event.data.snapshot) return;
+    try { localStorage.setItem("conglobal-current-day-roster-snapshot-v1", JSON.stringify(event.data.snapshot)); } catch (_) {}
+    if (rosterWanted) scheduleOpenFloatingRoster(0);
   });
   window.addEventListener("message", function(event){
     if (!event.data || event.data.type !== "conglobal-am-third-column-mode") return;
@@ -5013,8 +5022,9 @@
     return date.getFullYear()+"-"+String(date.getMonth()+1).padStart(2,"0")+"-"+String(date.getDate()).padStart(2,"0");
   }
   function rowFromPill(pill){
-    var flagNode=pill.querySelector(".status-flag,.bn-flag,.crane-flag,.role-assignment-flag");
-    var flag=String(flagNode&&flagNode.textContent||"").replace(/[()]/g,"").trim();
+    var flags=Array.from(pill.querySelectorAll(".status-flag,.bn-flag,.crane-flag,.role-assignment-flag,.role-unassigned-flag")).map(function(node){
+      return String(node.textContent||"").replace(/[()]/g,"").trim();
+    }).filter(Boolean);
     var className="";
     if(pill.matches(".vac,.flo,.hol"))className="is-vacation";
     else if(pill.matches(".sic,.called-off,.ncns"))className="is-sick";
@@ -5024,8 +5034,11 @@
     else if(pill.matches(".crane"))className="is-crane";
     return {
       name:String(pill.getAttribute("data-status-name")||pill.querySelector("span")&&pill.querySelector("span").textContent||"").trim(),
-      flag:flag,
-      className:className
+      flag:flags[0]||"",
+      flags:flags,
+      className:className,
+      sourceClassName:String(pill.className||""),
+      title:String(pill.getAttribute("title")||"")
     };
   }
   function publishCurrentRosterSnapshot(){
@@ -5044,9 +5057,11 @@
         first:String(totals[0]&&totals[0].textContent||"0").trim(),
         second:String(totals[1]&&totals[1].textContent||"0").trim()
       },
-      source:"timesheet-three-day-today"
+      source:"timesheet-three-day-today",
+      updatedAt:Date.now()
     };
     localStorage.setItem(snapshotKey,JSON.stringify(snapshot));
+    try{window.top.postMessage({type:"conglobal-current-day-roster-snapshot",snapshot:snapshot},"*");}catch(_){}
   }
   var originalRenderCalendar=renderCalendar;
   renderCalendar=function(){
@@ -5065,6 +5080,12 @@
   document.addEventListener("click",function(event){
     if(event.target.closest&&event.target.closest(".staff-day.today"))window.setTimeout(publishCurrentRosterSnapshot,0);
   });
+  var publishTimer=0;
+  var listView=document.getElementById("listView");
+  if(listView)new MutationObserver(function(){
+    window.clearTimeout(publishTimer);
+    publishTimer=window.setTimeout(publishCurrentRosterSnapshot,40);
+  }).observe(listView,{childList:true,subtree:true,characterData:true,attributes:true});
 })();
 </scr${""}ipt>`;
       const bodyClose = html.toLowerCase().lastIndexOf("</body>");
@@ -5200,6 +5221,42 @@
 </scr${""}ipt>`;
       const bodyClose = html.toLowerCase().lastIndexOf("</body>");
       return bodyClose >= 0 ? html.slice(0, bodyClose) + patch + "\n" + html.slice(bodyClose) : html + patch;
+    }
+
+    function withExcelSelectionHighlight(html) {
+      if (!html || typeof html !== "string" || html.includes("excel-selection-highlight-v1")) return html;
+      const style = `<style id="excel-selection-highlight-v1">
+#yardGrid .cut-cell.block-selected,
+#blankYardGrid .cut-cell.block-selected,
+#blankYardGridTwo .cut-cell.block-selected {
+  z-index: 6 !important;
+  outline: 3px solid #107c41 !important;
+  outline-offset: -3px !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,.92),
+    inset 0 0 0 999px rgba(33,115,70,.16),
+    0 0 0 1px #fff,
+    0 2px 7px rgba(16,124,65,.45) !important;
+  filter: saturate(1.08) contrast(1.04) !important;
+  transform: none !important;
+}
+#yardGrid .cut-cell.block-selected::after,
+#blankYardGrid .cut-cell.block-selected::after,
+#blankYardGridTwo .cut-cell.block-selected::after {
+  content: "";
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  width: 7px;
+  height: 7px;
+  border: 1px solid #fff;
+  background: #107c41;
+  box-shadow: 0 0 0 1px #107c41;
+  pointer-events: none;
+}
+</style>`;
+      const headClose = html.toLowerCase().lastIndexOf("</head>");
+      return headClose >= 0 ? html.slice(0, headClose) + style + "\n" + html.slice(headClose) : style + html;
     }
 
     function withExcelToolbarGroups(html) {
@@ -8288,6 +8345,7 @@ setInterval(function(){
         if (id === "roster") pageHtml = withSchedulePersistence(pageHtml);
         if (id === "pearl") pageHtml = withPearlScheduleDashboard(withPearlToolbarGroups(withPearlAlertMeterControl(pageHtml)));
         if (id === "excelView") {
+          pageHtml = withExcelSelectionHighlight(pageHtml);
           pageHtml = withExcelToolbarGroups(pageHtml);
           pageHtml = withExcelFutureDwellProjection(pageHtml);
           pageHtml = withExcelLphInputMenuSource(pageHtml);
