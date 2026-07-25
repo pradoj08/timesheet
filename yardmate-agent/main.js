@@ -19,8 +19,18 @@ let settingsPath;
 let lastMessage = 'Ready';
 let lastFile = '';
 let lastPreview = Buffer.alloc(0);
+let lastAlertMeterPreview = Buffer.alloc(0);
+let lastAlertMeterCapturedAt = '';
+let lastExtensionSeenAt = '';
+let extensionSchedule = {
+  mismatchEnabled: false,
+  alertMeterEnabled: false,
+  mismatchNextAt: '',
+  alertMeterNextAt: '',
+};
 let lastRows = [];
 let sourceRefresh = { timestamp: '', observedAt: '', ageMinutes: null, verified: false, changed: false };
+let alertMeterCommand = { id: '', status: 'idle', requestedAt: '', claimedAt: '', completedAt: '', error: '' };
 const queued = new Map();
 const processed = new Set();
 const processing = new Set();
@@ -91,6 +101,7 @@ async function persistSettings() {
 
 function publicState() {
   const noMates = lastRows.filter((row) => !row.chassis).length;
+  const extensionAge = lastExtensionSeenAt ? Date.now() - new Date(lastExtensionSeenAt).getTime() : Infinity;
   return {
     online: true,
     settings: {
@@ -102,7 +113,18 @@ function publicState() {
     lastMessage,
     lastFile: lastFile ? path.basename(lastFile) : '',
     previewAvailable: Boolean(lastPreview.length),
+    alertMeterPreviewAvailable: Boolean(lastAlertMeterPreview.length),
+    alertMeterCapturedAt: lastAlertMeterCapturedAt,
+    extensionConnected: Number.isFinite(extensionAge) && extensionAge < 90000,
+    extensionLastSeenAt: lastExtensionSeenAt,
+    extensionSchedule,
     sourceRefresh,
+    alertMeterCommand: {
+      status: alertMeterCommand.status,
+      requestedAt: alertMeterCommand.requestedAt,
+      completedAt: alertMeterCommand.completedAt,
+      error: alertMeterCommand.error,
+    },
     counts: { total: lastRows.length, noMates, mismatches: lastRows.length - noMates },
   };
 }
@@ -336,6 +358,9 @@ async function pushAlertMeterSnapshot(payload) {
   const participation = Math.max(0, Math.min(100, Number(payload.participation)));
   if (!Number.isFinite(participation)) throw new Error('Mori could not read the AlertMeter participation percentage.');
   const compliant = participation === 100;
+  const missingEmployees = Array.isArray(payload.missingEmployees)
+    ? payload.missingEmployees.map(text).filter(Boolean).slice(0, 30)
+    : [];
   const badgeSize = Math.max(118, Math.min(176, Math.round((croppedMetadata.width || 1200) * 0.13)));
   const badgeX = Math.max(12, (croppedMetadata.width || 1200) - badgeSize - 22);
   const badgeY = 18;
@@ -352,6 +377,8 @@ async function pushAlertMeterSnapshot(payload) {
     .composite([{ input: badge, top: 0, left: 0 }])
     .jpeg({ quality: 82, mozjpeg: true })
     .toBuffer();
+  lastAlertMeterPreview = attachment;
+  lastAlertMeterCapturedAt = new Date().toISOString();
   const capturedAt = payload.capturedAt ? new Date(payload.capturedAt) : new Date();
   const timeLabel = Number.isNaN(capturedAt.getTime())
     ? new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
@@ -365,7 +392,9 @@ async function pushAlertMeterSnapshot(payload) {
       title: `AlertMeter ${compliant ? '100% Participation' : 'Out of Compliance'} [${timeLabel}]`,
       message: compliant
         ? 'Participation verified at 100%. Cropped dashboard snapshot attached.'
-        : `OUT OF COMPLIANCE: participation is ${participation}%. Cropped dashboard snapshot attached.`,
+        : `OUT OF COMPLIANCE: participation is ${participation}%.${missingEmployees.length
+          ? ` No test taken: ${missingEmployees.join(', ')}.`
+          : ' The No Test Taken filter was applied; review the attached cropped table.'}`,
       attachment_base64: attachment.toString('base64'),
       attachment_type: 'image/jpeg',
     }),
@@ -652,6 +681,23 @@ function startControlServer() {
     }
     try {
       if (request.method === 'GET' && url.pathname === '/api/state') return sendJson(response, 200, publicState());
+      if (request.method === 'GET' && url.pathname === '/api/alertmeter-command') {
+        lastExtensionSeenAt = new Date().toISOString();
+        extensionSchedule = {
+          mismatchEnabled: url.searchParams.get('mismatchEnabled') === '1',
+          alertMeterEnabled: url.searchParams.get('alertMeterEnabled') === '1',
+          mismatchNextAt: url.searchParams.get('mismatchNextAt') || '',
+          alertMeterNextAt: url.searchParams.get('alertMeterNextAt') || '',
+        };
+        const claimExpired = alertMeterCommand.status === 'processing'
+          && Date.now() - new Date(alertMeterCommand.claimedAt || 0).getTime() > 120000;
+        if (alertMeterCommand.status === 'pending' || claimExpired) {
+          alertMeterCommand.status = 'processing';
+          alertMeterCommand.claimedAt = new Date().toISOString();
+          return sendJson(response, 200, { ok: true, command: { id: alertMeterCommand.id, type: 'capture-alertmeter' } });
+        }
+        return sendJson(response, 200, { ok: true, command: null });
+      }
       if (request.method === 'GET' && url.pathname === '/api/weather-latest') {
         return sendJson(response, 200, { ok: true, post: await fetchLatestSpaceCityWeatherPost() });
       }
@@ -663,6 +709,15 @@ function startControlServer() {
           'Content-Type': 'image/png',
         });
         return response.end(lastPreview);
+      }
+      if (request.method === 'GET' && url.pathname === '/api/alertmeter-preview') {
+        if (!lastAlertMeterPreview.length) return sendJson(response, 404, { error: 'No AlertMeter preview has been captured yet.' });
+        response.writeHead(200, {
+          'Access-Control-Allow-Origin': 'null',
+          'Cache-Control': 'no-store',
+          'Content-Type': 'image/jpeg',
+        });
+        return response.end(lastAlertMeterPreview);
       }
       if (request.method === 'POST' && url.pathname === '/api/source-refresh') {
         const body = await readJsonBody(request);
@@ -682,6 +737,32 @@ function startControlServer() {
           ? `UP refresh verified: ${sourceRefresh.timestamp}. Waiting for its new Excel download.`
           : `UP refresh timestamp could not be verified: ${sourceRefresh.timestamp || 'not found'}.`;
         publishState();
+        return sendJson(response, 200, publicState());
+      }
+      if (request.method === 'POST' && url.pathname === '/api/request-alertmeter') {
+        alertMeterCommand = {
+          id: `alertmeter-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          status: 'pending',
+          requestedAt: new Date().toISOString(),
+          claimedAt: '',
+          completedAt: '',
+          error: '',
+        };
+        lastMessage = 'AlertMeter refresh and push queued. Settegast Alerts will start it automatically.';
+        publishState();
+        return sendJson(response, 200, publicState());
+      }
+      if (request.method === 'POST' && url.pathname === '/api/complete-alertmeter-command') {
+        const body = await readJsonBody(request);
+        if (text(body.id) && text(body.id) === alertMeterCommand.id) {
+          alertMeterCommand.status = body.ok ? 'completed' : 'failed';
+          alertMeterCommand.completedAt = new Date().toISOString();
+          alertMeterCommand.error = body.ok ? '' : text(body.error).slice(0, 500);
+          lastMessage = body.ok
+            ? 'AlertMeter dashboard refreshed and pushed successfully.'
+            : `AlertMeter request failed: ${alertMeterCommand.error || 'Unknown error'}`;
+          publishState();
+        }
         return sendJson(response, 200, publicState());
       }
       if (request.method === 'POST' && url.pathname === '/api/watch') {

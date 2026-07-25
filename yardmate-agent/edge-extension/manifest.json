@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Settegast Alerts",
-  "version": "1.0.0",
+  "version": "1.0.5",
   "description": "Exports UP mismatch Excel files and captures the AlertMeter dashboard for YardMate push alerts.",
   "permissions": ["activeTab", "alarms", "scripting", "storage", "tabs"],
   "optional_host_permissions": ["<all_urls>"],

@@ -1,12 +1,14 @@
 const LEGACY_ALARM_NAME = 'mori-mismatch-export-15m';
 const MISMATCH_ALARM_NAME = 'settegast-mismatch-schedule';
 const ALERTMETER_ALARM_NAME = 'settegast-alertmeter-schedule';
+const COMMAND_POLL_ALARM_NAME = 'settegast-command-poll';
 const MISMATCH_TIMES = ['0100', '0300', '0600', '0900', '1100', '1300', '1500', '1800', '2100', '2300'];
-const ALERTMETER_TIMES = ['0345', '0900', '1545', '2000'];
+const ALERTMETER_INTERVAL_MINUTES = 30;
 const UP_ROOT = 'https://employees.www.uprr.com/';
 const DEFAULT_PAGE = 'https://employees.www.uprr.com/tos/secure/jas/mismatchedEquipmentPage.jas?wicket:pageMapName=wicket-0';
 let exportInProgress = false;
 let lastStartedAt = 0;
+let commandPollInProgress = false;
 
 function resemblesMismatchUrl(tab) {
   const url = String(tab?.url || '');
@@ -52,6 +54,17 @@ async function readAlertMeterDashboard(tabId) {
     if (!/receiving end does not exist|could not establish connection/i.test(message)) throw error;
     await chrome.scripting.executeScript({ target: { tabId }, files: ['alertmeter-content.js'] });
     return chrome.tabs.sendMessage(tabId, { type: 'mori-read-alertmeter-dashboard' });
+  }
+}
+
+async function prepareAlertMeterDashboard(tabId) {
+  try {
+    return await chrome.tabs.sendMessage(tabId, { type: 'mori-prepare-alertmeter-dashboard' });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (!/receiving end does not exist|could not establish connection/i.test(message)) throw error;
+    await chrome.scripting.executeScript({ target: { tabId }, files: ['alertmeter-content.js'] });
+    return chrome.tabs.sendMessage(tabId, { type: 'mori-prepare-alertmeter-dashboard' });
   }
 }
 
@@ -245,9 +258,18 @@ async function refreshCaptureAndPushAlertMeter(source = 'manual') {
     throw new Error('AlertMeter opened a different page. Sign in and open the dashboard, then try again.');
   }
   await new Promise((resolve) => setTimeout(resolve, 2500));
-  const dashboardInfo = await readAlertMeterDashboard(tab.id);
+  const dashboardInfo = await prepareAlertMeterDashboard(tab.id);
   if (!dashboardInfo?.ok || !Number.isFinite(Number(dashboardInfo.participation))) {
     throw new Error('Mori could not read the AlertMeter participation percentage. Wait for the dashboard to finish loading and try again.');
+  }
+  if (source === 'automatic' && Number(dashboardInfo.participation) >= 100) {
+    if (priorActive?.id && priorActive.id !== tab.id) {
+      await chrome.tabs.update(priorActive.id, { active: true }).catch(() => {});
+      await chrome.windows.update(priorActive.windowId, { focused: true }).catch(() => {});
+    }
+    const message = 'AlertMeter checked: 100% participation. No screenshot sent.';
+    await setStatus(message, true);
+    return { ok: true, skipped: true, message };
   }
   const imageDataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'png' });
   if (!imageDataUrl?.startsWith('data:image/')) throw new Error('Edge could not capture the AlertMeter dashboard.');
@@ -263,6 +285,8 @@ async function refreshCaptureAndPushAlertMeter(source = 'manual') {
       viewportWidth: dashboardInfo.viewportWidth,
       viewportHeight: dashboardInfo.viewportHeight,
       crop: dashboardInfo.crop,
+      noTestTakenFilterApplied: Boolean(dashboardInfo.noTestTakenFilterApplied),
+      missingEmployees: Array.isArray(dashboardInfo.missingEmployees) ? dashboardInfo.missingEmployees : [],
     }),
   });
   const result = await response.json();
@@ -274,6 +298,46 @@ async function refreshCaptureAndPushAlertMeter(source = 'manual') {
   const message = `AlertMeter dashboard pushed at ${new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}.`;
   await setStatus(message, true);
   return { ok: true, message };
+}
+
+async function pollYardMateCommands() {
+  if (commandPollInProgress) return;
+  commandPollInProgress = true;
+  let command;
+  try {
+    const [savedSchedule, mismatchAlarm, alertMeterAlarm] = await Promise.all([
+      chrome.storage.local.get(['mismatchScheduleEnabled', 'alertMeterScheduleEnabled']),
+      chrome.alarms.get(MISMATCH_ALARM_NAME),
+      chrome.alarms.get(ALERTMETER_ALARM_NAME),
+    ]);
+    const scheduleQuery = new URLSearchParams({
+      mismatchEnabled: savedSchedule.mismatchScheduleEnabled ? '1' : '0',
+      alertMeterEnabled: savedSchedule.alertMeterScheduleEnabled ? '1' : '0',
+      mismatchNextAt: mismatchAlarm?.scheduledTime ? new Date(mismatchAlarm.scheduledTime).toISOString() : '',
+      alertMeterNextAt: alertMeterAlarm?.scheduledTime ? new Date(alertMeterAlarm.scheduledTime).toISOString() : '',
+    });
+    const response = await fetch(`http://127.0.0.1:43127/api/alertmeter-command?${scheduleQuery}`, { cache: 'no-store' });
+    const result = await response.json();
+    command = result.command;
+    if (!command?.id || command.type !== 'capture-alertmeter') return;
+    try {
+      await refreshCaptureAndPushAlertMeter('automatic');
+      await fetch('http://127.0.0.1:43127/api/complete-alertmeter-command', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: command.id, ok: true }),
+      });
+    } catch (error) {
+      await fetch('http://127.0.0.1:43127/api/complete-alertmeter-command', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: command.id, ok: false, error: error instanceof Error ? error.message : String(error) }),
+      }).catch(() => {});
+    }
+  } catch (_) {
+  } finally {
+    commandPollInProgress = false;
+  }
 }
 
 function nextScheduledTime(times, now = new Date()) {
@@ -296,6 +360,17 @@ async function scheduleNext(alarmName, times, enabled) {
   return next;
 }
 
+async function scheduleAlertMeter(enabled) {
+  await chrome.alarms.clear(ALERTMETER_ALARM_NAME);
+  if (!enabled) return null;
+  const next = new Date(Date.now() + ALERTMETER_INTERVAL_MINUTES * 60000);
+  await chrome.alarms.create(ALERTMETER_ALARM_NAME, {
+    delayInMinutes: ALERTMETER_INTERVAL_MINUTES,
+    periodInMinutes: ALERTMETER_INTERVAL_MINUTES,
+  });
+  return next;
+}
+
 async function restoreSchedules() {
   await chrome.alarms.clear(LEGACY_ALARM_NAME);
   const saved = await chrome.storage.local.get(['mismatchScheduleEnabled', 'alertMeterScheduleEnabled', 'automaticEnabled']);
@@ -307,12 +382,18 @@ async function restoreSchedules() {
     automaticEnabled: false,
   });
   await scheduleNext(MISMATCH_ALARM_NAME, MISMATCH_TIMES, Boolean(mismatchEnabled));
-  await scheduleNext(ALERTMETER_ALARM_NAME, ALERTMETER_TIMES, alertMeterEnabled);
+  await scheduleAlertMeter(alertMeterEnabled);
+  await chrome.alarms.clear(COMMAND_POLL_ALARM_NAME);
+  await chrome.alarms.create(COMMAND_POLL_ALARM_NAME, { delayInMinutes: 0.1, periodInMinutes: 0.5 });
 }
 
 chrome.runtime.onInstalled.addListener(async () => {
   await restoreSchedules();
   await chrome.action.setBadgeText({ text: '' });
+  const saved = await chrome.storage.local.get('mismatchScheduleEnabled');
+  if (saved.mismatchScheduleEnabled) {
+    runExport('automatic').catch(() => {});
+  }
 });
 
 chrome.runtime.onStartup.addListener(async () => {
@@ -320,17 +401,18 @@ chrome.runtime.onStartup.addListener(async () => {
 });
 
 chrome.alarms.onAlarm.addListener(async (alarm) => {
+  if (alarm.name === COMMAND_POLL_ALARM_NAME) {
+    await pollYardMateCommands();
+  }
   if (alarm.name === MISMATCH_ALARM_NAME) {
     const saved = await chrome.storage.local.get('mismatchScheduleEnabled');
     try { await runExport('automatic'); } catch (_) {}
     await scheduleNext(MISMATCH_ALARM_NAME, MISMATCH_TIMES, Boolean(saved.mismatchScheduleEnabled));
   }
   if (alarm.name === ALERTMETER_ALARM_NAME) {
-    const saved = await chrome.storage.local.get('alertMeterScheduleEnabled');
     try { await refreshCaptureAndPushAlertMeter('automatic'); } catch (error) {
       await setStatus(error instanceof Error ? error.message : String(error), false);
     }
-    await scheduleNext(ALERTMETER_ALARM_NAME, ALERTMETER_TIMES, Boolean(saved.alertMeterScheduleEnabled));
   }
 });
 
@@ -353,17 +435,28 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     const kind = message.kind === 'alertmeter' ? 'alertmeter' : 'mismatch';
     const enabled = Boolean(message.enabled);
     const storageKey = kind === 'alertmeter' ? 'alertMeterScheduleEnabled' : 'mismatchScheduleEnabled';
-    const alarmName = kind === 'alertmeter' ? ALERTMETER_ALARM_NAME : MISMATCH_ALARM_NAME;
-    const times = kind === 'alertmeter' ? ALERTMETER_TIMES : MISMATCH_TIMES;
     chrome.storage.local.set({ [storageKey]: enabled })
-      .then(() => scheduleNext(alarmName, times, enabled))
-      .then((next) => sendResponse({
-        ok: true,
-        enabled,
-        message: enabled
-          ? `${kind === 'alertmeter' ? 'AlertMeter' : 'Mismatch'} schedule enabled. Next run ${next.toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' })}.`
-          : `${kind === 'alertmeter' ? 'AlertMeter' : 'Mismatch'} schedule paused.`,
-      }))
+      .then(() => kind === 'alertmeter'
+        ? scheduleAlertMeter(enabled)
+        : scheduleNext(MISMATCH_ALARM_NAME, MISMATCH_TIMES, enabled))
+      .then(async (next) => {
+        let initialMessage = '';
+        if (enabled && kind === 'mismatch') {
+          try {
+            await runExport('automatic');
+            initialMessage = ' Initial verified refresh/export completed.';
+          } catch (error) {
+            initialMessage = ` Schedule is enabled, but the initial refresh needs attention: ${error instanceof Error ? error.message : String(error)}`;
+          }
+        }
+        sendResponse({
+          ok: true,
+          enabled,
+          message: enabled
+            ? `${kind === 'alertmeter' ? 'AlertMeter' : 'Mismatch'} schedule enabled. Next run ${next.toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' })}.${initialMessage}`
+            : `${kind === 'alertmeter' ? 'AlertMeter' : 'Mismatch'} schedule paused.`,
+        });
+      })
       .catch((error) => sendResponse({ ok: false, error: error instanceof Error ? error.message : String(error) }));
     return true;
   }

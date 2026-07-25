@@ -71,11 +71,10 @@
     .am-report-actions[hidden] { display: none !important; }
     .am-report-actions {
       width: 100%;
-      display: flex;
-      flex-wrap: wrap;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
       gap: 8px;
       align-items: center;
-      justify-content: center;
       min-height: 46px;
       padding: 7px 14px;
       border-bottom: 1px solid #d7dee8;
@@ -84,6 +83,15 @@
       position: relative;
       z-index: 19;
     }
+    .am-report-actions-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+    .am-report-actions-left { justify-self: start; }
+    .am-report-actions-center { justify-self: center; justify-content: center; }
+    .am-report-actions-right { justify-self: end; }
     .am-report-actions button {
       min-width: 112px;
       height: 32px;
@@ -105,6 +113,12 @@
     .am-report-actions .today-roster { background: #6d28d9; border-color: #7c3aed; }
     .am-report-actions .report-tool { background: #1d4ed8; border-color: #1e40af; }
     .am-report-actions .weather-post { background: #0f766e; border-color: #115e59; }
+    @media (max-width: 760px) {
+      .am-report-actions { grid-template-columns: 1fr; }
+      .am-report-actions-left,
+      .am-report-actions-center,
+      .am-report-actions-right { justify-self: center; justify-content: center; }
+    }
     .scw-popup[hidden] { display: none !important; }
     .scw-popup {
       position: fixed;
@@ -1816,13 +1830,18 @@
 <body>
   <nav class="workbook-tabs" aria-label="Workbook pages"></nav>
   <nav class="am-report-actions" id="amReportActions" aria-label="AM Report tools" hidden>
-    <button type="button" class="mass-export" id="amHeaderMassExport">Mass Export</button>
-    <button type="button" class="today-roster" id="amHeaderTodayRoster" aria-haspopup="dialog">Today's Roster</button>
-    <button type="button" class="report-tool" id="amHeaderAudits" aria-haspopup="dialog">Audits</button>
-    <button type="button" class="report-tool" id="amHeaderChecklist" aria-haspopup="dialog">Checklist</button>
-    <button type="button" class="report-tool" id="amHeaderImportReport" aria-haspopup="dialog">Import Report</button>
-    <button type="button" class="weather-post" id="amHeaderScwLatest" aria-haspopup="dialog">SCW Latest</button>
-    <button type="button" class="report-tool" id="amHeaderThirdColumn">Show 3rd Day</button>
+    <span class="am-report-actions-group am-report-actions-left">
+      <button type="button" class="mass-export" id="amHeaderMassExport">Mass Export</button>
+      <button type="button" class="report-tool" id="amHeaderImportReport" aria-haspopup="dialog">Import Report</button>
+      <button type="button" class="today-roster" id="amHeaderTodayRoster" aria-haspopup="dialog">Today's Roster</button>
+    </span>
+    <span class="am-report-actions-group am-report-actions-center">
+      <button type="button" class="report-tool" id="amHeaderAudits" aria-haspopup="dialog">Audits</button>
+      <button type="button" class="report-tool" id="amHeaderChecklist" aria-haspopup="dialog">Checklist</button>
+    </span>
+    <span class="am-report-actions-group am-report-actions-right">
+      <button type="button" class="report-tool" id="amHeaderThirdColumn">Show 3rd Day</button>
+    </span>
   </nav>
   <section class="scw-popup" id="scwLatestPopup" role="dialog" aria-modal="false" aria-labelledby="scwLatestHeading" hidden>
     <header class="scw-popup-head" id="scwLatestHandle">
@@ -4371,7 +4390,50 @@
     sourceObserver.observe(sourceCard, {childList:true, subtree:true, characterData:true, attributes:true});
   }
 
+  function renderCurrentRosterSnapshot() {
+    var snapshot=readStored("conglobal-current-day-roster-snapshot-v1",null);
+    var today=new Date();
+    if (!snapshot || snapshot.date!==localDateKey(today) || !snapshot.shifts) return false;
+    function escapeHtml(value) {
+      return String(value==null?"":value).replace(/[&<>"]/g,function(character){
+        return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[character];
+      });
+    }
+    function rowHtml(row) {
+      row=row||{};
+      var flag=String(row.flag||"").replace(/[()]/g,"").trim();
+      return '<div class="am-today-roster-row '+escapeHtml(row.className||"")+'">' +
+        '<span class="am-today-roster-name" title="'+escapeHtml(row.name||"")+'">'+escapeHtml(row.name||"")+'</span>' +
+        '<span class="am-today-roster-statuses">'+(flag?'<span class="am-today-roster-status">('+escapeHtml(flag)+')</span>':"")+'</span></div>';
+    }
+    function shiftHtml(key,label) {
+      var rows=Array.isArray(snapshot.shifts[key])?snapshot.shifts[key]:[];
+      return '<section class="am-today-roster-shift"><div class="am-today-roster-shift-head">'+label+'</div>' +
+        '<div class="am-today-roster-rows">'+(rows.map(rowHtml).join("")||'<div class="am-today-roster-row is-unknown"><span class="am-today-roster-name">No roster entries</span></div>')+'</div></section>';
+    }
+    var totals=snapshot.totals||{};
+    card.innerHTML='<div class="am-today-roster-date">' +
+      '<span class="am-today-roster-day">'+today.toLocaleDateString(undefined,{weekday:"short"}).toUpperCase()+'</span>' +
+      '<span class="am-today-roster-today">TODAY</span><span class="am-today-roster-number">'+today.getDate()+'</span></div>' +
+      '<div class="am-today-roster-columns">'+shiftHtml("first","DAY")+shiftHtml("second","NIGHT")+'</div>' +
+      '<div class="am-today-roster-footer"><div class="am-today-roster-total">'+escapeHtml(totals.first||"0")+'</div>' +
+      '<div class="am-today-roster-total">'+escapeHtml(totals.second||"0")+'</div></div>';
+    if (sourceObserver) sourceObserver.disconnect();
+    sourceObserver=null;
+    return true;
+  }
+
+  function requestCurrentRosterSnapshot(targetWindow) {
+    try { targetWindow.postMessage({type:"conglobal-publish-current-day-roster"},"*"); } catch (_) {}
+    try {
+      for (var index=0; index<targetWindow.frames.length; index+=1) {
+        requestCurrentRosterSnapshot(targetWindow.frames[index]);
+      }
+    } catch (_) {}
+  }
+
   function renderFloatingRoster() {
+    if (renderCurrentRosterSnapshot()) return true;
     var frame = todayFrame();
     if (!frame || !frame.contentDocument) return false;
     try {
@@ -4403,6 +4465,7 @@
     var attempts = 0;
     root.hidden = true;
     syncYesterdayWeatherSlot(false);
+    requestCurrentRosterSnapshot(window);
     function attemptRender() {
       if (request !== openRequest || !rosterWanted) return;
       attempts += 1;
@@ -4415,7 +4478,7 @@
       }
       if (attempts < 100) window.setTimeout(attemptRender, 200);
     }
-    attemptRender();
+    window.setTimeout(attemptRender,40);
   }
 
   function closeFloatingRoster() {
@@ -4924,6 +4987,9 @@
   };
   publishCurrentRosterSnapshot();
   window.addEventListener("focus",function(){window.setTimeout(publishCurrentRosterSnapshot,0)});
+  window.addEventListener("message",function(event){
+    if(event.data&&event.data.type==="conglobal-publish-current-day-roster")publishCurrentRosterSnapshot();
+  });
   document.addEventListener("change",function(event){
     if(event.target.closest&&event.target.closest(".staff-day.today"))window.setTimeout(publishCurrentRosterSnapshot,0);
   });
@@ -5416,7 +5482,7 @@
   @media(max-width:620px){.input-menu-overlay{padding:0}.input-menu-dialog{width:100vw;height:100vh;border-radius:0}.input-menu-track{padding:8px}.input-menu-slide{min-height:200px}.input-menu-head{min-height:58px}.input-menu-title{font-size:17px}}
 </style>
 <scr${""}ipt id="lph-control-stack-behavior">
-(function(){if(window.__lphControlStackInstalled)return;window.__lphControlStackInstalled=true;var track=document.getElementById("input-menu-track");if(!track)return;var slides=Array.prototype.slice.call(track.querySelectorAll(".input-menu-slide"));slides.forEach(function(slide){var card=slide.querySelector(".sb-card");slide.dataset.stackTitle=card&&card.dataset.inputMenuTitle||"Control Module";slide.removeAttribute("inert");slide.setAttribute("aria-hidden","false")});lphInputSlides=slides;lphInputSlideIndex=0;lphRenderInputMenu=function(){track.style.transform="none";slides.forEach(function(slide){slide.removeAttribute("inert");slide.setAttribute("aria-hidden","false")});var titleNode=document.getElementById("input-menu-current-title");var countNode=document.getElementById("input-menu-count");if(titleNode)titleNode.textContent="Operations Control Stack";if(countNode)countNode.textContent="1 × 8"};lphGoInputSlide=function(index){var slide=slides[Math.max(0,Math.min(slides.length-1,Number(index)||0))];if(slide&&slide.scrollIntoView)slide.scrollIntoView({block:"start"});lphRenderInputMenu()};var kicker=document.querySelector(".input-menu-kicker");if(kicker)kicker.textContent="Settegast Input Menu";lphRenderInputMenu()})();
+(function(){if(window.__lphControlStackInstalled)return;window.__lphControlStackInstalled=true;var track=document.getElementById("input-menu-track");if(!track)return;var slides=Array.prototype.slice.call(track.querySelectorAll(".input-menu-slide"));var profileSlide=slides.find(function(slide){var card=slide.querySelector(".sb-card");return card&&card.dataset.inputMenuTitle==="Profiles"});if(profileSlide){track.appendChild(profileSlide);slides=slides.filter(function(slide){return slide!==profileSlide});slides.push(profileSlide)}var profileSection=document.getElementById("profiles-section");if(profileSection)profileSection.style.display="none";var profileChevron=document.getElementById("profile-chevron");if(profileChevron)profileChevron.innerHTML="&#x25BC;";slides.forEach(function(slide){var card=slide.querySelector(".sb-card");slide.dataset.stackTitle=card&&card.dataset.inputMenuTitle||"Control Module";slide.removeAttribute("inert");slide.setAttribute("aria-hidden","false")});lphInputSlides=slides;lphInputSlideIndex=0;lphRenderInputMenu=function(){track.style.transform="none";slides.forEach(function(slide){slide.removeAttribute("inert");slide.setAttribute("aria-hidden","false")});var titleNode=document.getElementById("input-menu-current-title");var countNode=document.getElementById("input-menu-count");if(titleNode)titleNode.textContent="Operations Control Stack";if(countNode)countNode.textContent="1 × 8"};lphGoInputSlide=function(index){var slide=slides[Math.max(0,Math.min(slides.length-1,Number(index)||0))];if(slide&&slide.scrollIntoView)slide.scrollIntoView({block:"start"});lphRenderInputMenu()};var kicker=document.querySelector(".input-menu-kicker");if(kicker)kicker.textContent="Settegast Input Menu";lphRenderInputMenu()})();
 </scr${""}ipt>`;
       const bodyClose = html.toLowerCase().lastIndexOf("</body>");
       return bodyClose >= 0 ? html.slice(0, bodyClose) + patch + "\n" + html.slice(bodyClose) : html + patch;
@@ -5882,6 +5948,14 @@
       );
     }
 
+    function withLphInboundCountSelection(html) {
+      if (!html || typeof html !== "string" || html.includes("lphSetUseTodayInbounds(false,false);")) return html;
+      return html.replace(
+        "if(autoToggle&&autoToggle.checked)return;",
+        "if(autoToggle&&autoToggle.checked){\n    lphSetUseTodayInbounds(false,false);\n  }"
+      );
+    }
+
     function withLphOperationsGuide(html) {
       if (!html || typeof html !== "string" || html.includes("settegast-lph-operations-guide-v1")) return html;
       const guideCard = `
@@ -5991,7 +6065,11 @@
   document.addEventListener('click',function(event){
     var up=event.target.closest('[data-guide-up]');var down=event.target.closest('[data-guide-down]');
     if(up||down){var from=Number((up||down).getAttribute(up?'data-guide-up':'data-guide-down'));var to=from+(up?-1:1);if(to>=0&&to<guide.length){var temp=guide[from];guide[from]=guide[to];guide[to]=temp;renderGuide();saveGuide();}return;}
-    if(event.target.closest('#operations-guide-reset')){guide=cloneDefaults();renderGuide();saveGuide();}
+    if(event.target.closest('#operations-guide-reset')){
+      guide=guide.map(function(){return {action:'none',value:''};});
+      renderGuide();
+      saveGuide();
+    }
   });
   document.addEventListener('DOMContentLoaded',function(){renderGuide();applyPreviousDayRule();if(typeof simulate==='function')simulate();});
 })();
@@ -7823,30 +7901,144 @@ body.forecast-excel-view-open { background: #fff !important; }
     }
 
     function withPearlAlertMeterControl(html) {
-      if (!html || typeof html !== "string" || html.includes('id="openAlertMeter"')) return html;
-      html = html.replace(
-        '<button class="btn primary" id="sendLatest" type="button">Process &amp; Send Alert</button>',
-        '<button class="btn primary" id="sendLatest" type="button">Process &amp; Send Alert</button>\n      <button class="btn primary" id="openAlertMeter" type="button">AlertMeter Snapshot</button>'
-      );
+      if (!html || typeof html !== "string") return html;
+      if (!html.includes('id="openAlertMeter"')) {
+        html = html.replace(
+          '<button class="btn primary" id="sendLatest" type="button">Process &amp; Send Alert</button>',
+          '<button class="btn primary" id="sendLatest" type="button">Process &amp; Send Alert</button>\n      <button class="btn primary" id="openAlertMeter" type="button">AlertMeter Snapshot</button>'
+        );
+      }
+      if (!html.includes('id="previewAlertMeter"')) {
+        html = html.replace(
+          '<button class="btn primary" id="openAlertMeter" type="button">AlertMeter Snapshot</button>',
+          '<button class="btn primary" id="openAlertMeter" type="button">AlertMeter Snapshot</button>\n      <button class="btn dark" id="previewAlertMeter" type="button">Preview AlertMeter</button>'
+        );
+      }
+      if (!html.includes('id="extensionConnection"')) {
+        html = html.replace(
+          '<div class="connection offline" id="connection"><span class="dot"></span><span id="connectionText">Connecting to agent…</span></div>',
+          '<div class="connection-stack"><div class="connection offline" id="connection"><span class="dot"></span><span id="connectionText">Desktop agent connecting…</span></div><div class="connection waiting" id="extensionConnection"><span class="dot"></span><span id="extensionConnectionText">Extension checking…</span></div></div>'
+        );
+        html = html.replace(
+          "</style>",
+          ".connection-stack{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px}.connection-stack .connection{padding:8px 11px;border:1px solid #ffffff22;border-radius:999px;background:#ffffff0b;font-size:11px}.connection.waiting .dot{background:#f5b942}\n</style>"
+        );
+      }
       const script = `<scr${""}ipt id="pearl-alertmeter-control">
 document.getElementById("openAlertMeter")?.addEventListener("click", function(){
-  const dashboard = window.open("https://app.alertmeter.com/Admin/Dashboard/Index", "_blank", "noopener");
   const message = document.getElementById("message");
-  if (!dashboard) {
-    if (message) {
-      message.textContent = "Edge blocked the AlertMeter tab. Allow pop-ups for this workbook and try again.";
-      message.classList.add("error");
-    }
-    return;
-  }
+  const button = document.getElementById("openAlertMeter");
+  if (button) button.disabled = true;
   if (message) {
-    message.textContent = "AlertMeter opened. On that dashboard tab, open Settegast Alerts v1.0.0 and click Run AlertMeter Now.";
+    message.textContent = "Queuing the AlertMeter refresh, snapshot, and push…";
     message.classList.remove("error");
   }
+  fetch("http://127.0.0.1:43127/api/request-alertmeter", {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=UTF-8" },
+    body: "{}"
+  }).then(function(response){ return response.json().then(function(payload){ return { response: response, payload: payload }; }); })
+    .then(function(result){
+      if (!result.response.ok) throw new Error(result.payload.error || "Could not queue AlertMeter.");
+      if (message) message.textContent = result.payload.lastMessage || "AlertMeter refresh and push queued.";
+    })
+    .catch(function(error){
+      if (message) {
+        message.textContent = error && error.message ? error.message : "Could not queue AlertMeter.";
+        message.classList.add("error");
+      }
+    })
+    .finally(function(){ if (button) button.disabled = false; });
 });
+document.getElementById("previewAlertMeter")?.addEventListener("click", function(){
+  const previewBody = document.getElementById("previewBody");
+  const previewCaption = document.getElementById("previewCaption");
+  const message = document.getElementById("message");
+  const image = new Image();
+  image.alt = "Latest AlertMeter compliance snapshot";
+  image.onload = function(){
+    if (previewBody) { previewBody.innerHTML = ""; previewBody.appendChild(image); }
+    if (previewCaption) previewCaption.textContent = "Latest AlertMeter compliance capture";
+    if (message) { message.textContent = "AlertMeter preview loaded."; message.classList.remove("error"); }
+  };
+  image.onerror = function(){
+    if (message) { message.textContent = "No AlertMeter preview has been captured yet."; message.classList.add("error"); }
+  };
+  image.src = "http://127.0.0.1:43127/api/alertmeter-preview?t=" + Date.now();
+});
+setInterval(function(){
+  fetch("http://127.0.0.1:43127/api/state", { cache: "no-store" })
+    .then(function(response){ return response.json(); })
+    .then(function(state){
+      const badge = document.getElementById("extensionConnection");
+      const label = document.getElementById("extensionConnectionText");
+      if (badge) badge.className = state.extensionConnected ? "connection online" : "connection offline";
+      if (label) label.textContent = state.extensionConnected ? "Settegast Alerts connected" : "Settegast Alerts not detected";
+    }).catch(function(){});
+}, 5000);
 </scr${""}ipt>`;
       const bodyClose = html.toLowerCase().lastIndexOf("</body>");
       return bodyClose >= 0 ? html.slice(0, bodyClose) + script + "\n" + html.slice(bodyClose) : html + script;
+    }
+
+    function withPearlScheduleDashboard(html) {
+      if (!html || typeof html !== "string" || html.includes("pearl-schedule-dashboard")) return html;
+      const patch = `
+<style id="pearl-schedule-dashboard-style">
+  .content{background:linear-gradient(145deg,#f8fafc,#edf4f8)!important}
+  .status-card{position:relative!important;padding-top:15px!important;overflow:hidden!important;border-radius:12px!important;box-shadow:0 5px 16px #0f172a0c}
+  .status-card:before{content:"";position:absolute;inset:0 0 auto;height:4px;background:linear-gradient(90deg,var(--cyan),#32d6b2)}
+  .schedule-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:14px}
+  .schedule-card{padding:14px 16px;border:1px solid #b8c7d8;border-radius:13px;background:linear-gradient(135deg,#0f2033,#142c43);color:#fff;box-shadow:0 8px 22px #0f172a16}
+  .schedule-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.schedule-head strong{font-size:13px;letter-spacing:.04em}
+  .schedule-state{padding:4px 8px;border-radius:999px;background:#ffffff12;color:#b9c8d8;font-size:9px;font-weight:950;letter-spacing:.08em;text-transform:uppercase}.schedule-state.on{background:#0d7a5c;color:#d9fff3}
+  .schedule-detail{margin:9px 0 0;color:#bdd0e1;font-size:11px;font-weight:750;line-height:1.45}
+  .schedule-next{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-top:10px;padding-top:10px;border-top:1px solid #ffffff1f}
+  .schedule-next span{display:block;color:#8fa8bd;font-size:9px;font-weight:900;letter-spacing:.08em;text-transform:uppercase}.schedule-next b{display:block;margin-top:3px;font-variant-numeric:tabular-nums;font-size:18px}.schedule-next time{color:#d9e7f3;font-size:11px;font-weight:850;text-align:right}
+  .toolbar{border-color:#b8c7d8!important;box-shadow:0 5px 16px #0f172a0a}
+  .preview-card{box-shadow:0 8px 24px #0f172a0d}
+  @media(max-width:800px){.schedule-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  @media(max-width:560px){.schedule-grid{grid-template-columns:1fr}}
+</style>
+<scr${""}ipt id="pearl-schedule-dashboard">
+(function(){
+  var statusGrid=document.querySelector(".status-grid");
+  if(!statusGrid||document.getElementById("pearlScheduleGrid"))return;
+  var scheduleGrid=document.createElement("section");
+  scheduleGrid.className="schedule-grid";
+  scheduleGrid.id="pearlScheduleGrid";
+  scheduleGrid.setAttribute("aria-label","Automatic retrieval schedule");
+  scheduleGrid.innerHTML='<article class="schedule-card"><div class="schedule-head"><strong>Mismatch retrieval</strong><span class="schedule-state" id="mismatchScheduleState">Checking</span></div><p class="schedule-detail">10 scheduled checks daily: 1:00, 3:00, 6:00, 9:00, 11:00 AM; 1:00, 3:00, 6:00, 9:00, 11:00 PM.</p><div class="schedule-next"><div><span>Next check in</span><b id="mismatchCountdown">--:--:--</b></div><time id="mismatchNextTime">Waiting for extension</time></div></article><article class="schedule-card"><div class="schedule-head"><strong>AlertMeter retrieval</strong><span class="schedule-state" id="alertMeterScheduleState">Checking</span></div><p class="schedule-detail">Checks every 30 minutes. Below 100% participation, the no-test list is filtered and pushed as a screenshot.</p><div class="schedule-next"><div><span>Next check in</span><b id="alertMeterCountdown">--:--:--</b></div><time id="alertMeterNextTime">Waiting for extension</time></div></article>';
+  statusGrid.insertAdjacentElement("afterend",scheduleGrid);
+  var latestSchedule=null;
+  function countdown(timestamp){
+    var remaining=new Date(timestamp||0).getTime()-Date.now();
+    if(!Number.isFinite(remaining)||remaining<=0)return"00:00:00";
+    var seconds=Math.floor(remaining/1000);
+    return[Math.floor(seconds/3600),Math.floor(seconds%3600/60),seconds%60].map(function(value){return String(value).padStart(2,"0")}).join(":");
+  }
+  function draw(){
+    var schedule=latestSchedule||{};
+    [["mismatch",schedule.mismatchEnabled,schedule.mismatchNextAt],["alertMeter",schedule.alertMeterEnabled,schedule.alertMeterNextAt]].forEach(function(item){
+      var stateNode=document.getElementById(item[0]+"ScheduleState");
+      var countdownNode=document.getElementById(item[0]+"Countdown");
+      var timeNode=document.getElementById(item[0]+"NextTime");
+      stateNode.textContent=item[1]?"Active":"Paused";
+      stateNode.classList.toggle("on",Boolean(item[1]));
+      countdownNode.textContent=item[1]&&item[2]?countdown(item[2]):"--:--:--";
+      timeNode.textContent=item[1]&&item[2]?"Runs "+new Date(item[2]).toLocaleString([],{weekday:"short",hour:"numeric",minute:"2-digit"}):"Schedule paused";
+    });
+  }
+  function update(){
+    fetch("http://127.0.0.1:43127/api/state",{cache:"no-store"}).then(function(response){return response.json()}).then(function(state){latestSchedule=state.extensionSchedule||null;draw()}).catch(function(){});
+  }
+  update();
+  window.setInterval(draw,1000);
+  window.setInterval(update,10000);
+})();
+</scr${""}ipt>`;
+      const bodyClose = html.toLowerCase().lastIndexOf("</body>");
+      return bodyClose >= 0 ? html.slice(0, bodyClose) + patch + "\n" + html.slice(bodyClose) : html + patch;
     }
 
     function bridgedHtmlForPage(id) {
@@ -7869,11 +8061,12 @@ document.getElementById("openAlertMeter")?.addEventListener("click", function(){
           pageHtml = withLphReleaseAnalysisPopup(pageHtml);
           pageHtml = withLphControlStack(pageHtml);
           pageHtml = withLphCarryOverShiftStart(pageHtml);
+          pageHtml = withLphInboundCountSelection(pageHtml);
           pageHtml = withLphOperationsGuide(pageHtml);
           pageHtml = withLphResetConfirmation(pageHtml);
         }
         if (id === "roster") pageHtml = withSchedulePersistence(pageHtml);
-        if (id === "pearl") pageHtml = withPearlAlertMeterControl(pageHtml);
+        if (id === "pearl") pageHtml = withPearlScheduleDashboard(withPearlAlertMeterControl(pageHtml));
         if (id === "excelView") {
           pageHtml = withExcelToolbarGroups(pageHtml);
           pageHtml = withExcelFutureDwellProjection(pageHtml);
@@ -8410,7 +8603,6 @@ document.getElementById("openAlertMeter")?.addEventListener("click", function(){
     });
     document.getElementById("amHeaderAudits").addEventListener("click", openAuditsPopup);
     document.getElementById("amHeaderChecklist").addEventListener("click", openChecklistPopup);
-    document.getElementById("amHeaderScwLatest").addEventListener("click", () => openScwLatest());
     document.getElementById("amHeaderThirdColumn").addEventListener("click", () => {
       setScwColumnMode(!weatherUsesThirdColumn());
     });

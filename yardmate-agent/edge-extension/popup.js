@@ -39,6 +39,9 @@ alertMeterButton.addEventListener('click', async () => {
 
 async function updateSchedule(kind, control) {
   control.disabled = true;
+  status.textContent = control.checked && kind === 'mismatch'
+    ? 'Enabling schedule and running the first verified mismatch refresh…'
+    : 'Updating schedule…';
   if (kind === 'alertmeter' && control.checked) {
     const granted = await chrome.permissions.request({ origins: ['<all_urls>'] });
     if (!granted) {

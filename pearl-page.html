@@ -13,21 +13,26 @@
   .shell{max-width:1180px;margin:0 auto}
   .hero{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:19px 22px;border-radius:16px 16px 0 0;background:var(--navy);color:#fff}
   .brand{display:flex;align-items:center;gap:13px}.orb{width:43px;height:43px;border-radius:50%;background:radial-gradient(circle at 30% 24%,#fff 0 9%,#bafcff 20%,#23b6c5 56%,#10445e 100%);box-shadow:0 0 22px #18b9d577}.brand h1{margin:0;font-size:25px}.brand p{margin:3px 0 0;color:#a9bdd0;font-size:11px;font-weight:800;letter-spacing:.11em;text-transform:uppercase}
-  .connection{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:900}.dot{width:10px;height:10px;border-radius:50%;background:#8794a5;box-shadow:0 0 0 4px #ffffff12}.connection.online .dot{background:#2fe0a4;box-shadow:0 0 0 4px #2fe0a422}.connection.offline .dot{background:#ff5a68}
-  .content{padding:18px;border:1px solid var(--line);border-top:0;border-radius:0 0 16px 16px;background:#f8fafc}
-  .status-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-bottom:14px}.status-card{min-width:0;padding:13px;border:1px solid var(--line);border-radius:11px;background:var(--panel)}.status-card span{display:block;color:var(--muted);font-size:10px;font-weight:900;letter-spacing:.08em;text-transform:uppercase}.status-card strong{display:block;margin-top:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:16px}.status-card strong.good{color:var(--green)}.status-card strong.bad{color:var(--red)}
+  .connection-stack{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px}.connection{display:flex;align-items:center;gap:8px;padding:8px 11px;border:1px solid #ffffff22;border-radius:999px;background:#ffffff0b;font-size:11px;font-weight:900}.dot{width:10px;height:10px;border-radius:50%;background:#8794a5;box-shadow:0 0 0 4px #ffffff12}.connection.online .dot{background:#2fe0a4;box-shadow:0 0 0 4px #2fe0a422}.connection.offline .dot{background:#ff5a68}.connection.waiting .dot{background:#f5b942}
+  .content{padding:18px;border:1px solid var(--line);border-top:0;border-radius:0 0 16px 16px;background:linear-gradient(145deg,#f8fafc,#edf4f8)}
+  .status-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-bottom:14px}.status-card{position:relative;min-width:0;padding:15px 13px 13px;overflow:hidden;border:1px solid var(--line);border-radius:12px;background:var(--panel);box-shadow:0 5px 16px #0f172a0c}.status-card:before{content:"";position:absolute;inset:0 0 auto;height:4px;background:linear-gradient(90deg,var(--cyan),#32d6b2)}.status-card span{display:block;color:var(--muted);font-size:10px;font-weight:900;letter-spacing:.08em;text-transform:uppercase}.status-card strong{display:block;margin-top:7px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:16px}.status-card strong.good{color:var(--green)}.status-card strong.bad{color:var(--red)}
+  .schedule-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:14px}.schedule-card{padding:14px 16px;border:1px solid #b8c7d8;border-radius:13px;background:linear-gradient(135deg,#0f2033,#142c43);color:#fff;box-shadow:0 8px 22px #0f172a16}.schedule-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.schedule-head strong{font-size:13px;letter-spacing:.04em}.schedule-state{padding:4px 8px;border-radius:999px;background:#ffffff12;color:#b9c8d8;font-size:9px;font-weight:950;letter-spacing:.08em;text-transform:uppercase}.schedule-state.on{background:#0d7a5c;color:#d9fff3}.schedule-detail{margin:9px 0 0;color:#bdd0e1;font-size:11px;font-weight:750;line-height:1.45}.schedule-next{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-top:10px;padding-top:10px;border-top:1px solid #ffffff1f}.schedule-next span{color:#8fa8bd;font-size:9px;font-weight:900;letter-spacing:.08em;text-transform:uppercase}.schedule-next b{font-variant-numeric:tabular-nums;font-size:18px}.schedule-next time{color:#d9e7f3;font-size:11px;font-weight:850;text-align:right}
   .toolbar{display:flex;flex-wrap:wrap;gap:8px;padding:12px;border:1px solid var(--line);border-radius:11px;background:var(--panel)}.btn{min-height:39px;padding:8px 13px;border:1px solid #aeb9c7;border-radius:8px;background:#fff;color:var(--ink);font-weight:900;cursor:pointer}.btn:hover,.btn:focus-visible{border-color:var(--cyan);outline:3px solid #0e91b820}.btn.primary{border-color:#08775a;background:var(--green);color:#fff}.btn.dark{border-color:#111827;background:#111827;color:#fff}.btn.warn{border-color:#b77900;background:#fff6d6;color:#734b00}.btn:disabled{opacity:.55;cursor:wait}.watch{display:inline-flex;align-items:center;gap:8px;min-height:39px;padding:7px 11px;border:1px solid var(--line);border-radius:8px;background:var(--soft);font-size:12px;font-weight:900}.watch input{width:19px;height:19px;accent-color:var(--green)}
   .message{min-height:42px;margin:12px 0;padding:12px 14px;border-left:5px solid var(--cyan);border-radius:7px;background:#e8f6fb;color:#17445c;font-size:13px;font-weight:750}.message.error{border-color:var(--red);background:#fff0f2;color:#8b1529}
   .preview-card{overflow:hidden;border:1px solid var(--line);border-radius:12px;background:#fff}.preview-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 14px;border-bottom:1px solid var(--line);background:var(--soft)}.preview-head strong{font-size:13px;letter-spacing:.06em;text-transform:uppercase}.preview-head span{color:var(--muted);font-size:11px}.preview-body{display:flex;min-height:260px;align-items:flex-start;justify-content:center;padding:14px;overflow:auto;background:#fff}.preview-body img{display:block;max-width:100%;height:auto;box-shadow:0 5px 20px #0f172a20}.empty{align-self:center;color:var(--muted);font-weight:700;text-align:center}
   .help{margin:12px 2px 0;color:var(--muted);font-size:11px;line-height:1.5}
-  @media(max-width:800px){body{padding:8px}.hero{align-items:flex-start;flex-direction:column}.status-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.content{padding:10px}}
+  @media(max-width:800px){body{padding:8px}.hero{align-items:flex-start;flex-direction:column}.status-grid,.schedule-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.content{padding:10px}}
+  @media(max-width:560px){.status-grid,.schedule-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
 <main class="shell">
   <header class="hero">
     <div class="brand"><div class="orb" aria-hidden="true"></div><div><h1>Mori · YardMate Agent</h1><p>Mismatch alert control center</p></div></div>
-    <div class="connection offline" id="connection"><span class="dot"></span><span id="connectionText">Connecting to agent…</span></div>
+    <div class="connection-stack">
+      <div class="connection offline" id="connection"><span class="dot"></span><span id="connectionText">Desktop agent connecting…</span></div>
+      <div class="connection waiting" id="extensionConnection"><span class="dot"></span><span id="extensionConnectionText">Extension checking…</span></div>
+    </div>
   </header>
   <section class="content">
     <div class="status-grid">
@@ -37,11 +42,24 @@
       <article class="status-card"><span>Pool mismatches</span><strong id="mismatchCount">0</strong></article>
       <article class="status-card"><span>UP page refreshed</span><strong id="sourceRefresh">Not verified</strong></article>
     </div>
+    <section class="schedule-grid" aria-label="Automatic retrieval schedule">
+      <article class="schedule-card">
+        <div class="schedule-head"><strong>Mismatch retrieval</strong><span class="schedule-state" id="mismatchScheduleState">Checking</span></div>
+        <p class="schedule-detail">10 scheduled checks daily: 1:00, 3:00, 6:00, 9:00, 11:00 AM; 1:00, 3:00, 6:00, 9:00, 11:00 PM.</p>
+        <div class="schedule-next"><div><span>Next check in</span><b id="mismatchCountdown">--:--:--</b></div><time id="mismatchNextTime">Waiting for extension</time></div>
+      </article>
+      <article class="schedule-card">
+        <div class="schedule-head"><strong>AlertMeter retrieval</strong><span class="schedule-state" id="alertMeterScheduleState">Checking</span></div>
+        <p class="schedule-detail">Checks every 30 minutes. If participation is below 100%, the no-test list is filtered and pushed as a screenshot.</p>
+        <div class="schedule-next"><div><span>Next check in</span><b id="alertMeterCountdown">--:--:--</b></div><time id="alertMeterNextTime">Waiting for extension</time></div>
+      </article>
+    </section>
     <div class="toolbar">
       <label class="watch"><input id="watchToggle" type="checkbox"> Watch Downloads automatically</label>
       <button class="btn dark" id="previewLatest" type="button">Preview Latest Excel</button>
       <button class="btn primary" id="sendLatest" type="button">Process &amp; Send Alert</button>
       <button class="btn primary" id="openAlertMeter" type="button">AlertMeter Snapshot</button>
+      <button class="btn dark" id="previewAlertMeter" type="button">Preview AlertMeter</button>
       <button class="btn warn" id="testPush" type="button">Send Test Alert</button>
       <button class="btn" id="openSettings" type="button">Agent Settings</button>
       <button class="btn" id="refreshStatus" type="button">Refresh</button>
@@ -59,6 +77,8 @@
   const api = "http://127.0.0.1:43127/api";
   const connection = document.getElementById("connection");
   const connectionText = document.getElementById("connectionText");
+  const extensionConnection = document.getElementById("extensionConnection");
+  const extensionConnectionText = document.getElementById("extensionConnectionText");
   const watchStatus = document.getElementById("watchStatus");
   const latestFile = document.getElementById("latestFile");
   const noMateCount = document.getElementById("noMateCount");
@@ -70,6 +90,26 @@
   const previewCaption = document.getElementById("previewCaption");
   const controls = [...document.querySelectorAll("button"), watchToggle];
   let connected = false;
+  let scheduleState = null;
+
+  function formatCountdown(timestamp) {
+    const remaining = new Date(timestamp || 0).getTime() - Date.now();
+    if (!Number.isFinite(remaining) || remaining <= 0) return "00:00:00";
+    const seconds = Math.floor(remaining / 1000);
+    return [Math.floor(seconds / 3600), Math.floor(seconds % 3600 / 60), seconds % 60].map(value => String(value).padStart(2, "0")).join(":");
+  }
+  function renderScheduleClock() {
+    const schedule = scheduleState || {};
+    [["mismatch", schedule.mismatchEnabled, schedule.mismatchNextAt], ["alertMeter", schedule.alertMeterEnabled, schedule.alertMeterNextAt]].forEach(([prefix, enabled, nextAt]) => {
+      const stateNode = document.getElementById(prefix + "ScheduleState");
+      const countdownNode = document.getElementById(prefix + "Countdown");
+      const timeNode = document.getElementById(prefix + "NextTime");
+      stateNode.textContent = enabled ? "Active" : "Paused";
+      stateNode.classList.toggle("on", Boolean(enabled));
+      countdownNode.textContent = enabled && nextAt ? formatCountdown(nextAt) : "--:--:--";
+      timeNode.textContent = enabled && nextAt ? "Runs " + new Date(nextAt).toLocaleString([], { weekday:"short", hour:"numeric", minute:"2-digit" }) : "Schedule paused";
+    });
+  }
 
   function setBusy(busy) { controls.forEach(control => { control.disabled = busy; }); }
   function showMessage(text, error) {
@@ -79,7 +119,9 @@
   function render(state) {
     connected = true;
     connection.className = "connection online";
-    connectionText.textContent = "Agent online";
+    connectionText.textContent = "Desktop agent connected";
+    extensionConnection.className = state.extensionConnected ? "connection online" : "connection offline";
+    extensionConnectionText.textContent = state.extensionConnected ? "Settegast Alerts connected" : "Settegast Alerts not detected";
     watchToggle.checked = Boolean(state.settings.enabled);
     watchStatus.textContent = state.settings.enabled ? "ON" : "PAUSED";
     watchStatus.className = state.settings.enabled ? "good" : "bad";
@@ -88,13 +130,17 @@
     mismatchCount.textContent = state.counts.mismatches;
     sourceRefresh.textContent = state.sourceRefresh?.timestamp || "Not verified";
     sourceRefresh.className = state.sourceRefresh?.verified ? "good" : "bad";
+    scheduleState = state.extensionSchedule || null;
+    renderScheduleClock();
     showMessage(state.lastMessage || "Ready.", false);
     if (state.previewAvailable) previewCaption.textContent = `${state.counts.total} parsed rows · ${state.lastFile || "latest export"}`;
   }
   function disconnected(error) {
     connected = false;
     connection.className = "connection offline";
-    connectionText.textContent = "Agent offline";
+    connectionText.textContent = "Desktop agent offline";
+    extensionConnection.className = "connection offline";
+    extensionConnectionText.textContent = "Settegast Alerts unavailable";
     watchStatus.textContent = "OFFLINE";
     watchStatus.className = "bad";
     showMessage(error || "YardMate Agent is not running. Start it from the Windows Start menu, then click Refresh.", true);
@@ -123,6 +169,29 @@
     } catch (error) { showMessage(error.message, true); }
     finally { setBusy(false); }
   }
+  async function previewAlertMeter() {
+    if (!connected) return refresh();
+    setBusy(true);
+    showMessage("Loading the latest AlertMeter capture…", false);
+    try {
+      const response = await fetch(`${api}/alertmeter-preview?t=${Date.now()}`, { cache:"no-store" });
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        throw new Error(payload.error || "No AlertMeter preview is available yet.");
+      }
+      const blob = await response.blob();
+      const imageUrl = URL.createObjectURL(blob);
+      previewBody.innerHTML = "";
+      const image = document.createElement("img");
+      image.alt = "Latest AlertMeter compliance snapshot";
+      image.src = imageUrl;
+      image.addEventListener("load", () => URL.revokeObjectURL(imageUrl), { once:true });
+      previewBody.appendChild(image);
+      previewCaption.textContent = "Latest AlertMeter compliance capture";
+      showMessage("AlertMeter preview loaded.", false);
+    } catch (error) { showMessage(error.message, true); }
+    finally { setBusy(false); }
+  }
 
   watchToggle.addEventListener("change", async () => {
     setBusy(true);
@@ -133,18 +202,15 @@
   });
   document.getElementById("previewLatest").addEventListener("click", () => action("/preview-latest", "Parsing the newest Excel…", true));
   document.getElementById("sendLatest").addEventListener("click", () => action("/process-latest", "Parsing and sending the newest Excel…", true));
-  document.getElementById("openAlertMeter").addEventListener("click", () => {
-    const dashboard = window.open("https://app.alertmeter.com/Admin/Dashboard/Index", "_blank", "noopener");
-    if (!dashboard) {
-      showMessage("Edge blocked the AlertMeter tab. Allow pop-ups for this workbook and try again.", true);
-      return;
-    }
-    showMessage("AlertMeter opened. On that dashboard tab, open Settegast Alerts v1.0.0 and click Run AlertMeter Now.", false);
-  });
+  document.getElementById("openAlertMeter").addEventListener("click", () =>
+    action("/request-alertmeter", "Queuing the AlertMeter refresh, snapshot, and push…", false)
+  );
+  document.getElementById("previewAlertMeter").addEventListener("click", previewAlertMeter);
   document.getElementById("testPush").addEventListener("click", () => action("/test-push", "Sending a test alert…", false));
   document.getElementById("openSettings").addEventListener("click", () => action("/open-settings", "Opening YardMate Agent settings…", false));
   document.getElementById("refreshStatus").addEventListener("click", refresh);
   refresh();
+  setInterval(renderScheduleClock, 1000);
   setInterval(refresh, 10000);
 })();
 </script>
