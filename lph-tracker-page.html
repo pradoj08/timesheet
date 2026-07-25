@@ -595,6 +595,16 @@ input[type=range]::-webkit-slider-thumb{
 /* ── LPMH GRID ───────────────────────────────────────────────────── */
 .lpmh-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;}
 @media (max-width:980px){.lpmh-grid{display:flex;flex-direction:column;}}
+.lpmh-daily-stack{display:flex;flex-direction:column;gap:10px;min-width:0;}
+.lpmh-midnight-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;}
+.lpmh-midnight-card{border:1px solid rgba(127,119,221,.34);border-radius:10px;background:rgba(127,119,221,.08);padding:10px 12px;min-width:0;}
+.lpmh-midnight-label{font-size:10px;font-weight:800;letter-spacing:.08em;color:#b8b3ff;text-transform:uppercase;}
+.lpmh-midnight-value{margin-top:5px;color:#fff;font-family:var(--mono);font-size:22px;font-weight:800;line-height:1;}
+.lpmh-midnight-value span{font-size:10px;color:var(--text3);letter-spacing:.08em;}
+.lpmh-midnight-meta{margin-top:7px;color:var(--text3);font-family:var(--mono);font-size:9px;line-height:1.4;}
+.lpmh-midnight-card.lok .lpmh-midnight-value{color:#10B981;}
+.lpmh-midnight-card.lbad .lpmh-midnight-value{color:#EF4444;}
+@media (max-width:520px){.lpmh-midnight-row{grid-template-columns:1fr;}}
 
 .lpmh-card{
   position:relative;
@@ -874,12 +884,21 @@ input[type=range]::-webkit-slider-thumb{
 .lpmh-brow-lifts-manual{color:var(--amber);}
 
 .lpmh-brow-downtime{
+  display:grid !important;
+  grid-template-columns:19px minmax(0,1fr) auto;
+  align-items:center;
+  column-gap:9px;
+  row-gap:5px;
   margin-top:4px;
   padding:8px 0;
   border-top:1px solid rgba(245,158,11,0.16);
   border-bottom:1px solid rgba(245,158,11,0.10);
   background:rgba(245,158,11,0.035);
 }
+.lpmh-brow-downtime .lpmh-brow-icon{grid-column:1;grid-row:1 / 3;}
+.lpmh-brow-downtime .lpmh-brow-label{grid-column:2 / 4;grid-row:1;}
+.lpmh-brow-downtime .lpmh-brow-time{grid-column:2;grid-row:2;min-width:0;}
+.lpmh-brow-downtime .lpmh-brow-lifts{grid-column:3;grid-row:2;min-width:0;}
 .lpmh-brow-downtime .lpmh-brow-icon{color:var(--amber);border-color:rgba(245,158,11,0.35);background:rgba(245,158,11,0.08);}
 .lpmh-brow-downtime .lpmh-brow-label{color:var(--amber);font-weight:700;white-space:normal;overflow:visible;text-overflow:clip;}
 .lpmh-brow-downtime .lpmh-brow-time{color:var(--amber);font-weight:700;}
@@ -2784,13 +2803,14 @@ body.lph-hydrating::after{
 .liftlog-delta.is-pos{color:var(--green);background:rgba(16,185,129,0.12);}
 .liftlog-delta.is-neg{color:var(--red);background:rgba(239,68,68,0.12);}
 .liftlog-delta.is-zero{color:var(--text3);background:rgba(255,255,255,0.04);}
-.liftlog-src-select{background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text2);font-family:var(--mono);font-size:10.5px;padding:0 8px;height:28px;line-height:26px;width:100%;cursor:pointer;transition:border-color .12s;box-sizing:border-box;display:block;vertical-align:middle;-webkit-appearance:menulist;}
+.liftlog-src-select{background:transparent;border:1px solid var(--border);border-radius:5px;color:var(--text2);font-family:var(--mono);font-size:11px;font-weight:500;padding:0 22px 0 6px;height:24px;line-height:22px;width:var(--source-width,68px);max-width:220px;cursor:pointer;transition:border-color .12s,background .12s;box-sizing:border-box;display:block;vertical-align:middle;-webkit-appearance:menulist;}
 .liftlog-src-select:focus{outline:none;border-color:var(--amber);}
-.liftlog-src-select.is-set{color:var(--amber);border-color:rgba(245,158,11,0.35);}
+.liftlog-src-select.is-set{color:var(--text2);border-color:color-mix(in srgb,var(--source-color,var(--amber)) 48%,transparent);background:color-mix(in srgb,var(--source-color,var(--amber)) 5%,transparent);}
 .liftlog-worktype-row{display:flex;align-items:center;gap:4px;overflow-x:auto;scrollbar-width:none;height:28px;}
 .liftlog-worktype-row::-webkit-scrollbar{display:none;}
-.liftlog-worktype-slot{display:flex;align-items:center;gap:2px;flex:1 1 auto;min-width:100px;}
-.liftlog-worktype-slot .liftlog-src-select{flex:1;min-width:0;}
+.liftlog-worktype-slot{display:flex;align-items:center;gap:5px;flex:0 0 auto;min-width:0;}
+.liftlog-worktype-slot.is-set::before{content:"";width:7px;height:7px;border-radius:50%;flex:0 0 7px;background:var(--source-color,var(--amber));}
+.liftlog-worktype-slot .liftlog-src-select{flex:0 0 auto;min-width:0;}
 .liftlog-src-remove{
   flex-shrink:0;width:16px;height:16px;border-radius:4px;border:1px solid var(--border);
   background:transparent;color:var(--text3);font-size:8px;line-height:1;cursor:pointer;
@@ -5198,6 +5218,7 @@ function getDelayIntervals(segs,ws,we){
   delayKeys.forEach(function(k){
     if(!segs[k])return;
     segs[k].forEach(function(seg){
+      if(seg.absorbedDuringDowntime)return;
       var os=Math.max(seg.start,ws);
       var oe=Math.min(seg.end,we);
       if(oe>os+0.001)out.push({from:os,to:oe,label:delayLabels[k]||k});
@@ -5226,6 +5247,17 @@ function getShiftDowntimeFlags(segs,ws,we,shiftSources,allSources,minGapMins){
   var minGap=minGapMins/60;
   var lifts=getLiftIntervalsFromSources(shiftSources);
   var delays=getDelayIntervals(segs,ws,we);
+  var absorbedLunches=[];
+  ['lunch','lunch2'].forEach(function(key){
+    (segs[key]||[]).forEach(function(seg){
+      if(!seg.absorbedDuringDowntime)return;
+      absorbedLunches.push({
+        from:seg.start,
+        to:seg.end,
+        label:key==='lunch'?'day lunch':'night lunch'
+      });
+    });
+  });
   var points=[ws];
   lifts.forEach(function(l){points.push(l.from);points.push(l.to);});
   delays.forEach(function(d){points.push(d.from);points.push(d.to);});
@@ -5247,6 +5279,15 @@ function getShiftDowntimeFlags(segs,ws,we,shiftSources,allSources,minGapMins){
       // as an expected pause rather than a warning.
       var covering=delays.filter(function(d){return intervalOverlap(a,b,d.from,d.to)>0.01;});
       var delayLabel=covering.map(function(d){return d.label;}).join(' + ')||'scheduled pause';
+      var lunchCovered=covering.some(function(d){return d.label==='day lunch'||d.label==='night lunch';});
+      var priorFlag=flags[flags.length-1];
+      if(lunchCovered&&priorFlag&&priorFlag.severity!=='delay'&&Math.abs(priorFlag.to-a)<0.01){
+        priorFlag.to=b;
+        priorFlag.duration=priorFlag.to-priorFlag.from;
+        priorFlag.label+='; '+delayLabel+' taken during downtime';
+        priorFlag.severity=priorFlag.duration>=1?'critical':'warn';
+        continue;
+      }
       flags.push({
         label:'\u23F1 '+delayLabel,
         from:a,
@@ -5262,6 +5303,12 @@ function getShiftDowntimeFlags(segs,ws,we,shiftSources,allSources,minGapMins){
     if(next.from>we+0.25)continue;
     var reason='no credited lifts';
     if(next.from>=b-0.001)reason+='; next work '+next.label;
+    var lunchesInGap=absorbedLunches.filter(function(lunch){
+      return intervalOverlap(a,b,lunch.from,lunch.to)>0.01;
+    });
+    if(lunchesInGap.length){
+      reason+='; '+lunchesInGap.map(function(lunch){return lunch.label;}).join(' + ')+' taken during downtime';
+    }
     flags.push({
       label:'\u26A0 DOWNTIME \u2014 '+reason,
       from:a,
@@ -5369,9 +5416,21 @@ function renderBreakdown(sources,manualItems,totalLabel,totalValue,downtimeItems
   var rows=[];
   sources.forEach(function(s){rows.push({type:'lift',from:s.from,to:s.to,label:s.label,lifts:s.lifts});});
   downtimeItems.forEach(function(d){rows.push({type:'downtime',from:d.from,to:d.to,label:d.label,severity:d.severity,duration:d.duration});});
+  manualItems.filter(function(m){return m.from!=null&&m.to!=null;}).forEach(function(m){
+    rows.push({type:'manual',from:m.from,to:m.to,label:m.label,lifts:m.lifts});
+  });
   rows.sort(function(a,b){return a.from-b.from;});
 
   rows.forEach(function(r){
+    if(r.type==='manual'){
+      html+='<div class="lpmh-brow lpmh-brow-manual">';
+      html+='<span class="lpmh-brow-icon lpmh-brow-icon-star">'+lpmhIcon('star')+'</span>';
+      html+='<span class="lpmh-brow-label">'+r.label+'</span>';
+      html+='<span class="lpmh-brow-time">'+fmtH(r.from)+'-'+fmtH(r.to)+'</span>';
+      html+='<span class="lpmh-brow-lifts lpmh-brow-lifts-manual">'+(r.lifts>0?'+':'')+r.lifts+'</span>';
+      html+='</div>';
+      return;
+    }
     if(r.type==='downtime'){
       if(r.severity==='delay'){
         html+='<div class="lpmh-brow lpmh-brow-downtime delay">';
@@ -5398,12 +5457,12 @@ function renderBreakdown(sources,manualItems,totalLabel,totalValue,downtimeItems
     html+='<span class="lpmh-brow-lifts">'+r.lifts+'</span>';
     html+='</div>';
   });
-  manualItems.forEach(function(m){
+  manualItems.filter(function(m){return m.from==null||m.to==null;}).forEach(function(m){
     html+='<div class="lpmh-brow lpmh-brow-manual">';
     html+='<span class="lpmh-brow-icon lpmh-brow-icon-star">'+lpmhIcon('star')+'</span>';
     html+='<span class="lpmh-brow-label">'+m.label+'</span>';
     html+='<span class="lpmh-brow-time">&mdash;</span>';
-    html+='<span class="lpmh-brow-lifts lpmh-brow-lifts-manual">+'+m.lifts+'</span>';
+    html+='<span class="lpmh-brow-lifts lpmh-brow-lifts-manual">'+(m.lifts>0?'+':'')+m.lifts+'</span>';
     html+='</div>';
   });
   html+='</div>';
@@ -5440,6 +5499,31 @@ function runPhase(trains,clockIn,commitment,rate,outRem,outLoaded,carsIn,segs,ev
   function nextTrainArrivalAfter(t){
     return trains.filter(function(tr){return tr.rem>0.5&&tr.arr>t;})
       .reduce(function(mn,tr){return Math.min(mn,tr.arr);},Infinity);
+  }
+
+  function absorbLunchDuringIdleWindow(idleStart,idleEnd){
+    function absorb(key,label,startHour,duration){
+      if(delaysDone[key]||duration<=0)return false;
+      var lunchStart=Math.max(idleStart,startHour);
+      var lunchEnd=lunchStart+duration;
+      if(lunchEnd>idleEnd+0.001)return false;
+      delaysDone[key]=true;
+      segs[key]=segs[key]||[];
+      segs[key].push({start:lunchStart,end:lunchEnd,absorbedDuringDowntime:true});
+      events.push({
+        time:lunchStart,
+        title:label+' taken during downtime',
+        meta:fmtDur(duration)+' absorbed into existing downtime; no additional production delay',
+        color:'#10B981',
+        pill:'LUNCH',
+        pillBg:'rgba(16,185,129,0.15)',
+        pillColor:'#10B981',
+        status:'ok'
+      });
+      return true;
+    }
+    absorb('lunch','Day shift lunch',11.0,lunchH);
+    absorb('lunch2','Night shift lunch',21.0,lunch2H);
   }
 
   function checkDelays(){
@@ -5624,6 +5708,7 @@ function runPhase(trains,clockIn,commitment,rate,outRem,outLoaded,carsIn,segs,ev
     }
     if(!at){
       var nta=trains.filter(function(t){return t.rem>0.5&&t.arr>clock;}).reduce(function(mn,t){return Math.min(mn,t.arr);},Infinity);
+      absorbLunchDuringIdleWindow(clock,Math.min(nta,commitment));
       var nd=Math.min(!delaysDone.ups&&upsH>0?zpbhoArr:Infinity,!delaysDone.lunch&&lunchH>0?11.0:Infinity,!delaysDone.shift&&shiftH>0?15:Infinity,!delaysDone.lunch2&&lunch2H>0?21.0:Infinity);
       // Don't idle past the moment shouldPivot becomes true — we may have cars to start loading now
       var pivotMomentIdle=(!pivotDone&&rem>0.5)
@@ -5663,6 +5748,36 @@ function liftSourceColor(k,trainLabelMap){
   if(LIFT_SOURCE_COLORS[k]) return LIFT_SOURCE_COLORS[k];
   var t=TRAINS&&TRAINS[k];
   return (t&&t.color) || '#4a9eff';
+}
+
+function reviseForecastBucketsWithActuals(buckets,activeKeys,trainLabelMap){
+  var actuals=loadHourlyActuals();
+  var optionMap={};
+  liftSourceOptionList(activeKeys,trainLabelMap).forEach(function(o){if(o.key)optionMap[o.key]=o.label;});
+  return buckets.map(function(bucket){
+    var entry=normalizeActualEntry(actuals[bucket.hour]);
+    if(entry.value==null||!Number.isFinite(entry.value))return bucket;
+    var actualValue=Math.max(0,entry.value);
+    var srcs=entry.srcs.filter(function(key){return !!key;});
+    var revisedSources;
+    if(srcs.length){
+      var perSource=actualValue/srcs.length;
+      revisedSources=srcs.map(function(key){
+        return {key:key,label:optionMap[key]||(trainLabelMap[key]||key)+' drop',lifts:Math.round(perSource),color:liftSourceColor(key,trainLabelMap)};
+      });
+    }else{
+      revisedSources=[{key:'actual',label:'Logged actual',lifts:Math.round(actualValue),color:'#4a9eff'}];
+    }
+    return {
+      hour:bucket.hour,
+      total:Math.round(actualValue),
+      plannedTotal:bucket.total,
+      detail:revisedSources.map(function(source){return source.label+': '+source.lifts;}),
+      sources:revisedSources,
+      isBreak:false,
+      realityAdjusted:true
+    };
+  });
 }
 
 function buildHourlyLiftLog(segs,activeKeys,rate,trainLabelMap,paceCtx){
@@ -5722,6 +5837,8 @@ function buildHourlyLiftLog(segs,activeKeys,rate,trainLabelMap,paceCtx){
     }
   }
 
+  buckets=reviseForecastBucketsWithActuals(buckets,activeKeys,trainLabelMap);
+  renderedBuckets=reviseForecastBucketsWithActuals(renderedBuckets,activeKeys,trainLabelMap);
   buildHourlyLiftLogActual(renderedBuckets,activeKeys,trainLabelMap,paceCtx);
   buildHourlyLiftTimeMap(buckets,paceCtx);
   buildHourlyLiftTimeMapActual(renderedBuckets,activeKeys,trainLabelMap,paceCtx);
@@ -6705,7 +6822,11 @@ function buildHourlyLiftLogActual(buckets,activeKeys,trainLabelMap,paceCtx){
         return '<option value="'+o.key+'"'+(o.key===selected?' selected':'')+'>'+escHtml(o.label)+'</option>';
       }).join('');
       var setClass=selected?' is-set':'';
-      html+='<span class="liftlog-worktype-slot">'
+      var selectedOption=optionList.find(function(o){return o.key===selected;});
+      var selectedLabel=selectedOption?selectedOption.label:'—';
+      var sourceColor=selected?liftSourceColor(selected,trainLabelMap):'var(--border2)';
+      var sourceWidth=Math.max(58,Math.min(220,(selectedLabel.length*7)+34));
+      html+='<span class="liftlog-worktype-slot'+setClass+'" style="--source-color:'+sourceColor+';--source-width:'+sourceWidth+'px;">'
         +'<select class="liftlog-src-select'+setClass+'" onchange="setHourlyActualSourceAt('+hour+','+i+',this.value)">'+opts+'</select>';
       if(slots.length>1){
         html+='<button type="button" class="liftlog-src-remove" title="Remove" onclick="removeHourlyActualSource('+hour+','+i+')">&#x2715;</button>';
@@ -7581,7 +7702,9 @@ function simulate(skipPrestigeXP){
       noteEl.textContent='Unfinished work from the prior shift \u2014 must be completed before today\'s operations can begin.';
     }
   })();
-  document.getElementById('night-hours-note').textContent='Night: crew x '+nightHours.toFixed(1)+'h ('+fmtH(s2Start)+'-'+fmtH(s2End)+(nightWraps?' next day; includes 0000-0300':'')+')';
+  document.getElementById('night-hours-note').textContent=nightWraps
+    ? 'Night card: crew x '+Math.max(0,24-s2Start).toFixed(1)+'h ('+fmtH(s2Start)+'-0000). Tomorrow pre-shift: crew x '+Math.max(0,s2End).toFixed(1)+'h (0000-'+fmtH(s2End)+').'
+    : 'Night: crew x '+nightHours.toFixed(1)+'h ('+fmtH(s2Start)+'-'+fmtH(s2End)+')';
   var dayEffectiveCrew = crew1 + swingHeadcount;
   document.getElementById('s1-badge').textContent=fmtH(s1Start)+'-'+fmtH(s1End);
   document.getElementById('s2-badge').textContent=fmtH(s2Start)+'-'+fmtH(s2End)+(nightWraps?'+':'');
@@ -7774,13 +7897,12 @@ function simulate(skipPrestigeXP){
   var s1Sources=getShiftLiftSources(segs,s1Start,s1End,activeKeys,trainLabelMap,rate);
   var s2Lifts;
   var nightSources;
+  var preShiftSources=[];
 
   if(nightWraps){
-    // Night shift crosses midnight. Segments after midnight are stored in 24+ hour space
-    // (e.g. 0100 = 25, 0300 = 27). Pass 24→(24+s2End) so the clip math works correctly.
-    var nightSourcesA=getShiftLiftSources(segs,s2Start,24,activeKeys,trainLabelMap,rate);
-    var nightSourcesB=getShiftLiftSources(segs,24,24+s2End,activeKeys,trainLabelMap,rate);
-    nightSources=nightSourcesA.concat(nightSourcesB).sort(function(a,b){return a.from-b.from;});
+    // Keep 0000-0300 as its own night pre-shift metric instead of rolling it into NIGHT.
+    nightSources=getShiftLiftSources(segs,s2Start,24,activeKeys,trainLabelMap,rate);
+    preShiftSources=getShiftLiftSources(segs,24,24+s2End,activeKeys,trainLabelMap,rate);
   } else {
     s2Lifts=computeLifts(segs,s2Start,s2End,activeKeys,rate);
     nightSources=getShiftLiftSources(segs,s2Start,s2End,activeKeys,trainLabelMap,rate);
@@ -7790,9 +7912,7 @@ function simulate(skipPrestigeXP){
   var s1Downtime=getShiftDowntimeFlags(segs,s1Start,s1End,s1Sources,allLiftSources,15);
   var nightDowntime;
   if(nightWraps){
-    var nightDownA=getShiftDowntimeFlags(segs,s2Start,24,nightSourcesA,allLiftSources,15);
-    var nightDownB=getShiftDowntimeFlags(segs,24,24+s2End,nightSourcesB,allLiftSources,15);
-    nightDowntime=nightDownA.concat(nightDownB).sort(function(a,b){return a.from-b.from;});
+    nightDowntime=getShiftDowntimeFlags(segs,s2Start,24,nightSources,allLiftSources,15);
   } else {
     nightDowntime=getShiftDowntimeFlags(segs,s2Start,s2End,nightSources,allLiftSources,15);
   }
@@ -7813,23 +7933,63 @@ function simulate(skipPrestigeXP){
   var s2LunchHours = crew2 > 0 ? (crew2 * lunch2H) : 0;
 
   var s1ManHours = Math.max(0, s1WorkedHours - s1LunchHours - swingLunchHours);
-  var s2ManHours = Math.max(0, (crew2 * nightHours) - s2LunchHours);
+  var nightCardHours=nightWraps?Math.max(0,24-s2Start):nightHours;
+  var preShiftHours=nightWraps?Math.max(0,s2End):0;
+  var s2ManHours = Math.max(0, (crew2 * nightCardHours) - s2LunchHours);
   var s2Manual=[];
-  if(preLifts>0)s2Manual.push({label:'0000-0300 lifts (night pre-start)',lifts:preLifts});
   var s2Exact=nightSources.reduce(function(sum,item){return sum+(item.exactLifts||item.lifts);},0)+s2Manual.reduce(function(sum,item){return sum+item.lifts;},0);
   s2Lifts=Math.round(s2Exact);
+  var previousShiftLifts=Math.round(preLifts);
+  var preShiftExact=preShiftSources.reduce(function(sum,item){return sum+(item.exactLifts||item.lifts);},0);
+  var preShiftLifts=Math.round(preShiftExact);
+  var preShiftManHours=Math.max(0,crew2*preShiftHours);
+  var preShiftLPMH=preShiftManHours>0?preShiftLifts/preShiftManHours:0;
+
+  // Replace modeled lifts with imported/manual actuals for completed hourly buckets.
+  // The upcoming 0000-0300 window (hours 24-26) remains forecast-only.
+  var realityActuals=loadHourlyActuals();
+  function realityAdjustedLifts(baseLifts,fromHour,toHour){
+    var modeledLogged=0,actualLogged=0,loggedHours=0,adjustments=[];
+    hourlyBuckets.forEach(function(bucket){
+      if(bucket.isBreak||bucket.hour<fromHour||bucket.hour>=toHour)return;
+      var entry=normalizeActualEntry(realityActuals[bucket.hour]);
+      if(entry.value==null||!Number.isFinite(entry.value))return;
+      modeledLogged+=bucket.plannedTotal!=null?bucket.plannedTotal:bucket.total;
+      actualLogged+=entry.value;
+      loggedHours+=1;
+      var planned=bucket.plannedTotal!=null?bucket.plannedTotal:bucket.total;
+      var sourceLabel=(bucket.sources||[]).map(function(source){return source.label;}).join(' + ')||'Logged actual';
+      adjustments.push({from:bucket.hour,to:bucket.hour+1,label:'Imported actual · '+sourceLabel,lifts:Math.round(entry.value-planned)});
+    });
+    return {
+      lifts:Math.max(0,Math.round(baseLifts-modeledLogged+actualLogged)),
+      delta:Math.round(actualLogged-modeledLogged),
+      actual:Math.round(actualLogged),
+      hours:loggedHours,
+      adjustments:adjustments
+    };
+  }
+  var previousReality=realityAdjustedLifts(previousShiftLifts,0,3);
+  if(previousReality.hours>0)previousReality.lifts=previousReality.actual;
+  var dayReality=realityAdjustedLifts(s1Lifts,3,15);
+  var nightReality=realityAdjustedLifts(s2Lifts,15,24);
+  previousShiftLifts=previousReality.lifts;
+  s1Lifts=dayReality.lifts;
+  s2Lifts=nightReality.lifts;
+  Array.prototype.push.apply(s1Manual,dayReality.adjustments);
+  Array.prototype.push.apply(s2Manual,nightReality.adjustments);
+
+  var previousShiftLPMH=preShiftManHours>0?previousShiftLifts/preShiftManHours:0;
   var s1LPMH=s1ManHours>0?s1Lifts/s1ManHours:0;
   var s2LPMH=s2ManHours>0?s2Lifts/s2ManHours:0;
-  var validShifts=(s1LPMH>0?1:0)+(s2LPMH>0?1:0);
-  var dailyLPMH=validShifts>0?(s1LPMH+s2LPMH)/validShifts:0;
+  var dailyLifts=s1Lifts+s2Lifts+preShiftLifts;
+  var dailyManHours=s1ManHours+s2ManHours+preShiftManHours;
+  var dailyLPMH=dailyManHours>0?dailyLifts/dailyManHours:0;
   var dayEffectiveCrew = crew1 + swingHeadcount;
   function lc(v){return v>=LPMH_TARGET?'lok':'lbad';}
   function vc(v){return v>=LPMH_TARGET?'ok':'bad';}
   var s1Label=fmtH(s1Start)+'-'+fmtH(s1End);
-  var s2Label=nightWraps?(fmtH(s2Start)+'-'+fmtH(s2End)+'+'):(fmtH(s2Start)+'-'+fmtH(s2End));
-
-  var s1Manual=[];
-  if(flips>0)s1Manual.push({label:'flips',lifts:flips});
+  var s2Label=nightWraps?(fmtH(s2Start)+'-0000'):(fmtH(s2Start)+'-'+fmtH(s2End));
 
   function lpmhCard(cardClass, shiftIcon, shiftIconColor, shortName, timeRange, lpmhVal, target, lifts, manHours, crew, gaugeHtml, breakdown){
     var hasData = lifts > 0;
@@ -7890,13 +8050,19 @@ function simulate(skipPrestigeXP){
     null, renderBreakdown(nightSources,s2Manual,'Night shift total',s2Lifts,nightDowntime,'NIGHT')
   );
   var dHtml = lpmhCard(
-    (s1Lifts+s2Lifts)>0?lc(dailyLPMH):'',
-    'calendar', '#38BDF8', 'DAILY', 'All Day ('+s1Label+' / '+s2Label+')',
-    dailyLPMH, LPMH_TARGET, s1Lifts+s2Lifts, s1ManHours+s2ManHours, crew1+'&thinsp;/&thinsp;'+crew2,
+    dailyLifts>0?lc(dailyLPMH):'',
+    'calendar', '#38BDF8', 'DAILY', 'All Day ('+s1Label+' / '+s2Label+' / 0000-0300)',
+    dailyLPMH, LPMH_TARGET, dailyLifts, dailyManHours, crew1+'&thinsp;/&thinsp;'+crew2,
     null, null
   );
+  var previousShiftClass=previousShiftLifts>0?lc(previousShiftLPMH):'';
+  var preShiftClass=preShiftLifts>0?lc(preShiftLPMH):'';
+  var preShiftHtml='<div class="lpmh-midnight-row">'
+    +'<div class="lpmh-midnight-card '+previousShiftClass+'"><div class="lpmh-midnight-label">Previous Shift · 0000-0300 LPH</div><div class="lpmh-midnight-value">'+(previousShiftLifts>0?previousShiftLPMH.toFixed(2):'—')+' <span>LPH</span></div><div class="lpmh-midnight-meta">'+previousShiftLifts+' entered lifts / '+preShiftManHours.toFixed(1)+' man-hrs</div></div>'
+    +'<div class="lpmh-midnight-card '+preShiftClass+'"><div class="lpmh-midnight-label">Current Night → Tomorrow · 0000-0300 LPH</div><div class="lpmh-midnight-value">'+(preShiftLifts>0?preShiftLPMH.toFixed(2):'—')+' <span>LPH</span></div><div class="lpmh-midnight-meta">'+preShiftLifts+' forecast lifts · '+crew2+' crew · '+preShiftHours.toFixed(1)+' hours</div></div>'
+    +'</div>';
 
-  document.getElementById('lpmh-grid').innerHTML=s1Html+s2Html+dHtml;
+  document.getElementById('lpmh-grid').innerHTML=s1Html+s2Html+'<div class="lpmh-daily-stack">'+dHtml+preShiftHtml+'</div>';
   buildHourlyLiftLog(segs,activeKeys,rate,trainLabelMap,liftLogPaceCtx);
 
   // ── ALERTS ──
@@ -7963,7 +8129,7 @@ function simulate(skipPrestigeXP){
 
   // ── TAVG ──
   buildTavg(trains,trainDropEnd,trainArrivalTimes,ihosaPivot,mhoasPivot,
-    shiftH,upsH,lunchH,lunch2H,ihosaUnits,mhoasUnits,ihosaLoaded,mhoasLoaded,rate,activeKeys,segs,zpbhoArr,crew1,crew2,s1Hours,nightHours,dailyLPMH,s1Lifts+s2Lifts,s1ManHours+s2ManHours,ihosaLate,mhoasLate,ihosaCompletedAt,mhoasCompletedAt,hourlyBuckets,liftLogPaceCtx,
+    shiftH,upsH,lunchH,lunch2H,ihosaUnits,mhoasUnits,ihosaLoaded,mhoasLoaded,rate,activeKeys,segs,zpbhoArr,crew1,crew2,s1Hours,nightHours,dailyLPMH,dailyLifts,dailyManHours,ihosaLate,mhoasLate,ihosaCompletedAt,mhoasCompletedAt,hourlyBuckets,liftLogPaceCtx,
     {s1Lifts:s1Lifts,s2Lifts:s2Lifts,s1ManHours:s1ManHours,s2ManHours:s2ManHours,s1LunchDeduct:s1LunchHours+swingLunchHours,s2LunchDeduct:s2LunchHours,s1WorkedHours:s1WorkedHours,s2WorkedHours:crew2*nightHours});
 
   var totalCrewHours=(crew1*s1Hours)+(crew2*nightHours);
