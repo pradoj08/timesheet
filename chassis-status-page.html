@@ -25530,5 +25530,248 @@ body:not(.forecast-view) .app > .hero.clean-hero > .hero-actions{
   try { window.parent?.addEventListener("scroll", () => { if (modal.classList.contains("open")) positionHotboxList(); }, { passive: true }); } catch (_) {}
   updateButtonCount();
 })();</script>
+<style id="chassis-compact-inbound-forecast-v1">
+#forecastStatusCards.forecast-status-cards{
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  align-items:start!important;
+  gap:16px!important;
+}
+#forecastStatusCards .forecast-day-section{
+  display:block!important;
+  min-width:0!important;
+  max-height:none!important;
+  overflow:visible!important;
+  padding:0!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+}
+#forecastStatusCards .forecast-day-divider{
+  min-height:48px!important;
+  padding:4px 0 8px!important;
+  border:0!important;
+  border-bottom:1px solid rgba(148,163,184,.28)!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+#forecastStatusCards .forecast-day-divider > div:first-child strong{
+  color:#f8fafc!important;
+  font-size:18px!important;
+  line-height:1!important;
+}
+#forecastStatusCards .forecast-day-unit-total span{
+  display:block!important;
+  color:#93a4c2!important;
+  font-size:7px!important;
+  letter-spacing:.12em!important;
+}
+#forecastStatusCards .forecast-day-unit-total strong{
+  color:#fff!important;
+  font-size:22px!important;
+  line-height:1!important;
+}
+#forecastStatusCards .forecast-status-cards-grid{
+  display:grid!important;
+  grid-template-columns:1fr!important;
+  align-content:start!important;
+  gap:9px!important;
+  padding:9px 0 0!important;
+  overflow:visible!important;
+}
+#forecastStatusCards .forecast-train-card.compact-option-three,
+#forecastStatusCards .forecast-status-cards-grid .forecast-train-card{
+  position:relative!important;
+  display:block!important;
+  width:100%!important;
+  min-width:0!important;
+  height:auto!important;
+  margin:0!important;
+  padding:9px!important;
+  overflow:visible!important;
+  border:1px solid rgba(148,163,184,.34)!important;
+  border-radius:8px!important;
+  background:rgba(27,29,42,.96)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.035)!important;
+}
+#forecastStatusCards .forecast-train-card:has(.forecast-hot-box-pill){
+  border:3px solid #fbbf24!important;
+  padding:7px!important;
+  outline:1px solid rgba(253,230,138,.42)!important;
+  outline-offset:1px!important;
+  animation:none!important;
+  filter:none!important;
+  box-shadow:
+    0 0 0 1px rgba(253,230,138,.32),
+    0 0 9px rgba(251,191,36,.30),
+    inset 0 0 6px rgba(251,191,36,.04)!important;
+}
+#forecastStatusCards .forecast-train-card.high-volume-train:not(.imccomllc-inbound){
+  border:1px solid rgba(148,163,184,.34)!important;
+  outline:0!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.035)!important;
+  animation:none!important;
+}
+#forecastStatusCards .forecast-train-card:has(.forecast-hot-box-pill) .forecast-train-card-glow{
+  display:none!important;
+  width:auto!important;
+  height:auto!important;
+  inset:auto!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  filter:none!important;
+  pointer-events:none!important;
+}
+#forecastStatusCards .forecast-compact-train-head{
+  position:relative!important;
+  z-index:2!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:8px!important;
+  margin:0 0 7px!important;
+}
+#forecastStatusCards .forecast-compact-train-main{
+  display:flex!important;
+  align-items:center!important;
+  gap:7px!important;
+  min-width:0!important;
+}
+#forecastStatusCards .forecast-train-name-line{
+  display:flex!important;
+  align-items:center!important;
+  gap:7px!important;
+  min-width:0!important;
+}
+#forecastStatusCards .forecast-compact-train-main .forecast-train-name{
+  color:#f8fafc!important;
+  font-size:15px!important;
+  line-height:1!important;
+  white-space:nowrap!important;
+}
+#forecastStatusCards .forecast-compact-eta-wrap,
+#forecastStatusCards .forecast-compact-eta{
+  display:none!important;
+}
+#forecastStatusCards .forecast-hot-box-pill{
+  min-height:18px!important;
+  padding:2px 7px!important;
+  border:1px solid #d99500!important;
+  border-radius:4px!important;
+  background:#fbbf24!important;
+  color:#271600!important;
+  font-size:8px!important;
+  box-shadow:0 0 9px rgba(251,191,36,.38)!important;
+}
+#forecastStatusCards .forecast-compact-total{
+  display:flex!important;
+  align-items:center!important;
+  gap:7px!important;
+  min-width:0!important;
+  padding:0!important;
+  border:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+#forecastStatusCards .forecast-compact-total span{
+  color:#93a4c2!important;
+  font-size:6px!important;
+  letter-spacing:.10em!important;
+  text-transform:uppercase!important;
+}
+#forecastStatusCards .forecast-compact-total strong{
+  display:grid!important;
+  place-items:center!important;
+  min-width:38px!important;
+  height:22px!important;
+  padding:0 8px!important;
+  border:1px solid rgba(167,139,250,.55)!important;
+  border-radius:999px!important;
+  background:rgba(91,33,182,.25)!important;
+  color:#fff!important;
+  font-size:12px!important;
+  line-height:1!important;
+}
+#forecastStatusCards .forecast-compact-meta-row{display:none!important}
+#forecastStatusCards .forecast-pool-size-grid.forecast-four-quadrant-grid{
+  position:relative!important;
+  z-index:1!important;
+  display:grid!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:5px 7px!important;
+  margin:0!important;
+}
+#forecastStatusCards .forecast-quadrant{
+  min-height:0!important;
+  height:auto!important;
+  padding:0!important;
+  overflow:visible!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+#forecastStatusCards .forecast-quadrant-head{display:none!important}
+#forecastStatusCards .forecast-quadrant-body{
+  display:grid!important;
+  gap:4px!important;
+  margin:0!important;
+}
+#forecastStatusCards .forecast-quadrant-item{
+  min-height:29px!important;
+  padding:4px 6px!important;
+  gap:4px!important;
+  border-width:1px!important;
+  border-radius:5px!important;
+}
+#forecastStatusCards .forecast-quadrant-label{
+  font-size:11px!important;
+  line-height:1!important;
+  white-space:nowrap!important;
+}
+#forecastStatusCards .forecast-quadrant-status{font-size:14px!important}
+#forecastStatusCards .forecast-count-bubble{
+  min-width:22px!important;
+  height:20px!important;
+  padding:0 5px!important;
+  font-size:10px!important;
+}
+#forecastStatusCards .forecast-quadrant-empty{
+  min-height:29px!important;
+  padding:4px 6px!important;
+  border:1px dashed rgba(148,163,184,.28)!important;
+  border-radius:5px!important;
+  background:transparent!important;
+  color:#697386!important;
+  font-size:9px!important;
+}
+#forecastStatusCards .forecast-other-strip{
+  margin:8px 0 0!important;
+  padding:7px 0 0!important;
+  border:0!important;
+  border-top:1px solid rgba(148,163,184,.25)!important;
+  border-radius:0!important;
+  background:transparent!important;
+}
+#forecastStatusCards .forecast-other-list{gap:5px!important}
+#forecastStatusCards .forecast-other-pill{
+  min-height:22px!important;
+  padding:3px 6px!important;
+  border-radius:4px!important;
+}
+#forecastStatusCards .forecast-other-pill span,
+#forecastStatusCards .forecast-other-pill strong{font-size:9px!important}
+#forecastStatusCards .forecast-other-pill strong{
+  min-width:18px!important;
+  height:18px!important;
+}
+#forecastStatusCards .forecast-train-card-actions{display:none!important}
+@media(max-width:1100px){
+  #forecastStatusCards.forecast-status-cards{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+}
+@media(max-width:720px){
+  #forecastStatusCards.forecast-status-cards{grid-template-columns:1fr!important}
+}
+</style>
 </body>
 </html>

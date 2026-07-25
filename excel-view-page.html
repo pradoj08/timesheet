@@ -439,6 +439,17 @@
   .yard-view-title { display:flex; align-items:center; justify-content:center; gap:8px; }
   .yard-view-summary { color:#9ed0ff; font-size:10px; letter-spacing:.04em; }
   .yard-view-body { background:#d7d7d7; }
+  .yard-view-section-title {
+    padding: 8px 10px;
+    border-top: 1px solid #7c3aed;
+    border-bottom: 1px solid #7c3aed;
+    background: #5b21b6;
+    color: #ffffff;
+    font: 900 12px/1 "Aptos Narrow", "Arial Narrow", Arial, sans-serif;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+  .yard-view-section-title:not(:first-child) { margin-top: 12px; }
   .yard-view-table {
     display:grid;
     grid-template-columns:88px 86px minmax(500px,1fr) 68px;
@@ -610,6 +621,31 @@
     color: #fff;
     font: 950 12px/1 "Aptos Narrow", "Arial Narrow", Arial, sans-serif;
     letter-spacing: .04em;
+  }
+  .today-roster-scheduled-time {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: center;
+    gap: 6px;
+    min-height: 38px;
+    padding: 4px 5px 5px;
+    border-top: 1px solid #3c5068;
+    border-bottom: 1px solid #aab4c2;
+    background: #203144;
+  }
+  .today-roster-scheduled-time input {
+    width: 100%;
+    min-width: 0;
+    height: 27px;
+    padding: 2px 5px;
+    border: 1px solid #506785;
+    border-radius: 5px;
+    background: #13233a;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 900;
+    text-align: center;
+    pointer-events: none;
   }
   .today-roster-rows { min-height: 24px; }
   .today-roster-row {
@@ -3605,9 +3641,9 @@
     <div class="split-view-body" id="splitViewBody"></div>
   </section>
 
-  <section class="split-view-popup yard-view-popup" id="yardViewPopup" hidden aria-label="Cars in yard tracks">
+  <section class="split-view-popup yard-view-popup" id="yardViewPopup" hidden aria-label="Cars in Yard and Pierce tracks">
     <div class="split-view-titlebar" id="yardViewHandle">
-      <span class="yard-view-title">YARD VIEW <span class="yard-view-summary" id="yardViewSummary"></span></span>
+      <span class="yard-view-title">YARD / PIERCE <span class="yard-view-summary" id="yardViewSummary"></span></span>
       <button class="split-view-close" id="yardViewClose" type="button" aria-label="Close yard view">&times;</button>
     </div>
     <div class="split-view-body yard-view-body" id="yardViewBody"></div>
@@ -3715,7 +3751,7 @@
           <div class="dashboard-controls">
             <button class="btn btn-light undo-grid-btn" id="undoExcelView" type="button" disabled title="Undo the last block move, edit, delete, or other saved change">Undo</button>
             <button class="btn btn-white btn-small" id="toggleSplitView" type="button">Split View</button>
-            <button class="btn btn-white btn-small" id="toggleYardView" type="button">Yard View</button>
+            <button class="btn btn-white btn-small" id="toggleYardView" type="button">Yard (0) / Pierce (0)</button>
             <div class="view-picker" id="viewPicker">
               <button class="view-select" id="viewSelect" type="button" aria-haspopup="listbox" aria-expanded="false">
                 <span id="viewSelectLabel">CURRENT RAMP BLOCKING</span>
@@ -5508,12 +5544,36 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     return raw || "UNASSIGNED";
   }
 
-  function yardTrackGroups() {
+  function isPierceTrackValue(value) {
+    const raw = clean(value).toUpperCase().replace(/[–—]/g, "-").replace(/\s+/g, "");
+    return /^0?3-[A-Z0-9]+$/.test(raw)
+      || /^03[A-Z0-9]{3,}$/.test(raw)
+      || /^3\d{3}$/.test(raw);
+  }
+
+  function pierceTrackLabel(value) {
+    const raw = clean(value).toUpperCase().replace(/[–—]/g, "-").replace(/\s+/g, "");
+    const dashed = raw.match(/^0?3-([A-Z0-9]+)$/);
+    if (dashed) return `03-${dashed[1]}`;
+    const compact = raw.match(/^03([A-Z0-9]{3,})$/) || raw.match(/^3(\d{3})$/);
+    return compact ? `03-${compact[1]}` : (raw || "UNASSIGNED");
+  }
+
+  function yardViewTrackLabel(value) {
+    return isPierceTrackValue(value) ? pierceTrackLabel(value) : yardTrackLabel(value);
+  }
+
+  function yardTrackGroups(view = "yard") {
     const groups = new Map();
-    (state.rows || []).map(normalizeRow).forEach((row, sourceIndex) => {
-      if (!clean(row[0]) || isRampTrackValue(row[0]) || !clean(row[2]) || Number(row[4]) <= 0) return;
-      const key = clean(row[0]).toUpperCase();
-      if (!groups.has(key)) groups.set(key, {track:row[0], rows:[]});
+    (state.rows || []).forEach((sourceRow, sourceIndex) => {
+      const originalTrack = sourceRow && sourceRow[0];
+      const row = normalizeRow(sourceRow || []);
+      const pierce = isPierceTrackValue(originalTrack) || isPierceTrackValue(row[0]);
+      if (!clean(originalTrack) || (!pierce && isRampTrackValue(row[0])) || !clean(row[2]) || Number(row[4]) <= 0) return;
+      if (view === "pierce" ? !pierce : pierce) return;
+      const displayTrack = pierce ? pierceTrackLabel(originalTrack) : row[0];
+      const key = clean(displayTrack).toUpperCase();
+      if (!groups.has(key)) groups.set(key, {track:displayTrack, rows:[]});
       groups.get(key).rows.push({row, sourceIndex});
     });
     return [...groups.values()]
@@ -5521,7 +5581,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         group.rows.sort((a, b) => Number(a.row[1]) - Number(b.row[1]) || a.sourceIndex - b.sourceIndex);
         return group;
       })
-      .sort((a, b) => yardTrackLabel(a.track).localeCompare(yardTrackLabel(b.track), undefined, {numeric:true, sensitivity:"base"}));
+      .sort((a, b) => yardViewTrackLabel(a.track).localeCompare(yardViewTrackLabel(b.track), undefined, {numeric:true, sensitivity:"base"}));
   }
 
   function yardCarHtml(row) {
@@ -5539,23 +5599,9 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     return `<div class="yard-view-car cut-cell ${tone}" title="${escapeAttr(`${equipment} · ${details}`)}"><strong class="yard-view-car-details">${detailParts}</strong><small class="yard-view-car-id">${escapeHtml(equipment)}</small></div>`;
   }
 
-  function renderYardView() {
-    const popup = $("#yardViewPopup");
-    const host = $("#yardViewBody");
-    const summary = $("#yardViewSummary");
-    const groups = yardTrackGroups();
-    const carCount = groups.reduce((total, group) => total + group.rows.length, 0);
-    const button = $("#toggleYardView");
-    if (button) {
-      button.textContent = `Yard View (${groups.length})`;
-      button.title = `${groups.length} non-ramp track${groups.length === 1 ? "" : "s"} available in Yard View`;
-    }
-    if (!popup || !host || popup.hidden) return;
-    if (summary) summary.textContent = `· ${groups.length} TRACK${groups.length === 1 ? "" : "S"} · ${carCount} CAR${carCount === 1 ? "" : "S"}`;
-    if (!groups.length) {
-      host.innerHTML = '<div class="yard-view-empty">No cars were found outside ramp tracks 6-801 through 6-809. Import the full inventory export to populate this view.</div>';
-      return;
-    }
+  function yardViewTableHtml(label, groups, emptyText) {
+    const heading = `<div class="yard-view-section-title">${escapeHtml(label)}</div>`;
+    if (!groups.length) return `${heading}<div class="yard-view-empty">${escapeHtml(emptyText)}</div>`;
     const cells = [
       '<div class="yard-view-head">Track</div>',
       '<div class="yard-view-head">Current FT</div>',
@@ -5564,12 +5610,32 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     ];
     groups.forEach(group => {
       const footage = group.rows.reduce((total, entry) => total + (Number(entry.row[4]) || 0), 0);
-      cells.push(`<div class="yard-view-track">${escapeHtml(yardTrackLabel(group.track))}</div>`);
+      cells.push(`<div class="yard-view-track">${escapeHtml(yardViewTrackLabel(group.track))}</div>`);
       cells.push(`<div class="yard-view-footage">${fmtInt(footage)}</div>`);
       cells.push(`<div class="yard-view-cars">${group.rows.map(entry => yardCarHtml(entry.row)).join("")}</div>`);
       cells.push(`<div class="yard-view-count">${group.rows.length}</div>`);
     });
-    host.innerHTML = `<div class="yard-view-table">${cells.join("")}</div>`;
+    return `${heading}<div class="yard-view-table">${cells.join("")}</div>`;
+  }
+
+  function renderYardView() {
+    const popup = $("#yardViewPopup");
+    const host = $("#yardViewBody");
+    const summary = $("#yardViewSummary");
+    const yardGroups = yardTrackGroups("yard");
+    const pierceGroups = yardTrackGroups("pierce");
+    const allGroups = yardGroups.concat(pierceGroups);
+    const carCount = allGroups.reduce((total, group) => total + group.rows.length, 0);
+    const button = $("#toggleYardView");
+    if (button) {
+      button.textContent = `Yard (${yardGroups.length}) / Pierce (${pierceGroups.length})`;
+      button.title = `${yardGroups.length} Yard track${yardGroups.length === 1 ? "" : "s"} and ${pierceGroups.length} Pierce track${pierceGroups.length === 1 ? "" : "s"}`;
+    }
+    if (!popup || !host || popup.hidden) return;
+    if (summary) summary.textContent = `· YARD ${yardGroups.length} · PIERCE ${pierceGroups.length} · ${carCount} CARS`;
+    host.innerHTML =
+      yardViewTableHtml("YARD VIEW", yardGroups, "No cars were found in non-ramp yard tracks.") +
+      yardViewTableHtml("PIERCE VIEW · 03-XXX TRACKS", pierceGroups, "No cars were found in Pierce tracks 03-xxx.");
   }
 
   function openYardView() {
@@ -5745,11 +5811,20 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     if (!snapshot || snapshot.date !== todayRosterDateKey(today) || !snapshot.shifts) return false;
     const shiftHtml = [["first", "DAY"], ["second", "NIGHT"]].map(([shift, label]) => {
       const rows = Array.isArray(snapshot.shifts[shift]) ? snapshot.shifts[shift] : [];
-      return '<section class="today-roster-shift"><div class="today-roster-shift-head">' + label + '</div><div class="today-roster-rows">' +
+      const times = snapshot.times && snapshot.times[shift] || {};
+      const defaults = shift === "second" ? {start:"15:00", end:"03:00"} : {start:"03:00", end:"15:00"};
+      const timesHtml = '<div class="today-roster-scheduled-time"><input type="time" tabindex="-1" aria-label="' + label +
+        ' scheduled clock in" value="' + escapeAttr(times.start || defaults.start) + '"><input type="time" tabindex="-1" aria-label="' +
+        label + ' scheduled clock out" value="' + escapeAttr(times.end || defaults.end) + '"></div>';
+      return '<section class="today-roster-shift"><div class="today-roster-shift-head">' + label + '</div>' + timesHtml + '<div class="today-roster-rows">' +
         (rows.map(row => {
-          const flags = [];
-          if (row.flag) flags.push('<span class="today-roster-status">(' + escapeHtml(row.flag) + ')</span>');
-          if (row.crane) flags.push('<span class="today-roster-status today-roster-crane">(C)</span>');
+          const values = Array.isArray(row.flags) ? row.flags : [row.flag];
+          const flags = values.filter(Boolean).map(flag =>
+            '<span class="today-roster-status">(' + escapeHtml(String(flag).replace(/[()]/g, "").trim()) + ')</span>'
+          );
+          if (row.crane && !values.some(flag => String(flag).replace(/[()]/g, "").trim().toUpperCase() === "C")) {
+            flags.push('<span class="today-roster-status today-roster-crane">(C)</span>');
+          }
           return '<div class="today-roster-row ' + escapeAttr(row.className || "") + '"><span class="today-roster-name" title="' + escapeAttr(row.name || "") + '">' + escapeHtml(row.name || "") + '</span><span class="today-roster-statuses">' + flags.join("") + '</span></div>';
         }).join("") || '<div class="today-roster-row is-unknown"><span class="today-roster-name">No roster entries</span></div>') +
         '</div></section>';
@@ -9350,9 +9425,15 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   setInterval(updateCurrentWorkForecast, 1000);
   window.addEventListener("storage", event => {
     if (event.key === TODAY_ZPBHO_SUMMARY_STORAGE_KEY) renderInboundSummary();
+    if (event.key === TODAY_ROSTER_SNAPSHOT_KEY && !$("#todayRosterPopup").hidden) renderTodayRoster();
     if (["conglobal-roster-state-v1", "conglobal-roster-additions-v1", "conglobal-dayforce-punches-v1",
       "conglobal-time-off-calendar-v1", "conglobal-timesheet-notes-v1", "settegast-staff-role-preferences-v1"].includes(event.key)
       && !$("#todayRosterPopup").hidden) renderTodayRoster();
+  });
+  window.addEventListener("message", event => {
+    if (!event.data || event.data.type !== "conglobal-current-day-roster-snapshot" || !event.data.snapshot) return;
+    try { localStorage.setItem(TODAY_ROSTER_SNAPSHOT_KEY, JSON.stringify(event.data.snapshot)); } catch (_) {}
+    if (!$("#todayRosterPopup").hidden) renderTodayRoster();
   });
 
   setInterval(() => {
