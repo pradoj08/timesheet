@@ -14806,50 +14806,72 @@ function getForecastRequestOnHandCount(pool,size){
 function renderForecastChassisRequestBoard(){
   const box=$("forecastChassisRequestBoard");
   if(!box)return;
-  box.innerHTML=FORECAST_CHASSIS_REQUEST_LAYOUT.map(group=>`
-    <section class="forecast-request-quadrant forecast-request-${escapeHtml(group.pool.toLowerCase())}">
-      <div class="forecast-request-pool-head">
-        <strong>${escapeHtml(group.pool)}</strong>
-      </div>
-      <div class="forecast-request-table-wrap">
-        <table class="forecast-request-table">
-          <thead>
-            <tr>
-              <th>Size</th>
-              <th>Expected</th>
-              <th><span class="forecast-request-th-wrap">On<br>Hand</span></th>
-              <th><span class="forecast-request-th-wrap">Dray<br>In</span></th>
-              <th><span class="forecast-request-th-wrap">Dray<br>Out</span></th>
-            </tr>
-          </thead>
-          <tbody>
-            ${group.sizes.map(size=>`
-              <tr>
-                <td class="forecast-request-size">${escapeHtml(size)}</td>
-                <td class="forecast-request-count expected">${getForecastRequestExpectedCount(group.pool,size)}</td>
-                <td class="forecast-request-count onhand">${(()=>{
-                  const onHand=getForecastRequestOnHandCount(group.pool,size);
-                  const expected=getForecastRequestExpectedCount(group.pool,size);
-                  const difference=onHand-expected;
-                  return `${onHand} <small class="forecast-onhand-difference ${difference>=0?"positive":"negative"}">${difference>0?"+":""}${difference}</small>`;
-                })()}</td>
-                <td>
-                  <input class="${getForecastChassisRequestValue(group.pool,size,"drayIn") ? "forecast-request-has-value" : ""}" type="number" inputmode="numeric" min="0" step="1" placeholder="" value="${escapeHtml(getForecastChassisRequestValue(group.pool,size,"drayIn"))}" data-forecast-request-pool="${escapeHtml(group.pool)}" data-forecast-request-size="${escapeHtml(size)}" data-forecast-request-field="drayIn">
-                </td>
-                <td>
-                  <input class="${getForecastChassisRequestValue(group.pool,size,"drayOut") ? "forecast-request-has-value" : ""}" type="number" inputmode="numeric" min="0" step="1" placeholder="" value="${escapeHtml(getForecastChassisRequestValue(group.pool,size,"drayOut"))}" data-forecast-request-pool="${escapeHtml(group.pool)}" data-forecast-request-size="${escapeHtml(size)}" data-forecast-request-field="drayOut">
-                </td>
-              </tr>
-            `).join("")}
-          </tbody>
-        </table>
-      </div>
-    </section>
-  `).join("");
+  const sizes=["53'","45'","40'","20'"];
+  const subheads=["Expected","On Hand","Dray In","Dray Out","Net"];
+  const poolHeader=FORECAST_CHASSIS_REQUEST_LAYOUT.map(group=>{
+    const tone=`forecast-request-unified-${group.pool.toLowerCase()}`;
+    return `<th colspan="5" class="forecast-request-unified-pool forecast-request-segment-start ${tone}">${escapeHtml(group.pool)}</th>`;
+  }).join("");
+  const subHeader=FORECAST_CHASSIS_REQUEST_LAYOUT.map(group=>{
+    const tone=`forecast-request-unified-${group.pool.toLowerCase()}`;
+    return subheads.map((label,index)=>`<th class="${tone} ${index===0?"forecast-request-segment-start":""}"><span class="forecast-request-th-wrap">${escapeHtml(label).replace(" ","<br>")}</span></th>`).join("");
+  }).join("");
+  const columnGrid=`<colgroup><col class="forecast-request-size-col">${Array.from({length:FORECAST_CHASSIS_REQUEST_LAYOUT.length*subheads.length},()=>'<col class="forecast-request-data-col">').join("")}</colgroup>`;
+  const rows=sizes.map(size=>`<tr>
+    <th class="forecast-request-size forecast-request-shared-size">${escapeHtml(size)}</th>
+    ${FORECAST_CHASSIS_REQUEST_LAYOUT.map(group=>{
+      const tone=`forecast-request-unified-${group.pool.toLowerCase()}`;
+      if(!group.sizes.includes(size)){
+        return `<td colspan="5" class="forecast-request-unavailable ${tone} forecast-request-segment-start"><span>—</span></td>`;
+      }
+      const expected=getForecastRequestExpectedCount(group.pool,size);
+      const onHand=getForecastRequestOnHandCount(group.pool,size);
+      const difference=onHand-expected;
+      const drayInValue=getForecastChassisRequestValue(group.pool,size,"drayIn");
+      const drayOutValue=getForecastChassisRequestValue(group.pool,size,"drayOut");
+const net=difference+(Number(drayInValue)||0)-(Number(drayOutValue)||0);
+      const netClass=getForecastRequestNetClass(group.pool,size,net);
+      return `
+        <td class="forecast-request-count expected ${tone} forecast-request-segment-start">${expected}</td>
+        <td class="forecast-request-count onhand ${tone}">${onHand} <small class="forecast-onhand-difference ${difference>=0?"positive":"negative"}">${difference>0?"+":""}${difference}</small></td>
+        <td class="${tone}">
+          <input class="${drayInValue ? "forecast-request-has-value" : ""}" type="number" inputmode="numeric" min="0" step="1" placeholder="" value="${escapeHtml(drayInValue)}" data-forecast-request-pool="${escapeHtml(group.pool)}" data-forecast-request-size="${escapeHtml(size)}" data-forecast-request-field="drayIn">
+        </td>
+        <td class="${tone}">
+          <input class="${drayOutValue ? "forecast-request-has-value" : ""}" type="number" inputmode="numeric" min="0" step="1" placeholder="" value="${escapeHtml(drayOutValue)}" data-forecast-request-pool="${escapeHtml(group.pool)}" data-forecast-request-size="${escapeHtml(size)}" data-forecast-request-field="drayOut">
+        </td>
+        <td class="forecast-request-count forecast-request-net ${netClass} ${net<0?"forecast-request-net-negative":"forecast-request-net-nonnegative"} ${tone}" data-forecast-request-net-pool="${escapeHtml(group.pool)}" data-forecast-request-net-size="${escapeHtml(size)}">${net}</td>`;
+    }).join("")}
+  </tr>`).join("");
+  box.innerHTML=`<section class="forecast-request-unified-shell">
+    <div class="forecast-request-table-wrap">
+      <table class="forecast-request-table forecast-request-unified-table">
+        ${columnGrid}
+        <thead>
+          <tr><th rowspan="2" class="forecast-request-shared-size">Size</th>${poolHeader}</tr>
+          <tr>${subHeader}</tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  </section>`;
+  const updateNet=(pool,size)=>{
+    const pairInputs=[...box.querySelectorAll("[data-forecast-request-field]")].filter(field=>field.dataset.forecastRequestPool===pool&&field.dataset.forecastRequestSize===size);
+    const drayIn=Number(pairInputs.find(field=>field.dataset.forecastRequestField==="drayIn")?.value)||0;
+    const drayOut=Number(pairInputs.find(field=>field.dataset.forecastRequestField==="drayOut")?.value)||0;
+const net=getForecastRequestOnHandCount(pool,size)+drayIn-drayOut-getForecastRequestExpectedCount(pool,size);
+    const netCell=[...box.querySelectorAll("[data-forecast-request-net-pool]")].find(cell=>cell.dataset.forecastRequestNetPool===pool&&cell.dataset.forecastRequestNetSize===size);
+    if(!netCell)return;
+    netCell.textContent=String(net);
+    netCell.classList.remove("request-net-red","request-net-yellow","request-net-green","forecast-request-net-negative","forecast-request-net-nonnegative");
+    netCell.classList.add(getForecastRequestNetClass(pool,size,net));
+    netCell.classList.add(net<0?"forecast-request-net-negative":"forecast-request-net-nonnegative");
+  };
   box.querySelectorAll("[data-forecast-request-field]").forEach(input=>{
     input.addEventListener("input",()=>{
       input.classList.toggle("forecast-request-has-value",Number(input.value)>0);
       setForecastChassisRequestValue(input.dataset.forecastRequestPool,input.dataset.forecastRequestSize,input.dataset.forecastRequestField,input.value);
+      updateNet(input.dataset.forecastRequestPool,input.dataset.forecastRequestSize);
     });
   });
   renderForecastChassisRequestSummary();
@@ -25530,7 +25552,7 @@ body:not(.forecast-view) .app > .hero.clean-hero > .hero-actions{
   try { window.parent?.addEventListener("scroll", () => { if (modal.classList.contains("open")) positionHotboxList(); }, { passive: true }); } catch (_) {}
   updateButtonCount();
 })();</script>
-<style id="chassis-compact-inbound-forecast-v1">
+<style id="chassis-compact-inbound-forecast-v2">
 #forecastStatusCards.forecast-status-cards{
   grid-template-columns:repeat(3,minmax(0,1fr))!important;
   align-items:start!important;
@@ -25765,12 +25787,421 @@ body:not(.forecast-view) .app > .hero.clean-hero > .hero-actions{
   min-width:18px!important;
   height:18px!important;
 }
+#forecastStatusCards .forecast-pool-size-grid.forecast-four-quadrant-grid{
+  gap:6px!important;
+}
+#forecastStatusCards .forecast-quadrant{
+  padding:3px!important;
+  overflow:hidden!important;
+  border:1px solid rgba(148,163,184,.24)!important;
+  border-radius:6px!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.035)!important;
+}
+#forecastStatusCards .forecast-quadrant-tgrp{background:#073a39!important;border-color:#0f766e!important}
+#forecastStatusCards .forecast-quadrant-fgcp{background:#10294e!important;border-color:#315f9d!important}
+#forecastStatusCards .forecast-quadrant-sncz{background:#291b47!important;border-color:#6944a5!important}
+#forecastStatusCards .forecast-quadrant-dcli{background:#382817!important;border-color:#805d13!important}
+#forecastStatusCards .forecast-quadrant-trailer{background:#092f2b!important;border-color:#18766b!important}
+#forecastStatusCards .forecast-quadrant-body{
+  gap:0!important;
+}
+#forecastStatusCards .forecast-quadrant-item{
+  grid-template-columns:minmax(0,1fr) 16px auto!important;
+  min-height:23px!important;
+  padding:2px 3px!important;
+  gap:3px!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+#forecastStatusCards .forecast-quadrant-item+.forecast-quadrant-item{
+  border-top:1px solid rgba(255,255,255,.08)!important;
+}
+#forecastStatusCards .forecast-quadrant-label{
+  justify-content:flex-start!important;
+  gap:5px!important;
+  padding:0!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  color:#f8fafc!important;
+  text-align:left!important;
+}
+#forecastStatusCards .forecast-quadrant-label::before{
+  content:""!important;
+  width:5px!important;
+  height:5px!important;
+  flex:0 0 5px!important;
+  border-radius:50%!important;
+  background:#94a3b8!important;
+}
+#forecastStatusCards .forecast-quadrant-tgrp .forecast-quadrant-label::before{background:#2dd4bf!important}
+#forecastStatusCards .forecast-quadrant-fgcp .forecast-quadrant-label::before{background:#60a5fa!important}
+#forecastStatusCards .forecast-quadrant-sncz .forecast-quadrant-label::before{background:#a78bfa!important}
+#forecastStatusCards .forecast-quadrant-dcli .forecast-quadrant-label::before{background:#eab308!important}
+#forecastStatusCards .forecast-quadrant-trailer .forecast-quadrant-label::before{background:#34d399!important}
+#forecastStatusCards .forecast-quadrant-status{
+  font-size:14px!important;
+  text-align:center!important;
+}
+#forecastStatusCards .forecast-quadrant-status.ok{color:#34d399!important}
+#forecastStatusCards .forecast-quadrant-status.short{color:#fb4761!important}
+#forecastStatusCards .forecast-count-bubble,
+#forecastStatusCards .forecast-count-bubble.deficit-bubble{
+  display:grid!important;
+  place-items:center!important;
+  min-width:20px!important;
+  height:18px!important;
+  padding:0 4px!important;
+  border:1px solid rgba(148,163,184,.34)!important;
+  border-radius:5px!important;
+  background:rgba(2,6,23,.52)!important;
+  color:#fff!important;
+  font-size:9px!important;
+  box-shadow:none!important;
+}
+#forecastStatusCards .forecast-count-bubble.deficit-bubble{
+  border-color:rgba(251,71,97,.52)!important;
+  background:rgba(76,5,25,.34)!important;
+}
+#forecastStatusCards .forecast-quadrant-empty{
+  min-height:23px!important;
+  padding:2px 4px!important;
+  border:1px dashed rgba(255,255,255,.14)!important;
+  border-radius:4px!important;
+  background:rgba(2,6,23,.13)!important;
+}
 #forecastStatusCards .forecast-train-card-actions{display:none!important}
 @media(max-width:1100px){
   #forecastStatusCards.forecast-status-cards{grid-template-columns:repeat(2,minmax(0,1fr))!important}
 }
 @media(max-width:720px){
   #forecastStatusCards.forecast-status-cards{grid-template-columns:1fr!important}
+}
+</style>
+<style id="chassis-compact-request-board-v1">
+#forecastModal .forecast-chassis-request-board{
+  gap:10px!important;
+  align-items:start!important;
+  grid-auto-rows:max-content!important;
+}
+#forecastModal .forecast-chassis-request-board .forecast-request-quadrant{
+  min-height:0!important;
+  height:auto!important;
+  align-self:start!important;
+  border-radius:12px!important;
+}
+#forecastModal .forecast-chassis-request-board .forecast-request-pool-head,
+#forecastModal .forecast-chassis-request-board .forecast-request-dcli .forecast-request-pool-head{
+  min-height:0!important;
+  padding:7px 12px!important;
+}
+#forecastModal .forecast-chassis-request-board .forecast-request-pool-head strong{
+  font-size:18px!important;
+  line-height:1!important;
+}
+#forecastModal .forecast-chassis-request-board .forecast-request-table-wrap{
+  overflow:hidden!important;
+}
+#forecastModal .forecast-chassis-request-board .forecast-request-table{
+  margin:0!important;
+  border-spacing:0!important;
+}
+#forecastModal .forecast-chassis-request-board .forecast-request-table thead tr{
+  height:34px!important;
+}
+#forecastModal .forecast-chassis-request-board .forecast-request-table thead th{
+  height:34px!important;
+  padding:5px 3px!important;
+  font-size:11px!important;
+  line-height:.95!important;
+}
+#forecastModal .forecast-chassis-request-board .forecast-request-table thead th:first-child,
+#forecastModal .forecast-chassis-request-board .forecast-request-table .forecast-request-size{
+  padding-left:10px!important;
+}
+#forecastModal .forecast-chassis-request-board .forecast-request-table tbody tr{
+  height:38px!important;
+}
+#forecastModal .forecast-chassis-request-board .forecast-request-table td,
+#forecastModal .forecast-chassis-request-board .forecast-request-table .forecast-request-size{
+  height:38px!important;
+  padding:4px 3px!important;
+  font-size:14px!important;
+  line-height:1!important;
+}
+#forecastModal .forecast-chassis-request-board .forecast-request-table input{
+  width:min(48px,100%)!important;
+  height:28px!important;
+  min-height:28px!important;
+  padding:0 4px!important;
+  border-radius:7px!important;
+  font-size:13px!important;
+}
+#forecastModal .forecast-chassis-request-board .forecast-request-count small,
+#forecastModal .forecast-chassis-request-board .forecast-request-count .forecast-request-delta{
+  font-size:10px!important;
+}
+</style>
+<style id="chassis-unified-request-board-v2">
+#forecastModal .forecast-chassis-request-board{
+  display:block!important;
+  padding:12px!important;
+}
+#forecastModal .forecast-request-unified-shell{
+  width:100%!important;
+  overflow:hidden!important;
+  border:1px solid rgba(148,163,184,.28)!important;
+  border-radius:14px!important;
+  background:#080f1e!important;
+  box-shadow:0 12px 30px rgba(2,6,23,.28),inset 0 1px 0 rgba(255,255,255,.035)!important;
+}
+#forecastModal .forecast-request-unified-shell .forecast-request-table-wrap{
+  width:100%!important;
+  overflow-x:auto!important;
+  scrollbar-color:rgba(148,163,184,.32) transparent!important;
+}
+#forecastModal .forecast-request-unified-table{
+  width:100%!important;
+  min-width:1120px!important;
+  table-layout:fixed!important;
+  border-collapse:separate!important;
+  border-spacing:0!important;
+}
+#forecastModal .forecast-request-unified-table col.forecast-request-size-col{
+  width:56px!important;
+}
+#forecastModal .forecast-request-unified-table col.forecast-request-data-col{
+  width:calc((100% - 56px)/20)!important;
+}
+#forecastModal .forecast-request-unified-table th,
+#forecastModal .forecast-request-unified-table td{
+  height:40px!important;
+  padding:4px 6px!important;
+  border-bottom:1px solid rgba(148,163,184,.13)!important;
+  border-right:1px solid rgba(148,163,184,.10)!important;
+  text-align:center!important;
+  font-size:13px!important;
+  line-height:1!important;
+  transition:background-color .15s ease,border-color .15s ease!important;
+}
+#forecastModal .forecast-request-unified-table thead tr:first-child th{
+  height:36px!important;
+  padding:7px 12px!important;
+  color:#fff!important;
+  font-size:15px!important;
+  font-weight:900!important;
+  text-align:left!important;
+  letter-spacing:.035em!important;
+  width:auto!important;
+}
+#forecastModal .forecast-request-unified-table thead tr:nth-child(2) th{
+  height:30px!important;
+  padding:4px!important;
+  color:rgba(248,250,252,.82)!important;
+  font-size:9px!important;
+  line-height:.95!important;
+  font-weight:800!important;
+  letter-spacing:.025em!important;
+  text-transform:uppercase!important;
+}
+#forecastModal .forecast-chassis-request-board .forecast-request-unified-table thead tr:first-child th.forecast-request-shared-size{
+  width:56px!important;
+}
+#forecastModal .forecast-chassis-request-board .forecast-request-unified-table thead tr:first-child th.forecast-request-unified-pool{
+  width:calc((100% - 56px)/4)!important;
+}
+#forecastModal .forecast-chassis-request-board .forecast-request-unified-table thead tr:nth-child(2) th{
+  width:calc((100% - 56px)/20)!important;
+}
+#forecastModal .forecast-request-unified-table .forecast-request-shared-size{
+  position:sticky!important;
+  left:0!important;
+  z-index:3!important;
+  width:56px!important;
+  min-width:56px!important;
+  max-width:56px!important;
+  padding-left:10px!important;
+  background:#24324b!important;
+  color:#fff!important;
+  text-align:left!important;
+  font-size:14px!important;
+  font-weight:900!important;
+  border-right:2px solid #64748b!important;
+  box-shadow:3px 0 12px rgba(2,6,23,.26),inset 3px 0 0 #94a3b8!important;
+}
+#forecastModal .forecast-request-unified-table thead .forecast-request-shared-size{
+  z-index:5!important;
+  vertical-align:middle!important;
+  font-size:11px!important;
+  text-transform:uppercase!important;
+  letter-spacing:.08em!important;
+  background:#364764!important;
+  box-shadow:3px 0 12px rgba(2,6,23,.26),inset 0 3px 0 #cbd5e1,inset 3px 0 0 #94a3b8!important;
+}
+#forecastModal .forecast-chassis-request-board .forecast-request-unified-table tbody tr th.forecast-request-size.forecast-request-shared-size{
+  background:#24324b!important;
+}
+#forecastModal .forecast-request-unified-table .forecast-request-segment-start{
+  border-left:2px solid var(--pool-accent)!important;
+}
+#forecastModal .forecast-request-unified-table .forecast-request-unified-dcli{
+  --pool-accent:#f59e42;
+  --pool-cell:rgba(245,158,66,.075);
+  --pool-cell-hover:rgba(245,158,66,.115);
+  --pool-border:rgba(245,158,66,.20);
+  --pool-input-border:rgba(245,158,66,.30);
+  --pool-input-hover:rgba(245,158,66,.62);
+  --pool-focus:rgba(245,158,66,.18);
+  --pool-head-strong:rgba(245,158,66,.28);
+  --pool-head-soft:rgba(245,158,66,.13);
+  --pool-glow:rgba(245,158,66,.42);
+}
+#forecastModal .forecast-request-unified-table .forecast-request-unified-tgrp{
+  --pool-accent:#2dd4bf;
+  --pool-cell:rgba(45,212,191,.075);
+  --pool-cell-hover:rgba(45,212,191,.115);
+  --pool-border:rgba(45,212,191,.20);
+  --pool-input-border:rgba(45,212,191,.30);
+  --pool-input-hover:rgba(45,212,191,.62);
+  --pool-focus:rgba(45,212,191,.18);
+  --pool-head-strong:rgba(45,212,191,.28);
+  --pool-head-soft:rgba(45,212,191,.13);
+  --pool-glow:rgba(45,212,191,.42);
+}
+#forecastModal .forecast-request-unified-table .forecast-request-unified-fgcp{
+  --pool-accent:#60a5fa;
+  --pool-cell:rgba(96,165,250,.075);
+  --pool-cell-hover:rgba(96,165,250,.115);
+  --pool-border:rgba(96,165,250,.20);
+  --pool-input-border:rgba(96,165,250,.30);
+  --pool-input-hover:rgba(96,165,250,.62);
+  --pool-focus:rgba(96,165,250,.18);
+  --pool-head-strong:rgba(96,165,250,.28);
+  --pool-head-soft:rgba(96,165,250,.13);
+  --pool-glow:rgba(96,165,250,.42);
+}
+#forecastModal .forecast-request-unified-table .forecast-request-unified-sncz{
+  --pool-accent:#a78bfa;
+  --pool-cell:rgba(167,139,250,.075);
+  --pool-cell-hover:rgba(167,139,250,.115);
+  --pool-border:rgba(167,139,250,.20);
+  --pool-input-border:rgba(167,139,250,.30);
+  --pool-input-hover:rgba(167,139,250,.62);
+  --pool-focus:rgba(167,139,250,.18);
+  --pool-head-strong:rgba(167,139,250,.28);
+  --pool-head-soft:rgba(167,139,250,.13);
+  --pool-glow:rgba(167,139,250,.42);
+}
+#forecastModal .forecast-request-unified-table td[class*="forecast-request-unified-"],
+#forecastModal .forecast-request-unified-table thead tr:nth-child(2) th[class*="forecast-request-unified-"]{
+  background-color:var(--pool-cell)!important;
+  border-color:var(--pool-border)!important;
+}
+#forecastModal .forecast-request-unified-table .forecast-request-unified-pool{
+  position:relative!important;
+  background-color:var(--pool-head-strong)!important;
+  background-image:linear-gradient(180deg,var(--pool-head-strong),var(--pool-head-soft))!important;
+  border-bottom:1px solid var(--pool-border)!important;
+  box-shadow:inset 0 3px 0 var(--pool-accent)!important;
+}
+#forecastModal .forecast-request-unified-table .forecast-request-unified-pool::before{
+  content:""!important;
+  display:inline-block!important;
+  width:7px!important;
+  height:7px!important;
+  margin:0 8px 1px 0!important;
+  border-radius:50%!important;
+  background:var(--pool-accent)!important;
+  box-shadow:0 0 10px var(--pool-glow)!important;
+}
+#forecastModal .forecast-request-unified-table .forecast-request-unavailable{
+  color:rgba(226,232,240,.30)!important;
+  font-size:14px!important;
+  letter-spacing:.14em!important;
+}
+#forecastModal .forecast-request-unified-table .forecast-request-unavailable span{
+  display:inline-grid!important;
+  place-items:center!important;
+  width:30px!important;
+  height:18px!important;
+  border-radius:999px!important;
+  background-color:var(--pool-cell)!important;
+}
+#forecastModal .forecast-request-unified-table input{
+  width:min(52px,100%)!important;
+  height:29px!important;
+  min-height:29px!important;
+  margin:auto!important;
+  padding:0 3px!important;
+  border:1px solid var(--pool-input-border)!important;
+  border-radius:7px!important;
+  background:rgba(2,6,23,.62)!important;
+  color:#f8fafc!important;
+  font-size:12px!important;
+  font-weight:800!important;
+  text-align:center!important;
+  box-shadow:inset 0 1px 2px rgba(0,0,0,.28)!important;
+  appearance:textfield!important;
+  -moz-appearance:textfield!important;
+}
+#forecastModal .forecast-request-unified-table input::-webkit-inner-spin-button,
+#forecastModal .forecast-request-unified-table input::-webkit-outer-spin-button{
+  display:none!important;
+  margin:0!important;
+  -webkit-appearance:none!important;
+}
+#forecastModal .forecast-request-unified-table input:hover{
+  border-color:var(--pool-input-hover)!important;
+}
+#forecastModal .forecast-request-unified-table input:focus{
+  border-color:var(--pool-accent)!important;
+  box-shadow:0 0 0 2px var(--pool-focus),inset 0 1px 2px rgba(0,0,0,.28)!important;
+  outline:0!important;
+}
+#forecastModal .forecast-request-unified-table tbody tr:hover td{
+  background-color:var(--pool-cell-hover)!important;
+}
+#forecastModal .forecast-chassis-request-board .forecast-request-unified-table tbody tr:hover th.forecast-request-size.forecast-request-shared-size{
+  background:#30415f!important;
+}
+#forecastModal .forecast-request-unified-table .forecast-request-unified-pool.forecast-request-unified-dcli{background-color:#5a3826!important;background-image:none!important}
+#forecastModal .forecast-request-unified-table .forecast-request-unified-pool.forecast-request-unified-tgrp{background-color:#0b4a46!important;background-image:none!important}
+#forecastModal .forecast-request-unified-table .forecast-request-unified-pool.forecast-request-unified-fgcp{background-color:#1b3f73!important;background-image:none!important}
+#forecastModal .forecast-request-unified-table .forecast-request-unified-pool.forecast-request-unified-sncz{background-color:#452b73!important;background-image:none!important}
+#forecastModal .forecast-chassis-request-board .forecast-request-unified-table td.forecast-request-unified-dcli,
+#forecastModal .forecast-chassis-request-board .forecast-request-unified-table thead tr:nth-child(2) th.forecast-request-unified-dcli{background:#241b19!important}
+#forecastModal .forecast-chassis-request-board .forecast-request-unified-table td.forecast-request-unified-tgrp,
+#forecastModal .forecast-chassis-request-board .forecast-request-unified-table thead tr:nth-child(2) th.forecast-request-unified-tgrp{background:#0c2527!important}
+#forecastModal .forecast-chassis-request-board .forecast-request-unified-table td.forecast-request-unified-fgcp,
+#forecastModal .forecast-chassis-request-board .forecast-request-unified-table thead tr:nth-child(2) th.forecast-request-unified-fgcp{background:#101f36!important}
+#forecastModal .forecast-chassis-request-board .forecast-request-unified-table td.forecast-request-unified-sncz,
+#forecastModal .forecast-chassis-request-board .forecast-request-unified-table thead tr:nth-child(2) th.forecast-request-unified-sncz{background:#1c1730!important}
+#forecastModal .forecast-request-unified-table td.forecast-request-unified-dcli input{border-color:rgba(245,158,66,.38)!important}
+#forecastModal .forecast-request-unified-table td.forecast-request-unified-tgrp input{border-color:rgba(45,212,191,.38)!important}
+#forecastModal .forecast-request-unified-table td.forecast-request-unified-fgcp input{border-color:rgba(96,165,250,.38)!important}
+#forecastModal .forecast-request-unified-table td.forecast-request-unified-sncz input{border-color:rgba(167,139,250,.38)!important}
+#forecastModal .forecast-chassis-request-board .forecast-request-count .forecast-onhand-difference.negative{
+  color:#ff4d67!important;
+  text-shadow:0 0 8px rgba(255,77,103,.28)!important;
+}
+#forecastModal .forecast-chassis-request-board .forecast-request-unified-table td.forecast-request-net{
+  font-size:14px!important;
+  font-weight:1000!important;
+  border-left:1px solid rgba(255,255,255,.12)!important;
+}
+#forecastModal .forecast-chassis-request-board .forecast-request-unified-table td.forecast-request-net.forecast-request-net-negative{
+  color:#ff7185!important;
+  text-shadow:0 0 8px rgba(255,77,103,.26)!important;
+}
+#forecastModal .forecast-chassis-request-board .forecast-request-unified-table td.forecast-request-net.forecast-request-net-nonnegative{
+  color:#6ee7b7!important;
+}
+#forecastModal .forecast-request-unified-table tr:last-child th,
+#forecastModal .forecast-request-unified-table tr:last-child td{
+  border-bottom:0!important;
 }
 </style>
 </body>
