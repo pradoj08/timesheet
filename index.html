@@ -7502,6 +7502,17 @@ document.addEventListener('click',function(event){
           targetFrame.style.height = Math.max(1, Math.ceil(contentHeight)) + "px";
           return;
         }
+        if (activePage === "chassisStatus" && doc.body?.classList.contains("forecast-excel-view-open")) {
+          const excelPage = doc.querySelector("#forecastExcelView .forecast-excel-page");
+          if (excelPage) {
+            doc.documentElement.style.minHeight = "0";
+            doc.body.style.minHeight = "0";
+            excelPage.style.minHeight = "0";
+            targetFrame.style.minHeight = "0";
+            targetFrame.style.height = Math.max(1, Math.ceil(excelPage.getBoundingClientRect().bottom)) + "px";
+            return;
+          }
+        }
         targetFrame.style.height = Math.max(
           doc.documentElement.scrollHeight,
           doc.body ? doc.body.scrollHeight : 0,
@@ -7791,6 +7802,129 @@ body.forecast-excel-view-open { background: #fff !important; }
       );
     }
 
+    function withChassisDifferenceToggleRemoved(html) {
+      if (!html || typeof html !== "string" || html.includes("chassis-difference-toggle-removed")) return html;
+      const patch = `<style id="chassis-forecast-hero-actions-side-by-side">
+body.forecast-view #forecastModal .forecast-page > .hero.clean-hero .hero-actions{
+  display:flex!important;
+  flex-direction:row!important;
+  flex-wrap:nowrap!important;
+  width:540px!important;
+  max-width:100%!important;
+  min-width:0!important;
+  gap:10px!important;
+}
+body.forecast-view #forecastModal .forecast-page > .hero.clean-hero #forecastHeroBtn,
+body.forecast-view #forecastModal .forecast-page > .hero.clean-hero #openForecastExcelViewBtn{
+  flex:1 1 0!important;
+  width:0!important;
+  min-width:0!important;
+}
+@media(max-width:1050px){
+  body.forecast-view #forecastModal .forecast-page > .hero.clean-hero .hero-actions{
+    width:100%!important;
+  }
+}
+#forecastStatusCards .forecast-train-card:has(.forecast-hot-box-pill),
+#forecastStatusCards .forecast-train-card.imccomllc-inbound{
+  border:1px solid rgba(148,163,184,.34)!important;
+  padding:9px!important;
+  outline:0!important;
+  animation:none!important;
+  filter:none!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.035)!important;
+}
+#forecastStatusCards .forecast-day-divider > div:first-child strong.forecast-day-status-pill{
+  display:inline-flex!important;
+  align-items:center!important;
+  width:max-content!important;
+  max-width:100%!important;
+  min-height:28px!important;
+  padding:5px 11px!important;
+  border:1px solid transparent!important;
+  border-radius:999px!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08)!important;
+}
+#forecastStatusCards .forecast-day-divider > div:first-child strong.forecast-day-status-clear{
+  color:#a7f3d0!important;
+  border-color:rgba(52,211,153,.48)!important;
+  background:rgba(6,78,59,.62)!important;
+}
+#forecastStatusCards .forecast-day-divider > div:first-child strong.forecast-day-status-alert{
+  color:#fecdd3!important;
+  border-color:rgba(251,113,133,.56)!important;
+  background:rgba(127,29,29,.62)!important;
+}
+</style>
+<script id="chassis-difference-toggle-removed">
+document.getElementById("forecastDifferenceToggleBtn")?.remove();
+document.getElementById("forecastOnHandChassisCard")?.remove();
+document.getElementById("forecastInventoryPreviewModal")?.remove();
+document.body.classList.add("hide-forecast-differences");
+const unplannedButton = document.getElementById("forecastUnplannedUnitsBtn");
+const mismatchClearButton = document.getElementById("forecastMismatchClearBtn");
+if (unplannedButton && mismatchClearButton) {
+  unplannedButton.textContent = "Unplanned";
+  mismatchClearButton.insertAdjacentElement("afterend", unplannedButton);
+}
+const excelViewButton = document.getElementById("openForecastExcelViewBtn");
+const reconciliationButton = document.getElementById("forecastHeroBtn");
+if (excelViewButton && reconciliationButton) {
+  excelViewButton.className = "hero-action-card forecast-excel-hero-card";
+  excelViewButton.innerHTML = '<span class="hero-action-icon">▦</span><span class="hero-action-label">Excel View</span>';
+  reconciliationButton.insertAdjacentElement("beforebegin", excelViewButton);
+}
+const hasForecastProjectedDeficitThroughDay = targetDay => {
+  try {
+    const available = buildForecastAvailableGoodChassisMap();
+    Object.values(forecastChassisRequests || {}).forEach(row => {
+      const pair = normalizeInventoryPoolSizePair(row.pool, row.size);
+      const key = pair.pool + "|" + pair.size;
+      available.set(key, (available.get(key) || 0) + (Number(row.drayIn) || 0) - (Number(row.drayOut) || 0));
+    });
+    const targetSort = forecastDaySortValue(targetDay);
+    const demand = new Map();
+    getVisibleForecastUnits().forEach(unit => {
+      if (forecastDaySortValue(getForecastUnitDay(unit)) > targetSort) return;
+      const pair = getForecastChassisDemandPair(unit);
+      if (!pair) return;
+      const normalized = normalizeInventoryPoolSizePair(pair.pool, pair.size);
+      const key = normalized.pool + "|" + normalized.size;
+      demand.set(key, (demand.get(key) || 0) + 1);
+    });
+    return [...demand].some(([key, needed]) => needed > Number(available.get(key) || 0));
+  } catch (_) {
+    return false;
+  }
+};
+const classifyForecastDayHeadings = () => {
+  document.querySelectorAll("#forecastStatusCards .forecast-day-section").forEach(section => {
+    const heading = section.querySelector(".forecast-day-divider > div:first-child strong");
+    if (!heading) return;
+    const hasShortage = hasForecastProjectedDeficitThroughDay(section.dataset.forecastDropDay);
+    heading.classList.add("forecast-day-status-pill");
+    heading.classList.toggle("forecast-day-status-alert", hasShortage);
+    heading.classList.toggle("forecast-day-status-clear", !hasShortage);
+  });
+};
+const forecastStatusCards = document.getElementById("forecastStatusCards");
+if (forecastStatusCards) {
+  new MutationObserver(classifyForecastDayHeadings).observe(forecastStatusCards, { childList: true, subtree: true });
+  classifyForecastDayHeadings();
+}
+document.addEventListener("input", event => {
+  if (event.target?.matches?.("[data-forecast-request-field]")) {
+    setTimeout(classifyForecastDayHeadings, 0);
+  }
+});
+<\/script>`;
+      const bodyClose = html.toLowerCase().lastIndexOf("</body>");
+      return bodyClose >= 0 ? html.slice(0, bodyClose) + patch + "\n" + html.slice(bodyClose) : html + patch;
+    }
+
     function withChassisCompactInboundForecast(html) {
       if (!html || typeof html !== "string" || html.includes("chassis-compact-inbound-forecast-v2")) return html;
       const style = `<style id="chassis-compact-inbound-forecast-v2">
@@ -7802,7 +7936,7 @@ body.forecast-excel-view-open { background: #fff !important; }
 #forecastStatusCards .forecast-day-unit-total strong{color:#fff!important;font-size:22px!important;line-height:1!important}
 #forecastStatusCards .forecast-status-cards-grid{display:grid!important;grid-template-columns:1fr!important;align-content:start!important;gap:9px!important;padding:9px 0 0!important;overflow:visible!important}
 #forecastStatusCards .forecast-train-card.compact-option-three,#forecastStatusCards .forecast-status-cards-grid .forecast-train-card{position:relative!important;display:block!important;width:100%!important;min-width:0!important;height:auto!important;margin:0!important;padding:9px!important;overflow:visible!important;border:1px solid rgba(148,163,184,.34)!important;border-radius:8px!important;background:rgba(27,29,42,.96)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.035)!important}
-#forecastStatusCards .forecast-train-card:has(.forecast-hot-box-pill){border:3px solid #fbbf24!important;padding:7px!important;outline:1px solid rgba(253,230,138,.42)!important;outline-offset:1px!important;animation:none!important;filter:none!important;box-shadow:0 0 0 1px rgba(253,230,138,.32),0 0 9px rgba(251,191,36,.30),inset 0 0 6px rgba(251,191,36,.04)!important}
+#forecastStatusCards .forecast-train-card:has(.forecast-hot-box-pill){border:1px solid rgba(148,163,184,.34)!important;padding:9px!important;outline:0!important;animation:none!important;filter:none!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.035)!important}
 #forecastStatusCards .forecast-train-card.high-volume-train:not(.imccomllc-inbound){border:1px solid rgba(148,163,184,.34)!important;outline:0!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.035)!important;animation:none!important}
 #forecastStatusCards .forecast-train-card:has(.forecast-hot-box-pill) .forecast-train-card-glow{display:none!important;width:auto!important;height:auto!important;inset:auto!important;background:transparent!important;box-shadow:none!important;filter:none!important;pointer-events:none!important}
 #forecastStatusCards .forecast-compact-train-head{position:relative!important;z-index:2!important;display:flex!important;align-items:center!important;justify-content:space-between!important;gap:8px!important;margin:0 0 7px!important}
@@ -8704,6 +8838,7 @@ setInterval(function(){
           pageHtml = withExcelAfternoonMeeting(pageHtml);
         }
         if (id === "chassisStatus") {
+          pageHtml = withChassisDifferenceToggleRemoved(pageHtml);
           pageHtml = withChassisFloatingEditorEnhancements(pageHtml);
           pageHtml = withChassisFlatPoolSummary(pageHtml);
           pageHtml = withChassisClearConfirmation(pageHtml);

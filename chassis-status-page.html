@@ -5687,6 +5687,11 @@ body.forecast-view .forecast-bottom-controls {
         <span class="hero-action-label">Calendar</span>
       </button>
 
+      <button id="openForecastExcelViewBtn" class="hero-action-card forecast-excel-hero-card" type="button">
+        <span class="hero-action-icon">▦</span>
+        <span class="hero-action-label">Excel View</span>
+      </button>
+
       <button id="forecastHeroBtn" class="hero-action-card forecast-hero-card" type="button">
         <span class="hero-action-icon">↩</span>
         <span class="hero-action-label">Chassis Reconciliation</span>
@@ -5983,11 +5988,8 @@ body.forecast-view .forecast-bottom-controls {
   <div class="forecast-page">
     <div class="forecast-head">
       <div class="forecast-head-actions">
-        <button id="forecastDifferenceToggleBtn" type="button" class="forecast-tools-toggle-btn forecast-difference-top-toggle">Show +/-</button>
         <button id="forecastRequestBoardToggleBtn" type="button" class="forecast-tools-toggle-btn" aria-controls="forecastChassisRequestBoard" aria-expanded="false">Show Request Board</button>
         <button id="forecastSummaryVisibilityToggle" type="button" class="forecast-tools-toggle-btn" aria-expanded="false">Show Deficits &amp; Request Summary</button>
-        <button id="forecastUnplannedUnitsBtn" type="button" class="forecast-tools-toggle-btn">Unplanned Units</button>
-        <button id="openForecastExcelViewBtn" class="forecast-tools-toggle-btn forecast-excel-open-btn" type="button">Excel View</button>
         <button id="forecastRequestHistoryToggleBtn" type="button" class="forecast-request-history-toggle-btn" aria-expanded="false">Show Request History</button>
         <button id="forecastClearChassisRequestsBtn" type="button" class="forecast-request-clear-btn">Clear Requests</button>
       </div>
@@ -6018,6 +6020,7 @@ body.forecast-view .forecast-bottom-controls {
         <button id="forecastInventoryClearBtn" type="button">Clear Inventory</button>
         <button id="forecastClearImportBtn" type="button">Clear Chassis</button>
         <button id="forecastMismatchClearBtn" type="button">Clear Mismatch</button>
+        <button id="forecastUnplannedUnitsBtn" type="button" class="forecast-tools-toggle-btn">Unplanned</button>
         <input id="forecastFileInput" type="file" accept=".csv,.xlsx,.xls" multiple hidden>
         <input id="forecastInventoryFileInput" type="file" accept=".csv,.xlsx,.xls" multiple hidden>
         <input id="forecastMismatchFileInput" type="file" accept=".csv,.xlsx,.xls" multiple hidden>
@@ -6107,41 +6110,6 @@ body.forecast-view .forecast-bottom-controls {
       </div>
     </div>
 
-    <div class="forecast-onhand-card" id="forecastOnHandChassisCard">
-      <div class="forecast-onhand-head forecast-onhand-head-clean">
-        <div class="forecast-onhand-actions forecast-onhand-actions-clean">
-          <span id="forecastInventoryStatus" class="forecast-inventory-status" hidden></span>
-          <div id="forecastOnHandBadge" class="forecast-onhand-badge" hidden></div>
-        </div>
-      </div>
-      <div class="forecast-onhand-metrics">
-        <div class="forecast-onhand-metric good"><span>Good / Usable Bare</span><strong id="forecastGoodChassisTotal">0</strong></div>
-        <div class="forecast-onhand-metric"><span>In Use / Mated</span><strong id="forecastInUseChassisTotal">0</strong></div>
-        <div class="forecast-onhand-metric hold"><span>Bad Orders / On Hold</span><strong id="forecastHeldChassisTotal">0</strong></div>
-      </div>
-      <div class="forecast-onhand-grid">
-        <div class="forecast-onhand-panel">
-          <div class="forecast-onhand-panel-title"><span>Required chassis by pool / size</span><span id="forecastGoodMixCount">0 groups</span></div>
-          <div class="forecast-onhand-table-wrap">
-            <table class="forecast-onhand-table">
-              <thead><tr><th>Pool</th><th>Size</th><th>Good</th><th>In Use</th><th>Bad Orders</th><th>Total</th></tr></thead>
-              <tbody id="forecastOnHandMixRows"></tbody>
-            </table>
-          </div>
-        </div>
-        <div class="forecast-onhand-panel">
-          <div class="forecast-onhand-panel-title"><span>Bad orders by pool / size</span><span id="forecastHoldCountLabel">0 bad orders</span></div>
-          <div class="forecast-onhand-table-wrap">
-            <table class="forecast-onhand-table">
-              <thead><tr><th>Pool</th><th>Size</th><th>Bad Orders</th><th>Total Held</th></tr></thead>
-              <tbody id="forecastHoldRows"></tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    
     <div id="forecastTracklistImportModal" class="forecast-tracklist-modal" aria-hidden="true">
       <div class="forecast-tracklist-card">
         <div class="forecast-tracklist-head">
@@ -6183,34 +6151,6 @@ body.forecast-view .forecast-bottom-controls {
         <div id="forecastTracklistPreview" class="forecast-tracklist-preview">No tracklist pasted.</div>
         <div class="forecast-tracklist-actions">
           <button id="forecastTracklistImportConfirmBtn" type="button">Import Tracklist</button>
-        </div>
-      </div>
-    </div>
-
-    <div id="forecastInventoryPreviewModal" class="forecast-inventory-preview-modal" aria-hidden="true">
-      <div class="forecast-inventory-preview-card">
-        <div class="forecast-inventory-preview-head">
-          <div>
-            <span class="forecast-inventory-preview-kicker">Inventory Preview</span>
-            <h3 id="forecastInventoryPreviewTitle">Preview</h3>
-            <p id="forecastInventoryPreviewSub">Click In Use or BO counts to inspect the matching chassis.</p>
-          </div>
-          <button id="forecastInventoryPreviewClose" type="button" class="forecast-inventory-preview-close">Close</button>
-        </div>
-        <div class="forecast-inventory-preview-table-wrap">
-          <table class="forecast-inventory-preview-table">
-            <thead>
-              <tr>
-                <th>Chassis</th>
-                <th>Pool</th>
-                <th>Size</th>
-                <th>Status</th>
-                <th>Dwell</th>
-                <th>Source</th>
-              </tr>
-            </thead>
-            <tbody id="forecastInventoryPreviewRows"></tbody>
-          </table>
         </div>
       </div>
     </div>
@@ -12617,6 +12557,38 @@ function buildForecastAvailableGoodChassisMap(){
   return available;
 }
 
+function hasForecastProjectedDeficitThroughDay(targetDay){
+  const available=buildForecastAvailableGoodChassisMap();
+  Object.values(forecastChassisRequests||{}).forEach(row=>{
+    const pair=normalizeInventoryPoolSizePair(row.pool,row.size);
+    const key=`${pair.pool}|${pair.size}`;
+    const adjusted=(available.get(key)||0)+(Number(row.drayIn)||0)-(Number(row.drayOut)||0);
+    available.set(key,adjusted);
+  });
+  const targetSort=forecastDaySortValue(targetDay);
+  const demand=new Map();
+  getVisibleForecastUnits().forEach(unit=>{
+    if(forecastDaySortValue(getForecastUnitDay(unit))>targetSort)return;
+    const pair=getForecastChassisDemandPair(unit);
+    if(!pair)return;
+    const normalized=normalizeInventoryPoolSizePair(pair.pool,pair.size);
+    const key=`${normalized.pool}|${normalized.size}`;
+    demand.set(key,(demand.get(key)||0)+1);
+  });
+  return [...demand].some(([key,needed])=>needed>Number(available.get(key)||0));
+}
+
+function updateForecastDayStatusPills(){
+  document.querySelectorAll("#forecastStatusCards .forecast-day-section").forEach(section=>{
+    const dayHeading=section.querySelector(".forecast-day-divider > div:first-child strong");
+    if(!dayHeading)return;
+    const hasShortage=hasForecastProjectedDeficitThroughDay(section.dataset.forecastDropDay);
+    dayHeading.classList.add("forecast-day-status-pill");
+    dayHeading.classList.toggle("forecast-day-status-alert",hasShortage);
+    dayHeading.classList.toggle("forecast-day-status-clear",!hasShortage);
+  });
+}
+
 function normalizeForecastDemandPoolSizePair(unit){
   if(isForecastTrailerUnit(unit))return null;
   const pool=normalizeForecastPoolLabel(unit?.pool||"").toUpperCase();
@@ -13045,6 +13017,8 @@ function renderForecastStatusCards(visibleUnitsInput){
       </div>
     </section>`;
   }).join("");
+
+  updateForecastDayStatusPills();
 
   box.querySelectorAll("[data-forecast-date-open]").forEach(btn=>{
     btn.onclick=()=>{
@@ -14872,6 +14846,7 @@ const net=getForecastRequestOnHandCount(pool,size)+drayIn-drayOut-getForecastReq
       input.classList.toggle("forecast-request-has-value",Number(input.value)>0);
       setForecastChassisRequestValue(input.dataset.forecastRequestPool,input.dataset.forecastRequestSize,input.dataset.forecastRequestField,input.value);
       updateNet(input.dataset.forecastRequestPool,input.dataset.forecastRequestSize);
+      updateForecastDayStatusPills();
     });
   });
   renderForecastChassisRequestSummary();
@@ -15015,13 +14990,6 @@ async function init(){
   setupForecastRequestBoardVisibility();
   const forecastTrainSummaryCard=$("forecastTrainSummaryCard");
   if(forecastTrainSummaryCard)forecastTrainSummaryCard.remove();
-  const forecastDifferenceToggleBtn=$("forecastDifferenceToggleBtn"); if(forecastDifferenceToggleBtn){
-    forecastDifferenceToggleBtn.textContent=document.body.classList.contains("hide-forecast-differences")?"Show +/-":"Hide +/-";
-    forecastDifferenceToggleBtn.onclick=()=>{
-      document.body.classList.toggle("hide-forecast-differences");
-      forecastDifferenceToggleBtn.textContent=document.body.classList.contains("hide-forecast-differences")?"Show +/-":"Hide +/-";
-    };
-  }
   const forecastArchiveSortSelect=$("forecastArchiveSortSelect"); if(forecastArchiveSortSelect)forecastArchiveSortSelect.onchange=()=>{forecastArchiveSortMode=forecastArchiveSortSelect.value||"newest";renderForecastArchiveList();};
   const forecastArchivePopupCloseBtn=$("forecastArchivePopupCloseBtn"); if(forecastArchivePopupCloseBtn)forecastArchivePopupCloseBtn.onclick=closeForecastArchivePopup;
   const forecastArchivePopup=$("forecastArchivePopup"); if(forecastArchivePopup)forecastArchivePopup.addEventListener("click",e=>{if(e.target===forecastArchivePopup)closeForecastArchivePopup();});
@@ -15068,7 +15036,6 @@ async function init(){
   const forecastAuthorizedPreviewConfirmBtn=$("forecastAuthorizedPreviewConfirmBtn"); if(forecastAuthorizedPreviewConfirmBtn)forecastAuthorizedPreviewConfirmBtn.onclick=confirmForecastAuthorizedImport;
   const forecastAuthorizedPreviewModal=$("forecastAuthorizedPreviewModal"); if(forecastAuthorizedPreviewModal)forecastAuthorizedPreviewModal.addEventListener("click",e=>{if(e.target===forecastAuthorizedPreviewModal)closeForecastAuthorizedPreview()});
   const forecastInventoryClearBtn=$("forecastInventoryClearBtn"); setupForecastClearConfirmation(forecastInventoryClearBtn,clearChassisInventoryRows);
-  setupForecastInventorySection();
   arrangeForecastLowerSections();
   const forecastClearImportBtn=$("forecastClearImportBtn"); setupForecastClearConfirmation(forecastClearImportBtn,clearChassisInventoryRows);
   const forecastResolvePoolsBtn=$("forecastResolvePoolsBtn"); if(forecastResolvePoolsBtn)forecastResolvePoolsBtn.onclick=toggleForecastPoolResolver;
@@ -21968,10 +21935,11 @@ body.forecast-excel-view-open .forecast-excel-view{
 }
 body.forecast-excel-view-open{
   background:#fff!important;
+  min-height:0!important;
 }
 .forecast-excel-page{
   width:818px;
-  min-height:774px;
+  min-height:0;
   max-width:calc(100vw - 16px);
   margin:0 auto;
   padding:6px;
@@ -24745,20 +24713,22 @@ body.forecast-view #forecastModal .forecast-page > .hero.clean-hero{
   grid-template-columns:minmax(320px,1fr) auto!important;
 }
 body.forecast-view #forecastModal .forecast-page > .hero.clean-hero .hero-actions{
-  display:grid!important;
-  grid-template-columns:310px!important;
-  width:auto!important;
+  display:flex!important;
+  flex-direction:row!important;
+  flex-wrap:nowrap!important;
+  width:540px!important;
+  max-width:100%!important;
   min-width:0!important;
   margin-left:auto!important;
   justify-content:end!important;
-  justify-items:stretch!important;
   align-items:stretch!important;
   gap:10px!important;
 }
-body.forecast-view #forecastModal .forecast-page > .hero.clean-hero #forecastHeroBtn{
-  grid-column:1!important;
-  width:310px!important;
-  min-width:310px!important;
+body.forecast-view #forecastModal .forecast-page > .hero.clean-hero #forecastHeroBtn,
+body.forecast-view #forecastModal .forecast-page > .hero.clean-hero #openForecastExcelViewBtn{
+  flex:1 1 0!important;
+  width:0!important;
+  min-width:0!important;
 }
 @media(max-width:1050px){
   body.forecast-view #forecastModal .forecast-page > .hero.clean-hero{
@@ -24766,11 +24736,6 @@ body.forecast-view #forecastModal .forecast-page > .hero.clean-hero #forecastHer
   }
   body.forecast-view #forecastModal .forecast-page > .hero.clean-hero .hero-actions{
     width:100%!important;
-    grid-template-columns:minmax(220px,1fr)!important;
-  }
-  body.forecast-view #forecastModal .forecast-page > .hero.clean-hero #forecastHeroBtn{
-    width:auto!important;
-    min-width:0!important;
   }
 }
 body.forecast-view.forecast-print-clean-view #forecastModal .forecast-page > .hero.clean-hero{
@@ -25617,16 +25582,12 @@ body:not(.forecast-view) .app > .hero.clean-hero > .hero-actions{
   box-shadow:inset 0 1px 0 rgba(255,255,255,.035)!important;
 }
 #forecastStatusCards .forecast-train-card:has(.forecast-hot-box-pill){
-  border:3px solid #fbbf24!important;
-  padding:7px!important;
-  outline:1px solid rgba(253,230,138,.42)!important;
-  outline-offset:1px!important;
+  border:1px solid rgba(148,163,184,.34)!important;
+  padding:9px!important;
+  outline:0!important;
   animation:none!important;
   filter:none!important;
-  box-shadow:
-    0 0 0 1px rgba(253,230,138,.32),
-    0 0 9px rgba(251,191,36,.30),
-    inset 0 0 6px rgba(251,191,36,.04)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.035)!important;
 }
 #forecastStatusCards .forecast-train-card.high-volume-train:not(.imccomllc-inbound){
   border:1px solid rgba(148,163,184,.34)!important;
@@ -25643,6 +25604,30 @@ body:not(.forecast-view) .app > .hero.clean-hero > .hero-actions{
   box-shadow:none!important;
   filter:none!important;
   pointer-events:none!important;
+}
+#forecastStatusCards .forecast-day-divider > div:first-child strong.forecast-day-status-pill{
+  display:inline-flex!important;
+  align-items:center!important;
+  width:max-content!important;
+  max-width:100%!important;
+  min-height:28px!important;
+  padding:5px 11px!important;
+  border:1px solid transparent!important;
+  border-radius:999px!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08)!important;
+}
+#forecastStatusCards .forecast-day-divider > div:first-child strong.forecast-day-status-clear{
+  color:#a7f3d0!important;
+  border-color:rgba(52,211,153,.48)!important;
+  background:rgba(6,78,59,.62)!important;
+}
+#forecastStatusCards .forecast-day-divider > div:first-child strong.forecast-day-status-alert{
+  color:#fecdd3!important;
+  border-color:rgba(251,113,133,.56)!important;
+  background:rgba(127,29,29,.62)!important;
 }
 #forecastStatusCards .forecast-compact-train-head{
   position:relative!important;
