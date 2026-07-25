@@ -4029,7 +4029,22 @@
       decorateDocument(doc);
     } catch (_) {}
   }
-  function connectFrames() { document.querySelectorAll("iframe").forEach(function(frame){frame.addEventListener("load",function(){connectFrame(frame);});connectFrame(frame);}); }
+  var connectFramesTimer = 0;
+  function connectFrames() {
+    window.clearTimeout(connectFramesTimer);
+    connectFramesTimer = 0;
+    document.querySelectorAll("iframe").forEach(function(frame){
+      if (!frame.dataset.amRosterQuickActionsLoadBound) {
+        frame.dataset.amRosterQuickActionsLoadBound = "1";
+        frame.addEventListener("load",function(){connectFrame(frame);});
+      }
+      connectFrame(frame);
+    });
+  }
+  function scheduleConnectFrames() {
+    if (connectFramesTimer) return;
+    connectFramesTimer = window.setTimeout(connectFrames, 80);
+  }
   root.addEventListener("click",function(event){
     var statusButton=event.target.closest("[data-amq-status]"); if(statusButton){saveStatus(statusButton.dataset.amqStatus);return;}
     var roleButton=event.target.closest("[data-amq-role]"); if(roleButton && !roleButton.disabled){saveRole(roleButton.dataset.amqRole);return;}
@@ -4039,8 +4054,14 @@
   document.getElementById("amqClockOut").addEventListener("change",saveTimes);
   document.getElementById("amqClose").addEventListener("click",function(){root.hidden=true;});
   document.addEventListener("keydown",function(event){if(event.key==="Escape"&&!root.hidden)root.hidden=true;});
-  new MutationObserver(connectFrames).observe(document.body,{childList:true,subtree:true});
-  connectFrames(); window.setTimeout(connectFrames,250); window.setTimeout(refreshRoster,500);
+  new MutationObserver(scheduleConnectFrames).observe(document.body,{childList:true,subtree:true});
+  connectFrames();
+  var finishInitialRosterSetup = function(){ connectFrames(); refreshRoster(); };
+  if (typeof window.requestIdleCallback === "function") {
+    window.requestIdleCallback(finishInitialRosterSetup, {timeout:900});
+  } else {
+    window.setTimeout(finishInitialRosterSetup, 450);
+  }
 })();
 </scr${""}ipt>`;
       const bodyClose = html.toLowerCase().lastIndexOf("</body>");
@@ -4223,6 +4244,10 @@
   var dialog = root.querySelector(".amfr-dialog");
   var sourceObserver = null;
   var openRequest = 0;
+  var openInProgress = false;
+  var openTimer = 0;
+  var hookFramesTimer = 0;
+  var slotSyncTimer = 0;
   var rosterWanted = true;
   var resetArmedUntil = 0;
   var resetTimer = 0;
@@ -4342,12 +4367,13 @@
   }
 
   function installThreeDayNws(frame) {
-    if (frame !== todayFrame()) return;
+    if (frame !== todayFrame()) return false;
     var doc;
-    try { doc = frame.contentDocument; } catch (_) { return; }
-    if (!doc || !doc.body || doc.getElementById("amNwsThreeDay")) return;
+    try { doc = frame.contentDocument; } catch (_) { return false; }
+    if (!doc || !doc.body) return false;
+    if (doc.getElementById("amNwsThreeDay")) return true;
     var weather = doc.querySelector(".am-weather-readout");
-    if (!weather) return;
+    if (!weather) return false;
     if (!doc.getElementById("am-nws-three-day-style")) {
       var style = doc.createElement("style");
       style.id = "am-nws-three-day-style";
@@ -4376,6 +4402,7 @@
       .catch(function(){
         panel.innerHTML = '<div class="am-nws-three-day-loading">3-day NWS forecast is temporarily unavailable.</div>';
       });
+    return true;
   }
 
   function observeSource(sourceCard) {
@@ -4461,29 +4488,54 @@
 
   function openFloatingRoster() {
     rosterWanted = true;
+    if (openInProgress) return;
+    openInProgress = true;
     var request = ++openRequest;
     var attempts = 0;
-    root.hidden = true;
-    syncYesterdayWeatherSlot(false);
+    if (root.hidden) syncYesterdayWeatherSlot(false);
     requestCurrentRosterSnapshot(window);
     function attemptRender() {
-      if (request !== openRequest || !rosterWanted) return;
+      if (request !== openRequest || !rosterWanted) {
+        openInProgress = false;
+        return;
+      }
       attempts += 1;
       if (renderFloatingRoster()) {
+        openInProgress = false;
         root.hidden = false;
         window.requestAnimationFrame(function(){
           if (request === openRequest && !root.hidden) syncYesterdayWeatherSlot(true);
         });
         return;
       }
-      if (attempts < 100) window.setTimeout(attemptRender, 200);
+      if (attempts < 30) window.setTimeout(attemptRender, 150);
+      else openInProgress = false;
     }
-    window.setTimeout(attemptRender,40);
+    attemptRender();
+  }
+
+  function scheduleOpenFloatingRoster(delay) {
+    if (!rosterWanted || openInProgress || openTimer) return;
+    openTimer = window.setTimeout(function(){
+      openTimer = 0;
+      openFloatingRoster();
+    }, Math.max(0, Number(delay) || 0));
+  }
+
+  function scheduleSlotSync() {
+    if (slotSyncTimer) return;
+    slotSyncTimer = window.setTimeout(function(){
+      slotSyncTimer = 0;
+      if (!root.hidden) syncYesterdayWeatherSlot(true);
+    }, 80);
   }
 
   function closeFloatingRoster() {
     rosterWanted = false;
     openRequest += 1;
+    openInProgress = false;
+    window.clearTimeout(openTimer);
+    openTimer = 0;
     root.hidden = true;
     syncYesterdayWeatherSlot(false);
     if (sourceObserver) sourceObserver.disconnect();
@@ -4554,11 +4606,17 @@
     try {
       var doc = frame.contentDocument;
       if (!doc) return;
-      installThreeDayNws(frame);
+      var nwsReady = installThreeDayNws(frame);
       installTodayFixedCopyRange(frame);
       if (doc.__amFloatingTodayRosterBound) return;
       doc.__amFloatingTodayRosterBound = true;
-      new MutationObserver(function(){ installThreeDayNws(frame); }).observe(doc.body, {childList:true,subtree:true});
+      if (!nwsReady) {
+        var nwsObserver = new MutationObserver(function(){
+          if (installThreeDayNws(frame)) nwsObserver.disconnect();
+        });
+        nwsObserver.observe(doc.body, {childList:true,subtree:true});
+        window.setTimeout(function(){ nwsObserver.disconnect(); }, 5000);
+      }
       var legacyStyle = doc.createElement("style");
       legacyStyle.id = "am-legacy-today-roster-hidden";
       legacyStyle.textContent = "#amTodayRosterPopup{display:none!important}";
@@ -4586,13 +4644,21 @@
         frame.dataset.amFloatingRosterBound = "1";
         frame.addEventListener("load", function(){
           hookFrame(frame);
-          if (rosterWanted) window.setTimeout(openFloatingRoster, 60);
+          if (rosterWanted) scheduleOpenFloatingRoster(60);
         });
       }
       hookFrame(frame);
     });
-    if (rosterWanted && root.hidden) window.setTimeout(openFloatingRoster, 40);
-    else if (!root.hidden) window.setTimeout(function(){ syncYesterdayWeatherSlot(true); }, 40);
+    if (rosterWanted && root.hidden) scheduleOpenFloatingRoster(40);
+    else if (!root.hidden) scheduleSlotSync();
+  }
+
+  function scheduleHookFrames() {
+    if (hookFramesTimer) return;
+    hookFramesTimer = window.setTimeout(function(){
+      hookFramesTimer = 0;
+      hookFrames();
+    }, 80);
   }
 
   card.addEventListener("click", function(event){
@@ -4625,19 +4691,19 @@
   window.addEventListener("message", function(event){
     if (!event.data || event.data.type !== "conglobal-am-third-column-mode") return;
     document.body.classList.toggle("am-scw-third-column", Boolean(event.data.weather));
-    hookFrames();
+    scheduleHookFrames();
   });
   window.addEventListener("storage", function(){
-    if (rosterWanted) openFloatingRoster();
+    if (rosterWanted) scheduleOpenFloatingRoster(0);
   });
 
   var handle = document.getElementById("amFloatingTodayRosterHandle");
   handle.style.cursor = "default";
 
-  new MutationObserver(hookFrames).observe(document.body, {childList:true, subtree:true});
+  new MutationObserver(scheduleHookFrames).observe(document.body, {childList:true, subtree:true});
   hookFrames();
-  window.setTimeout(hookFrames, 250);
-  window.setTimeout(openFloatingRoster, 650);
+  window.setTimeout(scheduleHookFrames, 250);
+  scheduleOpenFloatingRoster(80);
 })();
 </scr${""}ipt>`;
       const bodyClose = html.toLowerCase().lastIndexOf("</body>");
@@ -4756,7 +4822,7 @@
   function schedule(doc) {
     if (!doc) return;
     window.clearTimeout(doc.__amInboundConcernReadoutTimer || 0);
-    doc.__amInboundConcernReadoutTimer = window.setTimeout(function(){ updateReadout(doc); }, 0);
+    doc.__amInboundConcernReadoutTimer = window.setTimeout(function(){ updateReadout(doc); }, 60);
   }
   function connectFrame(frame) {
     try {
@@ -4764,12 +4830,11 @@
       if (!doc || !doc.body) return;
       if (!doc.__amInboundConcernReadoutBound) {
         doc.__amInboundConcernReadoutBound = true;
-        new MutationObserver(function(){ schedule(doc); }).observe(doc.body, {
+        var observedGrid = doc.querySelector("#am-report .sheet-grid") || doc.querySelector("#am-report") || doc.body;
+        new MutationObserver(function(){ schedule(doc); }).observe(observedGrid, {
           subtree:true,
           childList:true,
-          characterData:true,
-          attributes:true,
-          attributeFilter:["class","title","colspan","style"]
+          characterData:true
         });
         doc.addEventListener("input", function(){ schedule(doc); });
         doc.addEventListener("change", function(){ schedule(doc); });
@@ -4778,6 +4843,8 @@
     } catch (_) {}
   }
   function connectFrames() {
+    window.clearTimeout(connectFrames.timer || 0);
+    connectFrames.timer = 0;
     document.querySelectorAll("iframe").forEach(function(frame){
       if (!frame.__amInboundConcernLoadBound) {
         frame.__amInboundConcernLoadBound = true;
@@ -4786,15 +4853,17 @@
       connectFrame(frame);
     });
   }
-  new MutationObserver(connectFrames).observe(document.body,{childList:true,subtree:true});
+  function scheduleConnectFrames() {
+    if (connectFrames.timer) return;
+    connectFrames.timer = window.setTimeout(connectFrames, 100);
+  }
+  new MutationObserver(scheduleConnectFrames).observe(document.body,{childList:true,subtree:true});
   window.addEventListener("storage", function(event){
-    if (!event.key || event.key === "chassisForecastReport") connectFrames();
+    if (!event.key || event.key === "chassisForecastReport") scheduleConnectFrames();
   });
-  window.addEventListener("focus", connectFrames);
+  window.addEventListener("focus", scheduleConnectFrames);
   connectFrames();
-  window.setTimeout(connectFrames,250);
-  window.setTimeout(connectFrames,900);
-  window.setInterval(connectFrames,5000);
+  window.setTimeout(scheduleConnectFrames,350);
 })();
 </scr${""}ipt>`;
       const bodyClose = html.toLowerCase().lastIndexOf("</body>");
@@ -5103,13 +5172,30 @@
     var important=Number.isFinite(high)&&high>=96&&alertRow&&/(?:heat advisory|excessive heat)/i.test(alertRow.textContent||"");
     if(important){card.classList.add("is-alert");alertRow.classList.remove("warning");alertRow.classList.add("danger")}
   }
+  function attach(frame){
+    try{
+      var doc=frame.contentDocument;
+      if(!doc||!doc.body||doc.__amImportantHeatBound)return;
+      doc.__amImportantHeatBound=true;
+      var promoteTimer=0;
+      var run=function(){
+        if(promoteTimer)return;
+        promoteTimer=window.setTimeout(function(){promoteTimer=0;promote(doc)},80);
+      };
+      promote(doc);
+      new MutationObserver(run).observe(doc.querySelector(".am-weather-readout")||doc.body,{childList:true,subtree:true});
+    }catch(error){}
+  }
   function watch(frame){
     if(frame.dataset.importantHeatReady)return;frame.dataset.importantHeatReady="true";
-    frame.addEventListener("load",function(){try{var doc=frame.contentDocument;promote(doc);new MutationObserver(function(){promote(doc)}).observe(doc.documentElement,{childList:true,subtree:true})}catch(error){}});
-    try{if(frame.contentDocument&&frame.contentDocument.readyState!=="loading"){var doc=frame.contentDocument;promote(doc);new MutationObserver(function(){promote(doc)}).observe(doc.documentElement,{childList:true,subtree:true})}}catch(error){}
+    frame.addEventListener("load",function(){attach(frame)});
+    attach(frame);
   }
-  document.querySelectorAll(".am-day-frame").forEach(watch);
-  new MutationObserver(function(){document.querySelectorAll(".am-day-frame").forEach(watch)}).observe(document.body,{childList:true,subtree:true});
+  var scanTimer=0;
+  function scan(){scanTimer=0;document.querySelectorAll(".am-day-frame").forEach(watch)}
+  function scheduleScan(){if(!scanTimer)scanTimer=window.setTimeout(scan,100)}
+  scan();
+  new MutationObserver(scheduleScan).observe(document.body,{childList:true,subtree:true});
 })();
 </scr${""}ipt>`;
       const bodyClose = html.toLowerCase().lastIndexOf("</body>");
@@ -6875,6 +6961,7 @@ document.addEventListener('click',function(event){
     let matrixMenuButton = null;
     let reportMenuButton = null;
     let pearlMenuButton = null;
+    let scwLoadTimer = 0;
     function pageFromHash() {
       const id = window.location.hash.replace(/^#/, "");
       return pages[id] && !["compare", "time", "dayforce", "archive", "roster", "timeOff"].includes(id) ? id : "";
@@ -6909,11 +6996,25 @@ document.addEventListener('click',function(event){
       scwLatestPopup.hidden = !shouldShow;
       if (primaryFrame.contentWindow && primaryFrame.dataset.page === "amReport") {
         primaryFrame.contentWindow.postMessage({ type: "conglobal-am-third-column-mode", weather: false }, "*");
+        primaryFrame.contentWindow.postMessage({ type: "conglobal-am-third-day-visibility", visible: !useWeather }, "*");
         if (activePage === "amReport") {
           primaryFrame.contentWindow.postMessage({ type: "conglobal-open-todays-roster" }, "*");
         }
       }
-      if (shouldShow && loadPost) fetchScwLatest();
+      if (shouldShow && loadPost) {
+        const cached = readScwCache();
+        if (cached && cached.post) renderScwPost(cached.post, "checking latest");
+        window.clearTimeout(scwLoadTimer);
+        const loadLatest = () => {
+          scwLoadTimer = 0;
+          if (activePage === "amReport" && weatherUsesThirdColumn()) fetchScwLatest();
+        };
+        if (typeof window.requestIdleCallback === "function") {
+          window.requestIdleCallback(loadLatest, {timeout:1200});
+        } else {
+          scwLoadTimer = window.setTimeout(loadLatest, 500);
+        }
+      }
     }
 
     function setScwColumnMode(useWeather) {
@@ -7331,11 +7432,80 @@ document.addEventListener('click',function(event){
   const wire = frame => {
     if (frame.dataset.nwsThreeDayWired === "1") return;
     frame.dataset.nwsThreeDayWired = "1";
-    frame.addEventListener("load", () => install(frame));
-    install(frame);
+    const queueInstall = () => {
+      const run = () => install(frame);
+      if (typeof requestIdleCallback === "function") requestIdleCallback(run, {timeout:1400});
+      else setTimeout(run, 500);
+    };
+    frame.addEventListener("load", queueInstall);
+    queueInstall();
   };
-  frames().forEach(wire);
-  new MutationObserver(() => frames().forEach(wire)).observe(document.documentElement, {childList:true, subtree:true});
+  let scanTimer = 0;
+  const scan = () => { scanTimer = 0; frames().forEach(wire); };
+  const scheduleScan = () => { if (!scanTimer) scanTimer = setTimeout(scan, 100); };
+  scan();
+  new MutationObserver(scheduleScan).observe(document.documentElement, {childList:true, subtree:true});
+})();
+</scr${""}ipt>`;
+      const bodyClose = html.toLowerCase().lastIndexOf("</body>");
+      return bodyClose >= 0 ? html.slice(0, bodyClose) + patch + "\n" + html.slice(bodyClose) : html + patch;
+    }
+
+    function withAmReportPerformance(html) {
+      if (!html || typeof html !== "string" || html.includes("am-report-performance-v1")) return html;
+      html = html
+        .replace(
+`      setTimeout(() => fitFrame(frame), 80);
+      setTimeout(() => fitFrame(frame), 320);
+      setTimeout(() => fitFrame(frame), 900);`,
+`      setTimeout(() => fitFrame(frame), 260);`
+        )
+        .replace(
+`    frame.srcdoc = day.html;`,
+`    const loadDayFrame = () => {
+      if (frame.dataset.amDayLoaded === "1") return;
+      frame.dataset.amDayLoaded = "1";
+      frame.classList.add("am-day-loading");
+      frame.addEventListener("load", () => frame.classList.remove("am-day-loading"), {once:true});
+      frame.srcdoc = day.html;
+    };
+    frame.__amLoadDay = loadDayFrame;
+    if (day.offset === 0) {
+      loadDayFrame();
+    } else if (day.offset < 0) {
+      setTimeout(loadDayFrame, 60);
+    } else if (typeof requestIdleCallback === "function") {
+      requestIdleCallback(loadDayFrame, {timeout:1400});
+    } else {
+      setTimeout(loadDayFrame, 800);
+    }`
+        )
+        .replace(
+`  window.addEventListener("resize", () => frames.forEach(fitFrame));`,
+`  let resizeQueued = false;
+  window.addEventListener("resize", () => {
+    if (resizeQueued) return;
+    resizeQueued = true;
+    requestAnimationFrame(() => {
+      resizeQueued = false;
+      frames.forEach(fitFrame);
+    });
+  });`
+        );
+      const patch = `
+<style id="am-report-performance-v1">
+  .am-day-frame.am-day-loading { background: linear-gradient(110deg,#eef2f6 25%,#f8fafc 40%,#eef2f6 55%); background-size: 220% 100%; animation: amDayLoading 1.1s linear infinite; }
+  @keyframes amDayLoading { to { background-position-x: -220%; } }
+  @media (prefers-reduced-motion:reduce) { .am-day-frame.am-day-loading { animation:none; } }
+</style>
+<scr${""}ipt>
+(function(){
+  window.addEventListener("message",function(event){
+    if(!event.data||event.data.type!=="conglobal-am-third-day-visibility"||!event.data.visible)return;
+    document.querySelectorAll(".am-day-frame").forEach(function(frame){
+      if(typeof frame.__amLoadDay==="function")frame.__amLoadDay();
+    });
+  });
 })();
 </scr${""}ipt>`;
       const bodyClose = html.toLowerCase().lastIndexOf("</body>");
@@ -7981,6 +8151,55 @@ setInterval(function(){
       return bodyClose >= 0 ? html.slice(0, bodyClose) + script + "\n" + html.slice(bodyClose) : html + script;
     }
 
+    function withPearlToolbarGroups(html) {
+      if (!html || typeof html !== "string" || html.includes("pearl-toolbar-groups")) return html;
+      const toolbar = `<div class="toolbar pearl-toolbar-groups" aria-label="Mori alert controls">
+      <section class="toolbar-group">
+        <span class="toolbar-label">Automation</span>
+        <label class="watch"><input id="watchToggle" type="checkbox"> Watch downloads automatically</label>
+      </section>
+      <section class="toolbar-group">
+        <span class="toolbar-label">Mismatch alert</span>
+        <div class="toolbar-actions">
+          <button class="btn dark" id="previewLatest" type="button">Preview Excel</button>
+          <button class="btn primary" id="sendLatest" type="button">Process &amp; Send</button>
+        </div>
+      </section>
+      <section class="toolbar-group">
+        <span class="toolbar-label">AlertMeter</span>
+        <div class="toolbar-actions">
+          <button class="btn primary" id="openAlertMeter" type="button">Capture &amp; Send</button>
+          <button class="btn dark" id="previewAlertMeter" type="button">Preview</button>
+        </div>
+      </section>
+      <section class="toolbar-group toolbar-tools">
+        <span class="toolbar-label">Tools</span>
+        <div class="toolbar-actions">
+          <button class="btn warn" id="testPush" type="button">Test</button>
+          <button class="btn" id="openSettings" type="button">Settings</button>
+          <button class="btn" id="refreshStatus" type="button">Refresh</button>
+        </div>
+      </section>
+    </div>`;
+      html = html.replace(
+        /<div class="toolbar">[\s\S]*?<\/div>\s*<div class="message"/,
+        toolbar + '\n    <div class="message"'
+      );
+      const style = `<style id="pearl-toolbar-groups-style">
+  .toolbar.pearl-toolbar-groups{display:grid;grid-template-columns:1.15fr 1.3fr 1.2fr 1fr;gap:10px;padding:10px;border-radius:12px}
+  .toolbar-group{display:flex;min-width:0;flex-direction:column;gap:7px;padding:9px;border:1px solid #d8e1eb;border-radius:10px;background:#f8fafc}
+  .toolbar-label{color:var(--muted);font-size:9px;font-weight:950;letter-spacing:.1em;text-transform:uppercase}
+  .toolbar-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+  .toolbar-tools .toolbar-actions{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .toolbar.pearl-toolbar-groups .btn{width:100%;min-width:0;min-height:37px;padding:7px 10px;font-size:11px;white-space:nowrap}
+  .toolbar.pearl-toolbar-groups .watch{display:flex;min-width:0;min-height:37px;padding:7px 9px;font-size:11px}
+  .toolbar.pearl-toolbar-groups .watch input{width:18px;height:18px;flex:0 0 auto}
+  @media(max-width:980px){.toolbar.pearl-toolbar-groups{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  @media(max-width:560px){.toolbar.pearl-toolbar-groups{grid-template-columns:1fr}}
+</style>`;
+      return html.replace("</head>", style + "\n</head>");
+    }
+
     function withPearlScheduleDashboard(html) {
       if (!html || typeof html !== "string" || html.includes("pearl-schedule-dashboard")) return html;
       const patch = `
@@ -8045,6 +8264,7 @@ setInterval(function(){
       if (!bridgedPageHtml.has(id)) {
         let pageHtml = pages[id].html;
         if (id === "amReport") {
+          pageHtml = withAmReportPerformance(pageHtml);
           pageHtml = withAmReportWebsterWeatherSource(pageHtml);
           pageHtml = withAmReportMeaningfulThunderThreshold(pageHtml);
           pageHtml = withAmReportImportantHeatWarnings(pageHtml);
@@ -8066,7 +8286,7 @@ setInterval(function(){
           pageHtml = withLphResetConfirmation(pageHtml);
         }
         if (id === "roster") pageHtml = withSchedulePersistence(pageHtml);
-        if (id === "pearl") pageHtml = withPearlScheduleDashboard(withPearlAlertMeterControl(pageHtml));
+        if (id === "pearl") pageHtml = withPearlScheduleDashboard(withPearlToolbarGroups(withPearlAlertMeterControl(pageHtml)));
         if (id === "excelView") {
           pageHtml = withExcelToolbarGroups(pageHtml);
           pageHtml = withExcelFutureDwellProjection(pageHtml);

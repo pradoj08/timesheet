@@ -17,12 +17,13 @@
   .content{padding:18px;border:1px solid var(--line);border-top:0;border-radius:0 0 16px 16px;background:linear-gradient(145deg,#f8fafc,#edf4f8)}
   .status-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-bottom:14px}.status-card{position:relative;min-width:0;padding:15px 13px 13px;overflow:hidden;border:1px solid var(--line);border-radius:12px;background:var(--panel);box-shadow:0 5px 16px #0f172a0c}.status-card:before{content:"";position:absolute;inset:0 0 auto;height:4px;background:linear-gradient(90deg,var(--cyan),#32d6b2)}.status-card span{display:block;color:var(--muted);font-size:10px;font-weight:900;letter-spacing:.08em;text-transform:uppercase}.status-card strong{display:block;margin-top:7px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:16px}.status-card strong.good{color:var(--green)}.status-card strong.bad{color:var(--red)}
   .schedule-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:14px}.schedule-card{padding:14px 16px;border:1px solid #b8c7d8;border-radius:13px;background:linear-gradient(135deg,#0f2033,#142c43);color:#fff;box-shadow:0 8px 22px #0f172a16}.schedule-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.schedule-head strong{font-size:13px;letter-spacing:.04em}.schedule-state{padding:4px 8px;border-radius:999px;background:#ffffff12;color:#b9c8d8;font-size:9px;font-weight:950;letter-spacing:.08em;text-transform:uppercase}.schedule-state.on{background:#0d7a5c;color:#d9fff3}.schedule-detail{margin:9px 0 0;color:#bdd0e1;font-size:11px;font-weight:750;line-height:1.45}.schedule-next{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-top:10px;padding-top:10px;border-top:1px solid #ffffff1f}.schedule-next span{color:#8fa8bd;font-size:9px;font-weight:900;letter-spacing:.08em;text-transform:uppercase}.schedule-next b{font-variant-numeric:tabular-nums;font-size:18px}.schedule-next time{color:#d9e7f3;font-size:11px;font-weight:850;text-align:right}
-  .toolbar{display:flex;flex-wrap:wrap;gap:8px;padding:12px;border:1px solid var(--line);border-radius:11px;background:var(--panel)}.btn{min-height:39px;padding:8px 13px;border:1px solid #aeb9c7;border-radius:8px;background:#fff;color:var(--ink);font-weight:900;cursor:pointer}.btn:hover,.btn:focus-visible{border-color:var(--cyan);outline:3px solid #0e91b820}.btn.primary{border-color:#08775a;background:var(--green);color:#fff}.btn.dark{border-color:#111827;background:#111827;color:#fff}.btn.warn{border-color:#b77900;background:#fff6d6;color:#734b00}.btn:disabled{opacity:.55;cursor:wait}.watch{display:inline-flex;align-items:center;gap:8px;min-height:39px;padding:7px 11px;border:1px solid var(--line);border-radius:8px;background:var(--soft);font-size:12px;font-weight:900}.watch input{width:19px;height:19px;accent-color:var(--green)}
+  .toolbar{display:grid;grid-template-columns:1.15fr 1.3fr 1.2fr 1fr;gap:10px;padding:10px;border:1px solid var(--line);border-radius:12px;background:var(--panel)}.toolbar-group{display:flex;min-width:0;flex-direction:column;gap:7px;padding:9px;border:1px solid #d8e1eb;border-radius:10px;background:#f8fafc}.toolbar-label{color:var(--muted);font-size:9px;font-weight:950;letter-spacing:.1em;text-transform:uppercase}.toolbar-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}.toolbar-tools .toolbar-actions{grid-template-columns:repeat(3,minmax(0,1fr))}.btn{min-width:0;min-height:37px;padding:7px 10px;border:1px solid #aeb9c7;border-radius:8px;background:#fff;color:var(--ink);font-size:11px;font-weight:900;white-space:nowrap;cursor:pointer}.btn:hover,.btn:focus-visible{border-color:var(--cyan);outline:3px solid #0e91b820}.btn.primary{border-color:#08775a;background:var(--green);color:#fff}.btn.dark{border-color:#111827;background:#111827;color:#fff}.btn.warn{border-color:#b77900;background:#fff6d6;color:#734b00}.btn:disabled{opacity:.55;cursor:wait}.toolbar .btn{width:100%}.watch{display:flex;min-width:0;min-height:37px;align-items:center;gap:8px;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--soft);font-size:11px;font-weight:900}.watch input{width:18px;height:18px;flex:0 0 auto;accent-color:var(--green)}
   .message{min-height:42px;margin:12px 0;padding:12px 14px;border-left:5px solid var(--cyan);border-radius:7px;background:#e8f6fb;color:#17445c;font-size:13px;font-weight:750}.message.error{border-color:var(--red);background:#fff0f2;color:#8b1529}
   .preview-card{overflow:hidden;border:1px solid var(--line);border-radius:12px;background:#fff}.preview-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 14px;border-bottom:1px solid var(--line);background:var(--soft)}.preview-head strong{font-size:13px;letter-spacing:.06em;text-transform:uppercase}.preview-head span{color:var(--muted);font-size:11px}.preview-body{display:flex;min-height:260px;align-items:flex-start;justify-content:center;padding:14px;overflow:auto;background:#fff}.preview-body img{display:block;max-width:100%;height:auto;box-shadow:0 5px 20px #0f172a20}.empty{align-self:center;color:var(--muted);font-weight:700;text-align:center}
   .help{margin:12px 2px 0;color:var(--muted);font-size:11px;line-height:1.5}
+  @media(max-width:980px){.toolbar{grid-template-columns:repeat(2,minmax(0,1fr))}}
   @media(max-width:800px){body{padding:8px}.hero{align-items:flex-start;flex-direction:column}.status-grid,.schedule-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.content{padding:10px}}
-  @media(max-width:560px){.status-grid,.schedule-grid{grid-template-columns:1fr}}
+  @media(max-width:560px){.status-grid,.schedule-grid,.toolbar{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -54,15 +55,33 @@
         <div class="schedule-next"><div><span>Next check in</span><b id="alertMeterCountdown">--:--:--</b></div><time id="alertMeterNextTime">Waiting for extension</time></div>
       </article>
     </section>
-    <div class="toolbar">
-      <label class="watch"><input id="watchToggle" type="checkbox"> Watch Downloads automatically</label>
-      <button class="btn dark" id="previewLatest" type="button">Preview Latest Excel</button>
-      <button class="btn primary" id="sendLatest" type="button">Process &amp; Send Alert</button>
-      <button class="btn primary" id="openAlertMeter" type="button">AlertMeter Snapshot</button>
-      <button class="btn dark" id="previewAlertMeter" type="button">Preview AlertMeter</button>
-      <button class="btn warn" id="testPush" type="button">Send Test Alert</button>
-      <button class="btn" id="openSettings" type="button">Agent Settings</button>
-      <button class="btn" id="refreshStatus" type="button">Refresh</button>
+    <div class="toolbar" aria-label="Mori alert controls">
+      <section class="toolbar-group">
+        <span class="toolbar-label">Automation</span>
+        <label class="watch"><input id="watchToggle" type="checkbox"> Watch downloads automatically</label>
+      </section>
+      <section class="toolbar-group">
+        <span class="toolbar-label">Mismatch alert</span>
+        <div class="toolbar-actions">
+          <button class="btn dark" id="previewLatest" type="button">Preview Excel</button>
+          <button class="btn primary" id="sendLatest" type="button">Process &amp; Send</button>
+        </div>
+      </section>
+      <section class="toolbar-group">
+        <span class="toolbar-label">AlertMeter</span>
+        <div class="toolbar-actions">
+          <button class="btn primary" id="openAlertMeter" type="button">Capture &amp; Send</button>
+          <button class="btn dark" id="previewAlertMeter" type="button">Preview</button>
+        </div>
+      </section>
+      <section class="toolbar-group toolbar-tools">
+        <span class="toolbar-label">Tools</span>
+        <div class="toolbar-actions">
+          <button class="btn warn" id="testPush" type="button">Test</button>
+          <button class="btn" id="openSettings" type="button">Settings</button>
+          <button class="btn" id="refreshStatus" type="button">Refresh</button>
+        </div>
+      </section>
     </div>
     <div class="message" id="message">Start YardMate Agent to connect this page.</div>
     <section class="preview-card">
