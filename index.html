@@ -6559,6 +6559,218 @@ function buildHourlyLiftLog(segs,activeKeys,rate,trainLabelMap,paceCtx){`
       return patched.replace(/<\/head>/i, '<meta name="lph-previous-shift-hourly-rows-v1" content="enabled">\n</head>');
     }
 
+    function withLphRealityBasedForecast(html) {
+      if (!html || typeof html !== "string" || html.includes("lph-reality-based-forecast-v1")) return html;
+      let patched = html
+        .replace(
+          `<div class="liftlog-cell-count">Forecast Lifts</div>
+<div class="liftlog-cell-rest">Work Plan (Simulated)</div>
+<div class="liftlog-cell-count">Actual Lifts</div>
+<div class="liftlog-cell-var">Variance</div>
+<div class="liftlog-cell-worktype">Work Type (Manual Entry)</div>`,
+          `<div class="liftlog-cell-value">Lifts · Forecast / Actual</div>
+<div class="liftlog-cell-plan">Work Plan · Forecast / Actual</div>`
+        )
+        .replace(
+          ".liftlog-cell-count{width:64px;flex-shrink:0;text-align:center;}",
+          `.liftlog-cell-count{width:64px;flex-shrink:0;text-align:center;}
+.liftlog-cell-value{width:210px;flex-shrink:0;display:flex;align-items:center;gap:6px;}
+.liftlog-cell-plan{flex:1 1 auto;min-width:0;display:flex;align-items:center;gap:10px;}`
+        )
+        .replace(
+          ".liftlog-row.is-previous-shift{background:rgba(245,158,11,.035);}",
+          `.liftlog-row.is-previous-shift{background:rgba(245,158,11,.035);}
+.liftlog-state-tag{font-size:7px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--text3);}
+.liftlog-state-tag.is-actual{color:var(--amber);}
+.liftlog-hour-lph{display:inline-flex;align-items:baseline;gap:3px;padding:2px 6px;border:1px solid rgba(16,185,129,.22);border-radius:5px;background:rgba(16,185,129,.07);color:var(--green);font-size:10px;font-weight:800;white-space:nowrap;}
+.liftlog-hour-lph small{color:var(--text3);font-size:7px;letter-spacing:.05em;}
+.liftlog-hour-lph.is-low{border-color:rgba(239,68,68,.32);background:rgba(239,68,68,.11);color:var(--red);}
+.liftlog-hour-lph.is-watch{border-color:rgba(245,158,11,.34);background:rgba(245,158,11,.1);color:var(--amber);}
+.liftlog-hour-lph.is-good{border-color:rgba(16,185,129,.3);background:rgba(16,185,129,.09);color:var(--green);}
+.liftlog-rebase-note{color:var(--amber);font-size:9px;font-weight:700;white-space:nowrap;}`
+        )
+        .replace(
+          "cumForecast+=b.total;",
+          "cumForecast+=b.previousShift?Math.round((paceCtx&&paceCtx.rate)||0):(b.plannedTotal!=null?b.plannedTotal:b.total);"
+        )
+        .replace(
+          "var delta=hasActual?(actualVal-b.total):null;",
+          "var comparisonForecast=b.previousShift?Math.round((paceCtx&&paceCtx.rate)||0):(b.plannedTotal!=null?b.plannedTotal:b.total);\n    var delta=hasActual?(actualVal-comparisonForecast):null;"
+        )
+        .replace(
+          /    var fcstRefHtml='';\s*if\(!hasActual && b\.total>0\)\{\s*var fcstLabel='fcst '\+b\.total;\s*fcstRefHtml='<span class="liftlog-forecast-ref">'\+escHtml\(fcstLabel\)\+'<\/span>';\s*\}\s*/,
+          ""
+        )
+        .replace(
+          "var workPlanHtml;\n    if(b.total>0){",
+          `var workPlanHtml;
+    if(hasActual){
+      workPlanHtml='<div class="liftlog-cell-plan">'+workTypeCell(h,entry.srcs)+'</div>';
+    } else if(b.total>0){`
+        )
+        .replace(
+          "workPlanHtml='<div class=\"liftlog-row-detail liftlog-cell-rest\">'+chips+'</div>';",
+          `workPlanHtml='<div class="liftlog-cell-plan"><div class="liftlog-row-detail">'+chips+'</div></div>';`
+        )
+        .replace(
+          "workPlanHtml='<div class=\"liftlog-row-detail liftlog-cell-rest\">No activity \\u2014 '+escHtml(b.breakLabels)+'</div>';",
+          "workPlanHtml='<div class=\"liftlog-cell-plan\"><div class=\"liftlog-row-detail\">No activity \\u2014 '+escHtml(b.breakLabels)+'</div></div>';"
+        )
+        .replace(
+          "workPlanHtml='<div class=\"liftlog-row-detail liftlog-cell-rest\"></div>';",
+          "workPlanHtml='<div class=\"liftlog-cell-plan\"></div>';"
+        )
+        .replace(
+          "    rows.push(\n      '<div class=\"liftlog-row'",
+          `    var displayedLifts=hasActual?actualVal:b.total;
+    var hourlyCrew=hourCrewSize(h,paceCtx);
+    var hourlyLph=hourlyCrew>0&&Number.isFinite(displayedLifts)?displayedLifts/hourlyCrew:null;
+    var hourlyLphClass=hourlyLph==null?'':(hourlyLph>=2.1?'is-good':(hourlyLph>=1.9?'is-watch':'is-low'));
+    var hourlyLphHtml=hourlyLph!=null?'<span class="liftlog-hour-lph '+hourlyLphClass+'">'+hourlyLph.toFixed(2)+' <small>LPH</small></span>':'';
+    var liftValueHtml='<div class="liftlog-cell-value">'
+      +'<span class="liftlog-state-tag'+(hasActual?' is-actual':'')+'">'+(hasActual?'Actual':'Forecast')+'</span>'
+      +'<input type="number" min="0" step="1" class="liftlog-actual-input" value="'+(hasActual?actualVal:'')+'" placeholder="'+(b.total>0?b.total:'\\u2014')+'" '
+      +'onchange="setHourlyActual('+h+',this.value)">'
+      +deltaHtml
+      +hourlyLphHtml
+      +'</div>';
+
+    rows.push(
+      '<div class="liftlog-row'`
+        )
+        .replace(
+          `'<div class="liftlog-row-total liftlog-cell-count">'+(b.total>0?b.total:(b.isBreak?'0':'\\u2014'))+'</div>'+
+      workPlanHtml+
+      '<div class="liftlog-cell-count">'+
+        '<input type="number" min="0" step="1" class="liftlog-actual-input" value="'+(hasActual?actualVal:'')+'" placeholder="\\u2014" '+
+        'onchange="setHourlyActual('+h+',this.value)">'+
+      '</div>'+
+      '<div class="liftlog-varcell liftlog-cell-var">'+
+        deltaHtml+fcstRefHtml+
+      '</div>'+
+      '<div class="liftlog-cell-worktype">'+workTypeCell(h,entry.srcs)+'</div>'+`,
+          `liftValueHtml+
+      workPlanHtml+`
+        );
+
+      const revisedForecastFunction = `function reviseForecastBucketsWithActuals(buckets,activeKeys,trainLabelMap){
+  var actuals=loadHourlyActuals();
+  var optionMap={};
+  liftSourceOptionList(activeKeys,trainLabelMap).forEach(function(o){if(o.key)optionMap[o.key]=o.label;});
+  var revised=buckets.map(function(bucket){
+    var entry=normalizeActualEntry(actuals[bucket.hour]);
+    if(entry.value==null||!Number.isFinite(entry.value))return bucket;
+    var actualValue=Math.max(0,entry.value);
+    var srcs=entry.srcs.filter(function(key){return !!key;});
+    var revisedSources;
+    if(srcs.length){
+      var perSource=actualValue/srcs.length;
+      revisedSources=srcs.map(function(key){
+        return {key:key,label:optionMap[key]||(trainLabelMap[key]||key)+' drop',lifts:Math.round(perSource),color:liftSourceColor(key,trainLabelMap)};
+      });
+    }else{
+      revisedSources=[{key:'actual',label:'Logged actual',lifts:Math.round(actualValue),color:'#4a9eff'}];
+    }
+    return {hour:bucket.hour,total:Math.round(actualValue),plannedTotal:bucket.total,plannedSources:bucket.sources||[],detail:revisedSources.map(function(source){return source.label+': '+source.lifts;}),sources:revisedSources,isBreak:false,lunchLabels:bucket.lunchLabels||[],previousShift:!!bucket.previousShift,realityAdjusted:true};
+  });
+  return revised;
+}`;
+      patched = patched.replace(
+        /function reviseForecastBucketsWithActuals\(buckets,activeKeys,trainLabelMap\)\{[\s\S]*?\r?\n\}\r?\n\r?\nfunction buildHourlyLiftLog\(/,
+        revisedForecastFunction + "\n\nfunction buildHourlyLiftLog("
+      );
+      return patched.replace(/<\/head>/i, '<meta name="lph-reality-based-forecast-v1" content="enabled">\n</head>');
+    }
+
+    function withLphShiftSplitDividers(html) {
+      if (!html || typeof html !== "string" || html.includes("lph-shift-split-dividers-v1")) return html;
+      let patched = html
+        .replace(
+          ".liftlog-row.is-previous-shift{background:rgba(245,158,11,.035);}",
+          `.liftlog-row.is-previous-shift{background:rgba(245,158,11,.035);}
+.liftlog-shift-divider{height:27px;display:flex;align-items:center;gap:9px;padding:0 8px;border-top:2px solid rgba(245,158,11,.65);border-bottom:1px solid rgba(245,158,11,.2);background:linear-gradient(90deg,rgba(245,158,11,.11),transparent 48%);color:var(--amber);font:800 9px/1 var(--mono);letter-spacing:.11em;text-transform:uppercase;}
+.liftlog-shift-divider::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--amber);box-shadow:0 0 9px rgba(245,158,11,.65);}
+.liftlog-shift-divider span{color:var(--text3);font-size:8px;letter-spacing:.07em;}`
+        )
+        .replace(
+          "  buckets.forEach(function(b){\n    var h=b.hour;\n    var entry=normalizeActualEntry(actuals[h]);",
+          `  buckets.forEach(function(b){
+    var h=b.hour;
+    if(h===0){
+      rows.push('<div class="liftlog-shift-divider">Previous Shift <span>0000–0300</span></div>');
+    }else if(h===3){
+      rows.push('<div class="liftlog-shift-divider">Current Day Shift <span>0300–1500</span></div>');
+    }else if(h===15){
+      rows.push('<div class="liftlog-shift-divider">Night Shift <span>1500–0300</span></div>');
+    }else if(h===24){
+      rows.push('<div class="liftlog-shift-divider">Midnight Cutoff <span>Next Day</span></div>');
+    }
+    var entry=normalizeActualEntry(actuals[h]);`
+        );
+      return patched.replace(/<\/head>/i, '<meta name="lph-shift-split-dividers-v1" content="enabled">\n</head>');
+    }
+
+    function withLphTimeMapViewModes(html) {
+      if (!html || typeof html !== "string" || html.includes("lph-timemap-view-modes-v1")) return html;
+      let patched = html
+        .replace(
+          "var timemapFitMode = {forecast:false, actual:false};\nfunction toggleTimemapFit(which, elId){",
+          `var timemapFitMode = {forecast:false, actual:false};
+var timemapViewModes=['segments','hourly','shifts'];
+var timemapViewLabels={segments:'Work Segments',hourly:'Hour by Hour',shifts:'Shift Summary'};
+var timemapViewMode={forecast:'segments',actual:'segments'};
+try{
+  var savedTimemapViews=JSON.parse(localStorage.getItem('settegast-timemap-view-modes')||'{}');
+  ['forecast','actual'].forEach(function(key){if(timemapViewModes.indexOf(savedTimemapViews[key])>=0)timemapViewMode[key]=savedTimemapViews[key];});
+}catch(error){}
+function cycleTimemapView(which){
+  which=which||'forecast';
+  var current=timemapViewModes.indexOf(timemapViewMode[which]);
+  timemapViewMode[which]=timemapViewModes[(current+1)%timemapViewModes.length];
+  try{localStorage.setItem('settegast-timemap-view-modes',JSON.stringify(timemapViewMode));}catch(error){}
+  if(typeof simulate==='function')simulate();
+}
+function toggleTimemapFit(which, elId){`
+        )
+        .replace(
+          "function hourRangeLabel(g){\n  if(g.firstHour===g.lastHour)",
+          "function hourRangeLabel(g){\n  if(g.displayLabel)return g.displayLabel;\n  if(g.firstHour===g.lastHour)"
+        )
+        .replace(
+          "function renderTimeMap(elId, buckets, opts){",
+          `function groupLiftBucketsHourly(buckets){
+  return buckets.map(function(b){
+    var sourceTotals={};(b.sources||[]).forEach(function(s){sourceTotals[s.key]={label:s.label,lifts:s.lifts,color:s.color};});
+    var dominant=(b.sources||[]).slice().sort(function(a,c){return c.lifts-a.lifts;})[0];
+    return {key:dominant?dominant.key:'__gap__',color:dominant?dominant.color:'#EF4444',firstHour:b.hour,lastHour:b.hour,total:b.total||0,sourceTotals:sourceTotals,isGap:!(b.total>0),breakLabels:b.breakLabels?[b.breakLabels]:[],lunchLabels:(b.lunchLabels||[]).slice()};
+  });
+}
+function groupLiftBucketsByShift(buckets){
+  var ranges=[{start:0,end:2,label:'Previous Shift · 0000–0259'},{start:3,end:14,label:'Day Shift · 0300–1459'},{start:15,end:23,label:'Night Shift · 1500–2359'},{start:24,end:26,label:'Next Day · 0000–0259'}];
+  return ranges.map(function(range){
+    var selected=buckets.filter(function(b){return b.hour>=range.start&&b.hour<=range.end;}),sourceTotals={},total=0,lunchLabels=[];
+    selected.forEach(function(b){total+=b.total||0;lunchLabels=lunchLabels.concat(b.lunchLabels||[]);(b.sources||[]).forEach(function(s){if(sourceTotals[s.key])sourceTotals[s.key].lifts+=s.lifts;else sourceTotals[s.key]={label:s.label,lifts:s.lifts,color:s.color};});});
+    var dominant=Object.keys(sourceTotals).map(function(key){return Object.assign({key:key},sourceTotals[key]);}).sort(function(a,c){return c.lifts-a.lifts;})[0];
+    return {key:dominant?dominant.key:'__gap__',color:dominant?dominant.color:'#EF4444',firstHour:range.start,lastHour:range.end,total:total,sourceTotals:sourceTotals,isGap:total<=0,lunchLabels:lunchLabels,displayLabel:range.label};
+  });
+}
+function renderTimeMap(elId, buckets, opts){`
+        )
+        .replace(
+          "  var groups=groupLiftBuckets(buckets);",
+          "  var which=opts.which||'forecast';\n  var viewMode=timemapViewMode[which]||'segments';\n  var groups=viewMode==='hourly'?groupLiftBucketsHourly(buckets):(viewMode==='shifts'?groupLiftBucketsByShift(buckets):groupLiftBuckets(buckets));"
+        )
+        .replace(
+          "  var which=opts.which||'forecast';\n  var fitBtnActiveCls=",
+          "  var fitBtnActiveCls="
+        )
+        .replace(
+          "+'<div class=\"timemap-header\">'+CLOCK_ICON+'<span class=\"timemap-title\">'+(opts.title||'Hourly Lift Time Map')+'</span>'\n    +'<button type=\"button\" class=\"timemap-fit-btn'+fitBtnActiveCls+'\"",
+          "+'<div class=\"timemap-header\">'+CLOCK_ICON+'<span class=\"timemap-title\">'+(opts.title||'Hourly Lift Time Map')+'</span>'\n    +'<button type=\"button\" class=\"timemap-fit-btn timemap-view-btn\" onclick=\"cycleTimemapView(\\''+which+'\\')\" title=\"Cycle map grouping\">'+escHtml(timemapViewLabels[viewMode])+'</button>'\n    +'<button type=\"button\" class=\"timemap-fit-btn'+fitBtnActiveCls+'\""
+        );
+      return patched.replace(/<\/head>/i, '<meta name="lph-timemap-view-modes-v1" content="enabled">\n</head>');
+    }
+
     function withExcelArrivalResolution(html) {
       if (!html || typeof html !== "string" || html.includes("excel-arrival-resolution-v1")) return html;
       let patched = html.replace(
@@ -9653,6 +9865,9 @@ setInterval(function(){
           pageHtml = withLphControlStack(pageHtml);
           pageHtml = withLphCollapsibleControlSections(pageHtml);
           pageHtml = withLphPreviousShiftHourlyRows(pageHtml);
+          pageHtml = withLphRealityBasedForecast(pageHtml);
+          pageHtml = withLphShiftSplitDividers(pageHtml);
+          pageHtml = withLphTimeMapViewModes(pageHtml);
           pageHtml = withLphCarryOverShiftStart(pageHtml);
           pageHtml = withLphInboundCountSelection(pageHtml);
           pageHtml = withLphOperationsGuide(pageHtml);
