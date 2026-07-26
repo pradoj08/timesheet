@@ -10,7 +10,7 @@
     --muted: #64748b;
     --line: #d9e1eb;
     --panel: #ffffff;
-    --canvas: #eef2f6;
+    --canvas: #d5dae1;
     --navy: #12233e;
     --navy-2: #1b355c;
     --accent: #f4a51c;
@@ -1238,7 +1238,12 @@
     justify-content: space-between; gap: 10px; border-bottom: 1px solid var(--line);
     background: linear-gradient(180deg, #fff, #f8fafc);
   }
-  .dashboard-panel .panel-head { display: grid; grid-template-columns: minmax(260px, 1fr) auto; gap: 14px; }
+  .dashboard-panel .panel-head {
+    display: grid;
+    grid-template-columns: minmax(260px, 1fr) auto;
+    gap: 14px;
+    background: var(--canvas);
+  }
   .dashboard-title-row { display: flex; align-items: baseline; gap: 10px; min-width: 0; white-space: nowrap; }
   .dashboard-title-row .panel-subtitle { overflow: hidden; text-overflow: ellipsis; }
   .dashboard-title-row .grid-color-tab-btn {
@@ -1550,7 +1555,7 @@
     font-size: 9px; font-weight: 850; letter-spacing: .05em; text-transform: uppercase;
   }
   .live-dot { width: 6px; height: 6px; border-radius: 50%; background: #2d9b50; box-shadow: 0 0 0 4px rgba(45,155,80,.12); }
-  .grid-wrap { overflow-x: auto; overflow-y: hidden; border-radius: 0 0 10px 10px; }
+  .grid-wrap { overflow-x: auto; overflow-y: hidden; border-radius: 0 0 10px 10px; background: #f8fafc; }
   .yard-grid {
     display: grid;
     grid-template-columns: 72px 76px repeat(8, minmax(132px, 1fr)) minmax(92px, .7fr);
@@ -2096,12 +2101,16 @@
     text-align: center;
   }
   #yardGrid .grid-head {
-    background: #4c1d75;
-    border-bottom-color: #351150;
+    background: #050505;
+    border-bottom-color: #303030;
   }
   #blankYardGrid .grid-head {
-    background: #0b2f5b;
-    border-bottom-color: #071f3d;
+    background: #b42318;
+    border-bottom-color: #8f1c14;
+  }
+  #blankYardGridTwo .grid-head {
+    background: #050505;
+    border-bottom-color: #303030;
   }
   .grid-head.grid-head-action {
     padding: 3px 4px;
@@ -2573,7 +2582,7 @@
   .track-remaining.block-drop-end:hover {
     box-shadow: inset 0 0 0 2px #f59e0b;
   }
-  .cut-cell.empty { color: transparent; background: #f4f6f8; }
+  .cut-cell.empty { color: transparent; background: #f8fafc; }
   .cut-cell.gray { background: #334155; color: #f8fafc; }
   .cut-cell.blue { background: linear-gradient(135deg,#0b2f5b,#1d4ed8,#38bdf8); color: #fff; }
   .cut-cell.green { background: linear-gradient(135deg,#052e16,#15803d,#22c55e); color: #fff; }
@@ -4836,8 +4845,10 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       group.footage = group.rows.reduce((s,r) => s + (Number(r[4]) || 0), 0);
       group.tons = group.rows.reduce((s,r) => s + (Number(r[3]) || 0), 0);
       group.cars = group.rows.length;
-      group.train = clean(first[10]);
-      group.sampleArrival = parseMddhhmm(first[11], now);
+      group.train = group.rows.map(row => clean(row[10])).find(Boolean) || "";
+      group.sampleArrival = group.rows
+        .map(row => parseMddhhmm(row[11], now))
+        .find(date => date instanceof Date && !Number.isNaN(date.getTime())) || null;
       group.arrival = group.sampleArrival || trainArrival.get(group.train) || null;
       const groupHoldStart = latestValidDate(group.rows.map(row => parseMddhhmm(row[7], now)));
       group.holdStart = groupHoldStart || parseMddhhmm(first[11], now);
@@ -8211,7 +8222,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     const length = firstHeaderIndex(h,["LENGTH","LN","LENGTH FT"]);
     const holdStart = firstHeaderIndex(h,["TIME IN HOLD","HOLD START"]);
     const inbound = firstHeaderIndex(h,["INBOUND TRAIN","TRAIN"]);
-    const arrival = firstHeaderIndex(h,["TIME IN DISP","ARRIVAL"]);
+    let arrival = firstHeaderIndex(h,["ARRIVAL"]);
+    if (arrival < 0) arrival = firstHeaderIndex(h,["TIME IN DISP"]);
     const yardBlock = firstHeaderIndex(h,["YARD BLOCK","YD BLOCK"]);
     let pStatus = firstHeaderIndex(h,["TRAIN TRACK","PRIMARY STATUS","P STATUS"]);
     let qStatus = firstHeaderIndex(h,["HOLD CODE","SECONDARY STATUS","Q STATUS"]);

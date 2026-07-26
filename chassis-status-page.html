@@ -12582,7 +12582,7 @@ function updateForecastDayStatusPills(){
   document.querySelectorAll("#forecastStatusCards .forecast-day-section").forEach(section=>{
     const dayHeading=section.querySelector(".forecast-day-divider > div:first-child strong");
     if(!dayHeading)return;
-    const hasShortage=hasForecastProjectedDeficitThroughDay(section.dataset.forecastDropDay);
+    const hasShortage=Boolean(section.querySelector(".forecast-quadrant-status.short"));
     dayHeading.classList.add("forecast-day-status-pill");
     dayHeading.classList.toggle("forecast-day-status-alert",hasShortage);
     dayHeading.classList.toggle("forecast-day-status-clear",!hasShortage);

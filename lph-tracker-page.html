@@ -2694,32 +2694,32 @@ body.lph-hydrating::after{
 
 /* ── Summary bar ── */
 .liftlog-summary-bar{
-  display:flex;flex-direction:column;gap:14px;
+  display:flex;flex-direction:column;gap:8px;
   background:var(--bg3);border:1px solid var(--border);border-radius:10px;
-  padding:16px 12px;margin-bottom:16px;
+  padding:10px 10px;margin-bottom:10px;
 }
 .liftlog-summary-grid{
   display:grid;grid-template-columns:repeat(6,1fr);align-items:stretch;
 }
 .liftlog-summary-stat{
   display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:6px;padding:6px 14px;text-align:center;position:relative;
+  gap:3px;padding:3px 9px;text-align:center;position:relative;
 }
 .liftlog-summary-stat:not(:last-child)::after{
   content:'';position:absolute;right:0;top:10%;bottom:10%;width:1px;background:var(--border);
 }
 .liftlog-summary-stat.group-end::after{display:none;}
 .liftlog-summary-icon{
-  width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;
+  width:18px;height:18px;border-radius:5px;display:flex;align-items:center;justify-content:center;
   background:rgba(255,255,255,0.04);color:var(--text3);flex-shrink:0;
 }
-.liftlog-summary-label-row{display:flex;align-items:center;gap:6px;justify-content:center;}
-.liftlog-summary-label{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--text3);white-space:nowrap;}
-.liftlog-summary-val{font-family:var(--mono);font-size:26px;font-weight:700;color:var(--text);line-height:1;}
-.liftlog-summary-val .unit{font-size:12px;font-weight:500;color:var(--text3);margin-left:5px;}
+.liftlog-summary-label-row{display:flex;align-items:center;gap:4px;justify-content:center;}
+.liftlog-summary-label{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);white-space:nowrap;}
+.liftlog-summary-val{font-family:var(--mono);font-size:21px;font-weight:700;color:var(--text);line-height:1;}
+.liftlog-summary-val .unit{font-size:10px;font-weight:500;color:var(--text3);margin-left:4px;}
 .liftlog-summary-val.is-pos{color:var(--green);}
 .liftlog-summary-val.is-neg{color:var(--red);}
-.liftlog-summary-sub{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--text3);letter-spacing:0.04em;}
+.liftlog-summary-sub{font-family:var(--mono);font-size:9px;font-weight:600;color:var(--text3);letter-spacing:0.03em;}
 .liftlog-summary-sub.is-pos{color:var(--green);}
 .liftlog-summary-sub.is-neg{color:var(--red);}
 .liftlog-summary-sub strong{font-weight:700;}
@@ -2767,14 +2767,14 @@ body.lph-hydrating::after{
 
 /* ── Table head row (column labels) ── */
 .liftlog-table-head{
-  display:flex;gap:14px;align-items:center;padding:8px 6px;margin-bottom:2px;
+  display:flex;gap:10px;align-items:center;padding:5px 6px;margin-bottom:1px;
   border-bottom:1px solid var(--border);
   font-size:9.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);
 }
 .liftlog-rows{display:flex;flex-direction:column;font-family:var(--mono);font-size:12px;}
 
 /* ── Shared cell widths ── */
-.liftlog-cell-time{width:78px;flex-shrink:0;}
+.liftlog-cell-time{width:142px;flex-shrink:0;}
 .liftlog-cell-count{width:64px;flex-shrink:0;text-align:center;}
 .liftlog-cell-var{width:56px;flex-shrink:0;}
 .liftlog-cell-worktype{flex:1 1 220px;min-width:0;}
@@ -2782,9 +2782,12 @@ body.lph-hydrating::after{
 .liftlog-cell-rest{flex:1 1 200px;min-width:0;}
 
 /* ── Forecast rows ── */
-.liftlog-row{display:flex;align-items:center;gap:14px;padding:8px 6px;border-bottom:1px solid var(--border);height:44px;min-height:44px;max-height:44px;overflow:hidden;box-sizing:border-box;transition:background .12s;}
+.liftlog-row{display:flex;align-items:center;gap:10px;padding:3px 6px;border-bottom:1px solid var(--border);height:34px;min-height:34px;max-height:34px;overflow:hidden;box-sizing:border-box;transition:background .12s;}
 .liftlog-row:hover{background:var(--bg3);}
 .liftlog-row-time{color:var(--text2);font-weight:600;font-size:11px;}
+.liftlog-row-time.is-previous-shift{display:flex;align-items:center;gap:5px;white-space:nowrap;}
+.liftlog-previous-shift-tag{display:inline-flex;align-items:center;padding:1px 4px;border:1px solid rgba(245,158,11,.45);border-radius:3px;background:rgba(245,158,11,.1);color:var(--amber);font-size:7px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;}
+.liftlog-row.is-previous-shift{background:rgba(245,158,11,.035);}
 .liftlog-row-total{font-weight:700;color:var(--green);font-size:13px;}
 .liftlog-row-detail{display:flex;flex-wrap:nowrap;gap:6px;align-items:center;min-width:0;overflow-x:auto;scrollbar-width:none;}
 .liftlog-row-detail::-webkit-scrollbar{display:none;}
@@ -2799,7 +2802,7 @@ body.lph-hydrating::after{
 .liftlog-row.is-break .liftlog-forecast-ref{color:var(--text3);font-style:italic;}
 
 /* ── Actual (manual entry) rows ── */
-.liftlog-actual-input{width:54px;height:28px;line-height:26px;background:var(--bg2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:var(--mono);font-size:12px;font-weight:600;padding:0 6px;text-align:center;transition:border-color .12s;box-sizing:border-box;display:block;vertical-align:middle;}
+.liftlog-actual-input{width:50px;height:24px;line-height:22px;background:var(--bg2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:var(--mono);font-size:11px;font-weight:600;padding:0 5px;text-align:center;transition:border-color .12s;box-sizing:border-box;display:block;vertical-align:middle;}
 .liftlog-actual-input:focus{outline:none;border-color:var(--amber);}
 .liftlog-actual-input::placeholder{color:var(--text3);font-weight:400;}
 .liftlog-forecast-ref{color:var(--text3);font-size:10px;line-height:12px;white-space:nowrap;flex-shrink:0;}
@@ -2807,10 +2810,10 @@ body.lph-hydrating::after{
 .liftlog-delta.is-pos{color:var(--green);background:rgba(16,185,129,0.12);}
 .liftlog-delta.is-neg{color:var(--red);background:rgba(239,68,68,0.12);}
 .liftlog-delta.is-zero{color:var(--text3);background:rgba(255,255,255,0.04);}
-.liftlog-src-select{background:transparent;border:1px solid var(--border);border-radius:5px;color:var(--text2);font-family:var(--mono);font-size:11px;font-weight:500;padding:0 22px 0 6px;height:24px;line-height:22px;width:var(--source-width,68px);max-width:220px;cursor:pointer;transition:border-color .12s,background .12s;box-sizing:border-box;display:block;vertical-align:middle;-webkit-appearance:menulist;}
+.liftlog-src-select{background:transparent;border:1px solid var(--border);border-radius:5px;color:var(--text2);font-family:var(--mono);font-size:10px;font-weight:500;padding:0 20px 0 5px;height:22px;line-height:20px;width:var(--source-width,68px);max-width:220px;cursor:pointer;transition:border-color .12s,background .12s;box-sizing:border-box;display:block;vertical-align:middle;-webkit-appearance:menulist;}
 .liftlog-src-select:focus{outline:none;border-color:var(--amber);}
 .liftlog-src-select.is-set{color:var(--text2);border-color:color-mix(in srgb,var(--source-color,var(--amber)) 48%,transparent);background:color-mix(in srgb,var(--source-color,var(--amber)) 5%,transparent);}
-.liftlog-worktype-row{display:flex;align-items:center;gap:4px;overflow-x:auto;scrollbar-width:none;height:28px;}
+.liftlog-worktype-row{display:flex;align-items:center;gap:3px;overflow-x:auto;scrollbar-width:none;height:24px;}
 .liftlog-worktype-row::-webkit-scrollbar{display:none;}
 .liftlog-worktype-slot{display:flex;align-items:center;gap:5px;flex:0 0 auto;min-width:0;}
 .liftlog-worktype-slot.is-set::before{content:"";width:7px;height:7px;border-radius:50%;flex:0 0 7px;background:var(--source-color,var(--amber));}
@@ -2822,13 +2825,13 @@ body.lph-hydrating::after{
 }
 .liftlog-src-remove:hover{color:var(--red);border-color:var(--red);}
 .liftlog-src-add{
-  flex-shrink:0;width:22px;height:22px;border-radius:5px;border:1px dashed var(--border2);
+  flex-shrink:0;width:20px;height:20px;border-radius:5px;border:1px dashed var(--border2);
   background:transparent;color:var(--text3);font-size:13px;font-weight:700;line-height:1;cursor:pointer;
   display:flex;align-items:center;justify-content:center;padding:0;transition:color .12s,border-color .12s;
 }
 .liftlog-src-add:hover{color:var(--amber);border-color:var(--amber);}
 .liftlog-note-btn{
-  width:28px;height:28px;border-radius:6px;border:1px solid var(--border);
+  width:24px;height:24px;border-radius:5px;border:1px solid var(--border);
   background:var(--bg2);color:var(--text3);cursor:pointer;
   display:flex;align-items:center;justify-content:center;
   transition:color .12s,border-color .12s,background .12s;flex-shrink:0;
@@ -5786,6 +5789,7 @@ function reviseForecastBucketsWithActuals(buckets,activeKeys,trainLabelMap){
       sources:revisedSources,
       isBreak:false,
       lunchLabels:bucket.lunchLabels||[],
+      previousShift:!!bucket.previousShift,
       realityAdjusted:true
     };
   });
@@ -5843,16 +5847,18 @@ function buildHourlyLiftLog(segs,activeKeys,rate,trainLabelMap,paceCtx){
       });
     });
 
-    buckets.push({hour:h,total:total,detail:detail,sources:sources,lunchLabels:absorbedLunchLabels});
+    buckets.push({hour:h,total:total,detail:detail,sources:sources,lunchLabels:absorbedLunchLabels,previousShift:h<3});
 
     if(total>0){
-      renderedBuckets.push({hour:h,total:total,detail:detail,sources:sources,isBreak:false,lunchLabels:absorbedLunchLabels});
+      renderedBuckets.push({hour:h,total:total,detail:detail,sources:sources,isBreak:false,lunchLabels:absorbedLunchLabels,previousShift:h<3});
     } else {
       // No lift activity this hour — note why, if it's covered by a scheduled break.
       var breakOverlaps=getDelayIntervals(segs,h,h+1);
       if(breakOverlaps.length>0){
         var breakLabels=breakOverlaps.map(function(d){return d.label;}).join(' + ');
-        renderedBuckets.push({hour:h,total:0,detail:[],sources:[],isBreak:true,breakLabels:breakLabels,lunchLabels:absorbedLunchLabels});
+        renderedBuckets.push({hour:h,total:0,detail:[],sources:[],isBreak:true,breakLabels:breakLabels,lunchLabels:absorbedLunchLabels,previousShift:h<3});
+      } else if(h<3){
+        renderedBuckets.push({hour:h,total:0,detail:[],sources:[],isBreak:false,lunchLabels:absorbedLunchLabels,previousShift:true});
       }
     }
   }
@@ -6900,8 +6906,8 @@ function buildHourlyLiftLogActual(buckets,activeKeys,trainLabelMap,paceCtx){
     }
 
     rows.push(
-      '<div class="liftlog-row'+(b.isBreak?' is-break':'')+'">'+
-      '<div class="liftlog-row-time liftlog-cell-time">'+String(h).padStart(2,'0')+'00\u2013'+String(h).padStart(2,'0')+'59</div>'+
+      '<div class="liftlog-row'+(b.isBreak?' is-break':'')+(b.previousShift?' is-previous-shift':'')+'">'+
+      '<div class="liftlog-row-time liftlog-cell-time'+(b.previousShift?' is-previous-shift':'')+'">'+String(h).padStart(2,'0')+'00\u2013'+String(h).padStart(2,'0')+'59'+(b.previousShift?'<span class="liftlog-previous-shift-tag">Previous Shift</span>':'')+'</div>'+
       '<div class="liftlog-row-total liftlog-cell-count">'+(b.total>0?b.total:(b.isBreak?'0':'\u2014'))+'</div>'+
       workPlanHtml+
       '<div class="liftlog-cell-count">'+
@@ -11060,7 +11066,14 @@ document.addEventListener('click', function(e){
   .input-menu-viewport{overflow:auto;touch-action:auto;background-color:#021114;background-image:linear-gradient(rgba(45,212,191,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(45,212,191,.035) 1px,transparent 1px);background-size:28px 28px;scrollbar-color:#176b69 #031619}
   .input-menu-track{height:auto!important;min-height:100%;display:grid!important;grid-template-columns:1fr!important;grid-template-rows:none!important;align-items:start;gap:10px;padding:10px;transform:none!important;transition:none!important;will-change:auto}
   .input-menu-slide{position:relative;display:grid;grid-template-rows:auto minmax(0,1fr);min-width:0;width:auto!important;height:auto!important;min-height:220px;padding:0!important;overflow:visible;border:1px solid rgba(45,212,191,.34);border-radius:10px;background:linear-gradient(155deg,rgba(13,148,136,.15),rgba(2,18,21,.96) 38%);box-shadow:inset 0 1px 0 rgba(153,246,228,.08),0 10px 24px rgba(0,0,0,.25)}
-  .input-menu-slide::before{content:attr(data-stack-title);display:block;padding:11px 12px;border-bottom:1px solid rgba(45,212,191,.28);background:linear-gradient(90deg,rgba(15,118,110,.50),rgba(4,35,38,.97));color:#d5fffa;font:700 13px/1.15 var(--cond);letter-spacing:.09em;text-transform:uppercase;text-shadow:0 0 12px rgba(45,212,191,.28)}
+  .input-menu-slide::before{display:none!important;content:none!important}
+  .input-menu-section-toggle{width:100%;min-height:41px;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border:0;border-bottom:1px solid rgba(45,212,191,.28);border-radius:9px 9px 0 0;background:linear-gradient(90deg,rgba(15,118,110,.50),rgba(4,35,38,.97));color:#d5fffa;font:700 13px/1.15 var(--cond);letter-spacing:.09em;text-align:left;text-transform:uppercase;text-shadow:0 0 12px rgba(45,212,191,.28);cursor:pointer}
+  .input-menu-section-toggle::after{content:"−";flex:0 0 auto;color:#99f6e4;font:900 18px/1 var(--mono)}
+  .input-menu-section-toggle:hover,.input-menu-section-toggle:focus-visible{background:linear-gradient(90deg,rgba(20,184,166,.62),rgba(4,35,38,.97));outline:2px solid rgba(94,234,212,.72);outline-offset:-2px}
+  .input-menu-slide.is-collapsed{min-height:0!important;grid-template-rows:auto!important}
+  .input-menu-slide.is-collapsed>.sb-card{display:none!important}
+  .input-menu-slide.is-collapsed .input-menu-section-toggle{border-bottom:0;border-radius:9px}
+  .input-menu-slide.is-collapsed .input-menu-section-toggle::after{content:"+"}
   .input-menu-slide>.sb-card{min-height:0!important;margin:0!important;border:0!important;border-radius:0!important;background:rgba(1,12,15,.62)!important;box-shadow:none!important}
   .input-menu-slide .section-label,.input-menu-slide .sb-cap{color:#5eead4;border-color:rgba(45,212,191,.20);background:rgba(5,46,50,.62)}
   .input-menu-slide .ctrl-group,.input-menu-slide .commit-card,.input-menu-slide .sw-info-bar,.input-menu-slide .coh-stat{border-color:rgba(45,212,191,.22)}.input-menu-slide input[type=range]{accent-color:#2dd4bf}
@@ -11077,7 +11090,19 @@ document.addEventListener('click', function(e){
   if(profileSlide){track.appendChild(profileSlide);slides=slides.filter(function(slide){return slide!==profileSlide});slides.push(profileSlide)}
   var profileSection=document.getElementById('profiles-section');if(profileSection)profileSection.style.display='none';
   var profileChevron=document.getElementById('profile-chevron');if(profileChevron)profileChevron.innerHTML='&#x25BC;';
-  slides.forEach(function(slide){var card=slide.querySelector('.sb-card');slide.dataset.stackTitle=card&&card.dataset.inputMenuTitle||'Control Module';slide.removeAttribute('inert');slide.setAttribute('aria-hidden','false')});
+  var collapsedKey='settegast-lph-input-collapsed-v1';
+  var collapsedTitles=[];try{collapsedTitles=JSON.parse(localStorage.getItem(collapsedKey)||'[]');if(!Array.isArray(collapsedTitles))collapsedTitles=[]}catch(error){collapsedTitles=[]}
+  function saveCollapsed(){try{localStorage.setItem(collapsedKey,JSON.stringify(collapsedTitles))}catch(error){}}
+  slides.forEach(function(slide,index){
+    var card=slide.querySelector('.sb-card');var title=card&&card.dataset.inputMenuTitle||'Control Module';
+    slide.dataset.stackTitle=title;slide.removeAttribute('inert');slide.setAttribute('aria-hidden','false');
+    var toggle=document.createElement('button');toggle.type='button';toggle.className='input-menu-section-toggle';toggle.textContent=title;toggle.setAttribute('aria-controls','lph-input-section-'+index);
+    if(card)card.id='lph-input-section-'+index;
+    function applyCollapsed(collapsed){slide.classList.toggle('is-collapsed',collapsed);toggle.setAttribute('aria-expanded',collapsed?'false':'true')}
+    applyCollapsed(collapsedTitles.indexOf(title)>=0);
+    toggle.addEventListener('click',function(){var collapsed=!slide.classList.contains('is-collapsed');applyCollapsed(collapsed);collapsedTitles=slides.filter(function(item){return item.classList.contains('is-collapsed')}).map(function(item){return item.dataset.stackTitle});saveCollapsed()});
+    slide.insertBefore(toggle,card||slide.firstChild);
+  });
   lphInputSlides=slides;lphInputSlideIndex=0;
   lphRenderInputMenu=function(){track.style.transform='none';slides.forEach(function(slide){slide.removeAttribute('inert');slide.setAttribute('aria-hidden','false')});var titleNode=document.getElementById('input-menu-current-title');var countNode=document.getElementById('input-menu-count');if(titleNode)titleNode.textContent='Operations Control Stack';if(countNode)countNode.textContent='1 × 8'};
   lphGoInputSlide=function(index){var slide=slides[Math.max(0,Math.min(slides.length-1,Number(index)||0))];if(slide&&slide.scrollIntoView)slide.scrollIntoView({block:'start'});lphRenderInputMenu()};

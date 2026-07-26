@@ -4218,11 +4218,118 @@
   #amFloatingTodayRoster .am-today-roster-total { display: flex; min-height: 20px; align-items: center; padding: 2px 6px; }
   #amFloatingTodayRoster .am-today-roster-total:first-child { border-right: 1px solid #d7aeb5; }
   #amFloatingTodayRoster .amfr-loading { padding: 18px; color: #526177; font-size: 12px; font-weight: 800; text-align: center; }
+  #amFloatingTodayRoster .amfr-checklist {
+    border-top: 2px solid #263446;
+    background: #eef2f6;
+  }
+  #amFloatingTodayRoster .amfr-checklist-head {
+    display: flex;
+    min-height: 34px;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 8px;
+    border-bottom: 1px solid #c8d1dd;
+    background: #101c31;
+    color: #fff;
+  }
+  #amFloatingTodayRoster .amfr-checklist-title {
+    font-size: 12px;
+    font-weight: 950;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+  #amFloatingTodayRoster .amfr-checklist-role {
+    min-width: 0;
+    overflow: hidden;
+    color: #b7c4d5;
+    font-size: 9px;
+    font-weight: 800;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  #amFloatingTodayRoster .amfr-checklist-total {
+    margin-left: auto;
+    color: #d9e3ef;
+    font-size: 9px;
+    font-weight: 950;
+    white-space: nowrap;
+  }
+  #amFloatingTodayRoster .amfr-checklist-scroll {
+    max-height: min(340px, 42vh);
+    overflow: auto;
+    padding: 7px;
+    scrollbar-color: #7f8996 #e4e9ef;
+    scrollbar-width: thin;
+    user-select: text;
+  }
+  #amFloatingTodayRoster .amfr-checklist-window {
+    overflow: hidden;
+    margin-bottom: 7px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    background: #fff;
+  }
+  #amFloatingTodayRoster .amfr-checklist-window:last-child { margin-bottom: 0; }
+  #amFloatingTodayRoster .amfr-checklist-time {
+    display: flex;
+    min-height: 29px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 4px 8px;
+    border-bottom: 1px solid #d7dee8;
+    color: #b10e1e;
+    font-size: 12px;
+    font-weight: 950;
+  }
+  #amFloatingTodayRoster .amfr-checklist-count { color: #66758a; font-size: 9px; text-transform: uppercase; }
+  #amFloatingTodayRoster .amfr-checklist-task {
+    display: grid;
+    grid-template-columns: 17px minmax(0, 1fr) 55px 58px;
+    min-height: 31px;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 7px;
+    border-bottom: 1px solid #e1e6ed;
+  }
+  #amFloatingTodayRoster .amfr-checklist-task:last-child { border-bottom: 0; }
+  #amFloatingTodayRoster .amfr-checklist-task.done .amfr-checklist-text { color: #758296; text-decoration: line-through; }
+  #amFloatingTodayRoster .amfr-checklist-task input { width: 14px; height: 14px; accent-color: #168743; cursor: pointer; }
+  #amFloatingTodayRoster .amfr-checklist-text { min-width: 0; color: #172033; font-size: 9px; font-weight: 850; line-height: 1.18; }
+  #amFloatingTodayRoster .amfr-checklist-assignee {
+    width: 55px;
+    height: 23px;
+    padding: 1px 3px;
+    border: 1px solid #bdc9d7;
+    border-radius: 4px;
+    background: #f8fafc;
+    color: #25344a;
+    font-size: 9px;
+    font-weight: 800;
+  }
+  #amFloatingTodayRoster .amfr-checklist-status {
+    width: 58px;
+    height: 23px;
+    padding: 0 3px;
+    border: 1px solid #bdc9d7;
+    border-radius: 4px;
+    background: #f3f6fa;
+    color: #64748b;
+    cursor: pointer;
+    font-size: 8px;
+    font-weight: 950;
+    text-transform: uppercase;
+  }
+  #amFloatingTodayRoster .amfr-checklist-status.done { border-color: #9bd4b2; background: #e9f8ef; color: #13763b; }
+  #amFloatingTodayRoster .amfr-checklist-status.missed { border-color: #efb4b7; background: #fff0f0; color: #a80f17; }
+  #amFloatingTodayRoster .amfr-checklist-status.skipped { border-color: #e8cf9e; background: #fff7e7; color: #8a5a00; }
+  #amFloatingTodayRoster .amfr-checklist-empty { padding: 20px 12px; color: #64748b; font-size: 10px; font-weight: 800; text-align: center; }
   body.am-scw-third-column .am-three-day-workspace { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
   body.am-scw-third-column .am-day-panel:nth-child(3) { display: none !important; }
   @media (max-width: 620px) {
     #amFloatingTodayRoster .amfr-dialog { top: 4px; left: 4px; width: calc(100vw - 8px); max-height: none; }
     #amFloatingTodayRoster .amfr-card { max-height: none; }
+    #amFloatingTodayRoster .amfr-checklist-scroll { max-height: 36vh; }
   }
 </style>
 <div id="amFloatingTodayRoster" hidden>
@@ -4233,6 +4340,14 @@
       <button class="amfr-close" id="amFloatingTodayRosterClose" type="button" aria-label="Close current day roster">&times;</button>
     </header>
     <div class="amfr-card" id="amFloatingTodayRosterCard"><div class="amfr-loading">Loading current-day roster...</div></div>
+    <section class="amfr-checklist" aria-label="AM checklist">
+      <header class="amfr-checklist-head">
+        <span class="amfr-checklist-title">Checklist</span>
+        <span class="amfr-checklist-role" id="amFloatingChecklistRole">Role: default</span>
+        <span class="amfr-checklist-total" id="amFloatingChecklistTotal">0/0 done</span>
+      </header>
+      <div class="amfr-checklist-scroll" id="amFloatingChecklistContent"></div>
+    </section>
   </section>
 </div>
 <scr${""}ipt id="am-floating-today-roster-patch">
@@ -4251,6 +4366,20 @@
   var rosterWanted = true;
   var resetArmedUntil = 0;
   var resetTimer = 0;
+  var checklistContent = document.getElementById("amFloatingChecklistContent");
+  var checklistSeed = [
+    {time:"400-500 AM",tasks:["0-72 HR INBOUND BREAKDOWN / POST DAILY PLAN IN TEAMS","CHASSIS FORECAST / SHORTAGES / APPROVE SWINGS","AM DAILY SETTEGAST REPORT [630AM]","INPUT TIME FOR PREVIOUS DAY / REQUEST / HEADCOUNT"]},
+    {time:"500-600 AM",tasks:["SAFETY INBOX / ACTIVE HOSTLER CHECK","MISSOUT RESOLUTION / MISSING UNITS","VERIFY YARD CHECKS / DELETE OLD CHASSIS","SEND OUT NO-MATE AND MISMATCH LIST","YARD PATTERN CHECK / HOLDS / CROSS HAULS"]},
+    {time:"600-700 AM",tasks:["SEND AUDIT AND MONTHLY TRAINING LIST","LOAD OUT COUNT VS DERAMP COUNT ETA RELEASE","LIFT PER HOUR FLOOR NEEDED TO ACHIEVE GOAL","REVIEW DAILY EQUIPMENT DISPOSITION"]},
+    {time:"700-800 AM",tasks:["CHECK INBOUND STATUS","CONTACT SWITCH CREW / UPDATE PLANS","PLAN OUTBOUND / REVIEW LOAD PLAN / HOLDS","RESPOND TO EMAILS"]},
+    {time:"800-900 AM",tasks:["SEND OUTBOUND FOOTAGE / TONNAGE PROJECTION","CONTACT SWITCH CREW / UPDATE PLANS","MONTHLY TRAININGS / AUDITS & OBSERVATIONS","MAN HOURS VS LIFTS TO REACH TARGET"]},
+    {time:"1000-1100 AM",tasks:["SEND CUSTOMER REPORT","CHECK YARD PLAN FOR CROSS HAUL","PLAN OUTBOUND / REVIEW LOAD PLAN / HOLDS","PLAN NIGHT SHIFT WORKLOAD / ENOUGH CARS TO LOAD?"]},
+    {time:"1200-1300 PM",tasks:["IN/OUT TRACKER - START THINKING ABOUT TOMORROW","RESPOND TO EMAILS / ORGANIZE / DELETE","CONTACT SWITCH CREW / UPDATE PLANS","RIDE ALONG / AUDIT GROUND / CRANE / HOSTLER"]},
+    {time:"1300-1630 PM",tasks:["CHECK INBOUND STATUS / UPDATE TURNOVER","PLAN OUTBOUND / REVIEW LOAD PLAN / HOLDS","DWELL COMMENTARY UPDATE IF GREATER THAN TARGET"]},
+    {time:"1300-2100 PM",tasks:["CHECK INBOUND STATUS / UPDATE TURNOVER","SEND NIGHTLY TURNOVER GOING INTO AM","EXPOSURE CONTROL PLAN UPDATE","REVIEW OUTBOUND SUMMARY FOR TOMORROW"]}
+  ];
+  var checklistKeys = {state:"sdt_state_v6",roles:"sdt_role_sets_v1",role:"sdt_active_role_v1",log:"sdt_task_status_log_v1"};
+  var checklistAssignees = ["","Jacob","Dan","Mike","Jarvis","Neal","TM","NA","OTHER"];
 
   function localDateKey(date) {
     return date.getFullYear()+"-"+String(date.getMonth()+1).padStart(2,"0")+"-"+String(date.getDate()).padStart(2,"0");
@@ -4266,6 +4395,84 @@
   function writeStored(key, value) {
     if (value && typeof value === "object" && !Array.isArray(value) && !Object.keys(value).length) localStorage.removeItem(key);
     else localStorage.setItem(key,JSON.stringify(value));
+  }
+  function checklistEscape(value) {
+    return String(value == null ? "" : value).replace(/[&<>"]/g,function(character){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[character];
+    });
+  }
+  function checklistDefaultState() {
+    return checklistSeed.map(function(block){
+      return {time:block.time,tasks:block.tasks.map(function(text){
+        return {text:text,status:"pending",stamp:"Pending",reviewStatus:"pending",assignee:""};
+      })};
+    });
+  }
+  function checklistRead() {
+    var role=localStorage.getItem(checklistKeys.role)||"default";
+    var roles=readStored(checklistKeys.roles,{})||{};
+    var blocks=roles[role]&&Array.isArray(roles[role].state)?roles[role].state:readStored(checklistKeys.state,null);
+    if (!Array.isArray(blocks)) blocks=checklistDefaultState();
+    blocks=blocks.map(function(block){
+      return {time:block.time||"Time window",tasks:(Array.isArray(block.tasks)?block.tasks:[]).map(function(task){
+        return typeof task==="string"
+          ? {text:task,status:"pending",stamp:"Pending",reviewStatus:"pending",assignee:""}
+          : Object.assign({status:"pending",stamp:"Pending",reviewStatus:"pending",assignee:""},task);
+      })};
+    });
+    return {role:role,roles:roles,blocks:blocks};
+  }
+  function checklistSave(model) {
+    var existing=model.roles[model.role]||{};
+    model.roles[model.role]=Object.assign({},existing,{state:JSON.parse(JSON.stringify(model.blocks))});
+    localStorage.setItem(checklistKeys.roles,JSON.stringify(model.roles));
+    localStorage.setItem(checklistKeys.role,model.role);
+    if (model.role==="default") localStorage.setItem(checklistKeys.state,JSON.stringify(model.blocks));
+  }
+  function checklistLog(time,task,status) {
+    var log=readStored(checklistKeys.log,[]);
+    if (!Array.isArray(log)) log=[];
+    log.push({
+      id:globalThis.crypto&&crypto.randomUUID?crypto.randomUUID():String(Date.now()+Math.random()),
+      time:time,
+      text:task.text,
+      status:status,
+      key:(time+"|"+task.text).toLowerCase().replace(/[^a-z0-9]+/g,"-"),
+      created:Date.now(),
+      date:new Date().toISOString().slice(0,10)
+    });
+    localStorage.setItem(checklistKeys.log,JSON.stringify(log.slice(-2000)));
+  }
+  function renderChecklist() {
+    var model=checklistRead();
+    checklistContent._model=model;
+    var total=0,done=0;
+    model.blocks.forEach(function(block){
+      total+=block.tasks.length;
+      done+=block.tasks.filter(function(task){return task.status==="done";}).length;
+    });
+    document.getElementById("amFloatingChecklistRole").textContent="Role: "+model.role;
+    document.getElementById("amFloatingChecklistTotal").textContent=done+"/"+total+" done";
+    if (!model.blocks.length) {
+      checklistContent.innerHTML='<div class="amfr-checklist-empty">No checklist windows are configured for this role.</div>';
+      return;
+    }
+    checklistContent.innerHTML=model.blocks.map(function(block,blockIndex){
+      var complete=block.tasks.filter(function(task){return task.status==="done";}).length;
+      var tasks=block.tasks.map(function(task,taskIndex){
+        var review=task.status==="done"?"done":(["missed","skipped"].indexOf(task.reviewStatus)>=0?task.reviewStatus:"pending");
+        var options=checklistAssignees.map(function(name){
+          return '<option value="'+checklistEscape(name)+'"'+(task.assignee===name?" selected":"")+'>'+checklistEscape(name||"By")+'</option>';
+        }).join("");
+        return '<div class="amfr-checklist-task '+(task.status==="done"?"done":"")+'" data-check-block="'+blockIndex+'" data-check-task="'+taskIndex+'">'+
+          '<input type="checkbox" aria-label="Complete task" '+(task.status==="done"?"checked":"")+'>'+
+          '<div class="amfr-checklist-text">'+checklistEscape(task.text)+'</div>'+
+          '<select class="amfr-checklist-assignee" aria-label="Assignee">'+options+'</select>'+
+          '<button class="amfr-checklist-status '+review+'" type="button">'+review+'</button></div>';
+      }).join("");
+      return '<section class="amfr-checklist-window"><header class="amfr-checklist-time"><span>'+checklistEscape(block.time)+'</span><span class="amfr-checklist-count">'+complete+"/"+block.tasks.length+" done</span></header>"+tasks+"</section>";
+    }).join("");
+    window.requestAnimationFrame(function(){ if (!root.hidden) syncYesterdayWeatherSlot(true); });
   }
   function disarmRosterReset() {
     var button=document.getElementById("amFloatingTodayRosterReset");
@@ -4377,7 +4584,7 @@
     if (!doc.getElementById("am-nws-three-day-style")) {
       var style = doc.createElement("style");
       style.id = "am-nws-three-day-style";
-      style.textContent = ".am-nws-three-day{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;border-top:1px solid #d7dee8;background:#d7dee8}.am-nws-three-day-item{min-width:0;padding:5px 6px;background:#fff;color:#24344d;text-align:left}.am-nws-three-day-item strong{display:block;color:#172033;font-size:10px;font-weight:950;text-transform:uppercase}.am-nws-three-day-item span{display:block;margin-top:2px;font-size:10px;font-weight:750;line-height:1.2}.am-nws-three-day-item b{color:#7c2d12}.am-nws-three-day-loading{grid-column:1/-1;padding:7px;background:#fff;color:#526177;font-size:10px;font-weight:800;text-align:center}";
+      style.textContent = ".am-nws-three-day{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;border-top:1px solid #d7dee8;background:#d7dee8}.am-nws-three-day-item{min-width:0;padding:5px 6px;background:#fff;color:#24344d;text-align:left}.am-nws-three-day-item strong{display:block;color:#172033;font-size:12px;font-weight:950;text-transform:uppercase}.am-nws-three-day-item span{display:block;margin-top:2px;font-size:12px;font-weight:750;line-height:1.2}.am-nws-three-day-item b{color:#7c2d12}.am-nws-three-day-loading{grid-column:1/-1;padding:7px;background:#fff;color:#526177;font-size:12px;font-weight:800;text-align:center}";
       doc.head.appendChild(style);
     }
     var panel = doc.createElement("section");
@@ -4610,6 +4817,12 @@
     try {
       var doc = frame.contentDocument;
       if (!doc) return;
+      if (!doc.getElementById("am-weather-text-plus-two")) {
+        var weatherTextStyle = doc.createElement("style");
+        weatherTextStyle.id = "am-weather-text-plus-two";
+        weatherTextStyle.textContent = ".am-weather-title strong{font-size:16px!important}.am-weather-title span{font-size:12px!important}.am-weather-metric b{font-size:15px!important}.am-weather-metric span{font-size:10px!important}.am-weather-alert,.am-weather-guidance{font-size:14px!important}.am-weather-foot{font-size:13px!important}@media(max-width:560px){.am-weather-title strong{font-size:15px!important}.am-weather-metric b{font-size:14px!important}.am-weather-metric span{font-size:9px!important}}";
+        doc.head.appendChild(weatherTextStyle);
+      }
       var nwsReady = installThreeDayNws(frame);
       installTodayFixedCopyRange(frame);
       if (doc.__amFloatingTodayRosterBound) return;
@@ -4669,6 +4882,39 @@
     var row = event.target.closest(".am-today-roster-row");
     if (row && !/no roster entries/i.test(row.textContent)) openRowQuickActions(row);
   });
+  checklistContent.addEventListener("change",function(event){
+    var row=event.target.closest("[data-check-block]");
+    if (!row) return;
+    var model=checklistContent._model||checklistRead();
+    var block=model.blocks[Number(row.dataset.checkBlock)];
+    var task=block&&block.tasks[Number(row.dataset.checkTask)];
+    if (!task) return;
+    if (event.target.matches('input[type="checkbox"]')) {
+      task.status=event.target.checked?"done":"pending";
+      task.stamp=event.target.checked?new Date().toLocaleTimeString([],{hour:"numeric",minute:"2-digit"}):"Pending";
+      if (!event.target.checked) task.reviewStatus=task.reviewStatus||"pending";
+      checklistLog(block.time,task,event.target.checked?"done":task.reviewStatus);
+    } else if (event.target.matches(".amfr-checklist-assignee")) {
+      task.assignee=event.target.value;
+    }
+    checklistSave(model);
+    renderChecklist();
+  });
+  checklistContent.addEventListener("click",function(event){
+    var button=event.target.closest(".amfr-checklist-status");
+    var row=event.target.closest("[data-check-block]");
+    if (!button||!row) return;
+    var model=checklistContent._model||checklistRead();
+    var block=model.blocks[Number(row.dataset.checkBlock)];
+    var task=block&&block.tasks[Number(row.dataset.checkTask)];
+    if (!task||task.status==="done") return;
+    var current=["missed","skipped"].indexOf(task.reviewStatus)>=0?task.reviewStatus:"pending";
+    task.reviewStatus=current==="pending"?"missed":current==="missed"?"skipped":"pending";
+    task.stamp=task.reviewStatus.charAt(0).toUpperCase()+task.reviewStatus.slice(1);
+    checklistLog(block.time,task,task.reviewStatus);
+    checklistSave(model);
+    renderChecklist();
+  });
   document.getElementById("amFloatingTodayRosterReset").addEventListener("click",function(){
     var button=this;
     if (Date.now() < resetArmedUntil) {
@@ -4702,7 +4948,8 @@
     document.body.classList.toggle("am-scw-third-column", Boolean(event.data.weather));
     scheduleHookFrames();
   });
-  window.addEventListener("storage", function(){
+  window.addEventListener("storage", function(event){
+    if (!event || [checklistKeys.state,checklistKeys.roles,checklistKeys.role].indexOf(event.key)>=0) renderChecklist();
     if (rosterWanted) scheduleOpenFloatingRoster(0);
   });
 
@@ -4710,6 +4957,7 @@
   handle.style.cursor = "default";
 
   new MutationObserver(scheduleHookFrames).observe(document.body, {childList:true, subtree:true});
+  renderChecklist();
   hookFrames();
   window.setTimeout(scheduleHookFrames, 250);
   scheduleOpenFloatingRoster(80);
@@ -5231,6 +5479,19 @@
 </scr${""}ipt>`;
       const bodyClose = html.toLowerCase().lastIndexOf("</body>");
       return bodyClose >= 0 ? html.slice(0, bodyClose) + patch + "\n" + html.slice(bodyClose) : html + patch;
+    }
+
+    function withExcelDarkerGreyBackground(html) {
+      if (!html || typeof html !== "string" || html.includes("excel-darker-grey-background-v1")) return html;
+      return html.replace(/<\/head>/i, `<style id="excel-darker-grey-background-v1">
+:root{--canvas:#d5dae1!important}
+.dashboard-panel .panel-head{background:var(--canvas)!important}
+.grid-wrap{background:#f8fafc!important}
+.cut-cell.empty{background:#f8fafc!important}
+#yardGrid .grid-head,#blankYardGridTwo .grid-head{background:#050505!important;border-bottom-color:#303030!important}
+#blankYardGrid .grid-head,#blankYardGridThree .grid-head{background:#b42318!important;border-bottom-color:#8f1c14!important}
+</style>
+</head>`);
     }
 
     function withExcelSelectionHighlight(html) {
@@ -6223,6 +6484,94 @@ function buildHourlyLiftLog(segs,activeKeys,rate,trainLabelMap,paceCtx){`
       return bodyClose >= 0 ? html.slice(0, bodyClose) + patch + "\n" + html.slice(bodyClose) : html + patch;
     }
 
+    function withLphCollapsibleControlSections(html) {
+      if (!html || typeof html !== "string" || html.includes("lph-collapsible-control-sections-v1")) return html;
+      const patch = `
+<style id="lph-collapsible-control-sections-v1">
+  .input-menu-slide::before{display:none!important;content:none!important}
+  .input-menu-section-toggle{width:100%;min-height:41px;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border:0;border-bottom:1px solid rgba(45,212,191,.28);border-radius:9px 9px 0 0;background:linear-gradient(90deg,rgba(15,118,110,.50),rgba(4,35,38,.97));color:#d5fffa;font:700 13px/1.15 var(--cond);letter-spacing:.09em;text-align:left;text-transform:uppercase;text-shadow:0 0 12px rgba(45,212,191,.28);cursor:pointer}
+  .input-menu-section-toggle::after{content:"−";flex:0 0 auto;color:#99f6e4;font:900 18px/1 var(--mono)}
+  .input-menu-section-toggle:hover,.input-menu-section-toggle:focus-visible{background:linear-gradient(90deg,rgba(20,184,166,.62),rgba(4,35,38,.97));outline:2px solid rgba(94,234,212,.72);outline-offset:-2px}
+  .input-menu-slide.is-collapsed{min-height:0!important;grid-template-rows:auto!important}
+  .input-menu-slide.is-collapsed>.sb-card{display:none!important}
+  .input-menu-slide.is-collapsed .input-menu-section-toggle{border-bottom:0;border-radius:9px}
+  .input-menu-slide.is-collapsed .input-menu-section-toggle::after{content:"+"}
+</style>
+<scr${""}ipt>
+(function(){
+  var track=document.getElementById("input-menu-track");if(!track)return;
+  var slides=Array.prototype.slice.call(track.querySelectorAll(".input-menu-slide"));
+  var storageKey="settegast-lph-input-collapsed-v1",collapsed=[];
+  try{collapsed=JSON.parse(localStorage.getItem(storageKey)||"[]");if(!Array.isArray(collapsed))collapsed=[]}catch(error){collapsed=[]}
+  function save(){try{localStorage.setItem(storageKey,JSON.stringify(collapsed))}catch(error){}}
+  slides.forEach(function(slide,index){
+    var card=slide.querySelector(".sb-card"),title=card&&card.dataset.inputMenuTitle||slide.dataset.stackTitle||"Control Module";
+    slide.dataset.stackTitle=title;
+    var toggle=document.createElement("button");toggle.type="button";toggle.className="input-menu-section-toggle";toggle.textContent=title;
+    var contentId="lph-input-section-"+index;if(card)card.id=contentId;toggle.setAttribute("aria-controls",contentId);
+    function apply(value){slide.classList.toggle("is-collapsed",value);toggle.setAttribute("aria-expanded",value?"false":"true")}
+    apply(collapsed.indexOf(title)>=0);
+    toggle.addEventListener("click",function(){apply(!slide.classList.contains("is-collapsed"));collapsed=slides.filter(function(item){return item.classList.contains("is-collapsed")}).map(function(item){return item.dataset.stackTitle});save()});
+    slide.insertBefore(toggle,card||slide.firstChild);
+  });
+})();
+</scr${""}ipt>`;
+      const bodyClose = html.toLowerCase().lastIndexOf("</body>");
+      return bodyClose >= 0 ? html.slice(0, bodyClose) + patch + "\n" + html.slice(bodyClose) : html + patch;
+    }
+
+    function withLphPreviousShiftHourlyRows(html) {
+      if (!html || typeof html !== "string" || html.includes("lph-previous-shift-hourly-rows-v1")) return html;
+      let patched = html
+        .replace(
+          ".liftlog-cell-time{width:78px;flex-shrink:0;}",
+          ".liftlog-cell-time{width:142px;flex-shrink:0;}"
+        )
+        .replace(
+          ".liftlog-row-time{color:var(--text2);font-weight:600;font-size:11px;}",
+          `.liftlog-row-time{color:var(--text2);font-weight:600;font-size:11px;}
+.liftlog-row-time.is-previous-shift{display:flex;align-items:center;gap:5px;white-space:nowrap;}
+.liftlog-previous-shift-tag{display:inline-flex;align-items:center;padding:1px 4px;border:1px solid rgba(245,158,11,.45);border-radius:3px;background:rgba(245,158,11,.1);color:var(--amber);font-size:7px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;}
+.liftlog-row.is-previous-shift{background:rgba(245,158,11,.035);}`
+        )
+        .replace(
+          "lunchLabels:bucket.lunchLabels||[],\n      realityAdjusted:true",
+          "lunchLabels:bucket.lunchLabels||[],\n      previousShift:!!bucket.previousShift,\n      realityAdjusted:true"
+        )
+        .replace(
+          "buckets.push({hour:h,total:total,detail:detail,sources:sources,lunchLabels:absorbedLunchLabels});",
+          "buckets.push({hour:h,total:total,detail:detail,sources:sources,lunchLabels:absorbedLunchLabels,previousShift:h<3});"
+        )
+        .replace(
+          "renderedBuckets.push({hour:h,total:total,detail:detail,sources:sources,isBreak:false,lunchLabels:absorbedLunchLabels});",
+          "renderedBuckets.push({hour:h,total:total,detail:detail,sources:sources,isBreak:false,lunchLabels:absorbedLunchLabels,previousShift:h<3});"
+        )
+        .replace(
+          "renderedBuckets.push({hour:h,total:0,detail:[],sources:[],isBreak:true,breakLabels:breakLabels,lunchLabels:absorbedLunchLabels});\n      }",
+          "renderedBuckets.push({hour:h,total:0,detail:[],sources:[],isBreak:true,breakLabels:breakLabels,lunchLabels:absorbedLunchLabels,previousShift:h<3});\n      } else if(h<3){\n        renderedBuckets.push({hour:h,total:0,detail:[],sources:[],isBreak:false,lunchLabels:absorbedLunchLabels,previousShift:true});\n      }"
+        )
+        .replace(
+          `'<div class="liftlog-row'+(b.isBreak?' is-break':'')+'">'+
+      '<div class="liftlog-row-time liftlog-cell-time">'+String(h).padStart(2,'0')+'00\\u2013'+String(h).padStart(2,'0')+'59</div>'+`,
+          `'<div class="liftlog-row'+(b.isBreak?' is-break':'')+(b.previousShift?' is-previous-shift':'')+'">'+
+      '<div class="liftlog-row-time liftlog-cell-time'+(b.previousShift?' is-previous-shift':'')+'">'+String(h).padStart(2,'0')+'00\\u2013'+String(h).padStart(2,'0')+'59'+(b.previousShift?'<span class="liftlog-previous-shift-tag">Previous Shift</span>':'')+'</div>'+`
+        );
+      return patched.replace(/<\/head>/i, '<meta name="lph-previous-shift-hourly-rows-v1" content="enabled">\n</head>');
+    }
+
+    function withExcelArrivalResolution(html) {
+      if (!html || typeof html !== "string" || html.includes("excel-arrival-resolution-v1")) return html;
+      let patched = html.replace(
+        'const arrival = firstHeaderIndex(h,["TIME IN DISP","ARRIVAL"]);',
+        'let arrival = firstHeaderIndex(h,["ARRIVAL"]);\n    if (arrival < 0) arrival = firstHeaderIndex(h,["TIME IN DISP"]);'
+      );
+      patched = patched.replace(
+        'group.train = clean(first[10]);\n      group.sampleArrival = parseMddhhmm(first[11], now);',
+        'group.train = group.rows.map(row => clean(row[10])).find(Boolean) || "";\n      group.sampleArrival = group.rows\n        .map(row => parseMddhhmm(row[11], now))\n        .find(date => date instanceof Date && !Number.isNaN(date.getTime())) || null;'
+      );
+      return patched.replace(/<\/head>/i, '<meta name="excel-arrival-resolution-v1" content="enabled">\n</head>');
+    }
+
     function withExcelFutureDwellProjection(html) {
       if (!html || typeof html !== "string" || html.includes("projectedDwellAtDeparture")) return html;
       const oldDisplayLogic = `      const record = nonSsByBlock.get(group.baseDisplay);
@@ -6831,6 +7180,30 @@ function buildHourlyLiftLog(segs,activeKeys,rate,trainLabelMap,paceCtx){`
       return patched;
     }
 
+    function withLphCompactHourlyLog(html) {
+      if (!html || typeof html !== "string" || html.includes("lph-compact-hourly-log-v1")) return html;
+      const patch = `
+<style id="lph-compact-hourly-log-v1">
+.liftlog-summary-bar{gap:8px!important;padding:10px!important;margin-bottom:10px!important}
+.liftlog-summary-stat{gap:3px!important;padding:3px 9px!important}
+.liftlog-summary-icon{width:18px!important;height:18px!important;border-radius:5px!important}
+.liftlog-summary-label-row{gap:4px!important}
+.liftlog-summary-label{font-size:9px!important;letter-spacing:.1em!important}
+.liftlog-summary-val{font-size:21px!important}
+.liftlog-summary-val .unit{font-size:10px!important;margin-left:4px!important}
+.liftlog-summary-sub{font-size:9px!important;letter-spacing:.03em!important}
+.liftlog-table-head{gap:10px!important;padding:5px 6px!important;margin-bottom:1px!important}
+.liftlog-row{gap:10px!important;padding:3px 6px!important;height:34px!important;min-height:34px!important;max-height:34px!important}
+.liftlog-actual-input{width:50px!important;height:24px!important;line-height:22px!important;font-size:11px!important;padding:0 5px!important}
+.liftlog-src-select{height:22px!important;line-height:20px!important;font-size:10px!important;padding:0 20px 0 5px!important}
+.liftlog-worktype-row{height:24px!important;gap:3px!important}
+.liftlog-src-add{width:20px!important;height:20px!important}
+.liftlog-note-btn{width:24px!important;height:24px!important;border-radius:5px!important}
+</style>`;
+      const headClose = html.toLowerCase().lastIndexOf("</head>");
+      return headClose >= 0 ? html.slice(0, headClose) + patch + "\n" + html.slice(headClose) : html + patch;
+    }
+
     function withLphResetConfirmation(html) {
       if (!html || typeof html !== "string" || html.includes("function requestResetLeftInputs(")) return html;
       const confirmationCode = `
@@ -6943,8 +7316,8 @@ document.addEventListener('click',function(event){
   .fourth-ramp-separator.table-visible{background:#cbd5e1!important}
   .fourth-ramp-separator .blank-grid-title{color:#12233e!important}
   .fourth-ramp-grid[hidden]{display:none!important}
-  .fourth-ramp-grid .grid-head{background:#050505!important;color:#fff!important;border-color:#303030!important}
-  .fourth-ramp-grid .grid-head-button{border-color:#777!important;background:#181818!important;color:#fff!important}
+  .fourth-ramp-grid .grid-head{background:#b42318!important;color:#fff!important;border-color:#8f1c14!important}
+  .fourth-ramp-grid .grid-head-button{border-color:#f8d568!important;background:#fff3bd!important;color:#7c2d12!important}
 </style>`;
       const headClose = patched.toLowerCase().indexOf("</head>");
       return headClose >= 0 ? patched.slice(0, headClose) + styles + "\n" + patched.slice(headClose) : styles + patched;
@@ -7599,6 +7972,7 @@ document.addEventListener('click',function(event){
     let matrixControlsNav = null;
     let matrixMenuButton = null;
     let reportMenuButton = null;
+    let excelLphMenuButton = null;
     let pearlMenuButton = null;
     let scwLoadTimer = 0;
     function pageFromHash() {
@@ -8366,7 +8740,7 @@ const classifyForecastDayHeadings = () => {
   document.querySelectorAll("#forecastStatusCards .forecast-day-section").forEach(section => {
     const heading = section.querySelector(".forecast-day-divider > div:first-child strong");
     if (!heading) return;
-    const hasShortage = hasForecastProjectedDeficitThroughDay(section.dataset.forecastDropDay);
+    const hasShortage = Boolean(section.querySelector(".forecast-quadrant-status.short"));
     heading.classList.add("forecast-day-status-pill");
     heading.classList.toggle("forecast-day-status-alert", hasShortage);
     heading.classList.toggle("forecast-day-status-clear", !hasShortage);
@@ -9277,17 +9651,22 @@ setInterval(function(){
           pageHtml = withLphMidnightPreshiftMetrics(pageHtml);
           pageHtml = withLphReleaseAnalysisPopup(pageHtml);
           pageHtml = withLphControlStack(pageHtml);
+          pageHtml = withLphCollapsibleControlSections(pageHtml);
+          pageHtml = withLphPreviousShiftHourlyRows(pageHtml);
           pageHtml = withLphCarryOverShiftStart(pageHtml);
           pageHtml = withLphInboundCountSelection(pageHtml);
           pageHtml = withLphOperationsGuide(pageHtml);
           pageHtml = withLphResetConfirmation(pageHtml);
+          pageHtml = withLphCompactHourlyLog(pageHtml);
         }
         if (id === "roster") pageHtml = withSchedulePersistence(pageHtml);
         if (id === "pearl") pageHtml = withPearlScheduleDashboard(withPearlToolbarGroups(withPearlAlertMeterControl(pageHtml)));
         if (id === "excelView") {
+          pageHtml = withExcelDarkerGreyBackground(pageHtml);
           pageHtml = withExcelCurrentRosterSnapshotParity(pageHtml);
           pageHtml = withExcelSelectionHighlight(pageHtml);
           pageHtml = withExcelToolbarGroups(pageHtml);
+          pageHtml = withExcelArrivalResolution(pageHtml);
           pageHtml = withExcelFutureDwellProjection(pageHtml);
           pageHtml = withExcelLphInputMenuSource(pageHtml);
           pageHtml = withExcelSecondaryTableClearControls(pageHtml);
@@ -9417,6 +9796,7 @@ setInterval(function(){
         button.classList.toggle("active", button.dataset.page === activePage);
       });
       if (reportMenuButton) reportMenuButton.classList.toggle("active", ["amReport", "chassisStatus"].includes(activePage));
+      if (excelLphMenuButton) excelLphMenuButton.classList.toggle("active", ["excelView", "lphTracker"].includes(activePage));
       if (matrixMenuButton) matrixMenuButton.classList.toggle("active", ["matrix", "matrixWide"].includes(activePage));
       if (pearlMenuButton) pearlMenuButton.classList.toggle("active", ["pearl", "pearlBrowser"].includes(activePage));
       amReportActions.hidden = activePage !== "amReport";
@@ -9727,6 +10107,41 @@ setInterval(function(){
         return;
       }
       if (id === "chassisStatus") return;
+      if (id === "excelView") {
+        const group = document.createElement("div");
+        group.className = "matrix-nav-group excel-lph-nav-group";
+        excelLphMenuButton = document.createElement("button");
+        excelLphMenuButton.type = "button";
+        excelLphMenuButton.textContent = "Excel / LPH Tracker";
+        excelLphMenuButton.setAttribute("aria-haspopup", "menu");
+        excelLphMenuButton.setAttribute("aria-expanded", "false");
+        const menu = document.createElement("div");
+        menu.className = "matrix-nav-menu excel-lph-nav-menu";
+        menu.setAttribute("role", "menu");
+        [["excelView", "Excel View"], ["lphTracker", "LPH Tracker"]].forEach(([pageId, label]) => {
+          if (!pages[pageId]) return;
+          const option = document.createElement("button");
+          option.type = "button";
+          option.dataset.page = pageId;
+          option.textContent = label;
+          option.setAttribute("role", "menuitem");
+          option.addEventListener("click", () => {
+            group.classList.remove("open");
+            excelLphMenuButton.setAttribute("aria-expanded", "false");
+            option.blur();
+            selectPage(pageId);
+          });
+          menu.appendChild(option);
+        });
+        excelLphMenuButton.addEventListener("click", () => {
+          const open = group.classList.toggle("open");
+          excelLphMenuButton.setAttribute("aria-expanded", String(open));
+        });
+        group.append(excelLphMenuButton, menu);
+        tabs.appendChild(group);
+        return;
+      }
+      if (id === "lphTracker") return;
       if (id === "matrix") {
         tabs.appendChild(matrixControlsNav);
         const group = document.createElement("div");
@@ -9810,7 +10225,7 @@ setInterval(function(){
       tabs.appendChild(button);
     });
     document.addEventListener("click", (event) => {
-      [reportMenuButton, matrixMenuButton, pearlMenuButton].forEach((menuButton) => {
+      [reportMenuButton, excelLphMenuButton, matrixMenuButton, pearlMenuButton].forEach((menuButton) => {
         const group = menuButton && menuButton.closest(".matrix-nav-group");
         if (!group || group.contains(event.target)) return;
         group.classList.remove("open");
