@@ -5414,6 +5414,41 @@
       return headClose >= 0 ? html.slice(0, headClose) + patch + "\n" + html.slice(headClose) : patch + html;
     }
 
+    function withBillingArchiveIndexedDb(html) {
+      if (!html || typeof html !== "string" || html.includes("conglobal-billing-archive-indexeddb-v1")) return html;
+      const marker = '<meta name="conglobal-billing-archive-indexeddb-v1" content="enabled">';
+      const updated = html
+        .replace(
+          '    function readTimesheetArchive() {\n      try {',
+          `    async function readTimesheetArchive() {
+      if (window.indexedDB) {
+        try {
+          const database = await new Promise((resolve, reject) => {
+            const request = indexedDB.open("conglobal-timesheet-archive-db-v1", 1);
+            request.onupgradeneeded = () => {
+              if (!request.result.objectStoreNames.contains("archive")) request.result.createObjectStore("archive");
+            };
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+          });
+          const indexedArchive = await new Promise((resolve, reject) => {
+            const request = database.transaction("archive", "readonly").objectStore("archive").get("main");
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+          });
+          if (indexedArchive && typeof indexedArchive === "object" && !Array.isArray(indexedArchive)) return indexedArchive;
+        } catch (error) {}
+      }
+      try {`
+        )
+        .replace(
+          '    function importTimeFromArchive() {\n      const archive = readTimesheetArchive();',
+          '    async function importTimeFromArchive() {\n      const archive = await readTimesheetArchive();'
+        );
+      const headClose = updated.toLowerCase().indexOf("</head>");
+      return headClose >= 0 ? updated.slice(0, headClose) + marker + "\n" + updated.slice(headClose) : marker + updated;
+    }
+
     function withAmReportMeaningfulThunderThreshold(html) {
       if (!html || typeof html !== "string") return html;
       return html.replaceAll(
@@ -6781,6 +6816,45 @@ function renderTimeMap(elId, buckets, opts){`
         'group.train = clean(first[10]);\n      group.sampleArrival = parseMddhhmm(first[11], now);',
         'group.train = group.rows.map(row => clean(row[10])).find(Boolean) || "";\n      group.sampleArrival = group.rows\n        .map(row => parseMddhhmm(row[11], now))\n        .find(date => date instanceof Date && !Number.isNaN(date.getTime())) || null;'
       );
+      patched = patched.replace(
+        'let arrival = firstHeaderIndex(h,["ARRIVAL"]);\n    if (arrival < 0) arrival = firstHeaderIndex(h,["TIME IN DISP"]);',
+        'let arrival = firstHeaderIndex(h,[/^(ARRIVAL|ARRIVAL TIME|ARRIVAL DATE|ETA|EST ARRIVAL)$/]);\n    if (arrival < 0) arrival = firstHeaderIndex(h,[/^(TIME IN|TIME IN DISP)$/]);'
+      );
+      patched = patched.replace(
+        /function parseMddhhmm\(value, reference = new Date\(\)\) \{[\s\S]*?\n  \}\n\n  function hoursBetween/,
+        `function parseMddhhmm(value, reference = new Date()) {
+    if (value instanceof Date && !Number.isNaN(value.getTime())) return new Date(value.getTime());
+    const raw = clean(value);
+    if (!raw) return null;
+    const serialDate = typeof excelSerialToDate === "function" ? excelSerialToDate(raw) : null;
+    if (serialDate) return serialDate;
+    if (/[-/:T]/.test(raw)) {
+      const parsed = new Date(raw);
+      if (!Number.isNaN(parsed.getTime())) return parsed;
+    }
+    const digits = raw.replace(/\\D/g, "");
+    if (!digits || Number(digits) === 0) return null;
+    let month, day, hour, minute;
+    if (digits.length === 7) {
+      month = Number(digits.slice(0,1));
+      day = Number(digits.slice(1,3));
+      hour = Number(digits.slice(3,5));
+      minute = Number(digits.slice(5,7));
+    } else if (digits.length === 8) {
+      month = Number(digits.slice(0,2));
+      day = Number(digits.slice(2,4));
+      hour = Number(digits.slice(4,6));
+      minute = Number(digits.slice(6,8));
+    } else {
+      return null;
+    }
+    const d = new Date(reference.getFullYear(), month-1, day, hour, minute, 0, 0);
+    if (d.getMonth() !== month-1 || d.getDate() !== day || d.getHours() !== hour || d.getMinutes() !== minute) return null;
+    return d;
+  }
+
+  function hoursBetween`
+      );
       return patched.replace(/<\/head>/i, '<meta name="excel-arrival-resolution-v1" content="enabled">\n</head>');
     }
 
@@ -7230,10 +7304,151 @@ function renderTimeMap(elId, buckets, opts){`
       });
       return conglobalArchiveXlsxPromise;
     }
+    const conglobalArchiveSheetRows = archiveSheetRows;
+    archiveSheetRows = function(workbook, sheetName) {
+      const embeddedRows = workbook && workbook.Sheets && workbook.Sheets[sheetName] && workbook.Sheets[sheetName].__conglobalRows;
+      if (Array.isArray(embeddedRows)) return embeddedRows;
+      return conglobalArchiveSheetRows(workbook, sheetName);
+    };
+    async function readArchiveImportWorkbook(file, preparedBuffer) {
+      const name = String(file && file.name || "").toLowerCase();
+      if (/\\.html?$/.test(name)) {
+        const text = new TextDecoder().decode(preparedBuffer || await file.arrayBuffer());
+        const doc = new DOMParser().parseFromString(text, "text/html");
+        const rows = Array.from(doc.querySelectorAll("tr")).map((tr) =>
+          Array.from(tr.querySelectorAll("th,td")).map((cell) => String(cell.textContent || "").replace(/\\s+/g, " ").trim())
+        ).filter((row) => row.some(Boolean));
+        return { SheetNames: ["Imported HTML"], Sheets: { "Imported HTML": { __conglobalRows: rows } } };
+      }
+      return readArchiveWorkbook(preparedBuffer || await file.arrayBuffer());
+    }
 `;
-      return html
-        .replace('    async function importArchiveTimesheetFiles(event) {', loader + '\n    async function importArchiveTimesheetFiles(event) {')
-        .replace('      if (!window.XLSX) {\n        setArchiveMessage("XLSX parser unavailable");\n        return;\n      }', '      setArchiveMessage("Preparing mass import...");\n      try {\n        await ensureArchiveXlsxParser();\n      } catch (error) {\n        setArchiveMessage(error.message);\n        return;\n      }');
+      const normalizedHtml = html.replace(/\r\n?/g, "\n");
+      return normalizedHtml
+        .replace(/    async function importArchiveTimesheetFiles\(event\)\s*\{/,
+          loader + '\n    async function importArchiveTimesheetFiles(event) {')
+        .replace('      const files = Array.from(event.target.files || []);\n      event.target.value = "";',
+          '      const files = Array.from(event.target.files || []);')
+        .replace('      if (!files.length) return;\n      if (!window.XLSX) {',
+          '      if (!files.length) return;\n      setArchiveMessage("Reading " + files.length + " selected timesheet" + (files.length === 1 ? "" : "s") + "...");\n      let preparedFiles;\n      try {\n        preparedFiles = await Promise.all(files.map(async (file) => ({ file, buffer: await file.arrayBuffer() })));\n      } catch (error) {\n        setArchiveMessage("Unable to read the selected files: " + error.message);\n        event.target.value = "";\n        return;\n      }\n      event.target.value = "";\n      if (!window.XLSX) {')
+        .replace('      for (const file of files) {\n        try {',
+          '      for (let fileIndex = 0; fileIndex < preparedFiles.length; fileIndex += 1) {\n        const prepared = preparedFiles[fileIndex];\n        const file = prepared.file;\n        try {\n          setArchiveMessage("Importing " + (fileIndex + 1) + " of " + preparedFiles.length + ": " + file.name);\n          await new Promise((resolve) => setTimeout(resolve, 0));')
+        .replace(/          const workbook = readArchiveWorkbook\(await file\.arrayBuffer\(\)\);/,
+          '          const workbook = await readArchiveImportWorkbook(file, prepared.buffer);')
+        .replace('      if (imported) {\n        writeArchive(archive);\n        const selected = dateFromKey(selectedDateKey);\n        viewDate = new Date(selected.getFullYear(), selected.getMonth(), 1);\n        renderCalendar();\n      }',
+          '      if (imported) {\n        setArchiveMessage("Saving " + imported + " imported timesheet" + (imported === 1 ? "" : "s") + "...");\n        await new Promise((resolve) => setTimeout(resolve, 0));\n        try {\n          await writeArchive(archive);\n        } catch (error) {\n          setArchiveMessage("Import parsed successfully but could not be saved: " + error.message);\n          return;\n        }\n        await new Promise((resolve) => setTimeout(resolve, 0));\n        const selected = dateFromKey(selectedDateKey);\n        viewDate = new Date(selected.getFullYear(), selected.getMonth(), 1);\n        try {\n          renderCalendar();\n        } catch (error) {\n          setArchiveMessage("Import saved, but the calendar could not refresh: " + error.message);\n          return;\n        }\n      }')
+        .replace(/      if \(!window\.XLSX\) \{\s*setArchiveMessage\("XLSX parser unavailable"\);\s*return;\s*\}/,
+          '      setArchiveMessage("Preparing mass import...");\n      try {\n        await ensureArchiveXlsxParser();\n      } catch (error) {\n        setArchiveMessage(error.message);\n        return;\n      }');
+    }
+
+    function withArchiveIndexedDbPersistence(html) {
+      if (!html || typeof html !== "string" || html.includes('const archiveDbName = "conglobal-timesheet-archive-db-v1"')) return html;
+      const storage = `
+    const archiveDbName = "conglobal-timesheet-archive-db-v1";
+    const archiveDbStoreName = "archive";
+    const archiveDbRecordKey = "main";
+    let archiveMemoryCache = null;
+    let archiveDbPromise = null;
+    let archiveWriteQueue = Promise.resolve();
+
+    function readLegacyArchive() {
+      try {
+        const archive = JSON.parse(localStorage.getItem(archiveStorageKey) || "{}");
+        return archive && typeof archive === "object" && !Array.isArray(archive) ? archive : {};
+      } catch (error) {
+        localStorage.removeItem(archiveStorageKey);
+        return {};
+      }
+    }
+
+    function readArchive() {
+      if (!archiveMemoryCache) archiveMemoryCache = readLegacyArchive();
+      return archiveMemoryCache;
+    }
+
+    function openArchiveDb() {
+      if (!window.indexedDB) return Promise.reject(new Error("This browser does not support large archive storage."));
+      if (archiveDbPromise) return archiveDbPromise;
+      archiveDbPromise = new Promise((resolve, reject) => {
+        const request = indexedDB.open(archiveDbName, 1);
+        request.onupgradeneeded = () => {
+          if (!request.result.objectStoreNames.contains(archiveDbStoreName)) request.result.createObjectStore(archiveDbStoreName);
+        };
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error || new Error("Timesheet archive storage could not be opened."));
+      });
+      return archiveDbPromise;
+    }
+
+    async function loadArchiveFromIndexedDb() {
+      const db = await openArchiveDb();
+      return new Promise((resolve, reject) => {
+        const transaction = db.transaction(archiveDbStoreName, "readonly");
+        const request = transaction.objectStore(archiveDbStoreName).get(archiveDbRecordKey);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error || new Error("Timesheet archive could not be read."));
+      });
+    }
+
+    async function saveArchiveToIndexedDb(archive) {
+      const db = await openArchiveDb();
+      return new Promise((resolve, reject) => {
+        const transaction = db.transaction(archiveDbStoreName, "readwrite");
+        transaction.oncomplete = () => resolve();
+        transaction.onerror = () => reject(transaction.error || new Error("Timesheet archive could not be saved."));
+        transaction.onabort = () => reject(transaction.error || new Error("Timesheet archive save was interrupted."));
+        transaction.objectStore(archiveDbStoreName).put(archive, archiveDbRecordKey);
+      });
+    }
+
+    function writeArchive(archive) {
+      archiveMemoryCache = archive && typeof archive === "object" && !Array.isArray(archive) ? archive : {};
+      const snapshot = structuredClone(archiveMemoryCache);
+      archiveWriteQueue = archiveWriteQueue
+        .catch(() => {})
+        .then(() => saveArchiveToIndexedDb(snapshot))
+        .then(() => localStorage.removeItem(archiveStorageKey));
+      return archiveWriteQueue;
+    }
+
+    async function initializeArchiveStorage() {
+      const legacyArchive = readArchive();
+      try {
+        const storedArchive = await loadArchiveFromIndexedDb();
+        if (storedArchive && typeof storedArchive === "object" && !Array.isArray(storedArchive)) {
+          archiveMemoryCache = storedArchive;
+        } else if (Object.keys(legacyArchive).length) {
+          await saveArchiveToIndexedDb(structuredClone(legacyArchive));
+          localStorage.removeItem(archiveStorageKey);
+        }
+        renderCalendar();
+      } catch (error) {
+        setArchiveMessage("Archive storage warning: " + error.message);
+      }
+    }
+`;
+      const normalizedHtml = html.replace(/\r\n?/g, "\n");
+      return normalizedHtml
+        .replace(
+          /    function readArchive\(\) \{[\s\S]*?    function writeArchive\(archive\) \{\n      localStorage\.setItem\(archiveStorageKey, JSON\.stringify\(archive\)\);\n    \}/,
+          storage.trimEnd()
+        )
+        .replace(
+          '        <span class="save-message" id="saveMessage"></span>\n      </div>\n    </header>',
+          '      </div>\n    </header>'
+        )
+        .replace(
+          '    <section class="calendar-grid" id="calendarGrid" aria-label="Timesheet archive calendar"></section>',
+          '    <section class="calendar-grid" id="calendarGrid" aria-label="Timesheet archive calendar"></section>\n    <footer class="archive-status-footer" aria-live="polite"><span class="save-message" id="saveMessage"></span></footer>'
+        )
+        .replace(
+          '    .archive-file-input {',
+          '    .archive-status-footer { min-height: 30px; display: flex; align-items: center; padding: 6px 14px 10px; }\n\n    .archive-file-input {'
+        )
+        .replace(
+          '    document.getElementById("archiveDate").value = selectedDateKey;\n    renderCalendar();',
+          '    document.getElementById("archiveDate").value = selectedDateKey;\n    renderCalendar();\n    initializeArchiveStorage();'
+        );
     }
 
     function withLphCarryOverShiftStart(html) {
@@ -8102,6 +8317,42 @@ document.addEventListener('click',function(event){
       return headClose >= 0 ? html.slice(0, headClose) + patch + "\n" + html.slice(headClose) : patch + html;
     }
 
+    function withChassisForecastPersistence(html) {
+      if (!html || typeof html !== "string" || html.includes("chassis-forecast-parent-persistence-v1")) return html;
+      // Chassis Status is loaded as an iframe srcdoc. In browsers that give srcdoc
+      // an opaque origin, its localStorage is unavailable and imported Excel rows
+      // disappear when the frame is recreated. Keep the authoritative copy in the
+      // workbook shell and rehydrate the frame on every load.
+      const stateRead = '(function(){try{if(window.__CONGLOBAL_CHASSIS_FORECAST_STATE__&&typeof window.__CONGLOBAL_CHASSIS_FORECAST_STATE__==="object")return window.__CONGLOBAL_CHASSIS_FORECAST_STATE__;return JSON.parse(localStorage.getItem("chassisForecastReport")||"{}")}catch(e){return window.__CONGLOBAL_CHASSIS_FORECAST_STATE__&&typeof window.__CONGLOBAL_CHASSIS_FORECAST_STATE__==="object"?window.__CONGLOBAL_CHASSIS_FORECAST_STATE__:{}}})()';
+      const stateWrite = 'try{localStorage.setItem("chassisForecastReport",JSON.stringify(state))}catch(e){}try{window.__CONGLOBAL_CHASSIS_FORECAST_STATE__=state}catch(e){}try{if(window.parent&&window.parent!==window)window.parent.postMessage({type:"conglobal-chassis-forecast-state-save",state:state},"*")}catch(e){}';
+      const clearWrite = 'try{localStorage.removeItem("chassisForecastReport")}catch(e){}try{window.__CONGLOBAL_CHASSIS_FORECAST_STATE__={}}catch(e){}try{if(window.parent&&window.parent!==window)window.parent.postMessage({type:"conglobal-chassis-forecast-state-clear"},"*")}catch(e){}';
+      let patched = html
+        .replace(/return JSON\.parse\(localStorage\.getItem\("chassisForecastReport"\)\|\|"\{\}"\);/,
+          `return (${stateRead});`)
+        .replace(/localStorage\.setItem\("chassisForecastReport",JSON\.stringify\(state\)\);/,
+          stateWrite)
+        .replace(/localStorage\.removeItem\("chassisForecastReport"\);/,
+          clearWrite);
+      const patch = `
+<scr${""}ipt id="chassis-forecast-parent-persistence-v1">
+(function(){
+  function redraw(){
+    try{if(typeof loadForecastState==="function")loadForecastState();}catch(e){}
+    ["renderForecast","renderForecastImportedUnits","renderForecastOnHandChassis","renderForecastRequestHistoryPreview","renderForecastArchiveList"].forEach(function(name){try{if(typeof window[name]==="function")window[name]();}catch(e){}});
+  }
+  window.addEventListener("message",function(event){
+    var data=event.data||{};
+    if(event.source!==window.parent||data.type!=="conglobal-chassis-forecast-state")return;
+    window.__CONGLOBAL_CHASSIS_FORECAST_STATE__=data.state&&typeof data.state==="object"?data.state:{};
+    redraw();
+  });
+  try{if(window.parent&&window.parent!==window)window.parent.postMessage({type:"conglobal-chassis-forecast-state-request"},"*")}catch(e){}
+})();
+</scr${""}ipt>`;
+      const bodyClose = patched.toLowerCase().lastIndexOf("</body>");
+      return bodyClose >= 0 ? patched.slice(0, bodyClose) + patch + "\n" + patched.slice(bodyClose) : patched + patch;
+    }
+
     function withChassisClearConfirmation(html) {
       if (!html || typeof html !== "string" || html.includes("chassis-clear-confirmation-v1")) return html;
       const patch = `
@@ -8754,7 +9005,7 @@ document.addEventListener('click',function(event){
 <style id="chassis-forecast-supply-warnings-v1">
   #forecastExcelView .forecast-supply-shortage-mark {
     position: absolute;
-    right: 5px;
+    left: calc(50% + .65em);
     top: 50%;
     display: inline-flex;
     align-items: center;
@@ -8762,12 +9013,18 @@ document.addEventListener('click',function(event){
     margin: 0;
     color: #ef0000 !important;
     font-family: Arial, Helvetica, sans-serif;
-    font-size: .92em;
+    width: .8em;
+    height: 1em;
+    font-size: .8em;
     font-weight: 1000;
     line-height: 1;
     text-shadow: 0 0 1px #ffffff, 0 0 2px rgba(239, 0, 0, .35) !important;
     transform: translateY(-50%);
     pointer-events: none;
+    white-space: nowrap;
+  }
+  #forecastExcelView .forecast-supply-shortage .forecast-excel-cell-content {
+    gap: 0;
   }
   #forecastExcelView td.forecast-supply-shortage,
   #forecastExcelView th.forecast-supply-shortage {
@@ -9807,7 +10064,7 @@ setInterval(function(){
   scheduleGrid.className="schedule-grid";
   scheduleGrid.id="pearlScheduleGrid";
   scheduleGrid.setAttribute("aria-label","Automatic retrieval schedule");
-  scheduleGrid.innerHTML='<article class="schedule-card"><div class="schedule-head"><strong>Mismatch retrieval</strong><span class="schedule-state" id="mismatchScheduleState">Checking</span></div><p class="schedule-detail">10 scheduled checks daily: 1:00, 3:00, 6:00, 9:00, 11:00 AM; 1:00, 3:00, 6:00, 9:00, 11:00 PM.</p><div class="schedule-next"><div><span>Next check in</span><b id="mismatchCountdown">--:--:--</b></div><time id="mismatchNextTime">Waiting for extension</time></div></article><article class="schedule-card"><div class="schedule-head"><strong>AlertMeter retrieval</strong><span class="schedule-state" id="alertMeterScheduleState">Checking</span></div><p class="schedule-detail">Checks every 30 minutes. Below 100% participation, the no-test list is filtered and pushed as a screenshot.</p><div class="schedule-next"><div><span>Next check in</span><b id="alertMeterCountdown">--:--:--</b></div><time id="alertMeterNextTime">Waiting for extension</time></div></article>';
+  scheduleGrid.innerHTML='<article class="schedule-card"><div class="schedule-head"><strong>Mismatch retrieval</strong><span class="schedule-state" id="mismatchScheduleState">Checking</span></div><p class="schedule-detail">10 scheduled checks daily: 1:00, 3:00, 6:00, 9:00, 11:00 AM; 1:00, 3:00, 6:00, 9:00, 11:00 PM.</p><div class="schedule-next"><div><span>Next check in</span><b id="mismatchCountdown">--:--:--</b></div><time id="mismatchNextTime">Waiting for extension</time></div></article><article class="schedule-card"><div class="schedule-head"><strong>AlertMeter retrieval</strong><span class="schedule-state" id="alertMeterScheduleState">Checking</span></div><p class="schedule-detail">Runs at 3:45 AM, 10:30 AM, 3:45 PM, and 8:00 PM. Every scheduled run captures and pushes a screenshot.</p><div class="schedule-next"><div><span>Next check in</span><b id="alertMeterCountdown">--:--:--</b></div><time id="alertMeterNextTime">Waiting for extension</time></div></article>';
   statusGrid.insertAdjacentElement("afterend",scheduleGrid);
   var latestSchedule=null;
   function countdown(timestamp){
@@ -9856,7 +10113,7 @@ setInterval(function(){
         }
         if (id === "timeMd") pageHtml = withTimeMdResponsiveWidth(pageHtml);
         if (id === "timeOff") pageHtml = withTimeOffCurrentRosterSnapshot(withTimeOffCameInActions(withTimeOffMonthlyWeeklyStyle(pageHtml)));
-        if (id === "billing") pageHtml = withBillingHeaderRemoved(pageHtml);
+        if (id === "billing") pageHtml = withBillingArchiveIndexedDb(withBillingHeaderRemoved(pageHtml));
         if (id === "lphTracker") {
           pageHtml = withLphLunchDuringDowntime(pageHtml);
           pageHtml = withLphLunchTimeMapLabels(pageHtml);
@@ -9897,6 +10154,7 @@ setInterval(function(){
           pageHtml = withExcelAfternoonMeeting(pageHtml);
         }
         if (id === "chassisStatus") {
+          pageHtml = withChassisForecastPersistence(pageHtml);
           pageHtml = withChassisDifferenceToggleRemoved(pageHtml);
           pageHtml = withChassisFloatingEditorEnhancements(pageHtml);
           pageHtml = withChassisFlatPoolSummary(pageHtml);
@@ -10117,7 +10375,7 @@ setInterval(function(){
       document.body.appendChild(containedPopup);
       const panel = containedPopup.querySelector("#containedPopupPanel");
       const iframe = containedPopup.querySelector("iframe");
-      const popupHtml = pageId === "archive" ? withArchiveMassImportFix(page.html) : page.html;
+      const popupHtml = pageId === "archive" ? withArchiveIndexedDbPersistence(withArchiveMassImportFix(page.html)) : page.html;
       iframe.srcdoc = withWorkbookSyncBridge(popupHtml);
       containedPopup.querySelector("#closeContainedPopup").addEventListener("click", closeContainedPopup);
       if (!floating) {
@@ -10205,7 +10463,7 @@ setInterval(function(){
           pageId,
           title,
           html: pageId === "archive"
-            ? withArchiveMassImportFix(page.html)
+            ? withArchiveIndexedDbPersistence(withArchiveMassImportFix(page.html))
             : pageId === "timeOff" ? withTimeOffCurrentRosterSnapshot(withTimeOffCameInActions(withTimeOffMonthlyWeeklyStyle(page.html))) : page.html,
           background: options.background || "#f8fafc"
         }, "*");
@@ -10562,6 +10820,27 @@ setInterval(function(){
     excelFrame.addEventListener("load", handleWorkbookFrameLoad);
     window.addEventListener("resize", () => resizeFrame(frame));
     window.addEventListener("message", (event) => {
+      if (event.data && event.data.type === "conglobal-chassis-forecast-state-request" && event.source === chassisFrame.contentWindow) {
+        let state = {};
+        try {
+          const raw = localStorage.getItem("chassisForecastReport");
+          const parsed = raw ? JSON.parse(raw) : {};
+          if (parsed && typeof parsed === "object") state = parsed;
+        } catch (error) {}
+        event.source.postMessage({ type: "conglobal-chassis-forecast-state", state }, "*");
+        return;
+      }
+      if (event.data && event.data.type === "conglobal-chassis-forecast-state-save" && event.source === chassisFrame.contentWindow) {
+        try {
+          const state = event.data.state && typeof event.data.state === "object" ? event.data.state : {};
+          localStorage.setItem("chassisForecastReport", JSON.stringify(state));
+        } catch (error) {}
+        return;
+      }
+      if (event.data && event.data.type === "conglobal-chassis-forecast-state-clear" && event.source === chassisFrame.contentWindow) {
+        try { localStorage.removeItem("chassisForecastReport"); } catch (error) {}
+        return;
+      }
       if (event.data && event.data.type === "conglobal-local-storage-mutated") {
         scheduleWorkbookSupabasePush(event.data.action || event.data.key || "child-save");
         return;

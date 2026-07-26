@@ -3,12 +3,14 @@ const MISMATCH_ALARM_NAME = 'settegast-mismatch-schedule';
 const ALERTMETER_ALARM_NAME = 'settegast-alertmeter-schedule';
 const COMMAND_POLL_ALARM_NAME = 'settegast-command-poll';
 const MISMATCH_TIMES = ['0100', '0300', '0600', '0900', '1100', '1300', '1500', '1800', '2100', '2300'];
-const ALERTMETER_INTERVAL_MINUTES = 30;
+const ALERTMETER_TIMES = ['0345', '1030', '1545', '2000'];
 const UP_ROOT = 'https://employees.www.uprr.com/';
 const DEFAULT_PAGE = 'https://employees.www.uprr.com/tos/secure/jas/mismatchedEquipmentPage.jas?wicket:pageMapName=wicket-0';
 let exportInProgress = false;
 let lastStartedAt = 0;
+let exportStartedAt = 0;
 let commandPollInProgress = false;
+const EXPORT_LOCK_TIMEOUT_MS = 90000;
 
 function resemblesMismatchUrl(tab) {
   const url = String(tab?.url || '');
@@ -191,10 +193,15 @@ async function chooseOrOpenPage() {
 }
 
 async function runExport(source = 'manual') {
-  if (exportInProgress) throw new Error('An export is already running.');
+  if (exportInProgress && Date.now() - exportStartedAt >= EXPORT_LOCK_TIMEOUT_MS) {
+    exportInProgress = false;
+    exportStartedAt = 0;
+  }
+  if (exportInProgress) throw new Error('The UP page is still being refreshed for an export. Try again shortly.');
   if (Date.now() - lastStartedAt < 60000) throw new Error('An export was already started within the last minute.');
   exportInProgress = true;
   lastStartedAt = Date.now();
+  exportStartedAt = lastStartedAt;
   let openedTab;
   try {
     const selected = await chooseOrOpenPage();
@@ -217,10 +224,12 @@ async function runExport(source = 'manual') {
     return { ok: true, message: label };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
+    lastStartedAt = 0;
     await setStatus(message, false);
     throw error;
   } finally {
     exportInProgress = false;
+    exportStartedAt = 0;
   }
 }
 
@@ -261,15 +270,6 @@ async function refreshCaptureAndPushAlertMeter(source = 'manual') {
   const dashboardInfo = await prepareAlertMeterDashboard(tab.id);
   if (!dashboardInfo?.ok || !Number.isFinite(Number(dashboardInfo.participation))) {
     throw new Error('Mori could not read the AlertMeter participation percentage. Wait for the dashboard to finish loading and try again.');
-  }
-  if (source === 'automatic' && Number(dashboardInfo.participation) >= 100) {
-    if (priorActive?.id && priorActive.id !== tab.id) {
-      await chrome.tabs.update(priorActive.id, { active: true }).catch(() => {});
-      await chrome.windows.update(priorActive.windowId, { focused: true }).catch(() => {});
-    }
-    const message = 'AlertMeter checked: 100% participation. No screenshot sent.';
-    await setStatus(message, true);
-    return { ok: true, skipped: true, message };
   }
   const imageDataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'png' });
   if (!imageDataUrl?.startsWith('data:image/')) throw new Error('Edge could not capture the AlertMeter dashboard.');
@@ -361,14 +361,7 @@ async function scheduleNext(alarmName, times, enabled) {
 }
 
 async function scheduleAlertMeter(enabled) {
-  await chrome.alarms.clear(ALERTMETER_ALARM_NAME);
-  if (!enabled) return null;
-  const next = new Date(Date.now() + ALERTMETER_INTERVAL_MINUTES * 60000);
-  await chrome.alarms.create(ALERTMETER_ALARM_NAME, {
-    delayInMinutes: ALERTMETER_INTERVAL_MINUTES,
-    periodInMinutes: ALERTMETER_INTERVAL_MINUTES,
-  });
-  return next;
+  return scheduleNext(ALERTMETER_ALARM_NAME, ALERTMETER_TIMES, enabled);
 }
 
 async function restoreSchedules() {
@@ -413,6 +406,8 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
     try { await refreshCaptureAndPushAlertMeter('automatic'); } catch (error) {
       await setStatus(error instanceof Error ? error.message : String(error), false);
     }
+    const saved = await chrome.storage.local.get('alertMeterScheduleEnabled');
+    await scheduleAlertMeter(Boolean(saved.alertMeterScheduleEnabled));
   }
 });
 

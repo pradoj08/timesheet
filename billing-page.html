@@ -2999,7 +2999,25 @@
       if (affected.size) persist();
     }
 
-    function readTimesheetArchive() {
+    async function readTimesheetArchive() {
+      if (window.indexedDB) {
+        try {
+          const database = await new Promise((resolve, reject) => {
+            const request = indexedDB.open("conglobal-timesheet-archive-db-v1", 1);
+            request.onupgradeneeded = () => {
+              if (!request.result.objectStoreNames.contains("archive")) request.result.createObjectStore("archive");
+            };
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+          });
+          const indexedArchive = await new Promise((resolve, reject) => {
+            const request = database.transaction("archive", "readonly").objectStore("archive").get("main");
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+          });
+          if (indexedArchive && typeof indexedArchive === "object" && !Array.isArray(indexedArchive)) return indexedArchive;
+        } catch (error) {}
+      }
       try {
         const archive = JSON.parse(localStorage.getItem(TIMESHEET_ARCHIVE_KEY) || "{}");
         return archive && typeof archive === "object" && !Array.isArray(archive) ? archive : {};
@@ -3016,8 +3034,8 @@
       }, 0);
     }
 
-    function importTimeFromArchive() {
-      const archive = readTimesheetArchive();
+    async function importTimeFromArchive() {
+      const archive = await readTimesheetArchive();
       const dates = Object.keys(archive).filter((date) => date.startsWith(state.month + "-")).sort();
       if (!dates.length) {
         showToast("No archived timesheets found for " + monthTitle(state.month) + ".");

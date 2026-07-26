@@ -159,6 +159,7 @@
 - Schedule, Archive, Sign-Off, Full View, Timesheet, and Old View share HTML, data, and styles.
 - The current-day roster in Full View is the reference presentation for the AM floating roster.
 - Quick Actions changes must persist across refreshes and page swaps.
+- Timesheet Archive snapshots are stored in IndexedDB database `conglobal-timesheet-archive-db-v1`; the legacy `conglobal-timesheet-archive-v1` localStorage value is a migration source and is removed only after a successful IndexedDB save.
 - CSS accidentally emitted as text is a known catastrophic regression pattern. After changing shared Timesheet markup or style insertion, visually verify Schedule, Archive, and Full View.
 
 ### Excel View

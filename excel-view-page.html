@@ -4600,7 +4600,16 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   }
 
   function parseMddhhmm(value, reference = new Date()) {
-    const digits = clean(value).replace(/\D/g, "");
+    if (value instanceof Date && !Number.isNaN(value.getTime())) return new Date(value.getTime());
+    const raw = clean(value);
+    if (!raw) return null;
+    const serialDate = excelSerialToDate(raw);
+    if (serialDate) return serialDate;
+    if (/[-/:T]/.test(raw)) {
+      const parsed = new Date(raw);
+      if (!Number.isNaN(parsed.getTime())) return parsed;
+    }
+    const digits = raw.replace(/\D/g, "");
     if (!digits || Number(digits) === 0) return null;
     let month, day, hour, minute;
     if (digits.length === 7) {
@@ -8222,8 +8231,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     const length = firstHeaderIndex(h,["LENGTH","LN","LENGTH FT"]);
     const holdStart = firstHeaderIndex(h,["TIME IN HOLD","HOLD START"]);
     const inbound = firstHeaderIndex(h,["INBOUND TRAIN","TRAIN"]);
-    let arrival = firstHeaderIndex(h,["ARRIVAL"]);
-    if (arrival < 0) arrival = firstHeaderIndex(h,["TIME IN DISP"]);
+    let arrival = firstHeaderIndex(h,[/^(ARRIVAL|ARRIVAL TIME|ARRIVAL DATE|ETA|EST ARRIVAL)$/]);
+    if (arrival < 0) arrival = firstHeaderIndex(h,[/^(TIME IN|TIME IN DISP)$/]);
     const yardBlock = firstHeaderIndex(h,["YARD BLOCK","YD BLOCK"]);
     let pStatus = firstHeaderIndex(h,["TRAIN TRACK","PRIMARY STATUS","P STATUS"]);
     let qStatus = firstHeaderIndex(h,["HOLD CODE","SECONDARY STATUS","Q STATUS"]);

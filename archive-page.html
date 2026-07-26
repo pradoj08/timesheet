@@ -170,6 +170,13 @@
       font-weight: 800;
     }
 
+    .archive-status-footer {
+      min-height: 30px;
+      display: flex;
+      align-items: center;
+      padding: 6px 14px 10px;
+    }
+
     .archive-file-input {
       position: absolute;
       width: 1px;
@@ -709,7 +716,6 @@
         <button class="secondary-button" id="importArchiveTimesheets" type="button">Mass Import</button>
         <input class="archive-file-input" id="archiveTimesheetInput" type="file" multiple accept=".xlsx,.xls,.html,.htm" />
         <button class="secondary-button danger-month-button" id="clearArchiveMonth" type="button">Clear Current Month</button>
-        <span class="save-message" id="saveMessage"></span>
       </div>
     </header>
 
@@ -723,6 +729,9 @@
       <div class="weekday">Sat</div>
     </section>
     <section class="calendar-grid" id="calendarGrid" aria-label="Timesheet archive calendar"></section>
+    <footer class="archive-status-footer" aria-live="polite">
+      <span class="save-message" id="saveMessage"></span>
+    </footer>
   </main>
 
   <div class="modal-backdrop" id="previewModal" aria-hidden="true">
@@ -1075,7 +1084,14 @@
       return String(settings.shiftEndCustom || "1500").trim().padStart(4, "0");
     }
 
-    function readArchive() {
+    const archiveDbName = "conglobal-timesheet-archive-db-v1";
+    const archiveDbStoreName = "archive";
+    const archiveDbRecordKey = "main";
+    let archiveMemoryCache = null;
+    let archiveDbPromise = null;
+    let archiveWriteQueue = Promise.resolve();
+
+    function readLegacyArchive() {
       try {
         const archive = JSON.parse(localStorage.getItem(archiveStorageKey) || "{}");
         return archive && typeof archive === "object" && !Array.isArray(archive) ? archive : {};
@@ -1085,8 +1101,72 @@
       }
     }
 
+    function readArchive() {
+      if (!archiveMemoryCache) archiveMemoryCache = readLegacyArchive();
+      return archiveMemoryCache;
+    }
+
+    function openArchiveDb() {
+      if (!window.indexedDB) return Promise.reject(new Error("This browser does not support large archive storage."));
+      if (archiveDbPromise) return archiveDbPromise;
+      archiveDbPromise = new Promise((resolve, reject) => {
+        const request = indexedDB.open(archiveDbName, 1);
+        request.onupgradeneeded = () => {
+          if (!request.result.objectStoreNames.contains(archiveDbStoreName)) {
+            request.result.createObjectStore(archiveDbStoreName);
+          }
+        };
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error || new Error("Timesheet archive storage could not be opened."));
+      });
+      return archiveDbPromise;
+    }
+
+    async function loadArchiveFromIndexedDb() {
+      const db = await openArchiveDb();
+      return new Promise((resolve, reject) => {
+        const transaction = db.transaction(archiveDbStoreName, "readonly");
+        const request = transaction.objectStore(archiveDbStoreName).get(archiveDbRecordKey);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error || new Error("Timesheet archive could not be read."));
+      });
+    }
+
+    async function saveArchiveToIndexedDb(archive) {
+      const db = await openArchiveDb();
+      return new Promise((resolve, reject) => {
+        const transaction = db.transaction(archiveDbStoreName, "readwrite");
+        transaction.oncomplete = () => resolve();
+        transaction.onerror = () => reject(transaction.error || new Error("Timesheet archive could not be saved."));
+        transaction.onabort = () => reject(transaction.error || new Error("Timesheet archive save was interrupted."));
+        transaction.objectStore(archiveDbStoreName).put(archive, archiveDbRecordKey);
+      });
+    }
+
     function writeArchive(archive) {
-      localStorage.setItem(archiveStorageKey, JSON.stringify(archive));
+      archiveMemoryCache = archive && typeof archive === "object" && !Array.isArray(archive) ? archive : {};
+      const snapshot = structuredClone(archiveMemoryCache);
+      archiveWriteQueue = archiveWriteQueue
+        .catch(() => {})
+        .then(() => saveArchiveToIndexedDb(snapshot))
+        .then(() => localStorage.removeItem(archiveStorageKey));
+      return archiveWriteQueue;
+    }
+
+    async function initializeArchiveStorage() {
+      const legacyArchive = readArchive();
+      try {
+        const storedArchive = await loadArchiveFromIndexedDb();
+        if (storedArchive && typeof storedArchive === "object" && !Array.isArray(storedArchive)) {
+          archiveMemoryCache = storedArchive;
+        } else if (Object.keys(legacyArchive).length) {
+          await saveArchiveToIndexedDb(structuredClone(legacyArchive));
+          localStorage.removeItem(archiveStorageKey);
+        }
+        renderCalendar();
+      } catch (error) {
+        setArchiveMessage("Archive storage warning: " + error.message);
+      }
     }
 
     function shouldCheckMissingStart(shiftKey) {
@@ -1397,7 +1477,22 @@
     }
 
     function archiveSheetRows(workbook, sheetName) {
+      const embeddedRows = workbook && workbook.Sheets && workbook.Sheets[sheetName] && workbook.Sheets[sheetName].__conglobalRows;
+      if (Array.isArray(embeddedRows)) return embeddedRows;
       return XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1, raw: false, defval: "" });
+    }
+
+    async function readArchiveImportWorkbook(file, preparedBuffer) {
+      const name = String(file && file.name || "").toLowerCase();
+      if (/\.html?$/.test(name)) {
+        const text = new TextDecoder().decode(preparedBuffer || await file.arrayBuffer());
+        const doc = new DOMParser().parseFromString(text, "text/html");
+        const rows = Array.from(doc.querySelectorAll("tr")).map((tr) =>
+          Array.from(tr.querySelectorAll("th,td")).map((cell) => String(cell.textContent || "").replace(/\s+/g, " ").trim())
+        ).filter((row) => row.some(Boolean));
+        return { SheetNames: ["Imported HTML"], Sheets: { "Imported HTML": { __conglobalRows: rows } } };
+      }
+      return readArchiveWorkbook(preparedBuffer || await file.arrayBuffer());
     }
 
     function firstFilledCell(row) {
@@ -1663,8 +1758,20 @@
 
     async function importArchiveTimesheetFiles(event) {
       const files = Array.from(event.target.files || []);
-      event.target.value = "";
       if (!files.length) return;
+      setArchiveMessage("Reading " + files.length + " selected timesheet" + (files.length === 1 ? "" : "s") + "...");
+      let preparedFiles;
+      try {
+        preparedFiles = await Promise.all(files.map(async (file) => ({
+          file,
+          buffer: await file.arrayBuffer()
+        })));
+      } catch (error) {
+        setArchiveMessage("Unable to read the selected files: " + error.message);
+        event.target.value = "";
+        return;
+      }
+      event.target.value = "";
       if (!window.XLSX) {
         setArchiveMessage("XLSX parser unavailable");
         return;
@@ -1672,9 +1779,13 @@
       const archive = readArchive();
       let imported = 0;
       const failed = [];
-      for (const file of files) {
+      for (let fileIndex = 0; fileIndex < preparedFiles.length; fileIndex += 1) {
+        const prepared = preparedFiles[fileIndex];
+        const file = prepared.file;
         try {
-          const workbook = readArchiveWorkbook(await file.arrayBuffer());
+          setArchiveMessage("Importing " + (fileIndex + 1) + " of " + preparedFiles.length + ": " + file.name);
+          await new Promise((resolve) => setTimeout(resolve, 0));
+          const workbook = await readArchiveImportWorkbook(file, prepared.buffer);
           let snapshots = [];
           for (const sheetName of workbook.SheetNames) {
             const rows = archiveSheetRows(workbook, sheetName);
@@ -1703,10 +1814,23 @@
         }
       }
       if (imported) {
-        writeArchive(archive);
+        setArchiveMessage("Saving " + imported + " imported timesheet" + (imported === 1 ? "" : "s") + "...");
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        try {
+          await writeArchive(archive);
+        } catch (error) {
+          setArchiveMessage("Import parsed successfully but could not be saved: " + error.message);
+          return;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 0));
         const selected = dateFromKey(selectedDateKey);
         viewDate = new Date(selected.getFullYear(), selected.getMonth(), 1);
-        renderCalendar();
+        try {
+          renderCalendar();
+        } catch (error) {
+          setArchiveMessage("Import saved, but the calendar could not refresh: " + error.message);
+          return;
+        }
       }
       const failedText = failed.length ? " Failed: " + failed.join("; ") : "";
       setArchiveMessage("Imported " + imported + " archived timesheet" + (imported === 1 ? "" : "s") + "." + failedText);
@@ -1967,6 +2091,7 @@
 
     document.getElementById("archiveDate").value = selectedDateKey;
     renderCalendar();
+    initializeArchiveStorage();
   </script>
 </body>
 </html>
