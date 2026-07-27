@@ -4,7 +4,7 @@ This Edge helper uses the official **Export to Excel** control on the already
 signed-in UP Mismatches page. It supports:
 
 - **Export Now** for a manual download.
-- An optional automatic export every 15 minutes while Edge is running.
+- Scheduled mismatch, AlertMeter, and Yard Check runs are configured in Pearl.io; the extension only executes the authenticated browser step.
 
 The helper does not inspect or change filters. It selects one matching
 Mismatches tab, refreshes it, waits for the equipment table, prevents
@@ -18,3 +18,10 @@ Edge login session.
 It does not parse rows, store Pushover credentials, create alerts, or send
 table data. YardMate Agent handles those actions after the `.xls` file arrives
 in Downloads.
+
+The manual **Send Yard Check Now** action uses the signed-in UP Yard Check
+route. It enters yard `B 372`, selects Container, Trailer, Arrivals, Other
+Movement, and Yard Check, clears Chassis, applies a `>= 12 hours` lookback, and sends a cropped
+visible-page screenshot through YardMate. The extension requires its declared all-sites
+capture permission because Pearl-triggered and scheduled screenshots do not receive Edge's
+temporary `activeTab` permission.

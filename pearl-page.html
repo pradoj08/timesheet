@@ -10,14 +10,15 @@
   html,body{min-height:100%;margin:0;background:#e9eef4;color:var(--ink);font-family:Inter,"Segoe UI",Arial,sans-serif}
   button{font:inherit}
   body{padding:18px}
-  .shell{max-width:1180px;margin:0 auto}
+  .shell{width:100%;max-width:none;margin:0 auto}
   .hero{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:19px 22px;border-radius:16px 16px 0 0;background:var(--navy);color:#fff}
   .brand{display:flex;align-items:center;gap:13px}.orb{width:43px;height:43px;border-radius:50%;background:radial-gradient(circle at 30% 24%,#fff 0 9%,#bafcff 20%,#23b6c5 56%,#10445e 100%);box-shadow:0 0 22px #18b9d577}.brand h1{margin:0;font-size:25px}.brand p{margin:3px 0 0;color:#a9bdd0;font-size:11px;font-weight:800;letter-spacing:.11em;text-transform:uppercase}
   .connection-stack{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px}.connection{display:flex;align-items:center;gap:8px;padding:8px 11px;border:1px solid #ffffff22;border-radius:999px;background:#ffffff0b;font-size:11px;font-weight:900}.dot{width:10px;height:10px;border-radius:50%;background:#8794a5;box-shadow:0 0 0 4px #ffffff12}.connection.online .dot{background:#2fe0a4;box-shadow:0 0 0 4px #2fe0a422}.connection.offline .dot{background:#ff5a68}.connection.waiting .dot{background:#f5b942}
   .content{padding:18px;border:1px solid var(--line);border-top:0;border-radius:0 0 16px 16px;background:linear-gradient(145deg,#f8fafc,#edf4f8)}
   .status-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-bottom:14px}.status-card{position:relative;min-width:0;padding:15px 13px 13px;overflow:hidden;border:1px solid var(--line);border-radius:12px;background:var(--panel);box-shadow:0 5px 16px #0f172a0c}.status-card:before{content:"";position:absolute;inset:0 0 auto;height:4px;background:linear-gradient(90deg,var(--cyan),#32d6b2)}.status-card span{display:block;color:var(--muted);font-size:10px;font-weight:900;letter-spacing:.08em;text-transform:uppercase}.status-card strong{display:block;margin-top:7px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:16px}.status-card strong.good{color:var(--green)}.status-card strong.bad{color:var(--red)}
-  .schedule-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:14px}.schedule-card{padding:14px 16px;border:1px solid #b8c7d8;border-radius:13px;background:linear-gradient(135deg,#0f2033,#142c43);color:#fff;box-shadow:0 8px 22px #0f172a16}.schedule-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.schedule-head strong{font-size:13px;letter-spacing:.04em}.schedule-state{padding:4px 8px;border-radius:999px;background:#ffffff12;color:#b9c8d8;font-size:9px;font-weight:950;letter-spacing:.08em;text-transform:uppercase}.schedule-state.on{background:#0d7a5c;color:#d9fff3}.schedule-detail{margin:9px 0 0;color:#bdd0e1;font-size:11px;font-weight:750;line-height:1.45}.schedule-next{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-top:10px;padding-top:10px;border-top:1px solid #ffffff1f}.schedule-next span{color:#8fa8bd;font-size:9px;font-weight:900;letter-spacing:.08em;text-transform:uppercase}.schedule-next b{font-variant-numeric:tabular-nums;font-size:18px}.schedule-next time{color:#d9e7f3;font-size:11px;font-weight:850;text-align:right}
-  .toolbar{display:grid;grid-template-columns:1.15fr 1.3fr 1.2fr 1fr;gap:10px;padding:10px;border:1px solid var(--line);border-radius:12px;background:var(--panel)}.toolbar-group{display:flex;min-width:0;flex-direction:column;gap:7px;padding:9px;border:1px solid #d8e1eb;border-radius:10px;background:#f8fafc}.toolbar-label{color:var(--muted);font-size:9px;font-weight:950;letter-spacing:.1em;text-transform:uppercase}.toolbar-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}.toolbar-tools .toolbar-actions{grid-template-columns:repeat(3,minmax(0,1fr))}.btn{min-width:0;min-height:37px;padding:7px 10px;border:1px solid #aeb9c7;border-radius:8px;background:#fff;color:var(--ink);font-size:11px;font-weight:900;white-space:nowrap;cursor:pointer}.btn:hover,.btn:focus-visible{border-color:var(--cyan);outline:3px solid #0e91b820}.btn.primary{border-color:#08775a;background:var(--green);color:#fff}.btn.dark{border-color:#111827;background:#111827;color:#fff}.btn.warn{border-color:#b77900;background:#fff6d6;color:#734b00}.btn:disabled{opacity:.55;cursor:wait}.toolbar .btn{width:100%}.watch{display:flex;min-width:0;min-height:37px;align-items:center;gap:8px;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--soft);font-size:11px;font-weight:900}.watch input{width:18px;height:18px;flex:0 0 auto;accent-color:var(--green)}
+  .schedule-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:14px}.schedule-card{padding:14px 16px;border:1px solid #b8c7d8;border-radius:13px;background:linear-gradient(135deg,#0f2033,#142c43);color:#fff;box-shadow:0 8px 22px #0f172a16}.schedule-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.schedule-head strong{font-size:13px;letter-spacing:.04em}.schedule-state{padding:4px 8px;border-radius:999px;background:#ffffff12;color:#b9c8d8;font-size:9px;font-weight:950;letter-spacing:.08em;text-transform:uppercase}.schedule-state.on{background:#0d7a5c;color:#d9fff3}.schedule-detail{margin:9px 0 0;color:#bdd0e1;font-size:11px;font-weight:750;line-height:1.45}.schedule-next{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-top:10px;padding-top:10px;border-top:1px solid #ffffff1f}.schedule-next span{color:#8fa8bd;font-size:9px;font-weight:900;letter-spacing:.08em;text-transform:uppercase}.schedule-next b{font-variant-numeric:tabular-nums;font-size:18px}.schedule-next time{color:#d9e7f3;font-size:11px;font-weight:850;text-align:right}
+  .schedule-editor{margin:0 0 14px;padding:13px 15px;border:1px solid #b8c7d8;border-radius:13px;background:#fff}.schedule-editor-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.schedule-editor-head strong{font-size:13px}.schedule-editor-head span{color:var(--muted);font-size:10px;font-weight:700}.schedule-editor-row{display:grid;grid-template-columns:170px 1fr auto;align-items:center;gap:10px;margin-top:10px}.schedule-editor-row label{font-size:11px;font-weight:900}.schedule-editor-row input[type=text]{min-width:0;width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:#f8fafc;color:var(--ink);font:700 12px ui-monospace,SFMono-Regular,Consolas,monospace}.schedule-editor-row input[type=checkbox]{width:18px;height:18px;accent-color:var(--green)}.schedule-editor-actions{display:flex;align-items:center;gap:10px;margin-top:11px}.schedule-editor-actions small{color:var(--muted);font-size:10px}.schedule-editor-actions button{margin-left:auto}.schedule-preset{min-height:34px;padding:7px 13px;border:1px solid #b77900;border-radius:8px;background:#fff6d6;color:#734b00;font-weight:900;cursor:pointer}.schedule-save{min-height:34px;padding:7px 13px;border:1px solid #08775a;border-radius:8px;background:var(--green);color:#fff;font-weight:900;cursor:pointer}.schedule-save:disabled{opacity:.55;cursor:wait}
+  .toolbar{display:grid;grid-template-columns:1.2fr repeat(3,1fr) 1.15fr;gap:10px;padding:10px;border:1px solid var(--line);border-radius:12px;background:var(--panel)}.toolbar-group{display:flex;min-width:0;flex-direction:column;gap:7px;padding:9px;border:1px solid #d8e1eb;border-radius:10px;background:#f8fafc}.toolbar-label{color:var(--muted);font-size:9px;font-weight:950;letter-spacing:.1em;text-transform:uppercase}.toolbar-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}.toolbar-tools .toolbar-actions{grid-template-columns:repeat(3,minmax(0,1fr))}.btn{min-width:0;min-height:37px;padding:7px 10px;border:1px solid #aeb9c7;border-radius:8px;background:#fff;color:var(--ink);font-size:11px;font-weight:900;white-space:nowrap;cursor:pointer}.btn:hover,.btn:focus-visible{border-color:var(--cyan);outline:3px solid #0e91b820}.btn.primary{border-color:#08775a;background:var(--green);color:#fff}.btn.dark{border-color:#111827;background:#111827;color:#fff}.btn.warn{border-color:#b77900;background:#fff6d6;color:#734b00}.btn:disabled{opacity:.55;cursor:wait}.toolbar .btn{width:100%}.watch{display:flex;min-width:0;min-height:37px;align-items:center;gap:8px;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--soft);font-size:11px;font-weight:900}.watch input{width:18px;height:18px;flex:0 0 auto;accent-color:var(--green)}
   .message{min-height:42px;margin:12px 0;padding:12px 14px;border-left:5px solid var(--cyan);border-radius:7px;background:#e8f6fb;color:#17445c;font-size:13px;font-weight:750}.message.error{border-color:var(--red);background:#fff0f2;color:#8b1529}
   .preview-card{overflow:hidden;border:1px solid var(--line);border-radius:12px;background:#fff}.preview-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 14px;border-bottom:1px solid var(--line);background:var(--soft)}.preview-head strong{font-size:13px;letter-spacing:.06em;text-transform:uppercase}.preview-head span{color:var(--muted);font-size:11px}.preview-body{display:flex;min-height:260px;align-items:flex-start;justify-content:center;padding:14px;overflow:auto;background:#fff}.preview-body img{display:block;max-width:100%;height:auto;box-shadow:0 5px 20px #0f172a20}.empty{align-self:center;color:var(--muted);font-weight:700;text-align:center}
   .help{margin:12px 2px 0;color:var(--muted);font-size:11px;line-height:1.5}
@@ -33,6 +34,7 @@
     <div class="connection-stack">
       <div class="connection offline" id="connection"><span class="dot"></span><span id="connectionText">Desktop agent connecting…</span></div>
       <div class="connection waiting" id="extensionConnection"><span class="dot"></span><span id="extensionConnectionText">Extension checking…</span></div>
+      <div class="connection waiting" id="yardCheckConnection"><span class="dot"></span><span id="yardCheckConnectionText">Yard Check checking…</span></div>
     </div>
   </header>
   <section class="content">
@@ -46,14 +48,26 @@
     <section class="schedule-grid" aria-label="Automatic retrieval schedule">
       <article class="schedule-card">
         <div class="schedule-head"><strong>Mismatch retrieval</strong><span class="schedule-state" id="mismatchScheduleState">Checking</span></div>
-        <p class="schedule-detail">10 scheduled checks daily: 1:00, 3:00, 6:00, 9:00, 11:00 AM; 1:00, 3:00, 6:00, 9:00, 11:00 PM.</p>
+        <p class="schedule-detail">Programmed from the Pearl schedule editor below.</p>
         <div class="schedule-next"><div><span>Next check in</span><b id="mismatchCountdown">--:--:--</b></div><time id="mismatchNextTime">Waiting for extension</time></div>
       </article>
       <article class="schedule-card">
+        <div class="schedule-head"><strong>Yard Check capture</strong><span class="schedule-state" id="yardCheckScheduleState">Checking</span></div>
+        <p class="schedule-detail">Programmed from Pearl; each run captures and pushes the B 372 Yard Check snapshot.</p>
+        <div class="schedule-next"><div><span>Next check in</span><b id="yardCheckCountdown">--:--:--</b></div><time id="yardCheckNextTime">Waiting for extension</time></div>
+      </article>
+      <article class="schedule-card">
         <div class="schedule-head"><strong>AlertMeter retrieval</strong><span class="schedule-state" id="alertMeterScheduleState">Checking</span></div>
-        <p class="schedule-detail">Checks every 30 minutes. If participation is below 100%, the no-test list is filtered and pushed as a screenshot.</p>
+        <p class="schedule-detail">Programmed from the Pearl schedule editor below; each run captures and pushes a screenshot.</p>
         <div class="schedule-next"><div><span>Next check in</span><b id="alertMeterCountdown">--:--:--</b></div><time id="alertMeterNextTime">Waiting for extension</time></div>
       </article>
+    </section>
+    <section class="schedule-editor" id="programmedSchedules" aria-label="Pearl programmed schedules">
+      <div class="schedule-editor-head"><strong>Program schedules from Pearl</strong><span>Leave a time list blank to disable that schedule.</span></div>
+      <div class="schedule-editor-row"><label><input id="mismatchScheduleEnabled" type="checkbox"> Mismatch retrieval</label><input id="mismatchScheduleTimes" type="text" placeholder="01:00, 03:00, 06:00"><span>HH:MM</span></div>
+      <div class="schedule-editor-row"><label><input id="alertMeterScheduleEnabled" type="checkbox"> AlertMeter capture</label><input id="alertMeterScheduleTimes" type="text" placeholder="03:45, 10:30, 15:45"><span>HH:MM</span></div>
+      <div class="schedule-editor-row"><label><input id="yardCheckScheduleEnabled" type="checkbox"> Yard Check capture</label><input id="yardCheckScheduleTimes" type="text" placeholder="04:00, 12:00, 20:00"><span>HH:MM</span></div>
+      <div class="schedule-editor-actions"><small>These times replace the extension’s built-in schedule.</small><button class="schedule-preset" id="takeOneSchedulePreset" type="button">TAKE 1</button><button class="schedule-save" id="saveProgrammedSchedules" type="button">Save schedules</button></div>
     </section>
     <div class="toolbar" aria-label="Mori alert controls">
       <section class="toolbar-group">
@@ -72,6 +86,12 @@
         <div class="toolbar-actions">
           <button class="btn primary" id="openAlertMeter" type="button">Capture &amp; Send</button>
           <button class="btn dark" id="previewAlertMeter" type="button">Preview</button>
+        </div>
+      </section>
+      <section class="toolbar-group toolbar-yard">
+        <span class="toolbar-label">Yard Check</span>
+        <div class="toolbar-actions">
+          <button class="btn primary" id="openYardCheck" type="button">Capture &amp; Send</button>
         </div>
       </section>
       <section class="toolbar-group toolbar-tools">
@@ -98,6 +118,8 @@
   const connectionText = document.getElementById("connectionText");
   const extensionConnection = document.getElementById("extensionConnection");
   const extensionConnectionText = document.getElementById("extensionConnectionText");
+  const yardCheckConnection = document.getElementById("yardCheckConnection");
+  const yardCheckConnectionText = document.getElementById("yardCheckConnectionText");
   const watchStatus = document.getElementById("watchStatus");
   const latestFile = document.getElementById("latestFile");
   const noMateCount = document.getElementById("noMateCount");
@@ -108,6 +130,14 @@
   const previewBody = document.getElementById("previewBody");
   const previewCaption = document.getElementById("previewCaption");
   const controls = [...document.querySelectorAll("button"), watchToggle];
+  const mismatchScheduleEnabled = document.getElementById("mismatchScheduleEnabled");
+  const alertMeterScheduleEnabled = document.getElementById("alertMeterScheduleEnabled");
+  const yardCheckScheduleEnabled = document.getElementById("yardCheckScheduleEnabled");
+  const mismatchScheduleTimes = document.getElementById("mismatchScheduleTimes");
+  const alertMeterScheduleTimes = document.getElementById("alertMeterScheduleTimes");
+  const yardCheckScheduleTimes = document.getElementById("yardCheckScheduleTimes");
+  const saveProgrammedSchedules = document.getElementById("saveProgrammedSchedules");
+  const takeOneSchedulePreset = document.getElementById("takeOneSchedulePreset");
   let connected = false;
   let scheduleState = null;
 
@@ -119,7 +149,7 @@
   }
   function renderScheduleClock() {
     const schedule = scheduleState || {};
-    [["mismatch", schedule.mismatchEnabled, schedule.mismatchNextAt], ["alertMeter", schedule.alertMeterEnabled, schedule.alertMeterNextAt]].forEach(([prefix, enabled, nextAt]) => {
+    [["mismatch", schedule.mismatchEnabled, schedule.mismatchNextAt], ["alertMeter", schedule.alertMeterEnabled, schedule.alertMeterNextAt], ["yardCheck", schedule.yardCheckEnabled, schedule.yardCheckNextAt]].forEach(([prefix, enabled, nextAt]) => {
       const stateNode = document.getElementById(prefix + "ScheduleState");
       const countdownNode = document.getElementById(prefix + "Countdown");
       const timeNode = document.getElementById(prefix + "NextTime");
@@ -141,6 +171,8 @@
     connectionText.textContent = "Desktop agent connected";
     extensionConnection.className = state.extensionConnected ? "connection online" : "connection offline";
     extensionConnectionText.textContent = state.extensionConnected ? "Settegast Alerts connected" : "Settegast Alerts not detected";
+    yardCheckConnection.className = state.yardCheckOnline ? "connection online" : "connection offline";
+    yardCheckConnectionText.textContent = state.yardCheckOnline ? "Yard Check online" : "Yard Check offline";
     watchToggle.checked = Boolean(state.settings.enabled);
     watchStatus.textContent = state.settings.enabled ? "ON" : "PAUSED";
     watchStatus.className = state.settings.enabled ? "good" : "bad";
@@ -150,6 +182,13 @@
     sourceRefresh.textContent = state.sourceRefresh?.timestamp || "Not verified";
     sourceRefresh.className = state.sourceRefresh?.verified ? "good" : "bad";
     scheduleState = state.extensionSchedule || null;
+    const programmed = state.programmedSchedules || {};
+    mismatchScheduleEnabled.checked = Boolean(programmed.mismatchEnabled);
+    alertMeterScheduleEnabled.checked = Boolean(programmed.alertMeterEnabled);
+    yardCheckScheduleEnabled.checked = Boolean(programmed.yardCheckEnabled);
+    mismatchScheduleTimes.value = (programmed.mismatchTimes || []).map(value => value.slice(0, 2) + ":" + value.slice(2)).join(", ");
+    alertMeterScheduleTimes.value = (programmed.alertMeterTimes || []).map(value => value.slice(0, 2) + ":" + value.slice(2)).join(", ");
+    yardCheckScheduleTimes.value = (programmed.yardCheckTimes || []).map(value => value.slice(0, 2) + ":" + value.slice(2)).join(", ");
     renderScheduleClock();
     showMessage(state.lastMessage || "Ready.", false);
     if (state.previewAvailable) previewCaption.textContent = `${state.counts.total} parsed rows · ${state.lastFile || "latest export"}`;
@@ -160,6 +199,8 @@
     connectionText.textContent = "Desktop agent offline";
     extensionConnection.className = "connection offline";
     extensionConnectionText.textContent = "Settegast Alerts unavailable";
+    yardCheckConnection.className = "connection offline";
+    yardCheckConnectionText.textContent = "Yard Check unavailable";
     watchStatus.textContent = "OFFLINE";
     watchStatus.className = "bad";
     showMessage(error || "YardMate Agent is not running. Start it from the Windows Start menu, then click Refresh.", true);
@@ -212,6 +253,35 @@
     finally { setBusy(false); }
   }
 
+  function scheduleTimes(input) {
+    return input.value.split(/[\\s,;]+/).map(value => value.trim()).filter(Boolean);
+  }
+  takeOneSchedulePreset.addEventListener("click", () => {
+    mismatchScheduleEnabled.checked = true;
+    alertMeterScheduleEnabled.checked = true;
+    yardCheckScheduleEnabled.checked = true;
+    mismatchScheduleTimes.value = "01:00, 04:00, 06:30, 09:00, 12:00, 14:30, 16:30, 19:00, 23:00";
+    alertMeterScheduleTimes.value = "03:45, 09:00, 13:00, 15:35, 19:00";
+    yardCheckScheduleTimes.value = "06:00, 09:00, 12:00, 15:00, 18:00, 21:00";
+    showMessage("TAKE 1 schedule loaded. Click Save schedules to apply it.", false);
+  });
+  saveProgrammedSchedules.addEventListener("click", async () => {
+    saveProgrammedSchedules.disabled = true;
+    showMessage("Saving Pearl schedules…", false);
+    try {
+      await request("/schedules", { method:"POST", headers:{ "Content-Type":"application/json" }, body:JSON.stringify({
+        mismatchEnabled: mismatchScheduleEnabled.checked,
+        alertMeterEnabled: alertMeterScheduleEnabled.checked,
+        yardCheckEnabled: yardCheckScheduleEnabled.checked,
+        mismatchTimes: scheduleTimes(mismatchScheduleTimes),
+        alertMeterTimes: scheduleTimes(alertMeterScheduleTimes),
+        yardCheckTimes: scheduleTimes(yardCheckScheduleTimes)
+      }) });
+      showMessage("Pearl schedules saved. The extension will pick them up automatically.", false);
+    } catch (error) { showMessage(error.message, true); }
+    finally { saveProgrammedSchedules.disabled = false; }
+  });
+
   watchToggle.addEventListener("change", async () => {
     setBusy(true);
     try {
@@ -225,6 +295,9 @@
     action("/request-alertmeter", "Queuing the AlertMeter refresh, snapshot, and push…", false)
   );
   document.getElementById("previewAlertMeter").addEventListener("click", previewAlertMeter);
+  document.getElementById("openYardCheck").addEventListener("click", () =>
+    action("/request-yardcheck", "Queuing UP Yard Check B 372, applying filters, and sending the screenshot…", false)
+  );
   document.getElementById("testPush").addEventListener("click", () => action("/test-push", "Sending a test alert…", false));
   document.getElementById("openSettings").addEventListener("click", () => action("/open-settings", "Opening YardMate Agent settings…", false));
   document.getElementById("refreshStatus").addEventListener("click", refresh);

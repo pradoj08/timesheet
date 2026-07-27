@@ -1,11 +1,11 @@
 const LEGACY_ALARM_NAME = 'mori-mismatch-export-15m';
 const MISMATCH_ALARM_NAME = 'settegast-mismatch-schedule';
 const ALERTMETER_ALARM_NAME = 'settegast-alertmeter-schedule';
+const YARDCHECK_ALARM_NAME = 'settegast-yardcheck-schedule';
 const COMMAND_POLL_ALARM_NAME = 'settegast-command-poll';
-const MISMATCH_TIMES = ['0100', '0300', '0600', '0900', '1100', '1300', '1500', '1800', '2100', '2300'];
-const ALERTMETER_TIMES = ['0345', '1030', '1545', '2000'];
 const UP_ROOT = 'https://employees.www.uprr.com/';
 const DEFAULT_PAGE = 'https://employees.www.uprr.com/tos/secure/jas/mismatchedEquipmentPage.jas?wicket:pageMapName=wicket-0';
+const YARD_CHECK_PAGE = 'https://employees.www.uprr.com/tos/web2/secure/index.html#/yardcheck';
 let exportInProgress = false;
 let lastStartedAt = 0;
 let exportStartedAt = 0;
@@ -233,6 +233,17 @@ async function runExport(source = 'manual') {
   }
 }
 
+async function prepareYardCheck(tabId) {
+  try {
+    return await chrome.tabs.sendMessage(tabId, { type: 'mori-prepare-yardcheck' });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (!/receiving end does not exist|could not establish connection/i.test(message)) throw error;
+    await chrome.scripting.executeScript({ target: { tabId }, files: ['yardcheck-content.js'] });
+    return chrome.tabs.sendMessage(tabId, { type: 'mori-prepare-yardcheck' });
+  }
+}
+
 async function activeAlertMeterDashboard() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab?.id || !/^https:\/\/app\.alertmeter\.com\/Admin\/Dashboard\/Index/i.test(String(tab.url || ''))) {
@@ -271,6 +282,9 @@ async function refreshCaptureAndPushAlertMeter(source = 'manual') {
   if (!dashboardInfo?.ok || !Number.isFinite(Number(dashboardInfo.participation))) {
     throw new Error('Mori could not read the AlertMeter participation percentage. Wait for the dashboard to finish loading and try again.');
   }
+  await chrome.tabs.update(tab.id, { active: true });
+  await chrome.windows.update(tab.windowId, { focused: true });
+  await new Promise((resolve) => setTimeout(resolve, 250));
   const imageDataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'png' });
   if (!imageDataUrl?.startsWith('data:image/')) throw new Error('Edge could not capture the AlertMeter dashboard.');
   const response = await fetch('http://127.0.0.1:43127/api/push-alertmeter', {
@@ -300,35 +314,118 @@ async function refreshCaptureAndPushAlertMeter(source = 'manual') {
   return { ok: true, message };
 }
 
+async function chooseOrOpenYardCheck() {
+  const tabs = await chrome.tabs.query({ url: `${UP_ROOT}*` });
+  const existing = tabs.find((tab) => /\/tos\/web2\/secure\/index\.html#\/yardcheck/i.test(String(tab.url || '')));
+  if (existing) return existing;
+  const tab = await chrome.tabs.create({ url: YARD_CHECK_PAGE, active: false });
+  return waitForPage(tab.id, 30000);
+}
+
+async function refreshCaptureAndPushYardCheck() {
+  const priorActive = (await chrome.tabs.query({ active: true, currentWindow: true }))[0];
+  const tab = await chooseOrOpenYardCheck();
+  const refreshed = await reloadPage(tab.id, 30000);
+  if (!/\/tos\/web2\/secure\/index\.html#\/yardcheck/i.test(String(refreshed.url || ''))) {
+    await chrome.tabs.update(tab.id, { active: true }).catch(() => {});
+    throw new Error('UP Yard Check opened a different page. Sign in and open Yard Check, then try again.');
+  }
+  await chrome.tabs.update(tab.id, { active: true });
+  await chrome.windows.update(tab.windowId, { focused: true });
+  await new Promise((resolve) => setTimeout(resolve, 1800));
+  const pageInfo = await prepareYardCheck(tab.id);
+  if (!pageInfo?.ok) throw new Error(pageInfo?.error || 'The Yard Check filters could not be applied.');
+  await new Promise((resolve) => setTimeout(resolve, 350));
+  const imageDataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'png' });
+  if (!imageDataUrl?.startsWith('data:image/')) throw new Error('Edge could not capture the Yard Check results.');
+  const response = await fetch('http://127.0.0.1:43127/api/push-yardcheck', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      imageDataUrl,
+      pageUrl: refreshed.url,
+      capturedAt: new Date().toISOString(),
+      yard: pageInfo.yard || 'B 372',
+      lookbackHours: Number(pageInfo.lookbackHours) || 12,
+      checked: pageInfo.checked || [],
+      viewportWidth: pageInfo.viewportWidth,
+      viewportHeight: pageInfo.viewportHeight,
+      crop: pageInfo.crop,
+    }),
+  });
+  const result = await response.json();
+  if (!response.ok || !result.ok) throw new Error(result.error || 'YardMate could not send the Yard Check snapshot.');
+  if (priorActive?.id && priorActive.id !== tab.id) {
+    await chrome.tabs.update(priorActive.id, { active: true }).catch(() => {});
+    await chrome.windows.update(priorActive.windowId, { focused: true }).catch(() => {});
+  }
+  const message = `Yard Check B 372 snapshot pushed at ${new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}.`;
+  await setStatus(message, true);
+  return { ok: true, message };
+}
+
 async function pollYardMateCommands() {
   if (commandPollInProgress) return;
   commandPollInProgress = true;
   let command;
   try {
-    const [savedSchedule, mismatchAlarm, alertMeterAlarm] = await Promise.all([
-      chrome.storage.local.get(['mismatchScheduleEnabled', 'alertMeterScheduleEnabled']),
+    const scheduleResponse = await fetch('http://127.0.0.1:43127/api/schedules', { cache: 'no-store' });
+    if (scheduleResponse.ok) {
+      const remote = (await scheduleResponse.json()).programmedSchedules || {};
+      const mismatchTimes = Array.isArray(remote.mismatchTimes) ? remote.mismatchTimes : [];
+      const alertMeterTimes = Array.isArray(remote.alertMeterTimes) ? remote.alertMeterTimes : [];
+      const yardCheckTimes = Array.isArray(remote.yardCheckTimes) ? remote.yardCheckTimes : [];
+      const savedRemote = await chrome.storage.local.get(['mismatchScheduleEnabled', 'alertMeterScheduleEnabled', 'yardCheckScheduleEnabled', 'mismatchScheduleTimes', 'alertMeterScheduleTimes', 'yardCheckScheduleTimes']);
+      const changed = Boolean(savedRemote.mismatchScheduleEnabled) !== Boolean(remote.mismatchEnabled)
+        || Boolean(savedRemote.alertMeterScheduleEnabled) !== Boolean(remote.alertMeterEnabled)
+        || Boolean(savedRemote.yardCheckScheduleEnabled) !== Boolean(remote.yardCheckEnabled)
+        || JSON.stringify(savedRemote.mismatchScheduleTimes || []) !== JSON.stringify(mismatchTimes)
+        || JSON.stringify(savedRemote.alertMeterScheduleTimes || []) !== JSON.stringify(alertMeterTimes)
+        || JSON.stringify(savedRemote.yardCheckScheduleTimes || []) !== JSON.stringify(yardCheckTimes);
+      if (changed) {
+        await chrome.storage.local.set({
+          mismatchScheduleEnabled: Boolean(remote.mismatchEnabled),
+          alertMeterScheduleEnabled: Boolean(remote.alertMeterEnabled),
+          yardCheckScheduleEnabled: Boolean(remote.yardCheckEnabled),
+          mismatchScheduleTimes: mismatchTimes,
+          alertMeterScheduleTimes: alertMeterTimes,
+          yardCheckScheduleTimes: yardCheckTimes,
+        });
+        await scheduleNext(MISMATCH_ALARM_NAME, mismatchTimes, Boolean(remote.mismatchEnabled));
+        await scheduleNext(ALERTMETER_ALARM_NAME, alertMeterTimes, Boolean(remote.alertMeterEnabled));
+        await scheduleNext(YARDCHECK_ALARM_NAME, yardCheckTimes, Boolean(remote.yardCheckEnabled));
+      }
+    }
+    const [savedSchedule, mismatchAlarm, alertMeterAlarm, yardCheckAlarm] = await Promise.all([
+      chrome.storage.local.get(['mismatchScheduleEnabled', 'alertMeterScheduleEnabled', 'yardCheckScheduleEnabled']),
       chrome.alarms.get(MISMATCH_ALARM_NAME),
       chrome.alarms.get(ALERTMETER_ALARM_NAME),
+      chrome.alarms.get(YARDCHECK_ALARM_NAME),
     ]);
     const scheduleQuery = new URLSearchParams({
       mismatchEnabled: savedSchedule.mismatchScheduleEnabled ? '1' : '0',
       alertMeterEnabled: savedSchedule.alertMeterScheduleEnabled ? '1' : '0',
+      yardCheckEnabled: savedSchedule.yardCheckScheduleEnabled ? '1' : '0',
       mismatchNextAt: mismatchAlarm?.scheduledTime ? new Date(mismatchAlarm.scheduledTime).toISOString() : '',
       alertMeterNextAt: alertMeterAlarm?.scheduledTime ? new Date(alertMeterAlarm.scheduledTime).toISOString() : '',
+      yardCheckNextAt: yardCheckAlarm?.scheduledTime ? new Date(yardCheckAlarm.scheduledTime).toISOString() : '',
     });
     const response = await fetch(`http://127.0.0.1:43127/api/alertmeter-command?${scheduleQuery}`, { cache: 'no-store' });
     const result = await response.json();
     command = result.command;
-    if (!command?.id || command.type !== 'capture-alertmeter') return;
+    if (!command?.id || !['capture-alertmeter', 'capture-yardcheck'].includes(command.type)) return;
     try {
-      await refreshCaptureAndPushAlertMeter('automatic');
-      await fetch('http://127.0.0.1:43127/api/complete-alertmeter-command', {
+      if (command.type === 'capture-yardcheck') await refreshCaptureAndPushYardCheck();
+      else await refreshCaptureAndPushAlertMeter('automatic');
+      const completePath = command.type === 'capture-yardcheck' ? 'complete-yardcheck-command' : 'complete-alertmeter-command';
+      await fetch(`http://127.0.0.1:43127/api/${completePath}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: command.id, ok: true }),
       });
     } catch (error) {
-      await fetch('http://127.0.0.1:43127/api/complete-alertmeter-command', {
+      const completePath = command.type === 'capture-yardcheck' ? 'complete-yardcheck-command' : 'complete-alertmeter-command';
+      await fetch(`http://127.0.0.1:43127/api/${completePath}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: command.id, ok: false, error: error instanceof Error ? error.message : String(error) }),
@@ -354,28 +451,32 @@ function nextScheduledTime(times, now = new Date()) {
 
 async function scheduleNext(alarmName, times, enabled) {
   await chrome.alarms.clear(alarmName);
-  if (!enabled) return null;
+  if (!enabled || !Array.isArray(times) || !times.length) return null;
   const next = nextScheduledTime(times);
   await chrome.alarms.create(alarmName, { when: next.getTime() });
   return next;
 }
 
 async function scheduleAlertMeter(enabled) {
-  return scheduleNext(ALERTMETER_ALARM_NAME, ALERTMETER_TIMES, enabled);
+  const saved = await chrome.storage.local.get('alertMeterScheduleTimes');
+  return scheduleNext(ALERTMETER_ALARM_NAME, saved.alertMeterScheduleTimes || [], enabled);
 }
 
 async function restoreSchedules() {
   await chrome.alarms.clear(LEGACY_ALARM_NAME);
-  const saved = await chrome.storage.local.get(['mismatchScheduleEnabled', 'alertMeterScheduleEnabled', 'automaticEnabled']);
-  const mismatchEnabled = saved.mismatchScheduleEnabled ?? Boolean(saved.automaticEnabled);
+  const saved = await chrome.storage.local.get(['mismatchScheduleEnabled', 'alertMeterScheduleEnabled', 'yardCheckScheduleEnabled', 'automaticEnabled', 'mismatchScheduleTimes', 'alertMeterScheduleTimes', 'yardCheckScheduleTimes']);
+  const mismatchEnabled = Boolean(saved.mismatchScheduleEnabled);
   const alertMeterEnabled = Boolean(saved.alertMeterScheduleEnabled);
+  const yardCheckEnabled = Boolean(saved.yardCheckScheduleEnabled);
   await chrome.storage.local.set({
     mismatchScheduleEnabled: Boolean(mismatchEnabled),
     alertMeterScheduleEnabled: alertMeterEnabled,
+    yardCheckScheduleEnabled: yardCheckEnabled,
     automaticEnabled: false,
   });
-  await scheduleNext(MISMATCH_ALARM_NAME, MISMATCH_TIMES, Boolean(mismatchEnabled));
+  await scheduleNext(MISMATCH_ALARM_NAME, saved.mismatchScheduleTimes || [], Boolean(mismatchEnabled));
   await scheduleAlertMeter(alertMeterEnabled);
+  await scheduleNext(YARDCHECK_ALARM_NAME, saved.yardCheckScheduleTimes || [], yardCheckEnabled);
   await chrome.alarms.clear(COMMAND_POLL_ALARM_NAME);
   await chrome.alarms.create(COMMAND_POLL_ALARM_NAME, { delayInMinutes: 0.1, periodInMinutes: 0.5 });
 }
@@ -398,9 +499,9 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
     await pollYardMateCommands();
   }
   if (alarm.name === MISMATCH_ALARM_NAME) {
-    const saved = await chrome.storage.local.get('mismatchScheduleEnabled');
+    const saved = await chrome.storage.local.get(['mismatchScheduleEnabled', 'mismatchScheduleTimes']);
     try { await runExport('automatic'); } catch (_) {}
-    await scheduleNext(MISMATCH_ALARM_NAME, MISMATCH_TIMES, Boolean(saved.mismatchScheduleEnabled));
+    await scheduleNext(MISMATCH_ALARM_NAME, saved.mismatchScheduleTimes || [], Boolean(saved.mismatchScheduleEnabled));
   }
   if (alarm.name === ALERTMETER_ALARM_NAME) {
     try { await refreshCaptureAndPushAlertMeter('automatic'); } catch (error) {
@@ -408,6 +509,13 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
     }
     const saved = await chrome.storage.local.get('alertMeterScheduleEnabled');
     await scheduleAlertMeter(Boolean(saved.alertMeterScheduleEnabled));
+  }
+  if (alarm.name === YARDCHECK_ALARM_NAME) {
+    const saved = await chrome.storage.local.get(['yardCheckScheduleEnabled', 'yardCheckScheduleTimes']);
+    try { await refreshCaptureAndPushYardCheck(); } catch (error) {
+      await setStatus(error instanceof Error ? error.message : String(error), false);
+    }
+    await scheduleNext(YARDCHECK_ALARM_NAME, saved.yardCheckScheduleTimes || [], Boolean(saved.yardCheckScheduleEnabled));
   }
 });
 
@@ -426,6 +534,14 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     });
     return true;
   }
+  if (message?.type === 'mori-push-yardcheck') {
+    refreshCaptureAndPushYardCheck().then(sendResponse).catch(async (error) => {
+      const message = error instanceof Error ? error.message : String(error);
+      await setStatus(message, false);
+      sendResponse({ ok: false, error: message });
+    });
+    return true;
+  }
   if (message?.type === 'mori-set-schedule') {
     const kind = message.kind === 'alertmeter' ? 'alertmeter' : 'mismatch';
     const enabled = Boolean(message.enabled);
@@ -433,7 +549,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     chrome.storage.local.set({ [storageKey]: enabled })
       .then(() => kind === 'alertmeter'
         ? scheduleAlertMeter(enabled)
-        : scheduleNext(MISMATCH_ALARM_NAME, MISMATCH_TIMES, enabled))
+        : scheduleNext(MISMATCH_ALARM_NAME, [], enabled))
       .then(async (next) => {
         let initialMessage = '';
         if (enabled && kind === 'mismatch') {

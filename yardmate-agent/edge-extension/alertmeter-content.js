@@ -85,8 +85,18 @@
 
   async function prepareDashboard() {
     const initial = readDashboard();
-    if (!initial.ok || !Number.isFinite(initial.participation) || initial.participation >= 100) {
+    if (!initial.ok || !Number.isFinite(initial.participation)) {
       return initial;
+    }
+    if (initial.participation >= 100) {
+      const heading = smallestMatchingElement(/Last Test Results Collected for employees on shift in the past 24 hours/i);
+      const participation = smallestMatchingElement(/Employees Reporting In[\s\S]*?(\d+(?:\.\d+)?)%\s*Participation/i);
+      const target = heading || participation;
+      if (target && typeof target.scrollIntoView === 'function') {
+        target.scrollIntoView({ block: 'start', inline: 'nearest' });
+        await wait(350);
+      }
+      return readDashboard();
     }
     const previousRowCount = visibleEmployeeRowCount();
     let filterApplied = clickNoTestTakenText();
@@ -122,7 +132,7 @@
     const participationMatch = participationText.match(/(\d+(?:\.\d+)?)%\s*Participation/i);
     const heading = smallestMatchingElement(/Last Test Results Collected for employees on shift in the past 24 hours/i);
     const headingRect = heading?.getBoundingClientRect();
-    const top = Math.max(0, Math.floor((headingRect?.top ?? 0) - 12));
+    const top = Math.max(0, Math.min(window.innerHeight - 1, Math.floor((headingRect?.top ?? 0) - 12)));
     return {
       ok: Boolean(participationMatch && heading),
       participation: participationMatch ? Number(participationMatch[1]) : null,

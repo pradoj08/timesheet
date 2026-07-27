@@ -1280,6 +1280,252 @@
       min-width: 980px;
     }
 
+    .shift-lpmh-view {
+      display: grid;
+      gap: 18px;
+      min-width: 980px;
+    }
+
+    .shift-lpmh-panel {
+      overflow: hidden;
+      border: 1px solid #d6e0ec;
+      border-radius: 10px;
+      background: #fff;
+    }
+
+    .shift-lpmh-panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 12px 16px;
+      color: #fff;
+      background: #173a66;
+    }
+
+    .shift-lpmh-panel.night .shift-lpmh-panel-head {
+      background: #40246f;
+    }
+
+    .shift-lpmh-panel-title {
+      font-size: 15px;
+      font-weight: 900;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+
+    .shift-lpmh-week-average {
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .shift-lpmh-weekdays,
+    .shift-lpmh-grid {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(125px, 1fr));
+    }
+
+    .shift-lpmh-weekdays span {
+      padding: 7px 10px;
+      border-right: 1px solid #dfe6ef;
+      color: var(--muted);
+      background: #f5f8fc;
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      text-align: center;
+      text-transform: uppercase;
+    }
+
+    .shift-lpmh-day {
+      aspect-ratio: 1 / 1;
+      min-height: 125px;
+      width: 100%;
+      padding: 12px;
+      border: 0;
+      border-top: 1px solid #dfe6ef;
+      border-right: 1px solid #dfe6ef;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      background: #f7f9fc;
+      color: inherit;
+      font: inherit;
+      text-align: left;
+      cursor: pointer;
+      transition: filter .15s ease, transform .15s ease;
+    }
+
+    .shift-lpmh-day:hover,
+    .shift-lpmh-day:focus-visible {
+      filter: brightness(.97);
+      outline: 3px solid #2563eb;
+      outline-offset: -3px;
+    }
+
+    .shift-lpmh-day:active {
+      transform: scale(.99);
+    }
+
+    .shift-lpmh-day:last-child,
+    .shift-lpmh-weekdays span:last-child {
+      border-right: 0;
+    }
+
+    .shift-lpmh-date {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    .shift-lpmh-value {
+      color: var(--ink);
+      font-size: 27px;
+      font-weight: 900;
+      line-height: 1;
+      text-align: center;
+    }
+
+    .shift-lpmh-value small {
+      font-size: 10px;
+      letter-spacing: 0.05em;
+    }
+
+    .shift-lpmh-meta {
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 800;
+      text-align: center;
+    }
+
+    .shift-lpmh-employees {
+      display: -webkit-box;
+      overflow: hidden;
+      color: #334155;
+      font-size: 9px;
+      font-weight: 800;
+      line-height: 1.25;
+      text-align: center;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+    }
+
+    .shift-lpmh-detail-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 140;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      overflow: auto;
+      padding: 54px 18px 24px;
+      background: rgba(15, 23, 42, .62);
+    }
+
+    .shift-lpmh-detail {
+      width: min(980px, 100%);
+      overflow: hidden;
+      border: 1px solid #94a3b8;
+      border-radius: 10px;
+      background: #fff;
+      box-shadow: 0 24px 70px rgba(15, 23, 42, .35);
+    }
+
+    .shift-lpmh-detail-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 14px 16px;
+      background: #17233a;
+      color: #fff;
+    }
+
+    .shift-lpmh-detail-head strong {
+      display: block;
+      font-size: 17px;
+    }
+
+    .shift-lpmh-detail-head span {
+      color: #cbd5e1;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .shift-lpmh-detail-close {
+      width: 34px;
+      height: 34px;
+      border: 1px solid #64748b;
+      border-radius: 6px;
+      background: #0f172a;
+      color: #fff;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .shift-lpmh-detail-body {
+      overflow-x: auto;
+      padding: 14px;
+    }
+
+    .shift-lpmh-detail-table {
+      width: 100%;
+      min-width: 760px;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+
+    .shift-lpmh-detail-table th,
+    .shift-lpmh-detail-table td {
+      padding: 9px 10px;
+      border: 1px solid #dbe3ed;
+      vertical-align: top;
+    }
+
+    .shift-lpmh-detail-table th {
+      background: #eef3f8;
+      color: #475569;
+      font-size: 10px;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+
+    .shift-lpmh-detail-table td {
+      color: #172033;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .shift-lpmh-detail-table th:nth-child(1) { width: 14%; }
+    .shift-lpmh-detail-table th:nth-child(2),
+    .shift-lpmh-detail-table th:nth-child(3),
+    .shift-lpmh-detail-table th:nth-child(4) { width: 10%; }
+    .shift-lpmh-detail-table th:nth-child(5) { width: 56%; }
+
+    .shift-lpmh-detail-total td {
+      background: #e8f1fb;
+      font-weight: 900;
+    }
+
+    .shift-lpmh-day.good {
+      background: #e3f7ef;
+      box-shadow: inset 0 4px #16a37a;
+    }
+
+    .shift-lpmh-day.warn {
+      background: #fff4d6;
+      box-shadow: inset 0 4px #e3a008;
+    }
+
+    .shift-lpmh-day.bad {
+      background: #fde8e8;
+      box-shadow: inset 0 4px #d63b3b;
+    }
+
+    .shift-lpmh-day.empty .shift-lpmh-value {
+      color: #a4afbd;
+    }
+
     .group-bubble {
       cursor: pointer;
       transition: opacity 0.15s ease, stroke-width 0.15s ease;
@@ -1292,7 +1538,7 @@
 
     .group-label {
       fill: var(--ink);
-      font-size: 13px;
+      font-size: 15px;
       font-weight: 900;
       text-anchor: middle;
       pointer-events: none;
@@ -1300,7 +1546,7 @@
 
     .group-sub-label {
       fill: var(--muted);
-      font-size: 11px;
+      font-size: 12px;
       font-weight: 800;
       text-anchor: middle;
       pointer-events: none;
@@ -1547,7 +1793,7 @@
             <label class="filter-field">Metric sizing<select id="groupMapMetric"><option value="avgLpmh">Average LPMH</option><option value="totalLpmh">Total LPMH</option><option value="variance">LPMH vs target</option><option value="people">Person count</option></select></label>
             <label class="filter-field">Size scale<select id="groupMapScale"><option value="linear">Linear</option><option value="log">Logarithmic</option><option value="normalized">Normalized</option></select></label>
             <label class="filter-field compact-filter">Min LPMH<input id="groupMapMinLpmh" type="number" min="0" step="0.1"></label>
-            <label class="filter-field compact-filter">Target LPMH<input id="groupMapTarget" type="number" min="0" step="0.1" value="3"></label>
+            <label class="filter-field compact-filter">Target LPMH<input id="groupMapTarget" type="number" min="0" step="0.1" value="2.1"></label>
             <label class="filter-field">Show groups<select id="groupMapTargetFilter"><option value="all">All groups</option><option value="above">Above target</option><option value="below">Below target</option></select></label>
             <label class="filter-field">Sort<select id="groupMapSort"><option value="highest">Highest LPMH</option><option value="lowest">Lowest LPMH</option><option value="largest">Largest team</option></select></label>
             <label class="filter-field">Manager<select id="analyticsManager"><option value="all">All managers</option></select></label>
@@ -1555,6 +1801,7 @@
             <button id="analyticsEmployeesButton" class="analytics-employee-button" type="button">Employees</button>
             <button id="groupMapReset" class="bulk-action" type="button">Reset</button>
             <button id="groupMapViewToggle" class="bulk-action" type="button">Table view</button>
+            <button id="groupMapShiftToggle" class="bulk-action" type="button">Shift Grid</button>
           </div>
           <div id="groupMapContainer"></div>
         </div>
@@ -1691,6 +1938,7 @@
   <script>
     const STORE_KEY = "ops-monthly-v2";
     const LEGACY_STORE_KEY = "ops-monthly-v1";
+    const SHIFT_GRID_RESTORE_KEY = "ops-monthly-shift-grid-restored-v1";
     const TIMESHEET_ARCHIVE_KEY = "conglobal-timesheet-archive-v1";
     const LIFT_FIELDS = ["ramp", "deramp", "flip", "stacked", "unstacked", "chUnstacked", "chStacked"];
     const GATE_FIELDS = ["ingates", "outgates", "ingateRefusals", "outgateRefusals"];
@@ -1718,6 +1966,7 @@
       managerNames: [],
       managerContextEnabled: false,
       groupMapView: "map",
+      groupMapMode: "groups",
       groupMapSelected: "",
       previewFilter: "all",
       reasonFilter: "all",
@@ -1796,6 +2045,7 @@
       groupMapSort: document.querySelector("#groupMapSort"),
       groupMapReset: document.querySelector("#groupMapReset"),
       groupMapViewToggle: document.querySelector("#groupMapViewToggle"),
+      groupMapShiftToggle: document.querySelector("#groupMapShiftToggle"),
       groupMapContainer: document.querySelector("#groupMapContainer"),
       analyticsEmployeesButton: document.querySelector("#analyticsEmployeesButton"),
       analyticsEmployeesModal: document.querySelector("#analyticsEmployeesModal"),
@@ -1821,6 +2071,7 @@
     load();
     render();
     renderAnalytics();
+    hydrateAnalyticsFromTimesheetArchive().catch(() => {});
 
     els.operationsTab.addEventListener("click", () => setPage("operations"));
     els.analyticsTab.addEventListener("click", () => setPage("analytics"));
@@ -1970,7 +2221,8 @@
       const suffix = failed.length ? ` Failed: ${failed.join(", ")}` : "";
       const duplicateNote = prepared.skippedDuplicates ? ` Counted ${prepared.skippedDuplicates} duplicate${prepared.skippedDuplicates === 1 ? "" : "s"} once.` : "";
       const uniqueNote = prepared.uniqueMoveRows ? ` Counted ${prepared.uniqueMoveRows} unique ramp/deramp unit${prepared.uniqueMoveRows === 1 ? "" : "s"}.` : "";
-      showToast(`Imported ${dayCount} day${dayCount === 1 ? "" : "s"} from ${files.length} file${files.length === 1 ? "" : "s"}.${uniqueNote}${duplicateNote}${suffix}`);
+      const persistenceNote = state.persistenceWarning ? " Detailed import history exceeded browser storage; totals were retained." : "";
+      showToast(`Imported ${dayCount} day${dayCount === 1 ? "" : "s"} from ${files.length} file${files.length === 1 ? "" : "s"}.${uniqueNote}${duplicateNote}${suffix}${persistenceNote}`);
     });
 
     els.analyticsTimesheetInput.addEventListener("change", async (event) => {
@@ -2039,6 +2291,11 @@
       persist();
       renderAnalytics();
     });
+    els.groupMapShiftToggle.addEventListener("click", () => {
+      state.groupMapMode = state.groupMapMode === "shifts" ? "groups" : "shifts";
+      persist();
+      renderAnalytics();
+    });
 
     function currentMonth() {
       const now = new Date();
@@ -2066,10 +2323,15 @@
           state.managerContextEnabled = !!saved.managerContextEnabled;
           state.importedFiles = state.importedFiles.map((file) => file.type === "analytics" ? { dayManager: "", nightManager: "", ...file } : file);
           state.groupMapView = saved.groupMapView || "map";
+          state.groupMapMode = saved.groupMapMode === "shifts" ? "shifts" : "groups";
           state.groupMapSelected = saved.groupMapSelected || "";
           state.page = saved.page || "operations";
           normalizeExistingTimesheetDates();
           syncTimesheetManHoursFromAnalytics();
+        }
+        if (localStorage.getItem(SHIFT_GRID_RESTORE_KEY) !== "1") {
+          state.groupMapMode = "shifts";
+          localStorage.setItem(SHIFT_GRID_RESTORE_KEY, "1");
         }
       } catch (error) {
         state.data = {};
@@ -2078,7 +2340,7 @@
     }
 
     function persist() {
-      localStorage.setItem(STORE_KEY, JSON.stringify({
+      const payload = {
         month: state.month,
         data: state.data,
         moveDetails: state.moveDetails,
@@ -2095,9 +2357,29 @@
         managerNames: state.managerNames,
         managerContextEnabled: state.managerContextEnabled,
         groupMapView: state.groupMapView,
+        groupMapMode: state.groupMapMode,
         groupMapSelected: state.groupMapSelected,
         page: state.page
-      }));
+      };
+      try {
+        localStorage.setItem(STORE_KEY, JSON.stringify(payload));
+        state.persistenceWarning = false;
+      } catch (error) {
+        if (error && (error.name === "QuotaExceededError" || error.code === 22)) {
+          // Keep the imported totals and file list usable when detailed audit data exceeds localStorage.
+          const compactPayload = {
+            ...payload,
+            moveDetails: [],
+            importedCells: []
+          };
+          try {
+            localStorage.setItem(STORE_KEY, JSON.stringify(compactPayload));
+            state.persistenceWarning = true;
+            return;
+          } catch (compactError) {}
+        }
+        throw error;
+      }
     }
 
     let performanceResizeObserver = null;
@@ -2142,7 +2424,10 @@
       els.analyticsTab.classList.toggle("active", page === "analytics");
       els.performanceTab.classList.toggle("active", page === "performance");
       persist();
-      if (page === "analytics") renderAnalytics();
+      if (page === "analytics") {
+        renderAnalytics();
+        hydrateAnalyticsFromTimesheetArchive().catch(() => {});
+      }
       if (page === "performance") {
         ensurePerformancePage();
         setTimeout(resizePerformanceFrame, 0);
@@ -2771,7 +3056,7 @@
       const input = document.createElement("input");
       input.className = "cell-input";
       input.inputMode = mode;
-      input.value = typeof value === "number" ? String(value) : "";
+      input.value = typeof value === "number" ? (mode === "decimal" ? value.toFixed(1) : String(value)) : "";
       input.addEventListener("change", () => setCell(key, field, input.value));
       cell.append(input);
       return cell;
@@ -2833,7 +3118,7 @@
       values.forEach((value, index) => {
         const cell = document.createElement("td");
         if (index >= 4 && index <= 7) cell.classList.add("gate-column");
-        cell.textContent = typeof value === "number" ? formatNonZero(value, index === 18 ? 2 : null) : value;
+        cell.textContent = typeof value === "number" ? formatNonZero(value, index === 15 || index === 16 ? 1 : index === 18 ? 2 : null) : value;
         els.totalRow.append(cell);
       });
 
@@ -3034,6 +3319,53 @@
       }, 0);
     }
 
+    function analyticsRowsFromTimesheetArchive(archive) {
+      const rows = [];
+      Object.keys(archive || {}).filter((date) => date.startsWith(state.month + "-")).sort().forEach((date) => {
+        const shifts = archive[date] && archive[date].shifts;
+        if (!shifts || typeof shifts !== "object") return;
+        [["first", "1st Shift"], ["second", "2nd Shift"]].forEach(([shift, sheet]) => {
+          const employees = Array.isArray(shifts[shift]) ? shifts[shift] : [];
+          employees.forEach((employee, index) => {
+            const name = String(employee && (employee.name || employee.employee || employee.displayName) || "").trim();
+            const start = timeMinutes(employee && employee.start);
+            const end = timeMinutes(employee && employee.end);
+            const actual = Number(employee && employee.actual) || 0;
+            const hours = actual > 0 ? Math.round(actual * 100) / 100 : hoursBetween(start, end);
+            if (!name || !(hours > 0)) return;
+            rows.push({
+              id: `archive-${date}-${shift}-${index}-${normalizeName(name)}`,
+              source: "Roster Archive",
+              sheet,
+              rowNumber: index + 1,
+              role: "operations",
+              date,
+              employee: normalizeName(name),
+              displayName: titleName(name),
+              shift,
+              start,
+              end,
+              hours,
+              fileId: "archive-time-" + state.month
+            });
+          });
+        });
+      });
+      return rows;
+    }
+
+    async function hydrateAnalyticsFromTimesheetArchive(force = false) {
+      if (!force && state.analyticsRows.length) return false;
+      const archive = await readTimesheetArchive();
+      const rows = analyticsRowsFromTimesheetArchive(archive);
+      if (!rows.length) return false;
+      const sourceId = "archive-time-" + state.month;
+      state.analyticsRows = state.analyticsRows.filter((row) => row.fileId !== sourceId).concat(rows);
+      persist();
+      renderAnalytics();
+      return true;
+    }
+
     async function importTimeFromArchive() {
       const archive = await readTimesheetArchive();
       const dates = Object.keys(archive).filter((date) => date.startsWith(state.month + "-")).sort();
@@ -3077,10 +3409,12 @@
         rows: archiveRows.length,
         importedAt: new Date().toISOString()
       });
+      const analyticsRows = analyticsRowsFromTimesheetArchive(archive);
+      state.analyticsRows = state.analyticsRows.filter((row) => row.fileId !== sourceId).concat(analyticsRows);
       persist();
       render();
       renderAnalytics();
-      showToast("Imported archive man hours for " + archiveRows.length + " day" + (archiveRows.length === 1 ? "" : "s") + ".");
+      showToast("Imported archive man hours for " + archiveRows.length + " day" + (archiveRows.length === 1 ? "" : "s") + " and " + analyticsRows.length + " analytics row" + (analyticsRows.length === 1 ? "" : "s") + ".");
     }
 
     function syncTimesheetManHoursFromAnalytics() {
@@ -3573,8 +3907,8 @@
       const excludedCount = state.analyticsExcludedEmployees.length;
       els.analyticsEmployeesButton.textContent = excludedCount ? `Employees (${excludedCount} excluded)` : "Employees";
       const managerContextNote = state.managerContextEnabled ? " Manager-aware mode is on, so employee groups are split by the assigned day/night manager for the shift." : "";
-      els.analyticsStatus.textContent = `Shift LPMH uses timestamped imported lift rows when available. Person grouping evaluates same-shift coworker combinations, so only people who actually appeared on the same shift are paired.${managerContextNote}${excludedCount ? ` ${excludedCount} employee${excludedCount === 1 ? "" : "s"} excluded from findings.` : ""}`;
-      renderPersonGroupingMap(filtered);
+      els.analyticsStatus.textContent = `Shift LPMH uses timestamped imported lift rows when available; otherwise the day's lift total is allocated by each shift's share of labor hours. Person grouping evaluates same-shift coworker combinations, so only people who actually appeared on the same shift are paired.${managerContextNote}${excludedCount ? ` ${excludedCount} employee${excludedCount === 1 ? "" : "s"} excluded from findings.` : ""}`;
+      renderPersonGroupingMap(state.groupMapMode === "shifts" ? filterAnalyticsShifts(shifts, true) : filtered);
       renderDailyShiftPerformance(filtered);
       renderGroupAnalysis(filtered);
       renderPairingAnalysis(filtered);
@@ -3596,10 +3930,18 @@
         const manager = managerForAnalyticsRow(row, fileMap);
         if (manager) g.managers.set(normalizeName(manager), manager);
       });
-      return Array.from(grouped.values()).map((shift) => {
-        const lifts = timestampedLiftsForShift(shift);
+      const shifts = Array.from(grouped.values());
+      const hoursByDate = new Map();
+      shifts.forEach((shift) => hoursByDate.set(shift.date, (hoursByDate.get(shift.date) || 0) + shift.hours));
+      return shifts.map((shift) => {
+        const timestampedLifts = timestampedLiftsForShift(shift);
+        const dailyHours = hoursByDate.get(shift.date) || 0;
+        const dailyLifts = operationLiftCount(state.data[shift.date] || {});
+        const lifts = timestampedLifts == null && dailyHours > 0
+          ? Math.round((dailyLifts * shift.hours / dailyHours) * 100) / 100
+          : timestampedLifts || 0;
         const managerNames = Array.from(shift.managers.values()).sort((a, b) => a.localeCompare(b));
-        return { ...shift, managerNames, managerKeys: managerNames.map(normalizeName), lifts, lpmh: shift.hours > 0 ? lifts / shift.hours : null };
+        return { ...shift, managerNames, managerKeys: managerNames.map(normalizeName), lifts, liftSource: timestampedLifts == null ? "daily-total allocation" : "timestamped lifts", lpmh: shift.hours > 0 ? lifts / shift.hours : null };
       });
     }
 
@@ -3671,9 +4013,11 @@
 
     function timestampedLiftsForShift(shift) {
       const windows = shift.employees.filter((e) => e.start != null && e.end != null).map((e) => ({ start: e.start, end: e.end }));
-      if (!windows.length) return 0;
+      if (!windows.length) return null;
+      const details = state.moveDetails.filter((d) => !d.deleted && d.date === shift.date);
+      if (!details.length) return null;
       const seen = new Set();
-      state.moveDetails.filter((d) => !d.deleted && d.date === shift.date).forEach((detail) => {
+      details.forEach((detail) => {
         const minute = detailMinute(detail);
         if (minute == null) return;
         if (windows.some((w) => minuteInWindow(minute, w.start, w.end))) seen.add(`${detail.field}|${detail.equipment}`);
@@ -3681,7 +4025,7 @@
       return seen.size;
     }
 
-    function filterAnalyticsShifts(shifts) {
+    function filterAnalyticsShifts(shifts, ignoreShiftFilter = false) {
       const start = els.analyticsStart.value;
       const end = els.analyticsEnd.value;
       const shiftFilter = els.analyticsShift?.value || "all";
@@ -3691,7 +4035,7 @@
       return shifts.filter((shift) => {
         if (start && shift.date < start) return false;
         if (end && shift.date > end) return false;
-        if (shiftFilter !== "all" && shift.shift !== shiftFilter) return false;
+        if (!ignoreShiftFilter && shiftFilter !== "all" && shift.shift !== shiftFilter) return false;
         if (managerFilter === "unassigned" && shift.managerKeys.length) return false;
         if (!["all", "compare", "unassigned"].includes(managerFilter) && !shift.managerKeys.includes(managerFilter)) return false;
         if (employee && !shift.employees.some((e) => e.employee.includes(employee))) return false;
@@ -3701,6 +4045,13 @@
     }
 
     function renderPersonGroupingMap(shifts) {
+      const showingShiftGrid = state.groupMapMode === "shifts";
+      els.groupMapShiftToggle.textContent = showingShiftGrid ? "Group Bubbles" : "Shift Grid";
+      els.groupMapViewToggle.classList.toggle("hidden", showingShiftGrid);
+      if (showingShiftGrid) {
+        renderShiftLpmhGrid(shifts);
+        return;
+      }
       const groups = buildPersonGroupingMapData(shifts);
       els.groupMapViewToggle.textContent = state.groupMapView === "map" ? "Table view" : "Map view";
       if (!groups.length) {
@@ -3714,6 +4065,120 @@
         renderPersonGroupingSvg(groups);
       }
       if (helper) els.groupMapContainer.insertAdjacentHTML("afterbegin", helper);
+    }
+
+    function renderShiftLpmhGrid(shifts) {
+      const datedShifts = shifts.filter((shift) => /^\d{4}-\d{2}-\d{2}$/.test(shift.date || ""));
+      const latestKey = els.analyticsEnd.value || datedShifts.map((shift) => shift.date).sort().pop() || toKey(new Date());
+      const parts = latestKey.split("-").map(Number);
+      const anchor = new Date(parts[0], parts[1] - 1, parts[2], 12);
+      const windowStart = new Date(anchor);
+      windowStart.setDate(anchor.getDate() - 27);
+      const weekdayColumns = DAY_NAMES.map((name, index) => ({ name, index }));
+      const target = numberValue(els.groupMapTarget.value) || 3;
+      const breakdowns = {};
+
+      const panel = (shiftKey, title, panelClass) => {
+        const daily = weekdayColumns.map((weekday) => {
+          const matches = datedShifts.filter((shift) => {
+            if (shift.shift !== shiftKey) return false;
+            const dateParts = shift.date.split("-").map(Number);
+            const date = new Date(dateParts[0], dateParts[1] - 1, dateParts[2], 12);
+            return date >= windowStart && date <= anchor && date.getDay() === weekday.index;
+          });
+          const hours = matches.reduce((total, shift) => total + (Number(shift.hours) || 0), 0);
+          const lifts = matches.reduce((total, shift) => total + (Number(shift.lifts) || 0), 0);
+          const lpmh = hours > 0 ? lifts / hours : null;
+          const employees = Array.from(new Map(matches.flatMap((shift) => shift.employees || []).map((employee) => {
+            const name = String(employee.displayName || employee.name || employee.employee || "").trim();
+            return [normalizeName(name), name];
+          }).filter(([key]) => key)).values()).sort((a, b) => a.localeCompare(b));
+          return { weekday, hours, lifts, lpmh, sampleCount: matches.length, matches, employees };
+        });
+        const weekHours = daily.reduce((total, day) => total + day.hours, 0);
+        const weekLifts = daily.reduce((total, day) => total + day.lifts, 0);
+        const weekAverage = weekHours > 0 ? weekLifts / weekHours : null;
+        const cells = daily.map((day) => {
+          const detailKey = `${shiftKey}-${day.weekday.index}`;
+          breakdowns[detailKey] = { shiftKey, title, day };
+          const level = day.lpmh == null ? "empty" : day.lpmh >= target ? "good" : day.lpmh >= Math.max(0, target - 0.5) ? "warn" : "bad";
+          const value = day.lpmh == null ? "—" : day.lpmh.toFixed(2);
+          const meta = day.lpmh == null ? "No shift data" : `${day.sampleCount} day${day.sampleCount === 1 ? "" : "s"} · ${Math.round(day.lifts).toLocaleString("en-US")} lifts · ${day.hours.toFixed(1)} hrs`;
+          const employeeText = day.employees.length ? `Employees: ${day.employees.join(", ")}` : "No employees";
+          return `<button class="shift-lpmh-day ${level}" type="button" data-shift-lpmh-detail="${detailKey}" aria-label="Open ${day.weekday.name} ${title} breakdown">
+            <span class="shift-lpmh-date">Previous 4 ${day.weekday.name}s</span>
+            <strong class="shift-lpmh-value">${value}${day.lpmh == null ? "" : " <small>LPMH</small>"}</strong>
+            <span class="shift-lpmh-meta">${meta}</span>
+            <span class="shift-lpmh-employees" title="${escapeHtml(employeeText)}">${escapeHtml(employeeText)}</span>
+          </button>`;
+        }).join("");
+        const averageLabel = weekAverage == null ? "No 4-week data" : `4-week avg ${weekAverage.toFixed(2)} LPMH`;
+        return `<section class="shift-lpmh-panel ${panelClass}">
+          <header class="shift-lpmh-panel-head">
+            <span class="shift-lpmh-panel-title">${title}</span>
+            <span class="shift-lpmh-week-average">${averageLabel}</span>
+          </header>
+          <div class="shift-lpmh-weekdays">${weekdayColumns.map((day) => `<span>${day.name}</span>`).join("")}</div>
+          <div class="shift-lpmh-grid">${cells}</div>
+        </section>`;
+      };
+
+      els.groupMapContainer.innerHTML = `<div class="group-map-stage"><div class="shift-lpmh-view">
+        ${panel("first", "Day Shift · 0300–1500", "day")}
+        ${panel("second", "Night Shift · 1500–0300", "night")}
+      </div></div>`;
+      els.groupMapContainer.querySelectorAll("[data-shift-lpmh-detail]").forEach((button) => {
+        button.addEventListener("click", () => openShiftLpmhBreakdown(breakdowns[button.dataset.shiftLpmhDetail]));
+      });
+    }
+
+    function shiftLpmhEmployeeNames(shift) {
+      return Array.from(new Map((shift.employees || []).map((employee) => {
+        const name = String(employee.displayName || employee.name || employee.employee || "").trim();
+        return [normalizeName(name), name];
+      }).filter(([key]) => key)).values()).sort((a, b) => a.localeCompare(b));
+    }
+
+    function closeShiftLpmhBreakdown() {
+      document.querySelector(".shift-lpmh-detail-backdrop")?.remove();
+    }
+
+    function openShiftLpmhBreakdown(detail) {
+      if (!detail) return;
+      closeShiftLpmhBreakdown();
+      const { day, title } = detail;
+      const rows = day.matches.slice().sort((a, b) => a.date.localeCompare(b.date)).map((shift) => {
+        const employees = shiftLpmhEmployeeNames(shift);
+        const lpmh = Number(shift.hours) > 0 ? Number(shift.lifts || 0) / Number(shift.hours) : null;
+        return `<tr>
+          <td>${escapeHtml(shift.date)}</td>
+          <td>${Math.round(Number(shift.lifts) || 0).toLocaleString("en-US")}</td>
+          <td>${Number(shift.hours || 0).toFixed(1)}</td>
+          <td>${lpmh == null ? "—" : lpmh.toFixed(2)}</td>
+          <td>${employees.length ? escapeHtml(employees.join(", ")) : "No employees recorded"}</td>
+        </tr>`;
+      }).join("");
+      const overlay = document.createElement("div");
+      overlay.className = "shift-lpmh-detail-backdrop";
+      overlay.innerHTML = `<section class="shift-lpmh-detail" role="dialog" aria-modal="true" aria-labelledby="shiftLpmhDetailTitle">
+        <header class="shift-lpmh-detail-head">
+          <div><strong id="shiftLpmhDetailTitle">${day.weekday.name} · ${title}</strong><span>Previous four weeks used in this weighted LPMH average</span></div>
+          <button class="shift-lpmh-detail-close" type="button" aria-label="Close detailed breakdown">X</button>
+        </header>
+        <div class="shift-lpmh-detail-body">
+          <table class="shift-lpmh-detail-table">
+            <thead><tr><th>Date</th><th>Lifts</th><th>Hours</th><th>LPMH</th><th>Employees working</th></tr></thead>
+            <tbody>${rows || `<tr><td colspan="5">No matching shift data.</td></tr>`}
+              <tr class="shift-lpmh-detail-total"><td>Weighted total</td><td>${Math.round(day.lifts).toLocaleString("en-US")}</td><td>${day.hours.toFixed(1)}</td><td>${day.lpmh == null ? "—" : day.lpmh.toFixed(2)}</td><td>${day.employees.length ? escapeHtml(day.employees.join(", ")) : "No employees recorded"}</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>`;
+      overlay.addEventListener("click", (event) => {
+        if (event.target === overlay || event.target.closest(".shift-lpmh-detail-close")) closeShiftLpmhBreakdown();
+      });
+      document.body.appendChild(overlay);
+      overlay.querySelector(".shift-lpmh-detail-close").focus();
     }
 
     function buildPersonGroupingMapData(shifts) {
@@ -3820,15 +4285,15 @@
       const sizedGroups = groups.map((group) => {
         const raw = groupSizingValue(group);
         const normalized = scale === "log" ? Math.log1p(raw) / Math.log1p(max) : scale === "normalized" ? (raw - min) / ((max - min) || 1) : raw / max;
-        const area = 14500 + Math.max(0.12, normalized) * 50000;
-        const rx = Math.sqrt(area / Math.PI) * 1.35;
-        const ry = Math.sqrt(area / Math.PI) * 0.92;
+        const area = 22000 + Math.max(0.12, normalized) * 70000;
+        const rx = Math.sqrt(area / Math.PI) * 1.45;
+        const ry = Math.sqrt(area / Math.PI) * 0.98;
         return { group, rx, ry };
       });
       const maxRx = Math.max(...sizedGroups.map((item) => item.rx), 1);
       const maxRy = Math.max(...sizedGroups.map((item) => item.ry), 1);
       const colWidth = Math.max(width / cols, (maxRx * 2) + bubbleGap);
-      const rowHeight = Math.max(245, (maxRy * 2) + bubbleGap);
+      const rowHeight = Math.max(285, (maxRy * 2) + bubbleGap);
       const leftPad = colWidth / 2;
       const nodes = sizedGroups.map((item, index) => {
         const { group, rx, ry } = item;
@@ -3945,7 +4410,7 @@
         formatNonZero(s.hours, 2),
         scoreCell(s.lpmh, shifts.length)
       ]);
-      els.dailyShiftPerformance.innerHTML = analyticsTable(["Date", "Shift", "Manager", "Employees", "Timestamped lifts", "Labor hours", "LPMH"], rows);
+      els.dailyShiftPerformance.innerHTML = analyticsTable(["Date", "Shift", "Manager", "Employees", "Attributed lifts", "Labor hours", "LPMH"], rows);
     }
 
     function renderGroupAnalysis(shifts) {

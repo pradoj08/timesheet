@@ -25,18 +25,52 @@ let lastExtensionSeenAt = '';
 let extensionSchedule = {
   mismatchEnabled: false,
   alertMeterEnabled: false,
+  yardCheckEnabled: false,
   mismatchNextAt: '',
   alertMeterNextAt: '',
+  yardCheckNextAt: '',
+};
+let programmedSchedules = {
+  mismatchEnabled: false,
+  alertMeterEnabled: false,
+  yardCheckEnabled: false,
+  mismatchTimes: [],
+  alertMeterTimes: [],
+  yardCheckTimes: [],
 };
 let lastRows = [];
 let sourceRefresh = { timestamp: '', observedAt: '', ageMinutes: null, verified: false, changed: false };
 let alertMeterCommand = { id: '', status: 'idle', requestedAt: '', claimedAt: '', completedAt: '', error: '' };
+let yardCheckCommand = { id: '', status: 'idle', requestedAt: '', claimedAt: '', completedAt: '', error: '' };
 const queued = new Map();
 const processed = new Set();
 const processing = new Set();
 
 function text(value) {
   return String(value ?? '').replace(/\s+/g, ' ').trim();
+}
+
+function normalizeScheduleTimes(value) {
+  const values = Array.isArray(value) ? value : String(value || '').split(/[\s,;]+/);
+  return [...new Set(values.map((item) => String(item).replace(/\D/g, '').padStart(4, '0')).filter((item) => {
+    const hour = Number(item.slice(0, 2));
+    const minute = Number(item.slice(2));
+    return hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59;
+  }))].sort();
+}
+
+function normalizeProgrammedSchedules(value = {}) {
+  const mismatchTimes = normalizeScheduleTimes(value.mismatchTimes);
+  const alertMeterTimes = normalizeScheduleTimes(value.alertMeterTimes);
+  const yardCheckTimes = normalizeScheduleTimes(value.yardCheckTimes);
+  return {
+    mismatchEnabled: Boolean(value.mismatchEnabled) && mismatchTimes.length > 0,
+    alertMeterEnabled: Boolean(value.alertMeterEnabled) && alertMeterTimes.length > 0,
+    yardCheckEnabled: Boolean(value.yardCheckEnabled) && yardCheckTimes.length > 0,
+    mismatchTimes,
+    alertMeterTimes,
+    yardCheckTimes,
+  };
 }
 
 function mismatchDurationMinutes(value, now = new Date()) {
@@ -78,6 +112,7 @@ async function loadSettings() {
   const defaults = { enabled: false, downloadFolder: app.getPath('downloads'), appToken: '', userKey: '' };
   try {
     const stored = JSON.parse(await readFile(settingsPath, 'utf8'));
+    programmedSchedules = normalizeProgrammedSchedules(stored.programmedSchedules);
     return {
       enabled: Boolean(stored.enabled),
       downloadFolder: path.isAbsolute(stored.downloadFolder || '') ? stored.downloadFolder : defaults.downloadFolder,
@@ -96,6 +131,7 @@ async function persistSettings() {
     downloadFolder: settings.downloadFolder,
     appToken: encrypt(settings.appToken),
     userKey: encrypt(settings.userKey),
+    programmedSchedules,
   }, null, 2), 'utf8');
 }
 
@@ -116,14 +152,22 @@ function publicState() {
     alertMeterPreviewAvailable: Boolean(lastAlertMeterPreview.length),
     alertMeterCapturedAt: lastAlertMeterCapturedAt,
     extensionConnected: Number.isFinite(extensionAge) && extensionAge < 90000,
+    yardCheckOnline: Number.isFinite(extensionAge) && extensionAge < 90000,
     extensionLastSeenAt: lastExtensionSeenAt,
     extensionSchedule,
+    programmedSchedules,
     sourceRefresh,
     alertMeterCommand: {
       status: alertMeterCommand.status,
       requestedAt: alertMeterCommand.requestedAt,
       completedAt: alertMeterCommand.completedAt,
       error: alertMeterCommand.error,
+    },
+    yardCheckCommand: {
+      status: yardCheckCommand.status,
+      requestedAt: yardCheckCommand.requestedAt,
+      completedAt: yardCheckCommand.completedAt,
+      error: yardCheckCommand.error,
     },
     counts: { total: lastRows.length, noMates, mismatches: lastRows.length - noMates },
   };
@@ -395,6 +439,49 @@ async function pushAlertMeterSnapshot(payload) {
         : `OUT OF COMPLIANCE: participation is ${participation}%.${missingEmployees.length
           ? ` No test taken: ${missingEmployees.join(', ')}.`
           : ' The No Test Taken filter was applied; review the attached cropped table.'}`,
+      attachment_base64: attachment.toString('base64'),
+      attachment_type: 'image/jpeg',
+    }),
+  });
+  const result = await response.json();
+  if (!response.ok || result.status !== 1) throw new Error(result.errors?.join(' ') || `Pushover returned ${response.status}.`);
+}
+
+async function pushYardCheckSnapshot(payload) {
+  if (!settings.appToken || !settings.userKey) throw new Error('Enter both Pushover keys in YardMate Agent.');
+  const match = text(payload.imageDataUrl).match(/^data:image\/(?:png|jpeg);base64,(.+)$/i);
+  if (!match) throw new Error('The Yard Check snapshot was missing or invalid.');
+  const screenshot = Buffer.from(match[1], 'base64');
+  const source = sharp(screenshot, { failOn: 'warning' });
+  const metadata = await source.metadata();
+  const viewportWidth = Math.max(1, Number(payload.viewportWidth) || metadata.width || 1);
+  const viewportHeight = Math.max(1, Number(payload.viewportHeight) || metadata.height || 1);
+  const crop = payload.crop && typeof payload.crop === 'object' ? payload.crop : {};
+  const scaleX = (metadata.width || viewportWidth) / viewportWidth;
+  const scaleY = (metadata.height || viewportHeight) / viewportHeight;
+  const left = Math.max(0, Math.min(Math.round((Number(crop.left) || 0) * scaleX), (metadata.width || 1) - 1));
+  const top = Math.max(0, Math.min(Math.round((Number(crop.top) || 0) * scaleY), (metadata.height || 1) - 1));
+  const width = Math.max(1, Math.min(Math.round((Number(crop.width) || viewportWidth) * scaleX), (metadata.width || 1) - left));
+  const height = Math.max(1, Math.min(Math.round((Number(crop.height) || viewportHeight) * scaleY), (metadata.height || 1) - top));
+  const attachment = await source
+    .extract({ left, top, width, height })
+    .resize({ width: 1500, height: 1900, fit: 'inside', withoutEnlargement: true })
+    .jpeg({ quality: 84, mozjpeg: true })
+    .toBuffer();
+  const capturedAt = payload.capturedAt ? new Date(payload.capturedAt) : new Date();
+  const timeLabel = Number.isNaN(capturedAt.getTime())
+    ? new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+    : capturedAt.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  const yard = text(payload.yard || 'B 372').slice(0, 40);
+  const lookbackHours = Math.max(12, Number(payload.lookbackHours) || 12);
+  const response = await fetch('https://api.pushover.net/1/messages.json', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      token: settings.appToken,
+      user: settings.userKey,
+      title: `UP Yard Check ${yard} [${timeLabel}]`,
+      message: `Yard Check movements during the last ${lookbackHours}+ hours. Container, Trailer, Arrivals, Other Movement, and Yard Check filters applied; Chassis excluded.`,
       attachment_base64: attachment.toString('base64'),
       attachment_type: 'image/jpeg',
     }),
@@ -681,13 +768,26 @@ function startControlServer() {
     }
     try {
       if (request.method === 'GET' && url.pathname === '/api/state') return sendJson(response, 200, publicState());
+      if (request.method === 'GET' && url.pathname === '/api/schedules') {
+        return sendJson(response, 200, { ok: true, programmedSchedules });
+      }
+      if (request.method === 'POST' && url.pathname === '/api/schedules') {
+        const body = await readJsonBody(request);
+        programmedSchedules = normalizeProgrammedSchedules(body);
+        await persistSettings();
+        lastMessage = 'Pearl schedules saved. The extension will use these times on its next check.';
+        publishState();
+        return sendJson(response, 200, { ok: true, programmedSchedules, ...publicState() });
+      }
       if (request.method === 'GET' && url.pathname === '/api/alertmeter-command') {
         lastExtensionSeenAt = new Date().toISOString();
         extensionSchedule = {
           mismatchEnabled: url.searchParams.get('mismatchEnabled') === '1',
           alertMeterEnabled: url.searchParams.get('alertMeterEnabled') === '1',
+          yardCheckEnabled: url.searchParams.get('yardCheckEnabled') === '1',
           mismatchNextAt: url.searchParams.get('mismatchNextAt') || '',
           alertMeterNextAt: url.searchParams.get('alertMeterNextAt') || '',
+          yardCheckNextAt: url.searchParams.get('yardCheckNextAt') || '',
         };
         const claimExpired = alertMeterCommand.status === 'processing'
           && Date.now() - new Date(alertMeterCommand.claimedAt || 0).getTime() > 120000;
@@ -695,6 +795,13 @@ function startControlServer() {
           alertMeterCommand.status = 'processing';
           alertMeterCommand.claimedAt = new Date().toISOString();
           return sendJson(response, 200, { ok: true, command: { id: alertMeterCommand.id, type: 'capture-alertmeter' } });
+        }
+        const yardClaimExpired = yardCheckCommand.status === 'processing'
+          && Date.now() - new Date(yardCheckCommand.claimedAt || 0).getTime() > 120000;
+        if (yardCheckCommand.status === 'pending' || yardClaimExpired) {
+          yardCheckCommand.status = 'processing';
+          yardCheckCommand.claimedAt = new Date().toISOString();
+          return sendJson(response, 200, { ok: true, command: { id: yardCheckCommand.id, type: 'capture-yardcheck' } });
         }
         return sendJson(response, 200, { ok: true, command: null });
       }
@@ -765,6 +872,32 @@ function startControlServer() {
         }
         return sendJson(response, 200, publicState());
       }
+      if (request.method === 'POST' && url.pathname === '/api/request-yardcheck') {
+        yardCheckCommand = {
+          id: `yardcheck-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          status: 'pending',
+          requestedAt: new Date().toISOString(),
+          claimedAt: '',
+          completedAt: '',
+          error: '',
+        };
+        lastMessage = 'UP Yard Check B 372 snapshot queued. Settegast Alerts will apply the filters and send it automatically.';
+        publishState();
+        return sendJson(response, 200, publicState());
+      }
+      if (request.method === 'POST' && url.pathname === '/api/complete-yardcheck-command') {
+        const body = await readJsonBody(request);
+        if (text(body.id) && text(body.id) === yardCheckCommand.id) {
+          yardCheckCommand.status = body.ok ? 'completed' : 'failed';
+          yardCheckCommand.completedAt = new Date().toISOString();
+          yardCheckCommand.error = body.ok ? '' : text(body.error).slice(0, 500);
+          lastMessage = body.ok
+            ? 'UP Yard Check B 372 snapshot filtered and pushed successfully.'
+            : `UP Yard Check request failed: ${yardCheckCommand.error || 'Unknown error'}`;
+          publishState();
+        }
+        return sendJson(response, 200, publicState());
+      }
       if (request.method === 'POST' && url.pathname === '/api/watch') {
         const body = await readJsonBody(request);
         settings.enabled = Boolean(body.enabled);
@@ -798,6 +931,13 @@ function startControlServer() {
         const body = await readJsonBody(request, 12 * 1024 * 1024);
         await pushAlertMeterSnapshot(body);
         lastMessage = `Sent AlertMeter dashboard snapshot at ${new Date().toLocaleTimeString()}.`;
+        publishState();
+        return sendJson(response, 200, { ok: true, state: publicState() });
+      }
+      if (request.method === 'POST' && url.pathname === '/api/push-yardcheck') {
+        const body = await readJsonBody(request, 12 * 1024 * 1024);
+        await pushYardCheckSnapshot(body);
+        lastMessage = `Sent UP Yard Check snapshot at ${new Date().toLocaleTimeString()}.`;
         publishState();
         return sendJson(response, 200, { ok: true, state: publicState() });
       }

@@ -2323,10 +2323,8 @@ body.lph-hydrating::after{
 </div>
 </div>
 <div class="tb-spacer"></div>
-<div class="sb-item" id="supabase-sync-status" style="font-family:var(--mono);font-size:17px;letter-spacing:.1em;color:var(--text3);white-space:nowrap;">LOCAL CACHE</div>
 <input aria-hidden="true" class="hidden-current-time-input" id="current-time" tabindex="-1" type="time"/>
 <button class="tb-btn" id="sidebar-toggle-btn" onclick="toggleSidebar()" title="Open the swipeable simulation input menu">☰ INPUT MENU</button>
-<button class="tb-btn tb-save-btn" id="manual-save-btn" onclick="rampiqManualSave()" title="Save current inputs on this device">💾 SAVE</button>
 <button class="tb-btn tb-reset-btn" id="reset-inputs-btn" onclick="resetLeftInputs()" title="Reset simulation inputs to defaults">↺ RESET INPUTS</button>
 
 
@@ -2785,7 +2783,6 @@ body.lph-hydrating::after{
 .liftlog-row:hover{background:var(--bg3);}
 .liftlog-row-time{color:var(--text2);font-weight:600;font-size:11px;}
 .liftlog-row-time.is-previous-shift{display:flex;align-items:center;gap:5px;white-space:nowrap;}
-.liftlog-previous-shift-tag{display:inline-flex;align-items:center;padding:1px 4px;border:1px solid rgba(245,158,11,.45);border-radius:3px;background:rgba(245,158,11,.1);color:var(--amber);font-size:7px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;}
 .liftlog-row.is-previous-shift{background:rgba(245,158,11,.035);}
 .liftlog-shift-divider{height:27px;display:flex;align-items:center;gap:9px;padding:0 8px;border-top:2px solid rgba(245,158,11,.65);border-bottom:1px solid rgba(245,158,11,.2);background:linear-gradient(90deg,rgba(245,158,11,.11),transparent 48%);color:var(--amber);font:800 9px/1 var(--mono);letter-spacing:.11em;text-transform:uppercase;}
 .liftlog-shift-divider::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--amber);box-shadow:0 0 9px rgba(245,158,11,.65);}
@@ -2816,6 +2813,7 @@ body.lph-hydrating::after{
 .liftlog-actual-input:focus{outline:none;border-color:var(--amber);}
 .liftlog-actual-input::placeholder{color:var(--text3);font-weight:400;}
 .liftlog-forecast-ref{color:var(--text3);font-size:10px;line-height:12px;white-space:nowrap;flex-shrink:0;}
+.liftlog-delta-slot{width:40px;min-width:40px;flex:0 0 40px;display:inline-flex;align-items:center;justify-content:center;}
 .liftlog-delta{display:inline-flex;align-items:center;justify-content:center;font-size:11px;line-height:14px;font-weight:700;border-radius:5px;padding:1px 7px;white-space:nowrap;min-width:34px;}
 .liftlog-delta.is-pos{color:var(--green);background:rgba(16,185,129,0.12);}
 .liftlog-delta.is-neg{color:var(--red);background:rgba(239,68,68,0.12);}
@@ -6948,13 +6946,13 @@ function buildHourlyLiftLogActual(buckets,activeKeys,trainLabelMap,paceCtx){
       +'<span class="liftlog-state-tag'+(hasActual?' is-actual':'')+'">'+(hasActual?'Actual':'Forecast')+'</span>'
       +'<input type="number" min="0" step="1" class="liftlog-actual-input" value="'+(hasActual?actualVal:'')+'" placeholder="'+(b.total>0?b.total:'\u2014')+'" '
       +'onchange="setHourlyActual('+h+',this.value)">'
-      +deltaHtml
+      +'<span class="liftlog-delta-slot">'+deltaHtml+'</span>'
       +hourlyLphHtml
       +'</div>';
 
     rows.push(
       '<div class="liftlog-row'+(b.isBreak?' is-break':'')+(b.previousShift?' is-previous-shift':'')+'">'+
-      '<div class="liftlog-row-time liftlog-cell-time'+(b.previousShift?' is-previous-shift':'')+'">'+String(h).padStart(2,'0')+'00\u2013'+String(h).padStart(2,'0')+'59'+(b.previousShift?'<span class="liftlog-previous-shift-tag">Previous Shift</span>':'')+'</div>'+
+      '<div class="liftlog-row-time liftlog-cell-time'+(b.previousShift?' is-previous-shift':'')+'">'+String(h).padStart(2,'0')+'00\u2013'+String(h).padStart(2,'0')+'59</div>'+
       liftValueHtml+
       workPlanHtml+
       '<div class="liftlog-cell-notes">'+noteButton(h,entry.note)+'</div>'+
