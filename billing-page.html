@@ -1338,16 +1338,17 @@
     }
 
     .shift-lpmh-day {
-      aspect-ratio: 1 / 1;
-      min-height: 125px;
+      aspect-ratio: auto;
+      min-height: 0;
       width: 100%;
-      padding: 12px;
+      padding: 16px 14px;
       border: 0;
       border-top: 1px solid #dfe6ef;
       border-right: 1px solid #dfe6ef;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
+      display: grid;
+      grid-template-rows: auto auto auto auto auto;
+      align-items: stretch;
+      gap: 11px;
       background: #f7f9fc;
       color: inherit;
       font: inherit;
@@ -1374,40 +1375,52 @@
 
     .shift-lpmh-date {
       color: var(--muted);
-      font-size: 11px;
+      font-size: 13px;
       font-weight: 900;
     }
 
+    .shift-lpmh-shift {
+      color: #475569;
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+    }
+
     .shift-lpmh-value {
+      align-self: center;
       color: var(--ink);
-      font-size: 27px;
+      font-size: 34px;
       font-weight: 900;
       line-height: 1;
       text-align: center;
     }
 
     .shift-lpmh-value small {
-      font-size: 10px;
+      font-size: 12px;
       letter-spacing: 0.05em;
     }
 
     .shift-lpmh-meta {
       color: var(--muted);
-      font-size: 10px;
+      font-size: 12px;
       font-weight: 800;
+      line-height: 1.35;
       text-align: center;
     }
 
     .shift-lpmh-employees {
       display: -webkit-box;
       overflow: hidden;
+      padding-top: 10px;
+      border-top: 1px solid rgba(71, 85, 105, 0.18);
       color: #334155;
-      font-size: 9px;
+      font-size: 11px;
       font-weight: 800;
-      line-height: 1.25;
+      line-height: 1.4;
       text-align: center;
       -webkit-box-orient: vertical;
-      -webkit-line-clamp: 2;
+      -webkit-line-clamp: 6;
     }
 
     .shift-lpmh-detail-backdrop {
@@ -1466,6 +1479,64 @@
     .shift-lpmh-detail-body {
       overflow-x: auto;
       padding: 14px;
+    }
+
+    .shift-lpmh-employee-picker {
+      margin-bottom: 14px;
+      padding: 12px;
+      border: 1px solid #dbe3ed;
+      border-radius: 8px;
+      background: #f8fafc;
+    }
+
+    .shift-lpmh-employee-picker strong {
+      display: block;
+      margin-bottom: 3px;
+      color: #172033;
+      font-size: 12px;
+    }
+
+    .shift-lpmh-employee-limit {
+      display: block;
+      margin-bottom: 9px;
+      color: #64748b;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .shift-lpmh-employee-limit.error { color: #b91c1c; }
+
+    .shift-lpmh-employee-options {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px 12px;
+    }
+
+    .shift-lpmh-employee-option {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      color: #334155;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .shift-lpmh-employee-option input {
+      width: 15px;
+      height: 15px;
+      accent-color: #2563eb;
+    }
+
+    .shift-lpmh-employee-save {
+      margin-top: 10px;
+      border: 1px solid #2563eb;
+      border-radius: 6px;
+      padding: 7px 11px;
+      background: #2563eb;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 900;
+      cursor: pointer;
     }
 
     .shift-lpmh-detail-table {
@@ -4068,6 +4139,7 @@
     }
 
     function renderShiftLpmhGrid(shifts) {
+      state.shiftLpmhGridShifts = shifts || [];
       const datedShifts = shifts.filter((shift) => /^\d{4}-\d{2}-\d{2}$/.test(shift.date || ""));
       const latestKey = els.analyticsEnd.value || datedShifts.map((shift) => shift.date).sort().pop() || toKey(new Date());
       const parts = latestKey.split("-").map(Number);
@@ -4104,12 +4176,15 @@
           const level = day.lpmh == null ? "empty" : day.lpmh >= target ? "good" : day.lpmh >= Math.max(0, target - 0.5) ? "warn" : "bad";
           const value = day.lpmh == null ? "—" : day.lpmh.toFixed(2);
           const meta = day.lpmh == null ? "No shift data" : `${day.sampleCount} day${day.sampleCount === 1 ? "" : "s"} · ${Math.round(day.lifts).toLocaleString("en-US")} lifts · ${day.hours.toFixed(1)} hrs`;
-          const employeeText = day.employees.length ? `Employees: ${day.employees.join(", ")}` : "No employees";
+          const displayEmployees = selectedShiftLpmhEmployees({ shiftKey, day });
+          const employeeText = day.employees.length ? day.employees.join(", ") : "No employees scheduled";
+          const employeePreview = displayEmployees.length ? displayEmployees.join(", ") : "No employees selected — click to choose";
           return `<button class="shift-lpmh-day ${level}" type="button" data-shift-lpmh-detail="${detailKey}" aria-label="Open ${day.weekday.name} ${title} breakdown">
             <span class="shift-lpmh-date">Previous 4 ${day.weekday.name}s</span>
+            <span class="shift-lpmh-shift">${escapeHtml(title)}</span>
             <strong class="shift-lpmh-value">${value}${day.lpmh == null ? "" : " <small>LPMH</small>"}</strong>
             <span class="shift-lpmh-meta">${meta}</span>
-            <span class="shift-lpmh-employees" title="${escapeHtml(employeeText)}">${escapeHtml(employeeText)}</span>
+            <span class="shift-lpmh-employees" title="${escapeHtml(employeeText)}">${escapeHtml(employeePreview)}</span>
           </button>`;
         }).join("");
         const averageLabel = weekAverage == null ? "No 4-week data" : `4-week avg ${weekAverage.toFixed(2)} LPMH`;
@@ -4137,6 +4212,22 @@
         const name = String(employee.displayName || employee.name || employee.employee || "").trim();
         return [normalizeName(name), name];
       }).filter(([key]) => key)).values()).sort((a, b) => a.localeCompare(b));
+    }
+
+    function shiftLpmhEmployeeSelectionKey(detail) {
+      return `conglobal-lpmh-display-users-v1-${detail.shiftKey}-${detail.day.weekday.index}`;
+    }
+
+    function selectedShiftLpmhEmployees(detail) {
+      const all = detail.day.employees || [];
+      let stored = null;
+      try {
+        stored = JSON.parse(localStorage.getItem(shiftLpmhEmployeeSelectionKey(detail)) || "null");
+      } catch (error) {
+        stored = null;
+      }
+      const selected = Array.isArray(stored) ? stored.slice(0, 8) : all.slice(0, 8);
+      return all.filter((name) => selected.includes(name)).slice(0, 8);
     }
 
     function closeShiftLpmhBreakdown() {
@@ -4178,6 +4269,45 @@
         if (event.target === overlay || event.target.closest(".shift-lpmh-detail-close")) closeShiftLpmhBreakdown();
       });
       document.body.appendChild(overlay);
+      const picker = document.createElement("div");
+      picker.className = "shift-lpmh-employee-picker";
+      picker.innerHTML = `<strong>People displayed on this card</strong>
+        <span class="shift-lpmh-employee-limit">Choose up to 8 people.</span>
+        <div class="shift-lpmh-employee-options"></div>
+        <button class="shift-lpmh-employee-save" type="button">Apply displayed people</button>`;
+      const options = picker.querySelector(".shift-lpmh-employee-options");
+      const limit = picker.querySelector(".shift-lpmh-employee-limit");
+      const selected = new Set(selectedShiftLpmhEmployees(detail));
+      day.employees.forEach((name) => {
+        const label = document.createElement("label");
+        label.className = "shift-lpmh-employee-option";
+        const input = document.createElement("input");
+        input.type = "checkbox";
+        input.value = name;
+        input.checked = selected.has(name);
+        label.append(input, document.createTextNode(name));
+        options.appendChild(label);
+      });
+      options.addEventListener("change", (event) => {
+        const checked = options.querySelectorAll("input:checked");
+        if (checked.length > 8) {
+          event.target.checked = false;
+          limit.textContent = "Maximum 8 people can be displayed.";
+          limit.classList.add("error");
+          return;
+        }
+        limit.textContent = `${checked.length} of 8 selected`;
+        limit.classList.remove("error");
+      });
+      picker.querySelector(".shift-lpmh-employee-save").addEventListener("click", () => {
+        const values = Array.from(options.querySelectorAll("input:checked")).map((input) => input.value).slice(0, 8);
+        try {
+          localStorage.setItem(shiftLpmhEmployeeSelectionKey(detail), JSON.stringify(values));
+        } catch (error) {}
+        closeShiftLpmhBreakdown();
+        renderShiftLpmhGrid(state.shiftLpmhGridShifts || []);
+      });
+      overlay.querySelector(".shift-lpmh-detail-body").prepend(picker);
       overlay.querySelector(".shift-lpmh-detail-close").focus();
     }
 

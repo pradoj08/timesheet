@@ -5587,16 +5587,16 @@
   .shift-lpmh-week-average{font-size:13px;font-weight:900}
   .shift-lpmh-weekdays,.shift-lpmh-grid{display:grid;grid-template-columns:repeat(7,minmax(125px,1fr))}
   .shift-lpmh-weekdays span{padding:7px 10px;border-right:1px solid #dfe6ef;color:var(--muted);background:#f5f8fc;font-size:10px;font-weight:900;letter-spacing:.08em;text-align:center;text-transform:uppercase}
-  .shift-lpmh-day{aspect-ratio:auto;min-height:150px;width:100%;padding:12px;border:0;border-top:1px solid #dfe6ef;border-right:1px solid #dfe6ef;display:flex;flex-direction:column;justify-content:space-between;background:#f7f9fc;color:inherit;font:inherit;text-align:left;cursor:pointer;transition:filter .15s ease,transform .15s ease}
+  .shift-lpmh-day{aspect-ratio:auto;min-height:0;width:100%;padding:16px 14px;border:0;border-top:1px solid #dfe6ef;border-right:1px solid #dfe6ef;display:grid;grid-template-rows:auto auto auto auto auto;align-items:stretch;gap:11px;background:#f7f9fc;color:inherit;font:inherit;text-align:left;cursor:pointer;transition:filter .15s ease,transform .15s ease}
   .shift-lpmh-day:hover,.shift-lpmh-day:focus-visible{filter:brightness(.97);outline:3px solid #2563eb;outline-offset:-3px}
   .shift-lpmh-day:active{transform:scale(.99)}
   .shift-lpmh-day:last-child,.shift-lpmh-weekdays span:last-child{border-right:0}
-  .shift-lpmh-date{color:var(--muted);font-size:12px;font-weight:900}
-  .shift-lpmh-shift{display:block;margin-top:3px;color:#475569;font-size:11px;font-weight:900;letter-spacing:.02em;text-transform:uppercase}
-  .shift-lpmh-value{color:var(--ink);font-size:28px;font-weight:900;line-height:1;text-align:center}
-  .shift-lpmh-value small{font-size:11px;letter-spacing:.05em}
-  .shift-lpmh-meta{color:var(--muted);font-size:11px;font-weight:800;text-align:center}
-  .shift-lpmh-employees{display:-webkit-box;overflow:hidden;color:#334155;font-size:10px;font-weight:800;line-height:1.25;text-align:center;word-break:normal;-webkit-box-orient:vertical;-webkit-line-clamp:6}
+  .shift-lpmh-date{color:var(--muted);font-size:13px;font-weight:900}
+  .shift-lpmh-shift{color:#475569;font-size:12px;font-weight:900;letter-spacing:.02em;text-transform:uppercase}
+  .shift-lpmh-value{align-self:center;color:var(--ink);font-size:34px;font-weight:900;line-height:1;text-align:center}
+  .shift-lpmh-value small{font-size:12px;letter-spacing:.05em}
+  .shift-lpmh-meta{color:var(--muted);font-size:12px;font-weight:800;line-height:1.35;text-align:center}
+  .shift-lpmh-employees{display:-webkit-box;overflow:hidden;min-height:0;padding-top:10px;border-top:1px solid rgba(71,85,105,.18);color:#334155;font-size:11px;font-weight:800;line-height:1.4;text-align:center;word-break:normal;-webkit-box-orient:vertical;-webkit-line-clamp:6}
   .shift-lpmh-day.good{background:#e3f7ef;box-shadow:inset 0 4px #16a37a}
   .shift-lpmh-day.warn{background:#fff4d6;box-shadow:inset 0 4px #e3a008}
   .shift-lpmh-day.bad{background:#fde8e8;box-shadow:inset 0 4px #d63b3b}
@@ -5607,7 +5607,7 @@
   .shift-lpmh-detail-head strong{display:block;font-size:17px}.shift-lpmh-detail-head span{color:#cbd5e1;font-size:11px;font-weight:800}
   .shift-lpmh-detail-close{width:34px;height:34px;border:1px solid #64748b;border-radius:6px;background:#0f172a;color:#fff;font-weight:900;cursor:pointer}
   .shift-lpmh-detail-body{overflow-x:auto;padding:14px}.shift-lpmh-detail-table{width:100%;min-width:760px;border-collapse:collapse;table-layout:fixed}
-  .shift-lpmh-employee-picker{margin-bottom:14px;padding:12px;border:1px solid #dbe3ed;border-radius:8px;background:#f8fafc}.shift-lpmh-employee-picker strong{display:block;margin-bottom:8px;color:#172033;font-size:12px}.shift-lpmh-employee-options{display:flex;flex-wrap:wrap;gap:7px 12px}.shift-lpmh-employee-option{display:inline-flex;align-items:center;gap:5px;color:#334155;font-size:11px;font-weight:800}.shift-lpmh-employee-option input{width:15px;height:15px;accent-color:#2563eb}.shift-lpmh-employee-save{margin-top:10px;border:1px solid #2563eb;border-radius:6px;padding:6px 10px;background:#2563eb;color:#fff;font-size:11px;font-weight:900;cursor:pointer}
+  .shift-lpmh-employee-picker{margin-bottom:14px;padding:12px;border:1px solid #dbe3ed;border-radius:8px;background:#f8fafc}.shift-lpmh-employee-picker strong{display:block;margin-bottom:3px;color:#172033;font-size:12px}.shift-lpmh-employee-limit{display:block;margin-bottom:9px;color:#64748b;font-size:11px;font-weight:800}.shift-lpmh-employee-limit.error{color:#b91c1c}.shift-lpmh-employee-options{display:flex;flex-wrap:wrap;gap:7px 12px}.shift-lpmh-employee-option{display:inline-flex;align-items:center;gap:5px;color:#334155;font-size:11px;font-weight:800}.shift-lpmh-employee-option input{width:15px;height:15px;accent-color:#2563eb}.shift-lpmh-employee-save{margin-top:10px;border:1px solid #2563eb;border-radius:6px;padding:7px 11px;background:#2563eb;color:#fff;font-size:11px;font-weight:900;cursor:pointer}
   .shift-lpmh-detail-table th,.shift-lpmh-detail-table td{padding:9px 10px;border:1px solid #dbe3ed;vertical-align:top}
   .shift-lpmh-detail-table th{background:#eef3f8;color:#475569;font-size:10px;letter-spacing:.06em;text-transform:uppercase}
   .shift-lpmh-detail-table td{color:#172033;font-size:12px;font-weight:800}
@@ -5661,8 +5661,8 @@
   function selectedEmployees(detail){
     var all=detail.day.employees||[],stored=null;
     try{stored=JSON.parse(localStorage.getItem(employeeSelectionKey(detail))||"null");}catch(_){stored=null;}
-    var selected=Array.isArray(stored)?stored:all.slice(0,6);
-    return all.filter(function(name){return selected.indexOf(name)>=0;});
+    var selected=Array.isArray(stored)?stored.slice(0,8):all.slice(0,8);
+    return all.filter(function(name){return selected.indexOf(name)>=0;}).slice(0,8);
   }
   function openBreakdown(detail){
     if(!detail)return;
@@ -5680,11 +5680,12 @@
     document.body.appendChild(overlay);
     var picker=document.createElement("div");
     picker.className="shift-lpmh-employee-picker";
-    picker.innerHTML="<strong>Employees displayed on this card</strong><div class=\"shift-lpmh-employee-options\"></div><button class=\"shift-lpmh-employee-save\" type=\"button\">Apply displayed employees</button>";
-    var pickerOptions=picker.querySelector(".shift-lpmh-employee-options"),selected=selectedEmployees(detail),selectedSet=new Set(selected);
+    picker.innerHTML='<strong>People displayed on this card</strong><span class="shift-lpmh-employee-limit">Choose up to 8 people.</span><div class="shift-lpmh-employee-options"></div><button class="shift-lpmh-employee-save" type="button">Apply displayed people</button>';
+    var pickerOptions=picker.querySelector(".shift-lpmh-employee-options"),limit=picker.querySelector(".shift-lpmh-employee-limit"),selected=selectedEmployees(detail),selectedSet=new Set(selected);
     (day.employees||[]).forEach(function(name){var label=document.createElement("label");label.className="shift-lpmh-employee-option";var input=document.createElement("input");input.type="checkbox";input.value=name;input.checked=selectedSet.has(name);label.append(input,document.createTextNode(name));pickerOptions.appendChild(label);});
+    pickerOptions.addEventListener("change",function(event){var checked=pickerOptions.querySelectorAll("input:checked");if(checked.length>8){event.target.checked=false;limit.textContent="Maximum 8 people can be displayed.";limit.classList.add("error");return;}limit.textContent=checked.length+" of 8 selected";limit.classList.remove("error");});
     overlay.querySelector(".shift-lpmh-detail-body").prepend(picker);
-    picker.querySelector(".shift-lpmh-employee-save").addEventListener("click",function(){var values=Array.from(picker.querySelectorAll("input:checked")).map(function(input){return input.value;});try{localStorage.setItem(employeeSelectionKey(detail),JSON.stringify(values));}catch(_){}closeBreakdown();var active=window.__conglobalBillingShiftGridInput||[];renderShiftGrid(active);});
+    picker.querySelector(".shift-lpmh-employee-save").addEventListener("click",function(){var values=Array.from(picker.querySelectorAll("input:checked")).map(function(input){return input.value;}).slice(0,8);try{localStorage.setItem(employeeSelectionKey(detail),JSON.stringify(values));}catch(_){}closeBreakdown();var active=window.__conglobalBillingShiftGridInput||[];renderShiftGrid(active);});
     overlay.querySelector(".shift-lpmh-detail-close").focus();
   }
   function renderShiftGrid(shifts){
@@ -5730,9 +5731,9 @@
         var value=day.lpmh==null?"—":day.lpmh.toFixed(2);
         var meta=day.lpmh==null?"No shift data":day.sampleCount+" day"+(day.sampleCount===1?"":"s")+" · "+Math.round(day.lifts).toLocaleString("en-US")+" lifts · "+day.hours.toFixed(1)+" hrs";
         var displayList=[];
-        try{displayList=selectedEmployees({shiftKey:shiftKey,day:day});}catch(_){displayList=day.employees.slice(0,6);}
+        try{displayList=selectedEmployees({shiftKey:shiftKey,day:day});}catch(_){displayList=day.employees.slice(0,8);}
         var employeeText=day.employees.length?day.employees.join(", "):"No employees scheduled";
-        var employeePreview=displayList.length>6?displayList.slice(0,6).join(", ")+" · +"+(displayList.length-6)+" more — click to view all":(displayList.length?displayList.join(", "):"No employees selected — click to choose");
+        var employeePreview=displayList.length?displayList.slice(0,8).join(", "):"No employees selected — click to choose";
         return '<button class="shift-lpmh-day '+level+'" type="button" data-shift-lpmh-detail="'+detailKey+'" aria-label="Open '+day.weekday.name+" "+title+' breakdown"><span class="shift-lpmh-date">Previous 4 '+day.weekday.name+'s</span><span class="shift-lpmh-shift">'+escapeHtml(title)+'</span><strong class="shift-lpmh-value">'+value+(day.lpmh==null?'':' <small>LPMH</small>')+'</strong><span class="shift-lpmh-meta">'+meta+'</span><span class="shift-lpmh-employees" title="'+escapeHtml(employeeText)+'">'+escapeHtml(employeePreview)+'</span></button>';
       }).join("");
       var average=weekAverage==null?"No 4-week data":"4-week avg "+weekAverage.toFixed(2)+" LPMH";
@@ -8681,6 +8682,36 @@ document.addEventListener('click',function(event){
       return bodyClose >= 0 ? patched.slice(0, bodyClose) + patch + "\n" + patched.slice(bodyClose) : patched + patch;
     }
 
+    function withChassisInventoryRequestBoardRefresh(html) {
+      const marker = "chassis-inventory-request-board-refresh-v1";
+      if (!html || typeof html !== "string" || html.includes(marker)) return html;
+      const importBefore = `  renderForecastOnHandChassis();
+  renderForecast();
+  renderForecastOnHandChassis();
+  saveForecastState();`;
+      const importAfter = `  renderForecastOnHandChassis();
+  renderForecast();
+  renderForecastOnHandChassis();
+  renderForecastChassisRequestBoard();
+  if(document.body.classList.contains("forecast-excel-view"))renderForecastExcelView();
+  /* ${marker} */
+  saveForecastState();`;
+      const clearBefore = `  forecastInventoryRows=[];
+  renderForecastOnHandChassis();
+  renderForecast();
+  saveForecastState();`;
+      const clearAfter = `  forecastInventoryRows=[];
+  renderForecastOnHandChassis();
+  renderForecast();
+  renderForecastChassisRequestBoard();
+  if(document.body.classList.contains("forecast-excel-view"))renderForecastExcelView();
+  saveForecastState();`;
+      let patched = html.replace(importBefore, importAfter);
+      if (patched === html) return html;
+      patched = patched.replace(clearBefore, clearAfter);
+      return patched;
+    }
+
     function withChassisClearConfirmation(html) {
       if (!html || typeof html !== "string" || html.includes("chassis-clear-confirmation-v1")) return html;
       const patch = `
@@ -10553,7 +10584,7 @@ document.getElementById("openYardCheck")?.addEventListener("click", function(){
         }
         if (id === "timeMd") pageHtml = withTimeMdResponsiveWidth(pageHtml);
         if (id === "timeOff") pageHtml = withTimeOffCurrentRosterSnapshot(withTimeOffCameInActions(withTimeOffMonthlyWeeklyStyle(pageHtml)));
-        if (id === "billing") pageHtml = withBillingQuotaSafePersistence(withBillingAnalyticsLiftFallback(withBillingAnalyticsArchiveHydration(withBillingManHoursPrecision(withBillingArchiveIndexedDb(withBillingHeaderRemoved(pageHtml))))));
+        if (id === "billing") pageHtml = withBillingShiftLpmhGrid(withBillingQuotaSafePersistence(withBillingAnalyticsLiftFallback(withBillingAnalyticsArchiveHydration(withBillingManHoursPrecision(withBillingArchiveIndexedDb(withBillingHeaderRemoved(pageHtml)))))));
         if (id === "lphTracker") {
           pageHtml = withLphLunchDuringDowntime(pageHtml);
           pageHtml = withLphLunchTimeMapLabels(pageHtml);
@@ -10597,6 +10628,7 @@ document.getElementById("openYardCheck")?.addEventListener("click", function(){
         if (id === "chassisStatus") {
           pageHtml = withChassisGreenExcelHero(pageHtml);
           pageHtml = withChassisForecastPersistence(pageHtml);
+          pageHtml = withChassisInventoryRequestBoardRefresh(pageHtml);
           pageHtml = withChassisDifferenceToggleRemoved(pageHtml);
           pageHtml = withChassisFloatingEditorEnhancements(pageHtml);
           pageHtml = withChassisFlatPoolSummary(pageHtml);

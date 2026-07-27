@@ -13936,6 +13936,8 @@ async function importChassisInventoryFiles(fileList){
   renderForecastOnHandChassis();
   renderForecast();
   renderForecastOnHandChassis();
+  renderForecastChassisRequestBoard();
+  if(document.body.classList.contains("forecast-excel-view"))renderForecastExcelView();
   saveForecastState();
   const msg=`${imported.length} chassis inventory rows imported.`;
   if(typeof showArchiveToast==="function")showArchiveToast(msg);
@@ -13945,6 +13947,8 @@ function clearChassisInventoryRows(){
   forecastInventoryRows=[];
   renderForecastOnHandChassis();
   renderForecast();
+  renderForecastChassisRequestBoard();
+  if(document.body.classList.contains("forecast-excel-view"))renderForecastExcelView();
   saveForecastState();
   const msg="Chassis inventory cleared.";
   if(typeof showArchiveToast==="function")showArchiveToast(msg);
