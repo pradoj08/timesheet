@@ -238,6 +238,9 @@
 
 ## YardMate and Mori workflow
 
+- YardMate Agent supports Windows and macOS from the same Electron source. Windows releases use the NSIS target for `x64` and `arm64`; macOS releases produce DMG and ZIP artifacts for both Apple Silicon (`arm64`) and Intel (`x64`).
+- Build platform installers from `yardmate-agent/` with `npm run dist:win` or `npm run dist:mac`. Run `npm run check` before packaging.
+- Pearl connects only to an agent running on the same computer at `127.0.0.1:43127`; an agent on another computer is not reachable through that loopback address.
 - The Edge extension and YardMate desktop agent have separate responsibilities. The extension only locates and refreshes the signed-in Mismatches page, verifies its footer timestamp, and starts the official Excel download. It does not parse rows or send alerts.
 - The desktop agent accepts only a downloaded Excel that is fresh relative to the verified page refresh, parses no-mates and pool mismatches, and creates the light-theme status image.
 - No Mates are sorted by Location then Container and show Location, Container, Chassis/No Mate, Required Pool, Size, and Duration in minutes. Pool Mismatches are sorted by Required Pool, then Location and Container and include Chassis Pool.
@@ -324,4 +327,3 @@
 - Do not maintain a per-turn continuity log or modify repository documentation for routine questions.
 - `HANDOFF.md` is an explicitly requested point-in-time continuation document. Update or replace it only for a deliberate chat handoff; it is not a running diary.
 - In the final handoff, state what changed, where it changed, what validation ran, and any intentional work left unsynchronized.
-

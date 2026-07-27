@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="pearl-settings-popup-v1" content="enabled">
 <title>Mori · YardMate Agent</title>
 <style>
   :root{color-scheme:light;--ink:#152238;--muted:#607089;--line:#cbd5e1;--panel:#fff;--soft:#eef2f6;--navy:#0d1b2a;--cyan:#0e91b8;--green:#08775a;--red:#c8102e;--gold:#d99500}
@@ -22,6 +23,15 @@
   .message{min-height:42px;margin:12px 0;padding:12px 14px;border-left:5px solid var(--cyan);border-radius:7px;background:#e8f6fb;color:#17445c;font-size:13px;font-weight:750}.message.error{border-color:var(--red);background:#fff0f2;color:#8b1529}
   .preview-card{overflow:hidden;border:1px solid var(--line);border-radius:12px;background:#fff}.preview-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 14px;border-bottom:1px solid var(--line);background:var(--soft)}.preview-head strong{font-size:13px;letter-spacing:.06em;text-transform:uppercase}.preview-head span{color:var(--muted);font-size:11px}.preview-body{display:flex;min-height:260px;align-items:flex-start;justify-content:center;padding:14px;overflow:auto;background:#fff}.preview-body img{display:block;max-width:100%;height:auto;box-shadow:0 5px 20px #0f172a20}.empty{align-self:center;color:var(--muted);font-weight:700;text-align:center}
   .help{margin:12px 2px 0;color:var(--muted);font-size:11px;line-height:1.5}
+  .settings-backdrop{position:fixed;inset:0;z-index:120;display:grid;place-items:center;padding:20px;background:#07131fb8;backdrop-filter:blur(5px)}
+  .settings-backdrop[hidden]{display:none}
+  .settings-dialog{width:min(520px,100%);overflow:hidden;border:1px solid #345a74;border-radius:15px;background:#fff;color:var(--ink);box-shadow:0 24px 70px #06131f66}
+  .settings-dialog-head{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:15px 17px;background:var(--navy);color:#fff}
+  .settings-dialog-head h2{margin:0;font-size:18px}.settings-close{width:34px;height:34px;border:1px solid #ffffff3b;border-radius:8px;background:#ffffff12;color:#fff;font-size:20px;font-weight:900;cursor:pointer}
+  .settings-dialog-body{padding:18px}.settings-dialog-body p{margin:0 0 13px;color:var(--muted);font-size:12px;line-height:1.55}
+  .settings-agent-status{padding:12px 13px;border:1px solid #cbd5e1;border-radius:9px;background:#f8fafc;font-size:12px;font-weight:850}.settings-agent-status.online{border-color:#6fc9ad;background:#eafaf4;color:#075f49}.settings-agent-status.offline{border-color:#ef9aaa;background:#fff0f2;color:#94152c}
+  .settings-dialog-actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:15px}.settings-dialog-actions .btn{flex:1 1 190px}
+  .settings-dialog-note{margin-top:13px!important;padding-top:13px;border-top:1px solid #e2e8f0}
   @media(max-width:980px){.toolbar{grid-template-columns:repeat(2,minmax(0,1fr))}}
   @media(max-width:800px){body{padding:8px}.hero{align-items:flex-start;flex-direction:column}.status-grid,.schedule-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.content{padding:10px}}
   @media(max-width:560px){.status-grid,.schedule-grid,.toolbar{grid-template-columns:1fr}}
@@ -111,6 +121,20 @@
     <p class="help">The desktop agent reads only matching Excel exports from your selected Downloads folder. Pushover keys remain encrypted inside YardMate Agent and are never exposed to this workbook.</p>
   </section>
 </main>
+<div class="settings-backdrop" id="pearlSettingsBackdrop" hidden>
+  <section class="settings-dialog" role="dialog" aria-modal="true" aria-labelledby="pearlSettingsTitle">
+    <header class="settings-dialog-head"><h2 id="pearlSettingsTitle">Pearl.io settings</h2><button class="settings-close" id="closePearlSettings" type="button" aria-label="Close settings">×</button></header>
+    <div class="settings-dialog-body">
+      <p>Monitoring schedules are managed on this Pearl page. Download-folder and Pushover credentials stay protected inside the YardMate desktop app.</p>
+      <div class="settings-agent-status" id="pearlSettingsAgentStatus">Checking YardMate Agent…</div>
+      <div class="settings-dialog-actions">
+        <button class="btn primary" id="openDesktopSettings" type="button">Open desktop settings</button>
+        <button class="btn" id="refreshSettingsStatus" type="button">Check connection</button>
+      </div>
+      <p class="settings-dialog-note">If the agent is offline, start YardMate Agent on this computer, then check the connection again.</p>
+    </div>
+  </section>
+</div>
 <script>
 (() => {
   const api = "http://127.0.0.1:43127/api";
@@ -129,6 +153,9 @@
   const message = document.getElementById("message");
   const previewBody = document.getElementById("previewBody");
   const previewCaption = document.getElementById("previewCaption");
+  const settingsBackdrop = document.getElementById("pearlSettingsBackdrop");
+  const settingsAgentStatus = document.getElementById("pearlSettingsAgentStatus");
+  const openDesktopSettings = document.getElementById("openDesktopSettings");
   const controls = [...document.querySelectorAll("button"), watchToggle];
   const mismatchScheduleEnabled = document.getElementById("mismatchScheduleEnabled");
   const alertMeterScheduleEnabled = document.getElementById("alertMeterScheduleEnabled");
@@ -203,7 +230,7 @@
     yardCheckConnectionText.textContent = "Yard Check unavailable";
     watchStatus.textContent = "OFFLINE";
     watchStatus.className = "bad";
-    showMessage(error || "YardMate Agent is not running. Start it from the Windows Start menu, then click Refresh.", true);
+    showMessage(error || "YardMate Agent is not running. Start the desktop app on this computer, then click Refresh.", true);
   }
   async function request(path, options) {
     const response = await fetch(api + path, { cache:"no-store", ...options });
@@ -253,6 +280,45 @@
     finally { setBusy(false); }
   }
 
+  async function refreshSettingsConnection() {
+    settingsAgentStatus.className = "settings-agent-status";
+    settingsAgentStatus.textContent = "Checking YardMate Agent…";
+    try {
+      const state = await request("/state");
+      settingsAgentStatus.className = "settings-agent-status online";
+      settingsAgentStatus.textContent = state.settings.enabled
+        ? "YardMate Agent is connected and monitoring is active."
+        : "YardMate Agent is connected; monitoring is paused.";
+      openDesktopSettings.disabled = false;
+    } catch (_) {
+      settingsAgentStatus.className = "settings-agent-status offline";
+      settingsAgentStatus.textContent = "YardMate Agent is offline. Start it on this computer to open protected desktop settings.";
+      openDesktopSettings.disabled = true;
+    }
+  }
+  function openPearlSettings() {
+    settingsBackdrop.hidden = false;
+    void refreshSettingsConnection();
+  }
+  function closePearlSettings() {
+    settingsBackdrop.hidden = true;
+  }
+  async function requestDesktopSettings() {
+    openDesktopSettings.disabled = true;
+    settingsAgentStatus.className = "settings-agent-status";
+    settingsAgentStatus.textContent = "Opening YardMate Agent settings…";
+    try {
+      await request("/open-settings", { method:"POST", headers:{ "Content-Type":"text/plain;charset=UTF-8" }, body:"{}" });
+      settingsAgentStatus.className = "settings-agent-status online";
+      settingsAgentStatus.textContent = "Desktop settings opened.";
+    } catch (_) {
+      settingsAgentStatus.className = "settings-agent-status offline";
+      settingsAgentStatus.textContent = "Could not reach YardMate Agent. Start it on this computer, then try again.";
+    } finally {
+      openDesktopSettings.disabled = !connected;
+    }
+  }
+
   function scheduleTimes(input) {
     return input.value.split(/[\\s,;]+/).map(value => value.trim()).filter(Boolean);
   }
@@ -299,7 +365,12 @@
     action("/request-yardcheck", "Queuing UP Yard Check B 372, applying filters, and sending the screenshot…", false)
   );
   document.getElementById("testPush").addEventListener("click", () => action("/test-push", "Sending a test alert…", false));
-  document.getElementById("openSettings").addEventListener("click", () => action("/open-settings", "Opening YardMate Agent settings…", false));
+  document.getElementById("openSettings").addEventListener("click", openPearlSettings);
+  document.getElementById("closePearlSettings").addEventListener("click", closePearlSettings);
+  document.getElementById("refreshSettingsStatus").addEventListener("click", refreshSettingsConnection);
+  openDesktopSettings.addEventListener("click", requestDesktopSettings);
+  settingsBackdrop.addEventListener("click", event => { if (event.target === settingsBackdrop) closePearlSettings(); });
+  document.addEventListener("keydown", event => { if (event.key === "Escape" && !settingsBackdrop.hidden) closePearlSettings(); });
   document.getElementById("refreshStatus").addEventListener("click", refresh);
   refresh();
   setInterval(renderScheduleClock, 1000);

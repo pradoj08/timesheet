@@ -10555,6 +10555,87 @@ document.getElementById("openYardCheck")?.addEventListener("click", function(){
       return bodyClose >= 0 ? updated.slice(0, bodyClose) + patch + "\n" + updated.slice(bodyClose) : updated + patch;
     }
 
+    function withPearlSettingsRepair(html) {
+      if (!html || typeof html !== "string" || html.includes("pearl-settings-popup-v1")) return html;
+      const marker = '<meta name="pearl-settings-popup-v1" content="enabled">';
+      const style = `<style id="pearl-settings-popup-style">
+.settings-backdrop{position:fixed;inset:0;z-index:120;display:grid;place-items:center;padding:20px;background:#07131fb8;backdrop-filter:blur(5px)}
+.settings-backdrop[hidden]{display:none}
+.settings-dialog{width:min(520px,100%);overflow:hidden;border:1px solid #345a74;border-radius:15px;background:#fff;color:var(--ink);box-shadow:0 24px 70px #06131f66}
+.settings-dialog-head{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:15px 17px;background:var(--navy);color:#fff}
+.settings-dialog-head h2{margin:0;font-size:18px}.settings-close{width:34px;height:34px;border:1px solid #ffffff3b;border-radius:8px;background:#ffffff12;color:#fff;font-size:20px;font-weight:900;cursor:pointer}
+.settings-dialog-body{padding:18px}.settings-dialog-body p{margin:0 0 13px;color:var(--muted);font-size:12px;line-height:1.55}
+.settings-agent-status{padding:12px 13px;border:1px solid #cbd5e1;border-radius:9px;background:#f8fafc;font-size:12px;font-weight:850}.settings-agent-status.online{border-color:#6fc9ad;background:#eafaf4;color:#075f49}.settings-agent-status.offline{border-color:#ef9aaa;background:#fff0f2;color:#94152c}
+.settings-dialog-actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:15px}.settings-dialog-actions .btn{flex:1 1 190px}
+.settings-dialog-note{margin-top:13px!important;padding-top:13px;border-top:1px solid #e2e8f0}
+</style>`;
+      const dialog = `<div class="settings-backdrop" id="pearlSettingsBackdrop" hidden>
+  <section class="settings-dialog" role="dialog" aria-modal="true" aria-labelledby="pearlSettingsTitle">
+    <header class="settings-dialog-head"><h2 id="pearlSettingsTitle">Pearl.io settings</h2><button class="settings-close" id="closePearlSettings" type="button" aria-label="Close settings">×</button></header>
+    <div class="settings-dialog-body">
+      <p>Monitoring schedules are managed on this Pearl page. Download-folder and Pushover credentials stay protected inside the YardMate desktop app.</p>
+      <div class="settings-agent-status" id="pearlSettingsAgentStatus">Checking YardMate Agent…</div>
+      <div class="settings-dialog-actions">
+        <button class="btn primary" id="openDesktopSettings" type="button">Open desktop settings</button>
+        <button class="btn" id="refreshSettingsStatus" type="button">Check connection</button>
+      </div>
+      <p class="settings-dialog-note">If the agent is offline, start YardMate Agent on this computer, then check the connection again.</p>
+    </div>
+  </section>
+</div>`;
+      const script = `<scr${""}ipt id="pearl-settings-popup-runtime">
+(function(){
+  var button=document.getElementById("openSettings");
+  var backdrop=document.getElementById("pearlSettingsBackdrop");
+  var status=document.getElementById("pearlSettingsAgentStatus");
+  var desktop=document.getElementById("openDesktopSettings");
+  var refresh=document.getElementById("refreshSettingsStatus");
+  var closeButton=document.getElementById("closePearlSettings");
+  if(!button||!backdrop||!status||!desktop||!refresh||!closeButton)return;
+  function setStatus(text,tone){status.textContent=text;status.className="settings-agent-status"+(tone?" "+tone:"")}
+  function check(){
+    setStatus("Checking YardMate Agent…","");
+    return fetch("http://127.0.0.1:43127/api/state",{cache:"no-store"})
+      .then(function(response){return response.json().then(function(payload){return{response:response,payload:payload}})})
+      .then(function(result){
+        if(!result.response.ok)throw new Error(result.payload.error||"Could not reach YardMate Agent.");
+        var enabled=Boolean(result.payload&&result.payload.settings&&result.payload.settings.enabled);
+        setStatus(enabled?"YardMate Agent is connected and monitoring is active.":"YardMate Agent is connected; monitoring is paused.","online");
+        desktop.disabled=false;
+      })
+      .catch(function(){setStatus("YardMate Agent is offline. Start it on this computer to open protected desktop settings.","offline");desktop.disabled=true});
+  }
+  function open(){backdrop.hidden=false;closeButton.focus();check()}
+  function close(){backdrop.hidden=true;button.focus()}
+  button.addEventListener("click",function(event){
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    open();
+  },true);
+  desktop.addEventListener("click",function(){
+    desktop.disabled=true;
+    setStatus("Opening YardMate Agent settings…","");
+    fetch("http://127.0.0.1:43127/api/open-settings",{method:"POST",headers:{"Content-Type":"text/plain;charset=UTF-8"},body:"{}"})
+      .then(function(response){return response.json().then(function(payload){return{response:response,payload:payload}})})
+      .then(function(result){
+        if(!result.response.ok)throw new Error(result.payload.error||"Could not open YardMate Agent settings.");
+        setStatus("Desktop settings opened.","online");
+        desktop.disabled=false;
+      })
+      .catch(function(){setStatus("Could not reach YardMate Agent. Start it on this computer, then try again.","offline");desktop.disabled=true});
+  });
+  refresh.addEventListener("click",check);
+  closeButton.addEventListener("click",close);
+  backdrop.addEventListener("click",function(event){if(event.target===backdrop)close()});
+  document.addEventListener("keydown",function(event){if(event.key==="Escape"&&!backdrop.hidden)close()});
+})();
+</scr${""}ipt>`;
+      const updated = html.replace("</head>", marker + "\n" + style + "\n</head>");
+      const bodyClose = updated.toLowerCase().lastIndexOf("</body>");
+      const patch = dialog + "\n" + script;
+      return bodyClose >= 0 ? updated.slice(0, bodyClose) + patch + "\n" + updated.slice(bodyClose) : updated + patch;
+    }
+
     function withChassisGreenExcelHero(html) {
       if (!html || typeof html !== "string" || html.includes('id="chassis-green-excel-hero"')) return html;
       const style = `<style id="chassis-green-excel-hero">
@@ -10604,7 +10685,7 @@ document.getElementById("openYardCheck")?.addEventListener("click", function(){
           pageHtml = withLphCompactHourlyLog(pageHtml);
         }
         if (id === "roster") pageHtml = withSchedulePersistence(pageHtml);
-        if (id === "pearl") pageHtml = withPearlProgrammedScheduleControls(withPearlYardCheckControl(withPearlScheduleDashboard(withPearlToolbarGroups(withPearlAlertMeterControl(pageHtml)))));
+        if (id === "pearl") pageHtml = withPearlSettingsRepair(withPearlProgrammedScheduleControls(withPearlYardCheckControl(withPearlScheduleDashboard(withPearlToolbarGroups(withPearlAlertMeterControl(pageHtml))))));
         if (id === "excelView") {
           pageHtml = withExcelDarkerGreyBackground(pageHtml);
           pageHtml = withExcelCurrentRosterSnapshotParity(pageHtml);

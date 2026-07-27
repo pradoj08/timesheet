@@ -95,7 +95,7 @@ function mismatchDurationMinutes(value, now = new Date()) {
 
 function encrypt(value) {
   if (!value) return '';
-  if (!safeStorage.isEncryptionAvailable()) throw new Error('Windows secure credential storage is unavailable.');
+  if (!safeStorage.isEncryptionAvailable()) throw new Error('Operating-system secure credential storage is unavailable.');
   return safeStorage.encryptString(value).toString('base64');
 }
 
@@ -736,9 +736,14 @@ function sendJson(response, status, payload) {
 }
 
 function isAllowedControlOrigin(origin) {
-  return !origin
-    || origin === 'null'
-    || origin.startsWith('chrome-extension://');
+  if (!origin || origin === 'null' || origin.startsWith('chrome-extension://')) return true;
+  try {
+    const parsed = new URL(origin);
+    return parsed.protocol === 'http:'
+      && ['127.0.0.1', 'localhost', '[::1]', '::1'].includes(parsed.hostname);
+  } catch {
+    return false;
+  }
 }
 
 async function readJsonBody(request, maxLength = 16384) {
@@ -982,7 +987,12 @@ function restartWatcher() {
 }
 
 function createWindow() {
-  if (settingsWindow && !settingsWindow.isDestroyed()) return settingsWindow.show();
+  if (settingsWindow && !settingsWindow.isDestroyed()) {
+    if (settingsWindow.isMinimized()) settingsWindow.restore();
+    settingsWindow.show();
+    settingsWindow.focus();
+    return;
+  }
   settingsWindow = new BrowserWindow({
     width: 780, height: 720, minWidth: 640, minHeight: 600,
     title: 'YardMate Agent', backgroundColor: '#07131f',
@@ -997,7 +1007,9 @@ function createWindow() {
 
 function createTray() {
   const iconPath = path.join(__dirname, 'assets', 'icon.svg');
-  tray = new Tray(nativeImage.createFromPath(iconPath).resize({ width: 20, height: 20 }));
+  const trayImage = nativeImage.createFromPath(iconPath).resize({ width: 20, height: 20 });
+  if (process.platform === 'darwin') trayImage.setTemplateImage(true);
+  tray = new Tray(trayImage);
   tray.setToolTip('YardMate Agent');
   tray.setContextMenu(Menu.buildFromTemplate([
     { label: 'Open YardMate Agent', click: createWindow },
@@ -1037,6 +1049,7 @@ ipcMain.handle('yardmate:choose-download-folder', async () => {
 
 app.requestSingleInstanceLock();
 app.on('second-instance', createWindow);
+app.on('activate', createWindow);
 app.whenReady().then(async () => {
   settingsPath = path.join(app.getPath('userData'), 'settings.json');
   settings = await loadSettings();
