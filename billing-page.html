@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Monthly Operations</title>
-  <script src="xlsx.full.min.js"></script>
+  <script src="yardmate-agent/node_modules/xlsx/dist/xlsx.full.min.js"></script>
   <script>
     if (!window.XLSX) {
       document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"><\/script>');
@@ -1412,15 +1412,25 @@
     .shift-lpmh-employees {
       display: -webkit-box;
       overflow: hidden;
-      padding-top: 10px;
+      padding-top: 12px;
       border-top: 1px solid rgba(71, 85, 105, 0.18);
       color: #334155;
-      font-size: 11px;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 13px;
       font-weight: 800;
-      line-height: 1.4;
+      line-height: 1.35;
       text-align: center;
       -webkit-box-orient: vertical;
       -webkit-line-clamp: 6;
+    }
+
+    .shift-lpmh-employee-name.crane-operator {
+      color: #a16207;
+      font-weight: 900;
+    }
+
+    .shift-lpmh-employee-separator {
+      color: #64748b;
     }
 
     .shift-lpmh-detail-backdrop {
@@ -1768,6 +1778,7 @@
         </div>
         <button id="filesButton" class="button" type="button">Uploaded files</button>
         <button id="exportButton" class="button" type="button">Export</button>
+        <label id="importPowerBiButton" class="import-button" for="importPowerBiFile" role="button" tabindex="0">Import PowerBI</label>
         <div class="import-menu">
           <button id="importMenuButton" class="import-button import-menu-button" type="button">Import files</button>
           <div id="importMenuList" class="import-menu-list hidden">
@@ -1777,6 +1788,7 @@
           </div>
         </div>
         <input id="fileInput" class="file-input" type="file" multiple accept=".csv,.xlsx,.xls,.htm,.html">
+        <input id="importPowerBiFile" class="file-input" type="file" accept=".csv,.xlsx,.xls">
       </div>
     </header>
 
@@ -1793,7 +1805,7 @@
               <th class="group-gate gate-column" colspan="4">Gate</th>
               <th class="group-stacking" colspan="4">Stacking</th>
               <th class="group-chassis" colspan="3">Chassis</th>
-              <th class="group-hours" colspan="4">Hours &amp; Lifts</th>
+              <th class="group-hours" colspan="5">Hours &amp; Lifts</th>
             </tr>
             <tr>
               <th class="split-left">Ramp</th>
@@ -1811,7 +1823,8 @@
               <th>Stacked</th>
               <th>Total</th>
               <th class="split-left"><button id="timesheetHoursSource" class="hour-source-button active" type="button">Man Hours</button></th>
-              <th><button id="powerBiHoursSource" class="hour-source-button" type="button">PowerBI</button></th>
+              <th><button id="powerBiHoursSource" class="hour-source-button" type="button">PB Hours</button></th>
+              <th>PB Lifts</th>
               <th>Lifts</th>
               <th>LPH</th>
             </tr>
@@ -2009,11 +2022,14 @@
   <script>
     const STORE_KEY = "ops-monthly-v2";
     const LEGACY_STORE_KEY = "ops-monthly-v1";
+    const POWERBI_DB_NAME = "conglobal-billing-powerbi-db-v1";
+    const POWERBI_DB_STORE = "imports";
+    const POWERBI_DB_KEY = "latest";
     const SHIFT_GRID_RESTORE_KEY = "ops-monthly-shift-grid-restored-v1";
     const TIMESHEET_ARCHIVE_KEY = "conglobal-timesheet-archive-v1";
     const LIFT_FIELDS = ["ramp", "deramp", "flip", "stacked", "unstacked", "chUnstacked", "chStacked"];
     const GATE_FIELDS = ["ingates", "outgates", "ingateRefusals", "outgateRefusals"];
-    const FIELDS = [...LIFT_FIELDS, ...GATE_FIELDS, "manHours", "powerBiManHours"];
+    const FIELDS = [...LIFT_FIELDS, ...GATE_FIELDS, "manHours", "powerBiManHours", "powerBiLifts"];
     const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
     const SHORT_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -2065,6 +2081,8 @@
       operationsTable: document.querySelector("#operationsTable"),
       filesButton: document.querySelector("#filesButton"),
       exportButton: document.querySelector("#exportButton"),
+      importPowerBiButton: document.querySelector("#importPowerBiButton"),
+      importPowerBiFile: document.querySelector("#importPowerBiFile"),
       timesheetHoursSource: document.querySelector("#timesheetHoursSource"),
       powerBiHoursSource: document.querySelector("#powerBiHoursSource"),
       importMenuButton: document.querySelector("#importMenuButton"),
@@ -2142,6 +2160,7 @@
     load();
     render();
     renderAnalytics();
+    hydratePowerBiImport().catch(() => {});
     hydrateAnalyticsFromTimesheetArchive().catch(() => {});
 
     els.operationsTab.addEventListener("click", () => setPage("operations"));
@@ -2164,6 +2183,24 @@
     els.importTimesheetsButton.addEventListener("click", () => {
       els.importMenuList.classList.add("hidden");
       els.analyticsTimesheetInput.click();
+    });
+    if (els.importPowerBiButton.tagName === "BUTTON") {
+      els.importPowerBiButton.addEventListener("click", () => els.importPowerBiFile.click());
+    }
+    els.importPowerBiButton.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      event.preventDefault();
+      els.importPowerBiFile.click();
+    });
+    els.importPowerBiFile.addEventListener("change", async (event) => {
+      const file = event.target.files && event.target.files[0];
+      event.target.value = "";
+      if (!file) return;
+      try {
+        await importPowerBiFile(file);
+      } catch (error) {
+        showToast(`PowerBI import failed: ${error && error.message ? error.message : String(error)}`);
+      }
     });
     els.importArchiveTimeButton.addEventListener("click", importTimeFromArchive);
     document.addEventListener("click", (event) => {
@@ -2466,11 +2503,75 @@
       }
     }
 
+    function withPerformanceArchiveIndexedDb(html) {
+      if (!html || html.includes("conglobal-performance-archive-indexeddb-v1")) return html;
+      const bridge = `
+  <meta name="conglobal-performance-archive-indexeddb-v1" content="enabled" />
+  <script>
+    (function() {
+      let indexedArchiveStore = null;
+      let indexedPowerBiRows = [];
+      const originalReadArchiveStore = readArchiveStore;
+      const originalReadBillingHourlyLifts = readBillingHourlyLifts;
+      readArchiveStore = function() {
+        if (indexedArchiveStore && typeof indexedArchiveStore === "object" && !Array.isArray(indexedArchiveStore)) {
+          return indexedArchiveStore;
+        }
+        return originalReadArchiveStore();
+      };
+      readBillingHourlyLifts = function(dateValue) {
+        const result = originalReadBillingHourlyLifts(dateValue);
+        if (result && result.hasData) return result;
+        const dateKey = liftDateKey(dateValue);
+        const row = indexedPowerBiRows.find(function(value) { return value && value.date === dateKey; });
+        const lifts = Math.max(0, Number(row && row.lifts) || 0);
+        if (!lifts) return result;
+        const hourly = {};
+        addBillingLift(hourly, 3, "", lifts, "PowerBI daily total");
+        return { hourly: hourly, hasData: true };
+      };
+      if (!window.indexedDB) return;
+      const openRequest = indexedDB.open("conglobal-timesheet-archive-db-v1", 1);
+      openRequest.onupgradeneeded = function() {
+        if (!openRequest.result.objectStoreNames.contains("archive")) openRequest.result.createObjectStore("archive");
+      };
+      openRequest.onsuccess = function() {
+        const database = openRequest.result;
+        const request = database.transaction("archive", "readonly").objectStore("archive").get("main");
+        request.onsuccess = function() {
+          const archive = request.result;
+          database.close();
+          if (!archive || typeof archive !== "object" || Array.isArray(archive)) return;
+          indexedArchiveStore = archive;
+          render();
+        };
+        request.onerror = function() { database.close(); };
+      };
+      const powerBiOpenRequest = indexedDB.open("conglobal-billing-powerbi-db-v1", 1);
+      powerBiOpenRequest.onupgradeneeded = function() {
+        if (!powerBiOpenRequest.result.objectStoreNames.contains("imports")) powerBiOpenRequest.result.createObjectStore("imports");
+      };
+      powerBiOpenRequest.onsuccess = function() {
+        const database = powerBiOpenRequest.result;
+        const request = database.transaction("imports", "readonly").objectStore("imports").get("latest");
+        request.onsuccess = function() {
+          const saved = request.result;
+          database.close();
+          indexedPowerBiRows = saved && Array.isArray(saved.rows) ? saved.rows : [];
+          if (indexedPowerBiRows.length) render();
+        };
+        request.onerror = function() { database.close(); };
+      };
+    })();
+  <\/script>`;
+      return html.replace("</body>", bridge + "\n</body>");
+    }
+
     function ensurePerformancePage() {
       if (els.performanceFrame.srcdoc) return;
       const sourceNode = document.querySelector("#performancePageSource");
       try {
-        els.performanceFrame.srcdoc = JSON.parse(sourceNode.textContent || '""');
+        els.performanceFrame.srcdoc = withPerformanceArchiveIndexedDb(JSON.parse(sourceNode.textContent || '""'));
       } catch (error) {
         els.performanceFrame.srcdoc = "<p>Performance view could not be loaded.</p>";
       }
@@ -2510,7 +2611,7 @@
         lifts: { label: "lifts", fields: LIFT_FIELDS, clearMoveDetails: true },
         gate: { label: "gate counts", fields: GATE_FIELDS, clearMoveDetails: false },
         manHours: { label: "man hours", fields: ["manHours"], clearMoveDetails: false },
-        powerBi: { label: "PowerBI man hours", fields: ["powerBiManHours"], clearMoveDetails: false }
+        powerBi: { label: "PowerBI hours and lifts", fields: ["powerBiManHours", "powerBiLifts"], clearMoveDetails: false }
       };
       const action = actions[type];
       if (!action) return;
@@ -3086,6 +3187,7 @@
         row.append(totalCell(sum(record.chUnstacked, record.chStacked), "chassis-total"));
         row.append(inputCell(key, "manHours", record.manHours, "decimal"));
         row.append(inputCell(key, "powerBiManHours", record.powerBiManHours, "decimal"));
+        row.append(inputCell(key, "powerBiLifts", record.powerBiLifts));
         row.append(totalCell(dailyLifts, "lph-total"));
         row.append(totalCell(dayLpmh, "lph-total", 2));
 
@@ -3182,14 +3284,14 @@
       const lpmh = lphHours > 0 ? sums.lifts / lphHours : null;
       const values = [
         "Total", sums.ramp, sums.deramp, moves, sums.ingates, sums.outgates, sums.ingateRefusals, sums.outgateRefusals, sums.flip, sums.stacked, sums.unstacked,
-        flipStack, sums.chUnstacked, sums.chStacked, chassis, sums.manHours, sums.powerBiManHours, sums.lifts, lpmh
+        flipStack, sums.chUnstacked, sums.chStacked, chassis, sums.manHours, sums.powerBiManHours, sums.powerBiLifts, sums.lifts, lpmh
       ];
 
       els.totalRow.innerHTML = "";
       values.forEach((value, index) => {
         const cell = document.createElement("td");
         if (index >= 4 && index <= 7) cell.classList.add("gate-column");
-        cell.textContent = typeof value === "number" ? formatNonZero(value, index === 15 || index === 16 ? 1 : index === 18 ? 2 : null) : value;
+        cell.textContent = typeof value === "number" ? formatNonZero(value, index === 15 || index === 16 ? 1 : index === 19 ? 2 : null) : value;
         els.totalRow.append(cell);
       });
 
@@ -3844,7 +3946,8 @@
         ingateRefusals: "Ingate Refusals",
         outgateRefusals: "Outgate Refusals",
         manHours: "Man Hours",
-        powerBiManHours: "PowerBI Man Hours"
+        powerBiManHours: "PowerBI Man Hours",
+        powerBiLifts: "PB Lifts"
       }[field] || field;
     }
 
@@ -4164,7 +4267,7 @@
           const employees = Array.from(new Map(matches.flatMap((shift) => shift.employees || []).map((employee) => {
             const name = String(employee.displayName || employee.name || employee.employee || "").trim();
             return [normalizeName(name), name];
-          }).filter(([key]) => key)).values()).sort((a, b) => a.localeCompare(b));
+          }).filter(([key]) => key)).values()).sort(shiftLpmhEmployeeSort);
           return { weekday, hours, lifts, lpmh, sampleCount: matches.length, matches, employees };
         });
         const weekHours = daily.reduce((total, day) => total + day.hours, 0);
@@ -4211,7 +4314,7 @@
       return Array.from(new Map((shift.employees || []).map((employee) => {
         const name = String(employee.displayName || employee.name || employee.employee || "").trim();
         return [normalizeName(name), name];
-      }).filter(([key]) => key)).values()).sort((a, b) => a.localeCompare(b));
+      }).filter(([key]) => key)).values()).sort(shiftLpmhEmployeeSort);
     }
 
     function shiftLpmhEmployeeSelectionKey(detail) {
@@ -4229,6 +4332,59 @@
       const selected = Array.isArray(stored) ? stored.slice(0, 8) : all.slice(0, 8);
       return all.filter((name) => selected.includes(name)).slice(0, 8);
     }
+
+    const shiftLpmhDefaultCraneNames = new Set([
+      "Stewart Dexter", "Thomas Henry", "Brown James", "Player Keyston", "Hickman Makia",
+      "Hosey Kevin", "Tingle Jason", "Benavides Robert", "Delgado Jose"
+    ].map((name) => shiftLpmhCraneNameKey(name)));
+
+    function shiftLpmhCraneNameKey(name) {
+      return String(name || "")
+        .trim()
+        .toLowerCase()
+        .replace(/[,.]/g, " ")
+        .replace(/\b(jr|sr|ii|iii|iv)\b/g, "")
+        .replace(/\s+/g, " ")
+        .split(" ")
+        .filter(Boolean)
+        .sort()
+        .join(" ");
+    }
+
+    function shiftLpmhIsCraneOperator(name) {
+      const key = shiftLpmhCraneNameKey(name);
+      try {
+        const preferences = JSON.parse(localStorage.getItem("settegast-staff-role-preferences-v1") || "{}");
+        if (preferences && Object.prototype.hasOwnProperty.call(preferences, key)) {
+          const roles = Array.isArray(preferences[key]) ? preferences[key] : [preferences[key]];
+          return roles.some((role) => ["crane", "everything"].includes(String(role || "").toLowerCase()));
+        }
+      } catch (error) {}
+      return shiftLpmhDefaultCraneNames.has(key);
+    }
+
+    function shiftLpmhEmployeeSort(a, b) {
+      const aCrane = shiftLpmhIsCraneOperator(a);
+      const bCrane = shiftLpmhIsCraneOperator(b);
+      if (aCrane !== bCrane) return aCrane ? -1 : 1;
+      return a.localeCompare(b);
+    }
+
+    function renderShiftLpmhEmployeeNames(names) {
+      return names.map((name) => `<span class="shift-lpmh-employee-name${shiftLpmhIsCraneOperator(name) ? " crane-operator" : ""}">${escapeHtml(name)}</span>`).join('<span class="shift-lpmh-employee-separator">, </span>');
+    }
+
+    function decorateShiftLpmhEmployeeNames() {
+      document.querySelectorAll(".shift-lpmh-employees").forEach((element) => {
+        if (element.querySelector(".shift-lpmh-employee-name")) return;
+        const names = element.textContent.split(",").map((name) => name.trim()).filter(Boolean);
+        if (names.length) element.innerHTML = renderShiftLpmhEmployeeNames(names);
+      });
+    }
+
+    const shiftLpmhEmployeeObserver = new MutationObserver(decorateShiftLpmhEmployeeNames);
+    const shiftLpmhEmployeeContainer = document.getElementById("groupMapContainer");
+    if (shiftLpmhEmployeeContainer) shiftLpmhEmployeeObserver.observe(shiftLpmhEmployeeContainer, { childList: true, subtree: true });
 
     function closeShiftLpmhBreakdown() {
       document.querySelector(".shift-lpmh-detail-backdrop")?.remove();
@@ -5093,6 +5249,154 @@
       }
 
       return rows;
+    }
+
+    function powerBiNumber(value) {
+      if (typeof value === "number" && Number.isFinite(value)) return value;
+      const text = String(value == null ? "" : value).trim();
+      if (!text) return null;
+      const number = Number.parseFloat(text.replace(/,/g, ""));
+      return Number.isFinite(number) ? number : null;
+    }
+
+    function powerBiHeaderIndex(headers, names) {
+      const wanted = names.map(normalizeHeader);
+      return headers.findIndex((header) => wanted.includes(header));
+    }
+
+    function parsePowerBiRows(rows) {
+      for (let headerRow = 0; headerRow < Math.min(rows.length, 25); headerRow += 1) {
+        const headers = (rows[headerRow] || []).map(normalizeHeader);
+        const dateIndex = powerBiHeaderIndex(headers, ["date", "workdate", "day"]);
+        const liftsIndex = powerBiHeaderIndex(headers, ["lifts", "lift", "totallifts"]);
+        const hoursIndex = powerBiHeaderIndex(headers, ["totalhours", "totalmanhours", "totalhrs", "hours"]);
+        if (dateIndex < 0 || liftsIndex < 0 || hoursIndex < 0) continue;
+        return rows.slice(headerRow + 1).flatMap((row) => {
+          const date = toKey(row[dateIndex]);
+          const lifts = powerBiNumber(row[liftsIndex]);
+          const totalHours = powerBiNumber(row[hoursIndex]);
+          return date && lifts != null && totalHours != null ? [{ date, lifts, totalHours }] : [];
+        });
+      }
+      return [];
+    }
+
+    function openPowerBiDatabase() {
+      return new Promise((resolve, reject) => {
+        if (!window.indexedDB) {
+          reject(new Error("IndexedDB is unavailable."));
+          return;
+        }
+        const request = indexedDB.open(POWERBI_DB_NAME, 1);
+        request.onupgradeneeded = () => {
+          if (!request.result.objectStoreNames.contains(POWERBI_DB_STORE)) {
+            request.result.createObjectStore(POWERBI_DB_STORE);
+          }
+        };
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error || new Error("Could not open PowerBI storage."));
+      });
+    }
+
+    async function savePowerBiImport(rows, fileRecord) {
+      const database = await openPowerBiDatabase();
+      try {
+        await new Promise((resolve, reject) => {
+          const request = database
+            .transaction(POWERBI_DB_STORE, "readwrite")
+            .objectStore(POWERBI_DB_STORE)
+            .put({ rows, fileRecord, savedAt: new Date().toISOString() }, POWERBI_DB_KEY);
+          request.onsuccess = () => resolve();
+          request.onerror = () => reject(request.error || new Error("Could not save PowerBI import."));
+        });
+      } finally {
+        database.close();
+      }
+    }
+
+    async function readPowerBiImport() {
+      const database = await openPowerBiDatabase();
+      try {
+        return await new Promise((resolve, reject) => {
+          const request = database
+            .transaction(POWERBI_DB_STORE, "readonly")
+            .objectStore(POWERBI_DB_STORE)
+            .get(POWERBI_DB_KEY);
+          request.onsuccess = () => resolve(request.result || null);
+          request.onerror = () => reject(request.error || new Error("Could not read PowerBI import."));
+        });
+      } finally {
+        database.close();
+      }
+    }
+
+    async function hydratePowerBiImport() {
+      const saved = await readPowerBiImport();
+      const rows = saved && Array.isArray(saved.rows) ? saved.rows : [];
+      if (!rows.length) return;
+      rows.forEach((row) => {
+        if (!row || !row.date || !Number.isFinite(row.lifts) || !Number.isFinite(row.totalHours)) return;
+        state.data[row.date] = {
+          ...(state.data[row.date] || {}),
+          powerBiManHours: row.totalHours,
+          powerBiLifts: row.lifts
+        };
+      });
+      if (saved.fileRecord && !state.importedFiles.some((file) => file.id === saved.fileRecord.id)) {
+        state.importedFiles.push(saved.fileRecord);
+      }
+      render();
+      renderAnalytics();
+    }
+
+    async function importPowerBiFile(file) {
+      let rows;
+      if (/\.(xlsx|xls)$/i.test(file.name)) {
+        if (!window.XLSX) throw new Error("Excel reader is unavailable. Refresh the workbook, then try the import again.");
+        const workbook = window.XLSX.read(await file.arrayBuffer(), { cellDates: true });
+        rows = workbook.SheetNames.flatMap((sheetName) => {
+          const sheet = workbook.Sheets[sheetName];
+          return parsePowerBiRows(window.XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false, defval: "", dateNF: "yyyy-mm-dd" }));
+        });
+      } else {
+        rows = parsePowerBiRows(parseCSV(await file.text()));
+      }
+      const validRows = rows.filter((row) => row.date && Number.isFinite(row.lifts) && Number.isFinite(row.totalHours));
+      if (!validRows.length) throw new Error("No rows found with Date, Lifts, and Total Hours columns.");
+
+      validRows.forEach((row) => {
+        state.data[row.date] = {
+          ...(state.data[row.date] || {}),
+          powerBiManHours: row.totalHours,
+          powerBiLifts: row.lifts
+        };
+      });
+      const monthCounts = validRows.reduce((counts, row) => {
+        const month = row.date.slice(0, 7);
+        counts[month] = (counts[month] || 0) + 1;
+        return counts;
+      }, {});
+      state.month = Object.entries(monthCounts).sort((a, b) => b[1] - a[1])[0][0];
+      const fileRecord = {
+        id: createImportId(),
+        name: file.name,
+        type: "powerbi",
+        importedAt: new Date().toISOString(),
+        rows: validRows.length
+      };
+      state.importedFiles.push(fileRecord);
+      render();
+      renderAnalytics();
+      let saved = false;
+      try {
+        await savePowerBiImport(validRows, fileRecord);
+        saved = true;
+      } catch (error) {}
+      try {
+        persist();
+        saved = true;
+      } catch (error) {}
+      showToast(`Imported PowerBI hours and lifts for ${validRows.length} day${validRows.length === 1 ? "" : "s"}.${saved ? "" : " Values are visible, but browser storage is full."}`);
     }
 
     function sum(a, b) {

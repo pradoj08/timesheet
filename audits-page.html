@@ -14191,7 +14191,6 @@ document.addEventListener('input',function(e){
       }
     }catch(err){ console.warn('Clear all remote save failed', err); }
     rosterFilters.trainings = { shift:'all', working:false };
-    window.monthlyTrainingViewMode = 'timesheet';
     renderRosterTable('trainings');
     try{ await renderRosterPanels(); }catch(e){}
   };

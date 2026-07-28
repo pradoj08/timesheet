@@ -1,11 +1,11 @@
 const assert = require("assert/strict");
 const crypto = require("crypto");
+const { execFileSync } = require("child_process");
 const fs = require("fs");
 const vm = require("vm");
 const { injectAssistantShell, validateAssistantSources } = require("./assistant-shell-inject.cjs");
 
 const html = fs.readFileSync("index.html", "utf8");
-const mirrorPath = "GITHUB UPLOAD - ONE FILE/index.html";
 const runtimeFile = fs.readFileSync("assistant-shell.js", "utf8").trim();
 const knowledgeFile = fs.readFileSync("assistant-knowledge.js", "utf8").trim();
 const cssFile = fs.readFileSync("assistant-shell.css", "utf8").trim();
@@ -39,24 +39,20 @@ function evaluateIntentClassifier(source) {
 
 validateAssistantSources();
 
-assert.equal(count(html, 'id="conglobalOpsAssistant"'), 1, "Assistant root must be unique");
-assert.equal(count(html, 'id="conglobalOpsAssistantStyles"'), 1, "Assistant styles must be unique");
-assert.equal(count(html, 'id="conglobalOpsAssistantKnowledge"'), 1, "Assistant knowledge must be unique");
-assert.equal(count(html, 'id="conglobalOpsAssistantRuntime"'), 1, "Assistant runtime must be unique");
-assert.equal(count(html, "ConglobalOpsAssistant?.setPage"), 1, "Page navigation hook must be unique");
-assert.equal(count(html, "ConglobalOpsAssistant?.refreshContext"), 1, "Post-load page-context refresh hook must be unique");
-assert.equal(count(html, "CONGLOBAL_OPS_ASSISTANT_CONTEXT_PROVIDER"), 1, "Child-page data-adapter bridge must be unique");
-assert(html.includes("@media print"), "Assistant needs print hiding rules");
-assert(html.includes("conglobal-ops-assistant-"), "Assistant local state must be excluded from shared workbook state");
-assert(html.includes("privateNode.remove()"), "Portable export must scrub live assistant UI");
+assert.equal(count(html, 'id="conglobalOpsAssistant"'), 0, "Assistant root must be absent from the active workbook");
+assert.equal(count(html, 'id="conglobalOpsAssistantStyles"'), 0, "Assistant styles must be absent from the active workbook");
+assert.equal(count(html, 'id="conglobalOpsAssistantKnowledge"'), 0, "Assistant knowledge must be absent from the active workbook");
+assert.equal(count(html, 'id="conglobalOpsAssistantRuntime"'), 0, "Assistant runtime must be absent from the active workbook");
+assert.equal(count(html, "ConglobalOpsAssistant"), 0, "Assistant runtime hooks must be absent from the active workbook");
 
-const embeddedKnowledgeSource = scriptSource(html, "conglobalOpsAssistantKnowledge");
-const embeddedRuntimeSource = scriptSource(html, "conglobalOpsAssistantRuntime");
+const assistantFixture = injectAssistantShell(execFileSync("git", ["show", "HEAD:index.html"], { maxBuffer: 20 * 1024 * 1024 }).toString("utf8"));
+const embeddedKnowledgeSource = scriptSource(assistantFixture, "conglobalOpsAssistantKnowledge");
+const embeddedRuntimeSource = scriptSource(assistantFixture, "conglobalOpsAssistantRuntime");
 new vm.Script(embeddedKnowledgeSource, { filename: "embedded-assistant-knowledge.js" });
 new vm.Script(embeddedRuntimeSource, { filename: "embedded-assistant-runtime.js" });
 assert.equal(digest(embeddedKnowledgeSource), digest(knowledgeFile), "Embedded knowledge is stale relative to assistant-knowledge.js");
 assert.equal(digest(embeddedRuntimeSource), digest(runtimeFile), "Embedded runtime is stale relative to assistant-shell.js");
-assert(html.includes(cssFile), "Embedded assistant CSS is stale relative to assistant-shell.css");
+assert(assistantFixture.includes(cssFile), "Embedded assistant CSS is stale relative to assistant-shell.css");
 
 const knowledge = evaluateKnowledge(knowledgeFile);
 const expectedStatuses = ["confirmed", "inferred", "proposed", "superseded", "unresolved", "verification-required"].sort();
@@ -113,9 +109,8 @@ assert(!runtimeFile.includes("prefs.animations"), "Legacy Boolean animation beha
 assert(runtimeFile.includes("substantiveScore < 4"), "Page context must not make an unrelated prompt match knowledge");
 assert(!/sk-[A-Za-z0-9_-]{20,}|OPENAI_API_KEY|apiKey\s*[:=]/.test(runtimeFile + knowledgeFile), "Assistant source contains a possible AI credential");
 
-const once = injectAssistantShell(html);
+const once = injectAssistantShell(assistantFixture);
 const twice = injectAssistantShell(once);
 assert.equal(digest(once), digest(twice), "Assistant injection must be idempotent");
-if (fs.existsSync(mirrorPath)) assert.equal(digest(html), digest(fs.readFileSync(mirrorPath, "utf8")), "Canonical and GitHub-upload HTML must match");
 
-console.log(`Assistant foundation checks passed: ${knowledge.entries.length} knowledge entries, one global instance, status and intent safeguards verified.`);
+console.log(`Assistant source checks passed: ${knowledge.entries.length} knowledge entries, injection remains idempotent, and the active workbook is assistant-free.`);

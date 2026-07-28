@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="conglobal-performance-archive-indexeddb-v1" content="enabled" />
   <title>Performance Analytics</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
@@ -2549,6 +2550,12 @@
     const rosterAdditionsKey = "conglobal-roster-additions-v1";
     const dayforceStorageKey = "conglobal-dayforce-punches-v1";
     const archiveStorageKey = "conglobal-timesheet-archive-v1";
+    const archiveDatabaseName = "conglobal-timesheet-archive-db-v1";
+    const archiveDatabaseStore = "archive";
+    const archiveDatabaseKey = "main";
+    const powerBiDatabaseName = "conglobal-billing-powerbi-db-v1";
+    const powerBiDatabaseStore = "imports";
+    const powerBiDatabaseKey = "latest";
     const billingStorageKey = "ops-monthly-v2";
     const legacyBillingStorageKey = "ops-monthly-v1";
     const timesheetNotesKey = "conglobal-timesheet-notes-v1";
@@ -2648,6 +2655,8 @@
     let suppressTimelineClick = false;
     let timelineMarkerMode = "lunch";
     let timelineNoteDraft = null;
+    let indexedArchiveStore = null;
+    let indexedPowerBiRows = [];
 
     function esc(value) {
       return String(value == null ? "" : value).replace(/[&<>"']/g, function(char) {
@@ -3085,8 +3094,62 @@
       return localDateValue(date);
     }
     function readArchiveStore() {
+      if (indexedArchiveStore && typeof indexedArchiveStore === "object" && !Array.isArray(indexedArchiveStore)) {
+        return indexedArchiveStore;
+      }
       const archive = readJson(archiveStorageKey, {});
       return archive && typeof archive === "object" && !Array.isArray(archive) ? archive : {};
+    }
+    async function hydrateArchiveStore() {
+      if (!window.indexedDB) return false;
+      const database = await new Promise(function(resolve, reject) {
+        const request = indexedDB.open(archiveDatabaseName, 1);
+        request.onupgradeneeded = function() {
+          if (!request.result.objectStoreNames.contains(archiveDatabaseStore)) {
+            request.result.createObjectStore(archiveDatabaseStore);
+          }
+        };
+        request.onsuccess = function() { resolve(request.result); };
+        request.onerror = function() { reject(request.error || new Error("Could not open timesheet archive.")); };
+      });
+      try {
+        const archive = await new Promise(function(resolve, reject) {
+          const request = database.transaction(archiveDatabaseStore, "readonly").objectStore(archiveDatabaseStore).get(archiveDatabaseKey);
+          request.onsuccess = function() { resolve(request.result || null); };
+          request.onerror = function() { reject(request.error || new Error("Could not read timesheet archive.")); };
+        });
+        if (!archive || typeof archive !== "object" || Array.isArray(archive)) return false;
+        indexedArchiveStore = archive;
+        render();
+        return true;
+      } finally {
+        database.close();
+      }
+    }
+    async function hydratePowerBiRows() {
+      if (!window.indexedDB) return false;
+      const database = await new Promise(function(resolve, reject) {
+        const request = indexedDB.open(powerBiDatabaseName, 1);
+        request.onupgradeneeded = function() {
+          if (!request.result.objectStoreNames.contains(powerBiDatabaseStore)) {
+            request.result.createObjectStore(powerBiDatabaseStore);
+          }
+        };
+        request.onsuccess = function() { resolve(request.result); };
+        request.onerror = function() { reject(request.error || new Error("Could not open PowerBI imports.")); };
+      });
+      try {
+        const saved = await new Promise(function(resolve, reject) {
+          const request = database.transaction(powerBiDatabaseStore, "readonly").objectStore(powerBiDatabaseStore).get(powerBiDatabaseKey);
+          request.onsuccess = function() { resolve(request.result || null); };
+          request.onerror = function() { reject(request.error || new Error("Could not read PowerBI imports.")); };
+        });
+        indexedPowerBiRows = saved && Array.isArray(saved.rows) ? saved.rows : [];
+        render();
+        return indexedPowerBiRows.length > 0;
+      } finally {
+        database.close();
+      }
     }
     function previousArchiveCandidateKeys(archive, dateValue) {
       const dateKey = liftDateKey(dateValue);
@@ -3238,7 +3301,15 @@
       const hourly = {};
       const details = Array.isArray(billing.moveDetails) ? billing.moveDetails : [];
       const dateDetails = details.filter(function(detail) { return detail && !detail.deleted && detail.date === dateKey; });
-      const dailyTotal = billingDailyLiftCount(billing.data && billing.data[dateKey]);
+      const billingRecord = billing.data && billing.data[dateKey];
+      const operationalDailyTotal = billingDailyLiftCount(billingRecord);
+      const indexedPowerBiRow = indexedPowerBiRows.find(function(row) { return row && row.date === dateKey; });
+      const powerBiDailyTotal = Math.max(0, Number(
+        billingRecord && billingRecord.powerBiLifts != null
+          ? billingRecord.powerBiLifts
+          : indexedPowerBiRow && indexedPowerBiRow.lifts
+      ) || 0);
+      const dailyTotal = operationalDailyTotal > 0 ? operationalDailyTotal : powerBiDailyTotal;
       const seen = new Set();
 
       dateDetails.forEach(function(detail) {
@@ -3259,7 +3330,9 @@
         return sum + (Number(hourly[hour].value) || 0);
       }, 0);
       const adjustment = Math.max(0, dailyTotal - hourlyTotal);
-      if (adjustment > 0) addBillingLift(hourly, 3, "", adjustment, "Billing daily total");
+      if (adjustment > 0) {
+        addBillingLift(hourly, 3, "", adjustment, operationalDailyTotal > 0 ? "Billing daily total" : "PowerBI daily total");
+      }
 
       return { hourly: hourly, hasData: dailyTotal > 0 || dateDetails.length > 0 };
     }
@@ -4814,6 +4887,8 @@
     document.getElementById("groupInput").value = localStorage.getItem(groupsStorageKey) || "";
     window.addEventListener("focus", render);
     render();
+    hydrateArchiveStore().catch(function() {});
+    hydratePowerBiRows().catch(function() {});
   </script>
 </body>
 </html>

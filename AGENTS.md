@@ -27,6 +27,7 @@
 - `GITHUB UPLOAD - ONE FILE/index.html` is a separate single-file distribution copy.
 - Supabase-related database files and migrations live under `supabase/`.
 - `yardmate-agent/` is a separate Electron companion application. Its `edge-extension/` helper refreshes the signed-in UP Mismatches page and invokes the official Excel export; the desktop agent watches Downloads, parses the workbook, renders the equipment-status image, and can send Pushover alerts.
+- `pearl-standalone/index.html` is a separate browser app extracted from the Pearl/Mori page. It can be opened without the workbook shell, but still requires the local YardMate agent (and the signed-in extension for authenticated captures).
 
 ## Runtime architecture
 
@@ -75,7 +76,7 @@
 | Billing | `billing-page.html` | Monthly header is intentionally removed at runtime. |
 | Matrix | `matrix-wide-page.html` / `matrix-page.html` | Top navigation presents Matrix variants as a dropdown. |
 | Checklist | `checklist-page.html` | Must render above SCW when opened from AM Report. |
-| Pearl.io | `pearl-page.html` | Mori controls, schedules, AlertMeter preview, cloud/browser navigation. |
+| Pearl.io | `pearl-page.html` / `pearl-standalone/index.html` | Mori controls, schedules, AlertMeter preview, Yard Check, cloud/browser navigation. The standalone copy is independently launchable. |
 | Audits | `audits-page.html` | Large embedded operational page. |
 | Roster | `roster-page.html` | Shared schedule persistence behavior. |
 | Archive | `archive-page.html` | Mass import is patched at runtime. |
