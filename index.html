@@ -2061,6 +2061,7 @@
   #amFloatingTodayRoster .am-today-roster-total:first-child { border-right: 1px solid #d7aeb5; }
   #amFloatingTodayRoster .amfr-loading { padding: 18px; color: #526177; font-size: 12px; font-weight: 800; text-align: center; }
   #amFloatingTodayRoster .amfr-checklist {
+    display: none !important;
     border-top: 2px solid #263446;
     background: #eef2f6;
   }
@@ -3788,7 +3789,8 @@
   .shift-lpmh-day.warn{background:#fff4d6;box-shadow:inset 0 4px #e3a008}
   .shift-lpmh-day.bad{background:#fde8e8;box-shadow:inset 0 4px #d63b3b}
   .shift-lpmh-day.empty .shift-lpmh-value{color:#a4afbd}
-  .shift-lpmh-detail-backdrop{position:fixed;inset:0;z-index:140;display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:54px 18px 24px;background:rgba(15,23,42,.62)}
+  #groupMapContainer{position:relative}
+  .shift-lpmh-detail-backdrop{position:absolute;inset:0;z-index:140;display:flex;align-items:flex-start;justify-content:center;overflow:auto;min-height:100%;padding:28px 18px 24px;background:rgba(15,23,42,.62)}
   .shift-lpmh-detail{width:min(980px,100%);overflow:hidden;border:1px solid #94a3b8;border-radius:10px;background:#fff;box-shadow:0 24px 70px rgba(15,23,42,.35)}
   .shift-lpmh-detail-head{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 16px;background:#17233a;color:#fff}
   .shift-lpmh-detail-head strong{display:block;font-size:17px}.shift-lpmh-detail-head span{color:#cbd5e1;font-size:11px;font-weight:800}
@@ -3916,7 +3918,7 @@
     overlay.className="shift-lpmh-detail-backdrop";
     overlay.innerHTML='<section class="shift-lpmh-detail" role="dialog" aria-modal="true" aria-labelledby="shiftLpmhDetailTitle"><header class="shift-lpmh-detail-head"><div><strong id="shiftLpmhDetailTitle">'+day.weekday.name+" · "+detail.title+'</strong><span>Previous four weeks used in this weighted LPMH average</span></div><button class="shift-lpmh-detail-close" type="button" aria-label="Close detailed breakdown">X</button></header><div class="shift-lpmh-detail-body"><table class="shift-lpmh-detail-table"><thead><tr><th>Date</th><th>Lifts</th><th>Hours</th><th>LPMH</th><th>Employees working</th></tr></thead><tbody>'+(rows||'<tr><td colspan="5">No matching shift data.</td></tr>')+'<tr class="shift-lpmh-detail-total"><td>Weighted total</td><td>'+Math.round(day.lifts).toLocaleString("en-US")+"</td><td>"+day.hours.toFixed(1)+"</td><td>"+(day.lpmh==null?"—":day.lpmh.toFixed(2))+"</td><td>"+(day.employees.length?escapeHtml(day.employees.join(", ")):"No employees recorded")+"</td></tr></tbody></table></div></section>";
     overlay.addEventListener("click",function(event){if(event.target===overlay||event.target.closest(".shift-lpmh-detail-close"))closeBreakdown();});
-    document.body.appendChild(overlay);
+    (employeeContainer||document.body).appendChild(overlay);
     var picker=document.createElement("div");
     picker.className="shift-lpmh-employee-picker";
     picker.innerHTML='<strong>People displayed on this card</strong><span class="shift-lpmh-employee-limit">Choose up to 8 people.</span><div class="shift-lpmh-employee-options"></div><button class="shift-lpmh-employee-save" type="button">Apply displayed people</button>';
@@ -4019,10 +4021,209 @@
       const bodyClose = html.toLowerCase().lastIndexOf("</body>");
       const control = '<button id="groupMapShiftToggle" class="bulk-action" type="button">Shift Grid</button>';
       const sourceWithDefault = html.replace(/groupMapMode:\s*"groups"/, 'groupMapMode: "shifts"');
-      const sourceWithGridRender = sourceWithDefault.replace(/renderPersonGroupingMap\(state\.groupMapMode === "shifts" \? filterAnalyticsShifts\(shifts, true\) : filtered\);/, 'renderPersonGroupingMap(filterAnalyticsShifts(shifts, true));');
+      const sourceWithGridRender = sourceWithDefault;
       const sourceHtml = sourceWithGridRender.includes('id="groupMapShiftToggle"') ? sourceWithGridRender : sourceWithGridRender.replace(/(<div[^>]+class="[^"]*group-map-tools[^"]*"[^>]*>)/i, "$1" + control);
       const finalBodyClose = sourceHtml.toLowerCase().lastIndexOf("</body>");
       return finalBodyClose >= 0 ? sourceHtml.slice(0, finalBodyClose) + injection + "\n" + sourceHtml.slice(finalBodyClose) : sourceHtml + injection;
+    }
+
+    function withBillingDailyShiftProjection(html) {
+      if (!html || typeof html !== "string" || html.includes("conglobal-billing-daily-shift-projection-v1")) return html;
+      const panel = `<section id="dailyShiftProjection" class="daily-shift-projection">
+  <div class="daily-shift-projection-head">
+    <div><h2>Daily Shift LPMH Projection</h2><p>Imported Excel lift timestamps split work at 03:00 and 15:00; imported shift labor reconciles to the Billing daily total.</p></div>
+    <div class="daily-shift-projection-head-actions">
+      <div id="dailyShiftProjectionSummary" class="daily-shift-projection-summary"></div>
+      <button id="dailyShiftProjectionToggle" class="daily-shift-projection-toggle" type="button" aria-expanded="true">Collapse ▲</button>
+    </div>
+  </div>
+  <div class="daily-shift-projection-scroll">
+    <table>
+      <thead>
+        <tr><th rowspan="2">Date</th><th class="day-shift-cell" colspan="3">Day Shift · 0300–1500</th><th class="night-shift-cell" colspan="3">Night Shift · 1500–0300</th><th class="daily-total-cell" colspan="3">Reconciled Daily</th><th rowspan="2">Basis</th></tr>
+        <tr><th class="day-shift-cell">Hours</th><th class="day-shift-cell">Lifts</th><th class="day-shift-cell">LPMH</th><th class="night-shift-cell">Hours</th><th class="night-shift-cell">Lifts</th><th class="night-shift-cell">LPMH</th><th class="daily-total-cell">Hours</th><th class="daily-total-cell">Lifts</th><th class="daily-total-cell">LPMH</th></tr>
+      </thead>
+      <tbody id="dailyShiftProjectionBody"></tbody>
+    </table>
+    <div id="dailyShiftProjectionEmpty" class="daily-shift-projection-empty hidden">Import timesheets and lift reports to build the daily shift projection.</div>
+  </div>
+</section>`;
+      const analyticsAnchor = '    <section id="analyticsPage" class="analytics-page hidden">';
+      let sourceHtml = html.includes('id="dailyShiftProjection"') ? html : html.replace(analyticsAnchor, panel + "\n\n" + analyticsAnchor);
+      if (!sourceHtml.includes('id="dailyShiftProjectionToggle"')) {
+        sourceHtml = sourceHtml.replace(
+          '<div id="dailyShiftProjectionSummary" class="daily-shift-projection-summary"></div>',
+          '<div class="daily-shift-projection-head-actions"><div id="dailyShiftProjectionSummary" class="daily-shift-projection-summary"></div><button id="dailyShiftProjectionToggle" class="daily-shift-projection-toggle" type="button" aria-expanded="true">Collapse ▲</button></div>'
+        );
+      }
+      const injection = `<meta name="conglobal-billing-daily-shift-projection-v1" content="enabled">
+<style>
+  .daily-shift-projection{grid-column:1/-1;overflow:hidden;border:1px solid #cbd5e1;border-radius:10px;background:#fff;box-shadow:var(--shadow)}
+  .daily-shift-projection-head{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:13px 16px;color:#fff;background:#17233a}
+  .daily-shift-projection-head h2{margin:0;font-size:15px;font-weight:900;letter-spacing:.04em;text-transform:uppercase}
+  .daily-shift-projection-head p{margin:3px 0 0;color:#cbd5e1;font-size:11px;font-weight:700}
+  .daily-shift-projection-summary{color:#d1fae5;font-size:12px;font-weight:900;text-align:right;white-space:nowrap}
+  .daily-shift-projection-head-actions{display:flex;align-items:center;gap:12px}
+  .daily-shift-projection-toggle{min-width:92px;padding:7px 11px;border:1px solid #64748b;border-radius:7px;color:#fff;background:#26344d;font:inherit;font-size:11px;font-weight:900;letter-spacing:.04em;text-transform:uppercase;cursor:pointer}
+  .daily-shift-projection-toggle:hover,.daily-shift-projection-toggle:focus-visible{border-color:#d1fae5;background:#33445f;outline:none}
+  .daily-shift-projection.is-collapsed>.daily-shift-projection-scroll{display:none}
+  .daily-shift-projection-scroll{overflow-x:auto}.daily-shift-projection table{min-width:1180px;table-layout:fixed}
+  .daily-shift-projection th{padding:8px 7px;color:#111827!important;background:#eef3f8;border-right:1px solid #d9e2ec;border-bottom:1px solid #cbd5e1;font-size:10px;font-weight:900;letter-spacing:.06em;text-align:center;text-transform:uppercase}
+  .daily-shift-projection td{padding:8px 7px;border-right:1px solid #e2e8f0;font-size:12px;font-weight:800}
+  .daily-shift-projection th:first-child,.daily-shift-projection td:first-child{width:132px;padding-left:14px;text-align:left}
+  .daily-shift-projection th:last-child,.daily-shift-projection td:last-child{width:190px;border-right:0;text-align:left}
+  .daily-shift-projection .day-shift-cell{background:#eef6ff}.daily-shift-projection .night-shift-cell{background:#f4efff}.daily-shift-projection .daily-total-cell{background:#ecfdf5}
+  .daily-shift-projection .projection-lpmh.good{color:#047857}.daily-shift-projection .projection-lpmh.warn{color:#a16207}.daily-shift-projection .projection-lpmh.bad{color:#b91c1c}
+  .daily-shift-projection .projection-basis{color:#52657a;font-size:10.5px;line-height:1.25}.daily-shift-projection-empty{padding:16px;color:#64748b;font-size:12px;font-weight:800;text-align:center}
+</style>
+<script>
+(function(){
+  function projectionLpmhClass(value){if(!(value>=0))return "";if(value>=2.1)return "good";if(value>=2)return "warn";return "bad";}
+  function apportionedLiftPair(total,dayWeight,nightWeight){
+    var safeTotal=Math.max(0,Math.round(numberValue(total)));
+    var safeDay=Math.max(0,numberValue(dayWeight));
+    var safeNight=Math.max(0,numberValue(nightWeight));
+    var weightTotal=safeDay+safeNight;
+    var day=weightTotal>0?Math.round(safeTotal*safeDay/weightTotal):Math.round(safeTotal/2);
+    return {day:day,night:safeTotal-day};
+  }
+  function dailyShiftLaborMap(){
+    var map=new Map();
+    var excluded=new Set(state.analyticsExcludedEmployees||[]);
+    (state.analyticsRows||[]).filter(function(row){return !isGateAnalyticsRow(row)&&!excluded.has(row.employee);}).forEach(function(row){
+      var date=row.date;if(!date)return;
+      if(!map.has(date))map.set(date,{first:0,second:0});
+      var shift=row.shift==="second"?"second":"first";
+      map.get(date)[shift]+=Math.max(0,numberValue(row.hours));
+    });
+    return map;
+  }
+  detailMinute=function(detail){
+    var text=String(detail.time||"").trim();
+    var match=text.match(/(\\d{1,2}):(\\d{2})/);
+    if(match)return (Number(match[1])%24)*60+Number(match[2]);
+    var numeric=Number(text);
+    if(Number.isFinite(numeric)){
+      if(numeric>=0&&numeric<1)return Math.round(numeric*1440)%1440;
+      if(numeric>20000)return Math.round((numeric%1)*1440)%1440;
+      if(numeric>=0&&numeric<=2359&&/^\\d{1,4}(?:\\.0+)?$/.test(text)){
+        var hhmm=String(Math.trunc(numeric)).padStart(4,"0");
+        var hour=Number(hhmm.slice(0,2));var minute=Number(hhmm.slice(2));
+        if(hour<24&&minute<60)return hour*60+minute;
+      }
+    }
+    return null;
+  };
+  function adjacentDateKey(date,offset){
+    var value=new Date(date+"T12:00:00");if(Number.isNaN(value.getTime()))return date;
+    value.setDate(value.getDate()+offset);
+    return value.getFullYear()+"-"+pad2(value.getMonth()+1)+"-"+pad2(value.getDate());
+  }
+  function uniqueTimedLiftMinutes(date){
+    var unique=new Map();
+    (state.moveDetails||[]).filter(function(detail){return !detail.deleted&&detail.date===date&&detail.field&&detail.equipment;}).forEach(function(detail){
+      var key=detail.field+"|"+detail.equipment;var minute=detailMinute(detail);
+      if(!unique.has(key)||(unique.get(key)==null&&minute!=null))unique.set(key,minute);
+    });
+    return unique;
+  }
+  function uniqueDailyTimedLiftCounts(date){
+    var current=uniqueTimedLiftMinutes(date);var next=uniqueTimedLiftMinutes(adjacentDateKey(date,1));
+    var day=0;var night=0;var calendarEarly=0;var nextEarly=0;
+    current.forEach(function(minute){if(minute==null)return;if(minute>=180&&minute<900)day+=1;else if(minute>=900)night+=1;else calendarEarly+=1;});
+    next.forEach(function(minute){if(minute!=null&&minute<180)nextEarly+=1;});
+    night+=nextEarly;
+    return {day:day,night:night,timestamped:day+night,imported:day+night,calendarEarly:calendarEarly,nextEarly:nextEarly};
+  }
+  window.conglobalBillingDailyShiftProjectionRows=function(){
+    var labor=dailyShiftLaborMap();var dates=new Set(Object.keys(state.data||{}));
+    labor.forEach(function(value,date){dates.add(date);});
+    (state.moveDetails||[]).forEach(function(detail){var minute=detailMinute(detail);if(!detail.deleted&&detail.date&&minute!=null&&minute<180)dates.add(adjacentDateKey(detail.date,-1));});
+    return Array.from(dates).sort().map(function(date){
+      var record=state.data[date]||{};
+      var timed=uniqueDailyTimedLiftCounts(date);
+      var calendarLifts=Math.max(0,Math.round(operationLiftCount(record)));
+      var dailyLifts=Math.max(0,calendarLifts-timed.calendarEarly+timed.nextEarly);
+      var rawLabor=labor.get(date)||{first:0,second:0};
+      var rawHours=rawLabor.first+rawLabor.second;
+      var billingHours=Math.max(0,numberValue(lphHoursForRecord(record)));
+      var reconciledHours=billingHours>0?billingHours:rawHours;
+      var hourDayWeight=rawHours>0?rawLabor.first:timed.timestamped>0?timed.day:1;
+      var hourNightWeight=rawHours>0?rawLabor.second:timed.timestamped>0?timed.night:1;
+      var hourWeightTotal=hourDayWeight+hourNightWeight;
+      var dayHours=reconciledHours>0&&hourWeightTotal>0?reconciledHours*hourDayWeight/hourWeightTotal:0;
+      var nightHours=reconciledHours-dayHours;var dayLifts=0;var nightLifts=0;var basis="";
+      if(timed.timestamped>=dailyLifts&&timed.timestamped>0){
+        var scaled=apportionedLiftPair(dailyLifts,timed.day,timed.night);
+        dayLifts=scaled.day;nightLifts=scaled.night;
+        basis=timed.timestamped===dailyLifts?"Imported timestamps":"Timestamped rows scaled to Billing total";
+      }else{
+        dayLifts=timed.day;nightLifts=timed.night;
+        var remaining=Math.max(0,dailyLifts-timed.timestamped);
+        var allocated=apportionedLiftPair(remaining,dayHours||timed.day,nightHours||timed.night);
+        dayLifts+=allocated.day;nightLifts+=allocated.night;
+        basis=timed.timestamped>0?timed.timestamped+" timestamped · "+remaining+" allocated by shift hours":dailyLifts>0?"Daily lifts allocated by imported shift hours":"Imported shift labor";
+      }
+      var ratioSource=rawHours>0?"Timesheet shift ratio":timed.timestamped>0?"lift timestamp ratio":"even shift fallback";
+      var hoursSource=state.lphHourSource==="powerbi"?"PB hours using "+ratioSource:rawHours>0?"Timesheet hours":"Billing hours using "+ratioSource;
+      return {date:date,dayHours:dayHours,nightHours:nightHours,dailyHours:reconciledHours,dayLifts:dayLifts,nightLifts:nightLifts,dailyLifts:dailyLifts,dayLpmh:dayHours>0?dayLifts/dayHours:null,nightLpmh:nightHours>0?nightLifts/nightHours:null,dailyLpmh:reconciledHours>0?dailyLifts/reconciledHours:null,basis:basis+" · "+hoursSource,reconciled:dayLifts+nightLifts===dailyLifts&&Math.abs(dayHours+nightHours-reconciledHours)<.02};
+    });
+  };
+  function renderDailyShiftProjection(){
+    var body=document.getElementById("dailyShiftProjectionBody");var empty=document.getElementById("dailyShiftProjectionEmpty");var summary=document.getElementById("dailyShiftProjectionSummary");
+    if(!body||!empty||!summary)return;
+    var rows=window.conglobalBillingDailyShiftProjectionRows().filter(function(row){return row.date.indexOf(state.month+"-")===0&&(row.dailyHours>0||row.dailyLifts>0);});
+    body.innerHTML="";
+    rows.forEach(function(projection){
+      var date=new Date(projection.date+"T12:00:00");var row=document.createElement("tr");
+      row.innerHTML='<td><span class="day">'+SHORT_MONTHS[date.getMonth()]+" "+date.getDate()+'</span><span class="weekday">'+DAY_NAMES[date.getDay()]+'</span></td>'+
+        '<td class="day-shift-cell">'+format(projection.dayHours,1)+'</td><td class="day-shift-cell">'+format(projection.dayLifts)+'</td><td class="day-shift-cell projection-lpmh '+projectionLpmhClass(projection.dayLpmh)+'">'+(projection.dayLpmh==null?"—":format(projection.dayLpmh,2))+'</td>'+
+        '<td class="night-shift-cell">'+format(projection.nightHours,1)+'</td><td class="night-shift-cell">'+format(projection.nightLifts)+'</td><td class="night-shift-cell projection-lpmh '+projectionLpmhClass(projection.nightLpmh)+'">'+(projection.nightLpmh==null?"—":format(projection.nightLpmh,2))+'</td>'+
+        '<td class="daily-total-cell">'+format(projection.dailyHours,1)+'</td><td class="daily-total-cell">'+format(projection.dailyLifts)+'</td><td class="daily-total-cell projection-lpmh '+projectionLpmhClass(projection.dailyLpmh)+'">'+(projection.dailyLpmh==null?"—":format(projection.dailyLpmh,2))+'</td><td class="projection-basis">'+escapeHtml(projection.basis)+'</td>';
+      body.appendChild(row);
+    });
+    empty.classList.toggle("hidden",rows.length>0);
+    var totals=rows.reduce(function(total,row){total.lifts+=row.dailyLifts;total.hours+=row.dailyHours;total.reconciled=total.reconciled&&row.reconciled;return total;},{lifts:0,hours:0,reconciled:true});
+    summary.textContent=rows.length?(totals.reconciled?"RECONCILED":"CHECK TOTALS")+" · "+format(totals.lifts)+" lifts / "+format(totals.hours,1)+" hrs · "+(totals.hours>0?format(totals.lifts/totals.hours,2):"—")+" LPMH":"";
+  }
+  function initializeDailyShiftProjectionToggle(){
+    var panel=document.getElementById("dailyShiftProjection");var button=document.getElementById("dailyShiftProjectionToggle");
+    if(!panel||!button||button.dataset.bound==="true")return;
+    var storageKey="conglobal-billing-daily-shift-projection-collapsed-v1";
+    function applyState(collapsed){panel.classList.toggle("is-collapsed",collapsed);button.textContent=collapsed?"Expand ▼":"Collapse ▲";button.setAttribute("aria-expanded",String(!collapsed));}
+    var collapsed=false;try{collapsed=localStorage.getItem(storageKey)==="1";}catch(error){}
+    applyState(collapsed);button.dataset.bound="true";
+    button.addEventListener("click",function(){var nextCollapsed=!panel.classList.contains("is-collapsed");applyState(nextCollapsed);try{localStorage.setItem(storageKey,nextCollapsed?"1":"0");}catch(error){}});
+  }
+  initializeDailyShiftProjectionToggle();
+  var originalBillingRender=render;
+  render=function(){var result=originalBillingRender.apply(this,arguments);renderDailyShiftProjection();return result;};
+  analyticsShiftRows=function(){
+    var grouped=new Map();var excluded=new Set(state.analyticsExcludedEmployees);
+    var fileMap=new Map(state.importedFiles.filter(function(file){return file.type==="analytics";}).map(function(file){return [file.id,file];}));
+    state.analyticsRows.filter(function(row){return !isGateAnalyticsRow(row)&&!excluded.has(row.employee);}).forEach(function(row){
+      var key=row.date+"|"+row.shift;
+      if(!grouped.has(key))grouped.set(key,{date:row.date,shift:row.shift,employees:[],hours:0,managers:new Map()});
+      var g=grouped.get(key);g.employees.push(row);g.hours+=row.hours||0;
+      var manager=managerForAnalyticsRow(row,fileMap);if(manager)g.managers.set(normalizeName(manager),manager);
+    });
+    var shifts=Array.from(grouped.values());var hoursByDate=new Map();
+    shifts.forEach(function(shift){hoursByDate.set(shift.date,(hoursByDate.get(shift.date)||0)+shift.hours);});
+    var projectionByDate=new Map(window.conglobalBillingDailyShiftProjectionRows().map(function(row){return [row.date,row];}));
+    return shifts.map(function(shift){
+      var projection=projectionByDate.get(shift.date);var dailyHours=hoursByDate.get(shift.date)||0;var dailyLifts=operationLiftCount(state.data[shift.date]||{});
+      var lifts=projection?(shift.shift==="second"?projection.nightLifts:projection.dayLifts):dailyHours>0?Math.round(dailyLifts*shift.hours/dailyHours*100)/100:0;
+      var shiftHours=projection?(shift.shift==="second"?projection.nightHours:projection.dayHours):shift.hours;
+      var managerNames=Array.from(shift.managers.values()).sort(function(a,b){return a.localeCompare(b);});
+      return Object.assign({},shift,{hours:shiftHours,managerNames:managerNames,managerKeys:managerNames.map(normalizeName),lifts:lifts,liftSource:projection?projection.basis:"daily-total allocation",lpmh:shiftHours>0?lifts/shiftHours:null});
+    });
+  };
+  renderDailyShiftProjection();
+  if(typeof renderAnalytics==="function")renderAnalytics();
+})();
+<\/script>`;
+      const bodyClose = sourceHtml.toLowerCase().lastIndexOf("</body>");
+      return bodyClose >= 0 ? sourceHtml.slice(0, bodyClose) + injection + "\n" + sourceHtml.slice(bodyClose) : sourceHtml + injection;
     }
 
     function withAmReportMeaningfulThunderThreshold(html) {
@@ -7067,17 +7268,17 @@ document.addEventListener('click',function(event){
     let matrixMenuButton = null;
     let reportMenuButton = null;
     let excelLphMenuButton = null;
-    let pearlMenuButton = null;
     let scwLoadTimer = 0;
     function pageFromHash() {
       const id = window.location.hash.replace(/^#/, "");
-      return pages[id] && !["compare", "time", "dayforce", "archive", "roster", "timeOff"].includes(id) ? id : "";
+      return pages[id] && !["compare", "time", "dayforce", "archive", "roster", "timeOff", "pearl", "pearlBrowser"].includes(id) ? id : "";
     }
 
     let activePage = pageFromHash() || localStorage.getItem("conglobal-active-page") || "amReport";
     if (activePage === "time" && pageFromHash() !== "time") activePage = "timeMd";
     if (activePage === "compare" || activePage === "timeOff") activePage = "timeMd";
     if (activePage === "performance") activePage = "billing";
+    if (activePage === "pearl" || activePage === "pearlBrowser") activePage = "amReport";
 
     function workbookChromeHeight() {
       return tabs.offsetHeight + (amReportActions.hidden ? 0 : amReportActions.offsetHeight);
@@ -8937,7 +9138,7 @@ document.getElementById("openYardCheck")?.addEventListener("click", function(){
         }
         if (id === "timeMd") pageHtml = withTimeMdResponsiveWidth(pageHtml);
         if (id === "timeOff") pageHtml = withTimeOffCurrentRosterSnapshot(withTimeOffCameInActions(withTimeOffMonthlyWeeklyStyle(pageHtml)));
-        if (id === "billing") pageHtml = withBillingPerformanceArchiveIndexedDb(withBillingShiftLpmhGrid(withBillingPowerBiImport(withBillingQuotaSafePersistence(withBillingAnalyticsLiftFallback(withBillingAnalyticsArchiveHydration(withBillingManHoursPrecision(withBillingArchiveIndexedDb(withBillingHeaderRemoved(pageHtml)))))))));
+        if (id === "billing") pageHtml = withBillingDailyShiftProjection(withBillingPerformanceArchiveIndexedDb(withBillingShiftLpmhGrid(withBillingPowerBiImport(withBillingQuotaSafePersistence(withBillingAnalyticsLiftFallback(withBillingAnalyticsArchiveHydration(withBillingManHoursPrecision(withBillingArchiveIndexedDb(withBillingHeaderRemoved(pageHtml))))))))));
         if (id === "lphTracker") {
           pageHtml = withLphLunchDuringDowntime(pageHtml);
           pageHtml = withLphLunchTimeMapLabels(pageHtml);
@@ -8958,7 +9159,6 @@ document.getElementById("openYardCheck")?.addEventListener("click", function(){
         }
         if (id === "roster") pageHtml = withSchedulePersistence(pageHtml);
         if (id === "audits") pageHtml = withAuditsClearKeepsView(pageHtml);
-        if (id === "pearl") pageHtml = withPearlSettingsRepair(withPearlProgrammedScheduleControls(withPearlYardCheckControl(withPearlScheduleDashboard(withPearlToolbarGroups(withPearlAlertMeterControl(pageHtml))))));
         if (id === "excelView") {
           pageHtml = withExcelDarkerGreyBackground(pageHtml);
           pageHtml = withExcelCurrentRosterSnapshotParity(pageHtml);
@@ -9081,7 +9281,7 @@ document.getElementById("openYardCheck")?.addEventListener("click", function(){
     }
 
     function selectPage(id, colorRulesCheckpointed = false) {
-      const requestedPage = pages[id] && !["compare", "time", "dayforce", "archive", "roster", "timeOff"].includes(id) ? id : "amReport";
+      const requestedPage = pages[id] && !["compare", "time", "dayforce", "archive", "roster", "timeOff", "pearl", "pearlBrowser"].includes(id) ? id : "amReport";
       if (!colorRulesCheckpointed && activePage === "excelView" && requestedPage !== "excelView") {
         requestExcelColorRulesCheckpoint().then(() => selectPage(requestedPage, true));
         return;
@@ -9098,7 +9298,6 @@ document.getElementById("openYardCheck")?.addEventListener("click", function(){
       if (reportMenuButton) reportMenuButton.classList.toggle("active", ["amReport", "chassisStatus"].includes(activePage));
       if (excelLphMenuButton) excelLphMenuButton.classList.toggle("active", ["excelView", "lphTracker"].includes(activePage));
       if (matrixMenuButton) matrixMenuButton.classList.toggle("active", ["matrix", "matrixWide"].includes(activePage));
-      if (pearlMenuButton) pearlMenuButton.classList.toggle("active", ["pearl", "pearlBrowser"].includes(activePage));
       amReportActions.hidden = activePage !== "amReport";
       syncScwColumnMode(activePage === "amReport");
       if (matrixControlsNav) matrixControlsNav.classList.toggle("visible", ["matrix", "matrixWide"].includes(activePage));
@@ -9361,7 +9560,7 @@ document.getElementById("openYardCheck")?.addEventListener("click", function(){
     window.openSchedulePopup = openSchedulePopup;
     window.openOldViewPopup = openOldViewPopup;
 
-    const tabOrder = ["amReport", "chassisStatus", "excelView", "timeMd", "billing", "lphTracker", "matrix", "obsidian", "pearl"];
+    const tabOrder = ["amReport", "chassisStatus", "excelView", "timeMd", "billing", "lphTracker", "matrix", "obsidian"];
     matrixControlsNav = document.createElement("button");
     matrixControlsNav.type = "button";
     matrixControlsNav.className = "matrix-controls-nav";
@@ -9476,47 +9675,6 @@ document.getElementById("openYardCheck")?.addEventListener("click", function(){
         tabs.appendChild(group);
         return;
       }
-      if (id === "pearl") {
-        const group = document.createElement("div");
-        group.className = "matrix-nav-group pearl-nav-group";
-        pearlMenuButton = document.createElement("button");
-        pearlMenuButton.type = "button";
-        pearlMenuButton.textContent = "Pearl.io";
-        pearlMenuButton.setAttribute("aria-haspopup", "menu");
-        pearlMenuButton.setAttribute("aria-expanded", "false");
-        const menu = document.createElement("div");
-        menu.className = "matrix-nav-menu pearl-nav-menu";
-        menu.setAttribute("role", "menu");
-        const pearlOption = document.createElement("button");
-        pearlOption.type = "button";
-        pearlOption.dataset.page = "pearl";
-        pearlOption.textContent = "Pearl.io";
-        pearlOption.setAttribute("role", "menuitem");
-        pearlOption.addEventListener("click", () => {
-          group.classList.remove("open");
-          pearlMenuButton.setAttribute("aria-expanded", "false");
-          selectPage("pearl");
-        });
-        menu.appendChild(pearlOption);
-        const browserOption = document.createElement("button");
-        browserOption.type = "button";
-        browserOption.dataset.page = "pearlBrowser";
-        browserOption.textContent = "Web Browser";
-        browserOption.setAttribute("role", "menuitem");
-        browserOption.addEventListener("click", () => {
-          group.classList.remove("open");
-          pearlMenuButton.setAttribute("aria-expanded", "false");
-          selectPage("pearlBrowser");
-        });
-        menu.appendChild(browserOption);
-        pearlMenuButton.addEventListener("click", () => {
-          const open = group.classList.toggle("open");
-          pearlMenuButton.setAttribute("aria-expanded", String(open));
-        });
-        group.append(pearlMenuButton, menu);
-        tabs.appendChild(group);
-        return;
-      }
       const button = document.createElement("button");
       button.type = "button";
       button.dataset.page = id;
@@ -9525,7 +9683,7 @@ document.getElementById("openYardCheck")?.addEventListener("click", function(){
       tabs.appendChild(button);
     });
     document.addEventListener("click", (event) => {
-      [reportMenuButton, excelLphMenuButton, matrixMenuButton, pearlMenuButton].forEach((menuButton) => {
+      [reportMenuButton, excelLphMenuButton, matrixMenuButton].forEach((menuButton) => {
         const group = menuButton && menuButton.closest(".matrix-nav-group");
         if (!group || group.contains(event.target)) return;
         group.classList.remove("open");
@@ -9563,20 +9721,11 @@ document.getElementById("openYardCheck")?.addEventListener("click", function(){
     workbookSupabaseButton.className = "cloud-sync-nav";
     workbookSupabaseButton.textContent = "Cloud Setup";
     workbookSupabaseButton.addEventListener("click", () => {
-      const pearlGroup = workbookSupabaseButton.closest(".pearl-nav-group");
-      if (pearlGroup) pearlGroup.classList.remove("open");
-      if (pearlMenuButton) pearlMenuButton.setAttribute("aria-expanded", "false");
       populateWorkbookSupabaseFields();
       const modal = document.getElementById("cloudSyncModal");
       if (modal) modal.hidden = false;
     });
-    const pearlMenu = tabs.querySelector(".pearl-nav-menu");
-    if (pearlMenu) {
-      workbookSupabaseButton.setAttribute("role", "menuitem");
-      pearlMenu.appendChild(workbookSupabaseButton);
-    } else {
-      tabs.appendChild(workbookSupabaseButton);
-    }
+    tabs.appendChild(workbookSupabaseButton);
 
     document.getElementById("closeCloudSyncBtn").addEventListener("click", () => {
       document.getElementById("cloudSyncModal").hidden = true;

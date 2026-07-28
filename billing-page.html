@@ -1477,15 +1477,20 @@
       color: #64748b;
     }
 
+    #groupMapContainer {
+      position: relative;
+    }
+
     .shift-lpmh-detail-backdrop {
-      position: fixed;
+      position: absolute;
       inset: 0;
       z-index: 140;
       display: flex;
       align-items: flex-start;
       justify-content: center;
       overflow: auto;
-      padding: 54px 18px 24px;
+      min-height: 100%;
+      padding: 28px 18px 24px;
       background: rgba(15, 23, 42, .62);
     }
 
@@ -1793,6 +1798,161 @@
         font-size: 24px;
       }
     }
+
+    .daily-shift-projection {
+      grid-column: 1 / -1;
+      overflow: hidden;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      background: #fff;
+      box-shadow: var(--shadow);
+    }
+
+    .daily-shift-projection-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 13px 16px;
+      color: #fff;
+      background: #17233a;
+    }
+
+    .daily-shift-projection-head h2 {
+      margin: 0;
+      font-size: 15px;
+      font-weight: 900;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+
+    .daily-shift-projection-head p {
+      margin: 3px 0 0;
+      color: #cbd5e1;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .daily-shift-projection-summary {
+      color: #d1fae5;
+      font-size: 12px;
+      font-weight: 900;
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .daily-shift-projection-head-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .daily-shift-projection-toggle {
+      min-width: 92px;
+      padding: 7px 11px;
+      border: 1px solid #64748b;
+      border-radius: 7px;
+      color: #fff;
+      background: #26344d;
+      font: inherit;
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+
+    .daily-shift-projection-toggle:hover,
+    .daily-shift-projection-toggle:focus-visible {
+      border-color: #d1fae5;
+      background: #33445f;
+      outline: none;
+    }
+
+    .daily-shift-projection.is-collapsed > .daily-shift-projection-scroll {
+      display: none;
+    }
+
+    .daily-shift-projection-scroll {
+      overflow-x: auto;
+    }
+
+    .daily-shift-projection table {
+      min-width: 1180px;
+      table-layout: fixed;
+    }
+
+    .daily-shift-projection th {
+      padding: 8px 7px;
+      color: #111827 !important;
+      background: #eef3f8;
+      border-right: 1px solid #d9e2ec;
+      border-bottom: 1px solid #cbd5e1;
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing: .06em;
+      text-align: center;
+      text-transform: uppercase;
+    }
+
+    .daily-shift-projection td {
+      padding: 8px 7px;
+      border-right: 1px solid #e2e8f0;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .daily-shift-projection th:first-child,
+    .daily-shift-projection td:first-child {
+      width: 132px;
+      padding-left: 14px;
+      text-align: left;
+    }
+
+    .daily-shift-projection th:last-child,
+    .daily-shift-projection td:last-child {
+      width: 190px;
+      border-right: 0;
+      text-align: left;
+    }
+
+    .daily-shift-projection .day-shift-cell {
+      background: #eef6ff;
+    }
+
+    .daily-shift-projection .night-shift-cell {
+      background: #f4efff;
+    }
+
+    .daily-shift-projection .daily-total-cell {
+      background: #ecfdf5;
+    }
+
+    .daily-shift-projection .projection-lpmh.good {
+      color: #047857;
+    }
+
+    .daily-shift-projection .projection-lpmh.warn {
+      color: #a16207;
+    }
+
+    .daily-shift-projection .projection-lpmh.bad {
+      color: #b91c1c;
+    }
+
+    .daily-shift-projection .projection-basis {
+      color: #52657a;
+      font-size: 10.5px;
+      line-height: 1.25;
+    }
+
+    .daily-shift-projection-empty {
+      padding: 16px;
+      color: #64748b;
+      font-size: 12px;
+      font-weight: 800;
+      text-align: center;
+    }
   </style>
 </head>
 <body>
@@ -1903,6 +2063,45 @@
           </label>
         </div>
       </aside>
+
+      <section id="dailyShiftProjection" class="daily-shift-projection">
+        <div class="daily-shift-projection-head">
+          <div>
+            <h2>Daily Shift LPMH Projection</h2>
+            <p>Imported Excel lift timestamps split work at 03:00 and 15:00; imported shift labor reconciles to the Billing daily total.</p>
+          </div>
+          <div class="daily-shift-projection-head-actions">
+            <div id="dailyShiftProjectionSummary" class="daily-shift-projection-summary"></div>
+            <button id="dailyShiftProjectionToggle" class="daily-shift-projection-toggle" type="button" aria-expanded="true">Collapse ▲</button>
+          </div>
+        </div>
+        <div class="daily-shift-projection-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th rowspan="2">Date</th>
+                <th class="day-shift-cell" colspan="3">Day Shift · 0300–1500</th>
+                <th class="night-shift-cell" colspan="3">Night Shift · 1500–0300</th>
+                <th class="daily-total-cell" colspan="3">Reconciled Daily</th>
+                <th rowspan="2">Basis</th>
+              </tr>
+              <tr>
+                <th class="day-shift-cell">Hours</th>
+                <th class="day-shift-cell">Lifts</th>
+                <th class="day-shift-cell">LPMH</th>
+                <th class="night-shift-cell">Hours</th>
+                <th class="night-shift-cell">Lifts</th>
+                <th class="night-shift-cell">LPMH</th>
+                <th class="daily-total-cell">Hours</th>
+                <th class="daily-total-cell">Lifts</th>
+                <th class="daily-total-cell">LPMH</th>
+              </tr>
+            </thead>
+            <tbody id="dailyShiftProjectionBody"></tbody>
+          </table>
+          <div id="dailyShiftProjectionEmpty" class="daily-shift-projection-empty hidden">Import timesheets and lift reports to build the daily shift projection.</div>
+        </div>
+      </section>
     </section>
 
     <section id="analyticsPage" class="analytics-page hidden">
@@ -3345,6 +3544,7 @@
       }
 
       renderTotals(sums, dailyStats);
+      renderDailyShiftProjection();
       els.emptyNote.classList.toggle("hidden", hasData);
     }
 
@@ -3406,6 +3606,202 @@
     function lphHoursForRecord(record) {
       return state.lphHourSource === "powerbi" ? record.powerBiManHours || 0 : record.manHours || 0;
     }
+
+    function projectionLpmhClass(value) {
+      if (!(value >= 0)) return "";
+      if (value >= 2.1) return "good";
+      if (value >= 2) return "warn";
+      return "bad";
+    }
+
+    function apportionedLiftPair(total, dayWeight, nightWeight) {
+      const safeTotal = Math.max(0, Math.round(numberValue(total)));
+      const safeDay = Math.max(0, numberValue(dayWeight));
+      const safeNight = Math.max(0, numberValue(nightWeight));
+      const weightTotal = safeDay + safeNight;
+      const day = weightTotal > 0 ? Math.round(safeTotal * safeDay / weightTotal) : Math.round(safeTotal / 2);
+      return { day, night: safeTotal - day };
+    }
+
+    function dailyShiftLaborMap() {
+      const map = new Map();
+      const excluded = new Set(state.analyticsExcludedEmployees || []);
+      (state.analyticsRows || []).filter((row) => !isGateAnalyticsRow(row) && !excluded.has(row.employee)).forEach((row) => {
+        const date = row.date;
+        if (!date) return;
+        if (!map.has(date)) map.set(date, { first: 0, second: 0 });
+        const shift = row.shift === "second" ? "second" : "first";
+        map.get(date)[shift] += Math.max(0, numberValue(row.hours));
+      });
+      return map;
+    }
+
+    function adjacentDateKey(date, offset) {
+      const value = new Date(`${date}T12:00:00`);
+      if (Number.isNaN(value.getTime())) return date;
+      value.setDate(value.getDate() + offset);
+      return `${value.getFullYear()}-${pad2(value.getMonth() + 1)}-${pad2(value.getDate())}`;
+    }
+
+    function uniqueTimedLiftMinutes(date) {
+      const unique = new Map();
+      (state.moveDetails || []).filter((detail) => !detail.deleted && detail.date === date && detail.field && detail.equipment).forEach((detail) => {
+        const key = `${detail.field}|${detail.equipment}`;
+        const minute = detailMinute(detail);
+        if (!unique.has(key) || (unique.get(key) == null && minute != null)) unique.set(key, minute);
+      });
+      return unique;
+    }
+
+    function uniqueDailyTimedLiftCounts(date) {
+      const current = uniqueTimedLiftMinutes(date);
+      const next = uniqueTimedLiftMinutes(adjacentDateKey(date, 1));
+      let day = 0;
+      let night = 0;
+      let calendarEarly = 0;
+      let nextEarly = 0;
+      current.forEach((minute) => {
+        if (minute == null) return;
+        if (minute >= 180 && minute < 900) day += 1;
+        else if (minute >= 900) night += 1;
+        else calendarEarly += 1;
+      });
+      next.forEach((minute) => {
+        if (minute != null && minute < 180) nextEarly += 1;
+      });
+      night += nextEarly;
+      return { day, night, timestamped: day + night, imported: day + night, calendarEarly, nextEarly };
+    }
+
+    function dailyShiftProjectionRows() {
+      const labor = dailyShiftLaborMap();
+      const dates = new Set(Object.keys(state.data || {}));
+      labor.forEach((value, date) => dates.add(date));
+      (state.moveDetails || []).forEach((detail) => {
+        const minute = detailMinute(detail);
+        if (!detail.deleted && detail.date && minute != null && minute < 180) dates.add(adjacentDateKey(detail.date, -1));
+      });
+      return Array.from(dates).sort().map((date) => {
+        const record = state.data[date] || {};
+        const timed = uniqueDailyTimedLiftCounts(date);
+        const calendarLifts = Math.max(0, Math.round(operationLiftCount(record)));
+        const dailyLifts = Math.max(0, calendarLifts - timed.calendarEarly + timed.nextEarly);
+        const rawLabor = labor.get(date) || { first: 0, second: 0 };
+        const rawHours = rawLabor.first + rawLabor.second;
+        const billingHours = Math.max(0, numberValue(lphHoursForRecord(record)));
+        const reconciledHours = billingHours > 0 ? billingHours : rawHours;
+        const hourDayWeight = rawHours > 0 ? rawLabor.first : timed.timestamped > 0 ? timed.day : 1;
+        const hourNightWeight = rawHours > 0 ? rawLabor.second : timed.timestamped > 0 ? timed.night : 1;
+        const hourWeightTotal = hourDayWeight + hourNightWeight;
+        const dayHours = reconciledHours > 0 && hourWeightTotal > 0 ? reconciledHours * hourDayWeight / hourWeightTotal : 0;
+        const nightHours = reconciledHours - dayHours;
+        let dayLifts = 0;
+        let nightLifts = 0;
+        let basis = "";
+
+        if (timed.timestamped >= dailyLifts && timed.timestamped > 0) {
+          const split = apportionedLiftPair(dailyLifts, timed.day, timed.night);
+          dayLifts = split.day;
+          nightLifts = split.night;
+          basis = timed.timestamped === dailyLifts ? "Imported timestamps" : "Timestamped rows scaled to Billing total";
+        } else {
+          dayLifts = timed.day;
+          nightLifts = timed.night;
+          const remaining = Math.max(0, dailyLifts - timed.timestamped);
+          const split = apportionedLiftPair(
+            remaining,
+            dayHours || timed.day,
+            nightHours || timed.night
+          );
+          dayLifts += split.day;
+          nightLifts += split.night;
+          basis = timed.timestamped > 0
+            ? `${timed.timestamped} timestamped · ${remaining} allocated by shift hours`
+            : dailyLifts > 0
+              ? "Daily lifts allocated by imported shift hours"
+              : "Imported shift labor";
+        }
+
+        const ratioSource = rawHours > 0 ? "Timesheet shift ratio" : timed.timestamped > 0 ? "lift timestamp ratio" : "even shift fallback";
+        const hoursSource = state.lphHourSource === "powerbi" ? `PB hours using ${ratioSource}` : rawHours > 0 ? "Timesheet hours" : `Billing hours using ${ratioSource}`;
+        return {
+          date,
+          dayHours,
+          nightHours,
+          dailyHours: reconciledHours,
+          dayLifts,
+          nightLifts,
+          dailyLifts,
+          dayLpmh: dayHours > 0 ? dayLifts / dayHours : null,
+          nightLpmh: nightHours > 0 ? nightLifts / nightHours : null,
+          dailyLpmh: reconciledHours > 0 ? dailyLifts / reconciledHours : null,
+          basis: `${basis} · ${hoursSource}`,
+          reconciled: dayLifts + nightLifts === dailyLifts && Math.abs((dayHours + nightHours) - reconciledHours) < 0.02
+        };
+      });
+    }
+
+    function renderDailyShiftProjection() {
+      const body = document.getElementById("dailyShiftProjectionBody");
+      const empty = document.getElementById("dailyShiftProjectionEmpty");
+      const summary = document.getElementById("dailyShiftProjectionSummary");
+      if (!body || !empty || !summary) return;
+      const rows = dailyShiftProjectionRows().filter((row) => row.date.startsWith(`${state.month}-`) && (row.dailyHours > 0 || row.dailyLifts > 0));
+      body.innerHTML = "";
+      rows.forEach((projection) => {
+        const date = new Date(`${projection.date}T12:00:00`);
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td><span class="day">${SHORT_MONTHS[date.getMonth()]} ${date.getDate()}</span><span class="weekday">${DAY_NAMES[date.getDay()]}</span></td>
+          <td class="day-shift-cell">${format(projection.dayHours, 1)}</td>
+          <td class="day-shift-cell">${format(projection.dayLifts)}</td>
+          <td class="day-shift-cell projection-lpmh ${projectionLpmhClass(projection.dayLpmh)}">${projection.dayLpmh == null ? "—" : format(projection.dayLpmh, 2)}</td>
+          <td class="night-shift-cell">${format(projection.nightHours, 1)}</td>
+          <td class="night-shift-cell">${format(projection.nightLifts)}</td>
+          <td class="night-shift-cell projection-lpmh ${projectionLpmhClass(projection.nightLpmh)}">${projection.nightLpmh == null ? "—" : format(projection.nightLpmh, 2)}</td>
+          <td class="daily-total-cell">${format(projection.dailyHours, 1)}</td>
+          <td class="daily-total-cell">${format(projection.dailyLifts)}</td>
+          <td class="daily-total-cell projection-lpmh ${projectionLpmhClass(projection.dailyLpmh)}">${projection.dailyLpmh == null ? "—" : format(projection.dailyLpmh, 2)}</td>
+          <td class="projection-basis">${escapeHtml(projection.basis)}</td>`;
+        body.append(row);
+      });
+      empty.classList.toggle("hidden", rows.length > 0);
+      const totals = rows.reduce((total, row) => ({
+        lifts: total.lifts + row.dailyLifts,
+        hours: total.hours + row.dailyHours,
+        reconciled: total.reconciled && row.reconciled
+      }), { lifts: 0, hours: 0, reconciled: true });
+      summary.textContent = rows.length
+        ? `${totals.reconciled ? "RECONCILED" : "CHECK TOTALS"} · ${format(totals.lifts)} lifts / ${format(totals.hours, 1)} hrs · ${totals.hours > 0 ? format(totals.lifts / totals.hours, 2) : "—"} LPMH`
+        : "";
+    }
+
+    function initializeDailyShiftProjectionToggle() {
+      const panel = document.getElementById("dailyShiftProjection");
+      const button = document.getElementById("dailyShiftProjectionToggle");
+      if (!panel || !button || button.dataset.bound === "true") return;
+      const storageKey = "conglobal-billing-daily-shift-projection-collapsed-v1";
+      const applyState = (collapsed) => {
+        panel.classList.toggle("is-collapsed", collapsed);
+        button.textContent = collapsed ? "Expand ▼" : "Collapse ▲";
+        button.setAttribute("aria-expanded", String(!collapsed));
+      };
+      let collapsed = false;
+      try {
+        collapsed = localStorage.getItem(storageKey) === "1";
+      } catch (error) {}
+      applyState(collapsed);
+      button.dataset.bound = "true";
+      button.addEventListener("click", () => {
+        const nextCollapsed = !panel.classList.contains("is-collapsed");
+        applyState(nextCollapsed);
+        try {
+          localStorage.setItem(storageKey, nextCollapsed ? "1" : "0");
+        } catch (error) {}
+      });
+    }
+
+    initializeDailyShiftProjectionToggle();
 
     function renderTotals(sums, dailyStats = []) {
       const moves = sums.ramp + sums.deramp;
@@ -4238,15 +4634,29 @@
       const shifts = Array.from(grouped.values());
       const hoursByDate = new Map();
       shifts.forEach((shift) => hoursByDate.set(shift.date, (hoursByDate.get(shift.date) || 0) + shift.hours));
+      const projectionByDate = new Map(dailyShiftProjectionRows().map((row) => [row.date, row]));
       return shifts.map((shift) => {
-        const timestampedLifts = timestampedLiftsForShift(shift);
+        const projection = projectionByDate.get(shift.date);
         const dailyHours = hoursByDate.get(shift.date) || 0;
         const dailyLifts = operationLiftCount(state.data[shift.date] || {});
-        const lifts = timestampedLifts == null && dailyHours > 0
-          ? Math.round((dailyLifts * shift.hours / dailyHours) * 100) / 100
-          : timestampedLifts || 0;
+        const lifts = projection
+          ? (shift.shift === "second" ? projection.nightLifts : projection.dayLifts)
+          : dailyHours > 0
+            ? Math.round((dailyLifts * shift.hours / dailyHours) * 100) / 100
+            : 0;
+        const shiftHours = projection
+          ? (shift.shift === "second" ? projection.nightHours : projection.dayHours)
+          : shift.hours;
         const managerNames = Array.from(shift.managers.values()).sort((a, b) => a.localeCompare(b));
-        return { ...shift, managerNames, managerKeys: managerNames.map(normalizeName), lifts, liftSource: timestampedLifts == null ? "daily-total allocation" : "timestamped lifts", lpmh: shift.hours > 0 ? lifts / shift.hours : null };
+        return {
+          ...shift,
+          hours: shiftHours,
+          managerNames,
+          managerKeys: managerNames.map(normalizeName),
+          lifts,
+          liftSource: projection ? projection.basis : "daily-total allocation",
+          lpmh: shiftHours > 0 ? lifts / shiftHours : null
+        };
       });
     }
 
@@ -4667,7 +5077,7 @@
       overlay.addEventListener("click", (event) => {
         if (event.target === overlay || event.target.closest(".shift-lpmh-detail-close")) closeShiftLpmhBreakdown();
       });
-      document.body.appendChild(overlay);
+      (shiftLpmhEmployeeContainer || document.body).appendChild(overlay);
       const picker = document.createElement("div");
       picker.className = "shift-lpmh-employee-picker";
       picker.innerHTML = `<strong>People displayed on this card</strong>
@@ -5042,10 +5452,21 @@
     }
 
     function detailMinute(detail) {
-      const text = String(detail.time || "");
+      const text = String(detail.time || "").trim();
       const match = text.match(/(\d{1,2}):(\d{2})/);
-      if (!match) return null;
-      return Number(match[1]) * 60 + Number(match[2]);
+      if (match) return (Number(match[1]) % 24) * 60 + Number(match[2]);
+      const numeric = Number(text);
+      if (Number.isFinite(numeric)) {
+        if (numeric >= 0 && numeric < 1) return Math.round(numeric * 1440) % 1440;
+        if (numeric > 20000) return Math.round((numeric % 1) * 1440) % 1440;
+        if (numeric >= 0 && numeric <= 2359 && /^\d{1,4}(?:\.0+)?$/.test(text)) {
+          const hhmm = String(Math.trunc(numeric)).padStart(4, "0");
+          const hour = Number(hhmm.slice(0, 2));
+          const minute = Number(hhmm.slice(2));
+          if (hour < 24 && minute < 60) return hour * 60 + minute;
+        }
+      }
+      return null;
     }
 
     function minuteInWindow(minute, start, end) {
