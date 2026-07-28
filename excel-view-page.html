@@ -8231,8 +8231,13 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     const length = firstHeaderIndex(h,["LENGTH","LN","LENGTH FT"]);
     const holdStart = firstHeaderIndex(h,["TIME IN HOLD","HOLD START"]);
     const inbound = firstHeaderIndex(h,["INBOUND TRAIN","TRAIN"]);
-    let arrival = firstHeaderIndex(h,[/^(ARRIVAL|ARRIVAL TIME|ARRIVAL DATE|ETA|EST ARRIVAL)$/]);
-    if (arrival < 0) arrival = firstHeaderIndex(h,[/^(TIME IN|TIME IN DISP)$/]);
+    let arrival = firstHeaderIndex(h,[
+      /^(ARRIVAL|ARRIVAL TIME|ARRIVAL DATE|ARRIVAL DATE TIME|ARRIVAL DATETIME|ARRIVAL EVENT DATE TIME|ARRIVAL EVENT DATETIME)$/,
+      /^(ETA|EST ARRIVAL|ESTIMATED ARRIVAL|INBOUND ARRIVAL)$/,
+      /^ARRIVAL .*(DATE|TIME)/
+    ]);
+    if (arrival < 0) arrival = firstHeaderIndex(h,[/^(TIME IN|TIME IN DISP|TIME IN DISPLAY|TIME IN YARD|YARD ARRIVAL)$/]);
+    if (arrival < 0) arrival = firstHeaderIndex(h,[/\bARRIVAL\b/]);
     const yardBlock = firstHeaderIndex(h,["YARD BLOCK","YD BLOCK"]);
     let pStatus = firstHeaderIndex(h,["TRAIN TRACK","PRIMARY STATUS","P STATUS"]);
     let qStatus = firstHeaderIndex(h,["HOLD CODE","SECONDARY STATUS","Q STATUS"]);

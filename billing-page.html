@@ -1286,6 +1286,50 @@
       min-width: 980px;
     }
 
+    .shift-lpmh-reconciliation {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1px;
+      overflow: hidden;
+      border: 1px solid #cbd5e1;
+      border-radius: 9px;
+      background: #cbd5e1;
+    }
+
+    .shift-lpmh-reconciliation > div {
+      padding: 10px 12px;
+      background: #f8fafc;
+      color: #334155;
+      font-size: 12px;
+      font-weight: 800;
+      line-height: 1.4;
+    }
+
+    .shift-lpmh-reconciliation strong {
+      display: block;
+      margin-bottom: 2px;
+      color: #172033;
+      font-size: 13px;
+    }
+
+    .shift-lpmh-reconciliation.pass {
+      border-color: #16a37a;
+      background: #16a37a;
+    }
+
+    .shift-lpmh-reconciliation.fail {
+      border-color: #dc2626;
+      background: #dc2626;
+    }
+
+    .shift-lpmh-reconciliation .reconciliation-result {
+      color: #991b1b;
+    }
+
+    .shift-lpmh-reconciliation.pass .reconciliation-result {
+      color: #047857;
+    }
+
     .shift-lpmh-panel {
       overflow: hidden;
       border: 1px solid #d6e0ec;
@@ -2447,7 +2491,64 @@
       }
     }
 
+    const BILLING_HOURLY_LIFTS_KEY = "conglobal-billing-hourly-lifts-v1";
+
+    function importedLiftHour(value) {
+      if (value instanceof Date && !Number.isNaN(value.getTime())) return value.getHours();
+      if (typeof value === "number" && Number.isFinite(value)) {
+        const fraction = ((value % 1) + 1) % 1;
+        return Math.floor(fraction * 24) % 24;
+      }
+      const text = String(value || "").trim();
+      if (!text) return null;
+      const parsed = new Date(text);
+      if (!Number.isNaN(parsed.getTime()) && /[-/T]/.test(text)) return parsed.getHours();
+      let match = text.match(/(?:^|\s)(\d{1,2}):(\d{2})(?::\d{2})?\s*([ap])?m?\s*$/i);
+      if (match) {
+        let hour = Number(match[1]);
+        if (match[3] && match[3].toLowerCase() === "p" && hour !== 12) hour += 12;
+        if (match[3] && match[3].toLowerCase() === "a" && hour === 12) hour = 0;
+        return hour >= 0 && hour <= 23 ? hour : null;
+      }
+      match = text.replace(/\D/g, "").match(/(\d{3,4})$/);
+      if (!match) return null;
+      const military = match[1].padStart(4, "0");
+      const hour = Number(military.slice(0, 2));
+      return hour >= 0 && hour <= 23 ? hour : null;
+    }
+
+    function persistBillingHourlyLifts() {
+      const byDate = {};
+      const seen = new Set();
+      const details = Array.isArray(state.moveDetails) ? state.moveDetails : [];
+      if (!details.length) return;
+      details.forEach((detail) => {
+        if (!detail || detail.deleted || !LIFT_FIELDS.includes(detail.field)) return;
+        const date = String(detail.date || "").trim();
+        const hour = importedLiftHour(detail.time);
+        if (!date || hour == null) return;
+        const source = detailLiftSource(detail);
+        const equipment = String(detail.equipment || "").trim().toUpperCase();
+        const train = String(detail.train || "").trim().toUpperCase();
+        const uniqueKey = [date, source, equipment || detail.id || detail.rowNumber || "", train].join("|");
+        if (seen.has(uniqueKey)) return;
+        seen.add(uniqueKey);
+        if (!byDate[date]) byDate[date] = {};
+        if (!byDate[date][hour]) byDate[date][hour] = { value: 0, srcs: [], sourceCounts: {}, note: "Billing hourly detail" };
+        const entry = byDate[date][hour];
+        entry.value += 1;
+        if (source && source !== "actual") {
+          entry.sourceCounts[source] = (entry.sourceCounts[source] || 0) + 1;
+          if (!entry.srcs.includes(source)) entry.srcs.push(source);
+        }
+      });
+      try {
+        localStorage.setItem(BILLING_HOURLY_LIFTS_KEY, JSON.stringify({ version: 1, byDate }));
+      } catch (error) {}
+    }
+
     function persist() {
+      persistBillingHourlyLifts();
       const payload = {
         month: state.month,
         data: state.data,
@@ -2504,7 +2605,31 @@
     }
 
     function withPerformanceArchiveIndexedDb(html) {
-      if (!html || html.includes("conglobal-performance-archive-indexeddb-v1")) return html;
+      if (!html) return html;
+      html = html.replace(/\u0008/g, "\\b");
+      const hasArchiveBridge = html.includes("conglobal-performance-archive-indexeddb-v1");
+      html = html
+        .replace(
+          '        if (match[3].toLowerCase() === "p" && hour !== 12) hour += 12;\n        if (match[3].toLowerCase() === "a" && hour === 12) hour = 0;\n        return hour * 60 + minute;',
+          '        const meridiem = String(match[3] || "").toLowerCase();\n        if (meridiem === "p" && hour !== 12) hour += 12;\n        if (meridiem === "a" && hour === 12) hour = 0;\n        if (hour > 23 || minute > 59) return null;\n        return hour * 60 + minute;'
+        )
+        .replace(
+          '      const billingLiftData = readBillingHourlyLifts(dateValue);',
+          '      const hasImportedHourlyLifts = Object.keys(liftMap).some(function(hour) { return Number(normalizeLiftEntry(liftMap[hour]).value) > 0; });\n      const billingLiftData = readBillingHourlyLifts(dateValue);'
+        )
+        .replace(
+          '        const entry = normalizeLiftEntry(billingLiftData.hasData ? billingHourlyLifts[hour] : liftMap[hour]);',
+          '        const entry = normalizeLiftEntry(hasImportedHourlyLifts ? liftMap[hour] : billingHourlyLifts[hour]);'
+        )
+        .replace(
+          '      const adjustment = Math.max(0, dailyTotal - hourlyTotal);\n      if (adjustment > 0) {\n        addBillingLift(hourly, 3, "", adjustment, operationalDailyTotal > 0 ? "Billing daily total" : "PowerBI daily total");\n      }\n\n      return { hourly: hourly, hasData: dailyTotal > 0 || dateDetails.length > 0 };',
+          '      const hasHourlyData = Object.keys(hourly).some(function(hour) { return Number(hourly[hour] && hourly[hour].value) > 0; });\n      return { hourly: hourly, hasData: hasHourlyData, dailyTotal: dailyTotal, missingHourlyTotal: hasHourlyData ? 0 : dailyTotal };'
+        )
+        .replace(
+          '      const adjustment = Math.max(0, dailyTotal - hourlyTotal);\n      if (adjustment > 0) addBillingLift(hourly, 3, "", adjustment, "Billing daily total");\n\n      return { hourly: hourly, hasData: dailyTotal > 0 || dateDetails.length > 0 };',
+          '      const hasHourlyData = Object.keys(hourly).some(function(hour) { return Number(hourly[hour] && hourly[hour].value) > 0; });\n      return { hourly: hourly, hasData: hasHourlyData, dailyTotal: dailyTotal, missingHourlyTotal: hasHourlyData ? 0 : dailyTotal };'
+        );
+      if (hasArchiveBridge) return html;
       const bridge = `
   <meta name="conglobal-performance-archive-indexeddb-v1" content="enabled" />
   <script>
@@ -2522,13 +2647,16 @@
       readBillingHourlyLifts = function(dateValue) {
         const result = originalReadBillingHourlyLifts(dateValue);
         if (result && result.hasData) return result;
-        const dateKey = liftDateKey(dateValue);
-        const row = indexedPowerBiRows.find(function(value) { return value && value.date === dateKey; });
-        const lifts = Math.max(0, Number(row && row.lifts) || 0);
-        if (!lifts) return result;
-        const hourly = {};
-        addBillingLift(hourly, 3, "", lifts, "PowerBI daily total");
-        return { hourly: hourly, hasData: true };
+        try {
+          const saved = JSON.parse(localStorage.getItem("conglobal-billing-hourly-lifts-v1") || "{}");
+          const dateKey = liftDateKey(dateValue);
+          const hourly = saved && saved.byDate && saved.byDate[dateKey] ? saved.byDate[dateKey] : {};
+          const hasData = Object.keys(hourly).some(function(hour) {
+            return Number(hourly[hour] && hourly[hour].value) > 0;
+          });
+          if (hasData) return { hourly: hourly, hasData: true };
+        } catch (error) {}
+        return result || { hourly: {}, hasData: false };
       };
       if (!window.indexedDB) return;
       const openRequest = indexedDB.open("conglobal-timesheet-archive-db-v1", 1);
@@ -3043,6 +3171,9 @@
       state.importedCells = state.importedCells.filter((cell) => cell.fileId !== fileId);
       state.analyticsRows = state.analyticsRows.filter((row) => row.fileId !== fileId);
       state.analyticsReviewRows = state.analyticsReviewRows.filter((row) => row.fileId !== fileId);
+      if (!state.moveDetails.some((detail) => detail && !detail.deleted && LIFT_FIELDS.includes(detail.field))) {
+        localStorage.removeItem(BILLING_HOURLY_LIFTS_KEY);
+      }
 
       affected.forEach((key) => {
         const [date, field] = key.split("|");
@@ -4220,7 +4351,7 @@
 
     function renderPersonGroupingMap(shifts) {
       const showingShiftGrid = state.groupMapMode === "shifts";
-      els.groupMapShiftToggle.textContent = showingShiftGrid ? "Group Bubbles" : "Shift Grid";
+      els.groupMapShiftToggle.textContent = showingShiftGrid ? "Person Grouping Map" : "Shift Grid";
       els.groupMapViewToggle.classList.toggle("hidden", showingShiftGrid);
       if (showingShiftGrid) {
         renderShiftLpmhGrid(shifts);
@@ -4252,6 +4383,7 @@
       const weekdayColumns = DAY_NAMES.map((name, index) => ({ name, index }));
       const target = numberValue(els.groupMapTarget.value) || 3;
       const breakdowns = {};
+      const reconciliation = shiftLpmhReconciliation(datedShifts, windowStart, anchor);
 
       const panel = (shiftKey, title, panelClass) => {
         const daily = weekdayColumns.map((weekday) => {
@@ -4267,7 +4399,9 @@
           const employees = Array.from(new Map(matches.flatMap((shift) => shift.employees || []).map((employee) => {
             const name = String(employee.displayName || employee.name || employee.employee || "").trim();
             return [normalizeName(name), name];
-          }).filter(([key]) => key)).values()).sort(shiftLpmhEmployeeSort);
+          }).filter(([key]) => key)).values())
+            .filter((name) => shiftLpmhEmployeeIsScheduled(name, shiftKey, weekday.index))
+            .sort(shiftLpmhEmployeeSort);
           return { weekday, hours, lifts, lpmh, sampleCount: matches.length, matches, employees };
         });
         const weekHours = daily.reduce((total, day) => total + day.hours, 0);
@@ -4302,6 +4436,7 @@
       };
 
       els.groupMapContainer.innerHTML = `<div class="group-map-stage"><div class="shift-lpmh-view">
+        ${reconciliation}
         ${panel("first", "Day Shift · 0300–1500", "day")}
         ${panel("second", "Night Shift · 1500–0300", "night")}
       </div></div>`;
@@ -4310,11 +4445,119 @@
       });
     }
 
+    function shiftLpmhReconciliation(datedShifts, windowStart, anchor) {
+      const windowShifts = datedShifts.filter((shift) => {
+        const parts = shift.date.split("-").map(Number);
+        const date = new Date(parts[0], parts[1] - 1, parts[2], 12);
+        return date >= windowStart && date <= anchor;
+      });
+      const shiftDates = new Set(windowShifts.map((shift) => shift.date));
+      const shiftLifts = windowShifts.reduce((total, shift) => total + (Number(shift.lifts) || 0), 0);
+      const shiftHours = windowShifts.reduce((total, shift) => total + (Number(shift.hours) || 0), 0);
+      const shiftLpmh = shiftHours > 0 ? shiftLifts / shiftHours : null;
+      const monthlyTotals = { lifts: 0, hours: 0, matchedLifts: 0, matchedHours: 0, operationalDates: 0, missingDates: [] };
+      const cursor = new Date(windowStart);
+      while (cursor <= anchor) {
+        const key = toKey(cursor);
+        const record = state.data[key] || {};
+        const lifts = operationLiftCount(record);
+        const hours = lphHoursForRecord(record);
+        if (lifts > 0 || hours > 0) {
+          monthlyTotals.operationalDates += 1;
+          monthlyTotals.lifts += lifts;
+          monthlyTotals.hours += hours;
+          if (shiftDates.has(key)) {
+            monthlyTotals.matchedLifts += lifts;
+            monthlyTotals.matchedHours += hours;
+          } else {
+            monthlyTotals.missingDates.push(key);
+          }
+        }
+        cursor.setDate(cursor.getDate() + 1);
+      }
+      const matchedLpmh = monthlyTotals.matchedHours > 0 ? monthlyTotals.matchedLifts / monthlyTotals.matchedHours : null;
+      const fullLpmh = monthlyTotals.hours > 0 ? monthlyTotals.lifts / monthlyTotals.hours : null;
+      const liftDelta = shiftLifts - monthlyTotals.matchedLifts;
+      const hourDelta = shiftHours - monthlyTotals.matchedHours;
+      const reconciled = Math.abs(liftDelta) < 0.01 && Math.abs(hourDelta) < 0.01 && monthlyTotals.missingDates.length === 0;
+      const metric = (lifts, hours, lpmh) => `${Math.round(lifts).toLocaleString("en-US")} lifts ÷ ${hours.toFixed(1)} hrs = ${lpmh == null ? "—" : lpmh.toFixed(2)} LPMH`;
+      const signed = (value, digits = 1) => `${value > 0 ? "+" : ""}${value.toFixed(digits)}`;
+      const missing = monthlyTotals.missingDates.length
+        ? `${monthlyTotals.missingDates.length} operational date${monthlyTotals.missingDates.length === 1 ? "" : "s"} missing shift rows: ${monthlyTotals.missingDates.join(", ")}`
+        : "All operational dates have shift rows.";
+      return `<section class="shift-lpmh-reconciliation ${reconciled ? "pass" : "fail"}" aria-label="Shift and monthly LPMH reconciliation">
+        <div><strong>Day + Night shift rows</strong>${metric(shiftLifts, shiftHours, shiftLpmh)}</div>
+        <div><strong>Monthly table · same dates</strong>${metric(monthlyTotals.matchedLifts, monthlyTotals.matchedHours, matchedLpmh)}</div>
+        <div class="reconciliation-result"><strong>${reconciled ? "Reconciled" : "Not reconciled"}</strong>Δ ${signed(liftDelta, 0)} lifts · ${signed(hourDelta)} hrs<br>${missing}<br>Full 28-day table: ${metric(monthlyTotals.lifts, monthlyTotals.hours, fullLpmh)}</div>
+      </section>`;
+    }
+
     function shiftLpmhEmployeeNames(shift) {
       return Array.from(new Map((shift.employees || []).map((employee) => {
         const name = String(employee.displayName || employee.name || employee.employee || "").trim();
         return [normalizeName(name), name];
       }).filter(([key]) => key)).values()).sort(shiftLpmhEmployeeSort);
+    }
+
+    const shiftLpmhRosterStorageKey = "conglobal-roster-state-v1";
+    const shiftLpmhRosterAdditionsKey = "conglobal-roster-additions-v1";
+    const shiftLpmhRosterDayIndex = [6, 0, 1, 2, 3, 4, 5];
+    const shiftLpmhDefaultRoster = {
+      first: [
+        ["Branford Alton", "Mon, Tues"], ["Castruita Armando", "Wed, Thurs"],
+        ["Frazer Dacoyea", "Mon, Tues"], ["Citizen Dante", "Thurs, Fri"],
+        ["Towler Demetrius", "Thurs, Fri"], ["Stewart Dexter", "Sat, Sun"],
+        ["Gardner Dorrean", "Tues, Wed"], ["Thomas Henry", "Sat, Sun"],
+        ["Brown James", "Thurs, Fri"], ["Herrera Jose", "Sat, Sun"],
+        ["Player Keyston", "Mon, Sun"], ["Hickman Makia", "Mon, Sun"],
+        ["Dever Mikey", "Tues, Wed"], ["Wanza Myles", "Mon, Tues"],
+        ["Romero Nelson", "Tues, Wed"], ["McDaniel Charles", "Fri, Sat"],
+        ["Nava Ramon", "Sat, Sun"], ["Tran Tyler", "Thurs, Fri"]
+      ],
+      second: [
+        ["Carruthers Timothy", "Mon, Sun"], ["Caceres Virula Victor", "Mon, Tues"],
+        ["Keme Aweri Jr.", "Mon, Tues"], ["Hosey Kevin", "Mon, Tues"],
+        ["Brown Brandy", "Wed, Thurs"], ["Mejia Aaron", "Thurs, Fri"],
+        ["Bookman Derrell", "Thurs, Fri"], ["Hopkins Alexander", "Mon, Sun"],
+        ["Tingle Jason", "Sat, Sun"], ["Contreras Marco", "Sat, Sun"],
+        ["Benavides Robert", "Wed, Sun"], ["Urtado Ernest", "Tues, Wed"],
+        ["Johnson Messiah", "Tues, Thurs"], ["Gilder Rufus II", "Tues, Wed"],
+        ["Echendu Chimenierm", "Wed, Thurs"], ["Delgado Jose", "Fri, Sat"]
+      ]
+    };
+
+    function shiftLpmhOffDaySet(value) {
+      const aliases = {
+        sun: 0, sunday: 0, mon: 1, monday: 1, tue: 2, tues: 2, tuesday: 2,
+        wed: 3, weds: 3, wednesday: 3, thu: 4, thur: 4, thurs: 4, thursday: 4,
+        fri: 5, friday: 5, sat: 6, saturday: 6
+      };
+      return new Set(String(value || "").split(",").map((day) => aliases[day.trim().toLowerCase()]).filter((day) => day !== undefined));
+    }
+
+    function shiftLpmhRosterRows(shiftKey) {
+      let rows = (shiftLpmhDefaultRoster[shiftKey] || []).map(([name, offDays]) => ({ name, offDays }));
+      try {
+        const saved = JSON.parse(localStorage.getItem(shiftLpmhRosterStorageKey) || "{}");
+        if (Array.isArray(saved[shiftKey]) && saved[shiftKey].length) {
+          rows = saved[shiftKey].filter((employee) => employee && employee.name);
+        }
+        const additions = JSON.parse(localStorage.getItem(shiftLpmhRosterAdditionsKey) || "[]");
+        if (Array.isArray(additions)) {
+          rows = rows.concat(additions.filter((employee) => employee && employee.name && (employee.shift || "first") === shiftKey));
+        }
+      } catch (error) {}
+      return rows;
+    }
+
+    function shiftLpmhEmployeeIsScheduled(name, shiftKey, weekdayIndex) {
+      const nameKey = normalizeName(name);
+      const employee = shiftLpmhRosterRows(shiftKey).find((row) => normalizeName(row.name) === nameKey);
+      if (!employee) return false;
+      if (Array.isArray(employee.days)) {
+        return String(employee.days[shiftLpmhRosterDayIndex[weekdayIndex]] || "").trim().toUpperCase() !== "O";
+      }
+      return !shiftLpmhOffDaySet(employee.offDays).has(weekdayIndex);
     }
 
     function shiftLpmhEmployeeSelectionKey(detail) {

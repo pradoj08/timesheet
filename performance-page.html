@@ -3239,9 +3239,9 @@
       if (numberedDrop) return numberedDrop;
       if (compact.includes("zlbho")) return "zlbho1";
       if (compact.includes("ihosa") || compact.includes("mliho") || compact.includes("iho")) return "ihosa";
-      if (compact.includes("mhoas") || compact.includes("yho37r") || compact.includes("yho69r") || /mho/i.test(text)) return "mhoas";
-      if (/coh/i.test(text)) return "coh";
-      if (/ups/i.test(text)) return "ups_work";
+      if (compact.includes("mhoas") || compact.includes("yho37r") || compact.includes("yho69r") || /\bmho\b/i.test(text)) return "mhoas";
+      if (/\bcoh\b/i.test(text)) return "coh";
+      if (/\bups\b/i.test(text)) return "ups_work";
       if (/carry/.test(text)) return "carryover";
       if (/flip|stack/.test(field) || /flip|stack/.test(String(detail && detail.reason || "").toLowerCase())) return "flips";
       return "";
@@ -3269,8 +3269,10 @@
       if (match) {
         let hour = Number(match[1]);
         const minute = Number(match[2]);
-        if (match[3].toLowerCase() === "p" && hour !== 12) hour += 12;
-        if (match[3].toLowerCase() === "a" && hour === 12) hour = 0;
+        const meridiem = String(match[3] || "").toLowerCase();
+        if (meridiem === "p" && hour !== 12) hour += 12;
+        if (meridiem === "a" && hour === 12) hour = 0;
+        if (hour > 23 || minute > 59) return null;
         return hour * 60 + minute;
       }
       match = text.replace(/\D/g, "").match(/(\d{3,4})$/);
@@ -3326,15 +3328,28 @@
         addBillingLift(hourly, hour, sourceKey, 1, "Billing hourly detail");
       });
 
-      const hourlyTotal = Object.keys(hourly).reduce(function(sum, hour) {
-        return sum + (Number(hourly[hour].value) || 0);
-      }, 0);
-      const adjustment = Math.max(0, dailyTotal - hourlyTotal);
-      if (adjustment > 0) {
-        addBillingLift(hourly, 3, "", adjustment, operationalDailyTotal > 0 ? "Billing daily total" : "PowerBI daily total");
+      const hasHourlyData = Object.keys(hourly).some(function(hour) {
+        return Number(hourly[hour] && hourly[hour].value) > 0;
+      });
+      if (!hasHourlyData) {
+        try {
+          const saved = JSON.parse(localStorage.getItem("conglobal-billing-hourly-lifts-v1") || "{}");
+          const savedHourly = saved && saved.byDate && saved.byDate[dateKey] ? saved.byDate[dateKey] : {};
+          Object.keys(savedHourly).forEach(function(hour) {
+            const entry = savedHourly[hour];
+            if (entry && Number(entry.value) > 0) hourly[hour] = entry;
+          });
+        } catch (error) {}
       }
-
-      return { hourly: hourly, hasData: dailyTotal > 0 || dateDetails.length > 0 };
+      const hasPersistedHourlyData = Object.keys(hourly).some(function(hour) {
+        return Number(hourly[hour] && hourly[hour].value) > 0;
+      });
+      return {
+        hourly: hourly,
+        hasData: hasPersistedHourlyData,
+        dailyTotal: dailyTotal,
+        missingHourlyTotal: hasPersistedHourlyData ? 0 : dailyTotal
+      };
     }
     function previousArchiveBucketsFromSnapshot(snapshot) {
       const buckets = {};
@@ -3829,6 +3844,9 @@
     function buildModel() {
       const dateValue = document.getElementById("analysisDate").value || localDateValue();
       const liftMap = readLiftMap(dateValue);
+      const hasImportedHourlyLifts = Object.keys(liftMap).some(function(hour) {
+        return Number(normalizeLiftEntry(liftMap[hour]).value) > 0;
+      });
       const billingLiftData = readBillingHourlyLifts(dateValue);
       const billingHourlyLifts = billingLiftData.hourly || {};
       const previousArchiveBuckets = readPreviousArchiveBuckets(dateValue);
@@ -3836,7 +3854,7 @@
       const archiveRows = buildRowsFromArchive(dateValue);
       const rows = archiveRows.length ? archiveRows : buildRows(dateValue);
       const buckets = hourKeys.map(function(hour) {
-        const entry = normalizeLiftEntry(billingLiftData.hasData ? billingHourlyLifts[hour] : liftMap[hour]);
+        const entry = normalizeLiftEntry(hasImportedHourlyLifts ? liftMap[hour] : billingHourlyLifts[hour]);
         const rawLifts = entry.value == null ? 0 : Number(entry.value) || 0;
         const rawSources = sourceBreakdown(entry);
         const isLunch = lunchHours.has(hour);

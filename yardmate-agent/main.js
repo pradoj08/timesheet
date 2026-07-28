@@ -21,6 +21,7 @@ let lastFile = '';
 let lastPreview = Buffer.alloc(0);
 let lastAlertMeterPreview = Buffer.alloc(0);
 let lastAlertMeterCapturedAt = '';
+let lastYardCheckPreview = Buffer.alloc(0);
 let lastExtensionSeenAt = '';
 let extensionSchedule = {
   mismatchEnabled: false,
@@ -468,6 +469,7 @@ async function pushYardCheckSnapshot(payload) {
     .resize({ width: 1500, height: 1900, fit: 'inside', withoutEnlargement: true })
     .jpeg({ quality: 84, mozjpeg: true })
     .toBuffer();
+  lastYardCheckPreview = attachment;
   const capturedAt = payload.capturedAt ? new Date(payload.capturedAt) : new Date();
   const timeLabel = Number.isNaN(capturedAt.getTime())
     ? new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
@@ -830,6 +832,15 @@ function startControlServer() {
           'Content-Type': 'image/jpeg',
         });
         return response.end(lastAlertMeterPreview);
+      }
+      if (request.method === 'GET' && url.pathname === '/api/yardcheck-preview') {
+        if (!lastYardCheckPreview.length) return sendJson(response, 404, { error: 'No Yard Check preview has been captured yet.' });
+        response.writeHead(200, {
+          'Access-Control-Allow-Origin': 'null',
+          'Cache-Control': 'no-store',
+          'Content-Type': 'image/jpeg',
+        });
+        return response.end(lastYardCheckPreview);
       }
       if (request.method === 'POST' && url.pathname === '/api/source-refresh') {
         const body = await readJsonBody(request);

@@ -3422,7 +3422,31 @@
       const marker = '<meta name="conglobal-billing-performance-archive-indexeddb-v1" content="enabled">';
       const helper = `
     function withPerformanceArchiveIndexedDb(html) {
-      if (!html || html.includes("conglobal-performance-archive-indexeddb-v1")) return html;
+      if (!html) return html;
+      html = html.replace(/\\u0008/g, "\\\\b");
+      const hasArchiveBridge = html.includes("conglobal-performance-archive-indexeddb-v1");
+      html = html
+        .replace(
+          '        if (match[3].toLowerCase() === "p" && hour !== 12) hour += 12;\\n        if (match[3].toLowerCase() === "a" && hour === 12) hour = 0;\\n        return hour * 60 + minute;',
+          '        const meridiem = String(match[3] || "").toLowerCase();\\n        if (meridiem === "p" && hour !== 12) hour += 12;\\n        if (meridiem === "a" && hour === 12) hour = 0;\\n        if (hour > 23 || minute > 59) return null;\\n        return hour * 60 + minute;'
+        )
+        .replace(
+          '      const billingLiftData = readBillingHourlyLifts(dateValue);',
+          '      const hasImportedHourlyLifts = Object.keys(liftMap).some(function(hour) { return Number(normalizeLiftEntry(liftMap[hour]).value) > 0; });\\n      const billingLiftData = readBillingHourlyLifts(dateValue);'
+        )
+        .replace(
+          '        const entry = normalizeLiftEntry(billingLiftData.hasData ? billingHourlyLifts[hour] : liftMap[hour]);',
+          '        const entry = normalizeLiftEntry(hasImportedHourlyLifts ? liftMap[hour] : billingHourlyLifts[hour]);'
+        )
+        .replace(
+          '      const adjustment = Math.max(0, dailyTotal - hourlyTotal);\\n      if (adjustment > 0) {\\n        addBillingLift(hourly, 3, "", adjustment, operationalDailyTotal > 0 ? "Billing daily total" : "PowerBI daily total");\\n      }\\n\\n      return { hourly: hourly, hasData: dailyTotal > 0 || dateDetails.length > 0 };',
+          '      const hasHourlyData = Object.keys(hourly).some(function(hour) { return Number(hourly[hour] && hourly[hour].value) > 0; });\\n      return { hourly: hourly, hasData: hasHourlyData, dailyTotal: dailyTotal, missingHourlyTotal: hasHourlyData ? 0 : dailyTotal };'
+        )
+        .replace(
+          '      const adjustment = Math.max(0, dailyTotal - hourlyTotal);\\n      if (adjustment > 0) addBillingLift(hourly, 3, "", adjustment, "Billing daily total");\\n\\n      return { hourly: hourly, hasData: dailyTotal > 0 || dateDetails.length > 0 };',
+          '      const hasHourlyData = Object.keys(hourly).some(function(hour) { return Number(hourly[hour] && hourly[hour].value) > 0; });\\n      return { hourly: hourly, hasData: hasHourlyData, dailyTotal: dailyTotal, missingHourlyTotal: hasHourlyData ? 0 : dailyTotal };'
+        );
+      if (hasArchiveBridge) return html;
       const bridge = [
         '<meta name="conglobal-performance-archive-indexeddb-v1" content="enabled" />',
         '<script>',
@@ -3438,13 +3462,14 @@
         '  readBillingHourlyLifts = function(dateValue) {',
         '    const result = originalReadBillingHourlyLifts(dateValue);',
         '    if (result && result.hasData) return result;',
-        '    const dateKey = liftDateKey(dateValue);',
-        '    const row = indexedPowerBiRows.find(function(value) { return value && value.date === dateKey; });',
-        '    const lifts = Math.max(0, Number(row && row.lifts) || 0);',
-        '    if (!lifts) return result;',
-        '    const hourly = {};',
-        '    addBillingLift(hourly, 3, "", lifts, "PowerBI daily total");',
-        '    return { hourly: hourly, hasData: true };',
+        '    try {',
+        '      const saved = JSON.parse(localStorage.getItem("conglobal-billing-hourly-lifts-v1") || "{}");',
+        '      const dateKey = liftDateKey(dateValue);',
+        '      const hourly = saved && saved.byDate && saved.byDate[dateKey] ? saved.byDate[dateKey] : {};',
+        '      const hasData = Object.keys(hourly).some(function(hour) { return Number(hourly[hour] && hourly[hour].value) > 0; });',
+        '      if (hasData) return { hourly: hourly, hasData: true };',
+        '    } catch (error) {}',
+        '    return result || { hourly: {}, hasData: false };',
         '  };',
         '  if (!window.indexedDB) return;',
         '  const openRequest = indexedDB.open("conglobal-timesheet-archive-db-v1", 1);',
@@ -3490,6 +3515,83 @@
           "        els.performanceFrame.srcdoc = JSON.parse(sourceNode.textContent || '\"\"');",
           "        els.performanceFrame.srcdoc = withPerformanceArchiveIndexedDb(JSON.parse(sourceNode.textContent || '\"\"'));"
         );
+      const hourlyBridge = `
+  <script>
+    (function() {
+      const HOURLY_KEY = "conglobal-billing-hourly-lifts-v1";
+      function importedLiftHour(value) {
+        if (value instanceof Date && !Number.isNaN(value.getTime())) return value.getHours();
+        if (typeof value === "number" && Number.isFinite(value)) return Math.floor((((value % 1) + 1) % 1) * 24) % 24;
+        const text = String(value || "").trim();
+        if (!text) return null;
+        const parsed = new Date(text);
+        if (!Number.isNaN(parsed.getTime()) && /[-/T]/.test(text)) return parsed.getHours();
+        let match = text.match(/(?:^|\\s)(\\d{1,2}):(\\d{2})(?::\\d{2})?\\s*([ap])?m?\\s*$/i);
+        if (match) {
+          let hour = Number(match[1]);
+          if (match[3] && match[3].toLowerCase() === "p" && hour !== 12) hour += 12;
+          if (match[3] && match[3].toLowerCase() === "a" && hour === 12) hour = 0;
+          return hour >= 0 && hour <= 23 ? hour : null;
+        }
+        match = text.replace(/\\D/g, "").match(/(\\d{3,4})$/);
+        if (!match) return null;
+        const hour = Number(match[1].padStart(4, "0").slice(0, 2));
+        return hour >= 0 && hour <= 23 ? hour : null;
+      }
+      function persistHourlySummary() {
+        const byDate = {};
+        const seen = new Set();
+        const details = Array.isArray(state.moveDetails) ? state.moveDetails : [];
+        if (!details.length) return;
+        details.forEach(function(detail) {
+          if (!detail || detail.deleted || !LIFT_FIELDS.includes(detail.field)) return;
+          const date = String(detail.date || "").trim();
+          const hour = importedLiftHour(detail.time);
+          if (!date || hour == null) return;
+          const source = detailLiftSource(detail);
+          const equipment = String(detail.equipment || "").trim().toUpperCase();
+          const train = String(detail.train || "").trim().toUpperCase();
+          const uniqueKey = [date, source, equipment || detail.id || detail.rowNumber || "", train].join("|");
+          if (seen.has(uniqueKey)) return;
+          seen.add(uniqueKey);
+          if (!byDate[date]) byDate[date] = {};
+          if (!byDate[date][hour]) byDate[date][hour] = { value: 0, srcs: [], sourceCounts: {}, note: "Billing hourly detail" };
+          const entry = byDate[date][hour];
+          entry.value += 1;
+          if (source && source !== "actual") {
+            entry.sourceCounts[source] = (entry.sourceCounts[source] || 0) + 1;
+            if (!entry.srcs.includes(source)) entry.srcs.push(source);
+          }
+        });
+        try { localStorage.setItem(HOURLY_KEY, JSON.stringify({ version: 1, byDate: byDate })); } catch (error) {}
+      }
+      if (typeof persist === "function" && !persist.__billingHourlySummaryWrapped) {
+        const originalPersist = persist;
+        persist = function() {
+          persistHourlySummary();
+          return originalPersist.apply(this, arguments);
+        };
+        persist.__billingHourlySummaryWrapped = true;
+      }
+      if (typeof removeImportedFile === "function" && !removeImportedFile.__billingHourlySummaryWrapped) {
+        const originalRemoveImportedFile = removeImportedFile;
+        removeImportedFile = function() {
+          const result = originalRemoveImportedFile.apply(this, arguments);
+          const hasLiftDetails = Array.isArray(state.moveDetails) && state.moveDetails.some(function(detail) {
+            return detail && !detail.deleted && LIFT_FIELDS.includes(detail.field);
+          });
+          if (!hasLiftDetails) localStorage.removeItem(HOURLY_KEY);
+          return result;
+        };
+        removeImportedFile.__billingHourlySummaryWrapped = true;
+      }
+      persistHourlySummary();
+    })();
+  <\/script>`;
+      const billingBodyClose = updated.toLowerCase().lastIndexOf("</body>");
+      if (billingBodyClose >= 0) {
+        updated = updated.slice(0, billingBodyClose) + hourlyBridge + "\n" + updated.slice(billingBodyClose);
+      }
       const headClose = updated.toLowerCase().indexOf("</head>");
       return headClose >= 0 ? updated.slice(0, headClose) + marker + "\n" + updated.slice(headClose) : marker + updated;
     }
@@ -3659,6 +3761,11 @@
       const injection = `<meta name="conglobal-billing-shift-lpmh-grid-v1" content="enabled">
 <style>
   .shift-lpmh-view{display:grid;gap:18px;min-width:980px}
+  .shift-lpmh-reconciliation{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;overflow:hidden;border:1px solid #cbd5e1;border-radius:9px;background:#cbd5e1}
+  .shift-lpmh-reconciliation>div{padding:10px 12px;background:#f8fafc;color:#334155;font-size:12px;font-weight:800;line-height:1.4}
+  .shift-lpmh-reconciliation strong{display:block;margin-bottom:2px;color:#172033;font-size:13px}
+  .shift-lpmh-reconciliation.pass{border-color:#16a37a;background:#16a37a}.shift-lpmh-reconciliation.fail{border-color:#dc2626;background:#dc2626}
+  .shift-lpmh-reconciliation .reconciliation-result{color:#991b1b}.shift-lpmh-reconciliation.pass .reconciliation-result{color:#047857}
   .shift-lpmh-panel{overflow:hidden;border:1px solid #d6e0ec;border-radius:10px;background:#fff}
   .shift-lpmh-panel-head{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 16px;color:#fff;background:#173a66}
   .shift-lpmh-panel.night .shift-lpmh-panel-head{background:#40246f}
@@ -3721,7 +3828,15 @@
   if(!shiftToggle||typeof renderPersonGroupingMap!=="function")return;
   if(!shiftToggle.dataset.conglobalBound){
     shiftToggle.dataset.conglobalBound="1";
-    shiftToggle.addEventListener("click",function(){mode=mode==="shifts"?"groups":"shifts";try{localStorage.setItem(modeKey,mode);}catch(_){}var rows=window.__conglobalBillingShiftGridInput||(typeof analyticsShiftRows==="function"?analyticsShiftRows():[]);renderPersonGroupingMap(rows);});
+    shiftToggle.addEventListener("click",function(event){
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      mode=mode==="shifts"?"groups":"shifts";
+      if(typeof state==="object"&&state)state.groupMapMode=mode;
+      try{localStorage.setItem(modeKey,mode);}catch(_){}
+      try{if(typeof persist==="function")persist();}catch(_){}
+      if(typeof renderAnalytics==="function")renderAnalytics();
+    },true);
   }
   var originalRenderPersonGroupingMap=renderPersonGroupingMap;
   function employeeNames(shift){
@@ -3743,6 +3858,42 @@
     try{stored=JSON.parse(localStorage.getItem(employeeSelectionKey(detail))||"null");}catch(_){stored=null;}
     var selected=Array.isArray(stored)?stored.slice(0,8):all.slice(0,8);
     return all.filter(function(name){return selected.indexOf(name)>=0;}).slice(0,8);
+  }
+  var rosterStorageKey="conglobal-roster-state-v1",rosterAdditionsKey="conglobal-roster-additions-v1",rosterDayIndex=[6,0,1,2,3,4,5];
+  var defaultShiftRoster={
+    first:[
+      ["Branford Alton","Mon, Tues"],["Castruita Armando","Wed, Thurs"],["Frazer Dacoyea","Mon, Tues"],["Citizen Dante","Thurs, Fri"],
+      ["Towler Demetrius","Thurs, Fri"],["Stewart Dexter","Sat, Sun"],["Gardner Dorrean","Tues, Wed"],["Thomas Henry","Sat, Sun"],
+      ["Brown James","Thurs, Fri"],["Herrera Jose","Sat, Sun"],["Player Keyston","Mon, Sun"],["Hickman Makia","Mon, Sun"],
+      ["Dever Mikey","Tues, Wed"],["Wanza Myles","Mon, Tues"],["Romero Nelson","Tues, Wed"],["McDaniel Charles","Fri, Sat"],
+      ["Nava Ramon","Sat, Sun"],["Tran Tyler","Thurs, Fri"]
+    ],
+    second:[
+      ["Carruthers Timothy","Mon, Sun"],["Caceres Virula Victor","Mon, Tues"],["Keme Aweri Jr.","Mon, Tues"],["Hosey Kevin","Mon, Tues"],
+      ["Brown Brandy","Wed, Thurs"],["Mejia Aaron","Thurs, Fri"],["Bookman Derrell","Thurs, Fri"],["Hopkins Alexander","Mon, Sun"],
+      ["Tingle Jason","Sat, Sun"],["Contreras Marco","Sat, Sun"],["Benavides Robert","Wed, Sun"],["Urtado Ernest","Tues, Wed"],
+      ["Johnson Messiah","Tues, Thurs"],["Gilder Rufus II","Tues, Wed"],["Echendu Chimenierm","Wed, Thurs"],["Delgado Jose","Fri, Sat"]
+    ]
+  };
+  function offDaySet(value){
+    var aliases={sun:0,sunday:0,mon:1,monday:1,tue:2,tues:2,tuesday:2,wed:3,weds:3,wednesday:3,thu:4,thur:4,thurs:4,thursday:4,fri:5,friday:5,sat:6,saturday:6};
+    return new Set(String(value||"").split(",").map(function(day){return aliases[day.trim().toLowerCase()];}).filter(function(day){return day!==undefined;}));
+  }
+  function rosterRows(shiftKey){
+    var rows=(defaultShiftRoster[shiftKey]||[]).map(function(row){return {name:row[0],offDays:row[1]};});
+    try{
+      var saved=JSON.parse(localStorage.getItem(rosterStorageKey)||"{}");
+      if(Array.isArray(saved[shiftKey])&&saved[shiftKey].length)rows=saved[shiftKey].filter(function(employee){return employee&&employee.name;});
+      var additions=JSON.parse(localStorage.getItem(rosterAdditionsKey)||"[]");
+      if(Array.isArray(additions))rows=rows.concat(additions.filter(function(employee){return employee&&employee.name&&(employee.shift||"first")===shiftKey;}));
+    }catch(_){}
+    return rows;
+  }
+  function isScheduledEmployee(name,shiftKey,weekdayIndex){
+    var key=normalizeName(name),employee=rosterRows(shiftKey).find(function(row){return normalizeName(row.name)===key;});
+    if(!employee)return false;
+    if(Array.isArray(employee.days))return String(employee.days[rosterDayIndex[weekdayIndex]]||"").trim().toUpperCase()!=="O";
+    return !offDaySet(employee.offDays).has(weekdayIndex);
   }
   var defaultCraneNames=new Set(["Stewart Dexter","Thomas Henry","Brown James","Player Keyston","Hickman Makia","Hosey Kevin","Tingle Jason","Benavides Robert","Delgado Jose"].map(craneNameKey));
   function craneNameKey(name){return String(name||"").trim().toLowerCase().replace(/[,.]/g," ").replace(/\\b(jr|sr|ii|iii|iv)\\b/g,"").replace(/\\s+/g," ").split(" ").filter(Boolean).sort().join(" ");}
@@ -3776,6 +3927,25 @@
     picker.querySelector(".shift-lpmh-employee-save").addEventListener("click",function(){var values=Array.from(picker.querySelectorAll("input:checked")).map(function(input){return input.value;}).slice(0,8);try{localStorage.setItem(employeeSelectionKey(detail),JSON.stringify(values));}catch(_){}closeBreakdown();var active=window.__conglobalBillingShiftGridInput||[];renderShiftGrid(active);});
     overlay.querySelector(".shift-lpmh-detail-close").focus();
   }
+  function reconciliationHtml(dated,windowStart,anchor){
+    var windowShifts=dated.filter(function(shift){var p=shift.date.split("-").map(Number),d=new Date(p[0],p[1]-1,p[2],12);return d>=windowStart&&d<=anchor;});
+    var shiftDates=new Set(windowShifts.map(function(shift){return shift.date;}));
+    var shiftLifts=windowShifts.reduce(function(total,shift){return total+(Number(shift.lifts)||0);},0);
+    var shiftHours=windowShifts.reduce(function(total,shift){return total+(Number(shift.hours)||0);},0);
+    var totals={lifts:0,hours:0,matchedLifts:0,matchedHours:0,missing:[]},cursor=new Date(windowStart);
+    while(cursor<=anchor){
+      var key=toKey(cursor),record=(state.data&&state.data[key])||{},lifts=operationLiftCount(record),hours=lphHoursForRecord(record);
+      if(lifts>0||hours>0){
+        totals.lifts+=lifts;totals.hours+=hours;
+        if(shiftDates.has(key)){totals.matchedLifts+=lifts;totals.matchedHours+=hours;}else totals.missing.push(key);
+      }
+      cursor.setDate(cursor.getDate()+1);
+    }
+    var liftDelta=shiftLifts-totals.matchedLifts,hourDelta=shiftHours-totals.matchedHours;
+    var pass=Math.abs(liftDelta)<.01&&Math.abs(hourDelta)<.01&&totals.missing.length===0;
+    function metric(lifts,hours){return Math.round(lifts).toLocaleString("en-US")+" lifts / "+hours.toFixed(1)+" hrs = "+(hours>0?(lifts/hours).toFixed(2):"0.00")+" LPMH";}
+    return '<section class="shift-lpmh-reconciliation '+(pass?"pass":"fail")+'"><div><strong>Day + Night shift rows</strong>'+metric(shiftLifts,shiftHours)+'</div><div><strong>Monthly table - same dates</strong>'+metric(totals.matchedLifts,totals.matchedHours)+'</div><div class="reconciliation-result"><strong>'+(pass?"Reconciled":"Not reconciled")+'</strong>Delta '+(liftDelta>=0?"+":"")+Math.round(liftDelta)+' lifts / '+(hourDelta>=0?"+":"")+hourDelta.toFixed(1)+' hrs; '+totals.missing.length+' operational date(s) missing shift rows.<br>Full 28-day table: '+metric(totals.lifts,totals.hours)+'</div></section>';
+  }
   function renderShiftGrid(shifts){
     window.__conglobalBillingShiftGridInput=shifts||[];
     var gridShifts=shifts||[];
@@ -3807,7 +3977,7 @@
         var lifts=matches.reduce(function(total,shift){return total+(Number(shift.lifts)||0);},0);
         var names=new Map();
         matches.forEach(function(shift){employeeNames(shift).forEach(function(name){var key=normalizeName(name);if(key&&!names.has(key))names.set(key,name);});});
-        return {weekday:day,hours:hours,lifts:lifts,lpmh:hours>0?lifts/hours:null,sampleCount:matches.length,matches:matches,employees:Array.from(names.values()).sort(sortEmployees)};
+        return {weekday:day,hours:hours,lifts:lifts,lpmh:hours>0?lifts/hours:null,sampleCount:matches.length,matches:matches,employees:Array.from(names.values()).filter(function(name){return isScheduledEmployee(name,shiftKey,day.index);}).sort(sortEmployees)};
       });
       var weekHours=daily.reduce(function(total,day){return total+day.hours;},0);
       var weekLifts=daily.reduce(function(total,day){return total+day.lifts;},0);
@@ -3829,12 +3999,13 @@
     }
     var container=document.getElementById("groupMapContainer");
     if(!container)return;
-    container.innerHTML='<div class="group-map-stage"><div class="shift-lpmh-view">'+panel("first","Day Shift · 0300–1500","day")+panel("second","Night Shift · 1500–0300","night")+'</div></div>';
+    container.innerHTML='<div class="group-map-stage"><div class="shift-lpmh-view">'+reconciliationHtml(dated,windowStart,anchor)+panel("first","Day Shift · 0300–1500","day")+panel("second","Night Shift · 1500–0300","night")+'</div></div>';
     container.querySelectorAll("[data-shift-lpmh-detail]").forEach(function(button){button.addEventListener("click",function(){openBreakdown(breakdowns[button.dataset.shiftLpmhDetail]);});});
   }
   renderPersonGroupingMap=function(shifts){
     var showing=mode==="shifts";
-    shiftToggle.textContent=showing?"Group Bubbles":"Shift Grid";
+    if(typeof state==="object"&&state)state.groupMapMode=mode;
+    shiftToggle.textContent=showing?"Person Grouping Map":"Shift Grid";
     shiftToggle.hidden=false;
     shiftToggle.classList.remove("hidden");
     shiftToggle.style.display="inline-flex";
@@ -3842,11 +4013,6 @@
     if(showing){try{renderShiftGrid(shifts);}catch(error){console.error("Billing shift grid render failed",error);originalRenderPersonGroupingMap(shifts);}return;}
     originalRenderPersonGroupingMap(shifts);
   };
-  shiftToggle.addEventListener("click",function(){
-    mode=mode==="shifts"?"groups":"shifts";
-    localStorage.setItem(modeKey,mode);
-    renderAnalytics();
-  });
   renderAnalytics();
 })();
 <\/script>`;
@@ -5235,7 +5401,11 @@ function renderTimeMap(elId, buckets, opts){`
       );
       patched = patched.replace(
         'let arrival = firstHeaderIndex(h,["ARRIVAL"]);\n    if (arrival < 0) arrival = firstHeaderIndex(h,["TIME IN DISP"]);',
-        'let arrival = firstHeaderIndex(h,[/^(ARRIVAL|ARRIVAL TIME|ARRIVAL DATE|ETA|EST ARRIVAL)$/]);\n    if (arrival < 0) arrival = firstHeaderIndex(h,[/^(TIME IN|TIME IN DISP)$/]);'
+        'let arrival = firstHeaderIndex(h,[/^(ARRIVAL|ARRIVAL TIME|ARRIVAL DATE|ARRIVAL DATE TIME|ARRIVAL DATETIME|ARRIVAL EVENT DATE TIME|ARRIVAL EVENT DATETIME)$/,/^(ETA|EST ARRIVAL|ESTIMATED ARRIVAL|INBOUND ARRIVAL)$/,/^ARRIVAL .*(DATE|TIME)/]);\n    if (arrival < 0) arrival = firstHeaderIndex(h,[/^(TIME IN|TIME IN DISP|TIME IN DISPLAY|TIME IN YARD|YARD ARRIVAL)$/]);\n    if (arrival < 0) arrival = firstHeaderIndex(h,[/\\bARRIVAL\\b/]);'
+      );
+      patched = patched.replace(
+        'let arrival = firstHeaderIndex(h,[/^(ARRIVAL|ARRIVAL TIME|ARRIVAL DATE|ETA|EST ARRIVAL)$/]);\n    if (arrival < 0) arrival = firstHeaderIndex(h,[/^(TIME IN|TIME IN DISP)$/]);',
+        'let arrival = firstHeaderIndex(h,[/^(ARRIVAL|ARRIVAL TIME|ARRIVAL DATE|ARRIVAL DATE TIME|ARRIVAL DATETIME|ARRIVAL EVENT DATE TIME|ARRIVAL EVENT DATETIME)$/,/^(ETA|EST ARRIVAL|ESTIMATED ARRIVAL|INBOUND ARRIVAL)$/,/^ARRIVAL .*(DATE|TIME)/]);\n    if (arrival < 0) arrival = firstHeaderIndex(h,[/^(TIME IN|TIME IN DISP|TIME IN DISPLAY|TIME IN YARD|YARD ARRIVAL)$/]);\n    if (arrival < 0) arrival = firstHeaderIndex(h,[/\\bARRIVAL\\b/]);'
       );
       patched = patched.replace(
         /function parseMddhhmm\(value, reference = new Date\(\)\) \{[\s\S]*?\n  \}\n\n  function hoursBetween/,
