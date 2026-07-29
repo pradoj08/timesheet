@@ -6606,6 +6606,160 @@ function renderTimeMap(elId, buckets, opts){`
       return bodyClose >= 0 ? updated.slice(0, bodyClose) + patch + "\n" + updated.slice(bodyClose) : updated + patch;
     }
 
+    function withLphLiftLogSelectContrast(html) {
+      if (!html || typeof html !== "string" || html.includes("conglobal-lph-liftlog-select-contrast-v1")) return html;
+      const patch = `<meta name="conglobal-lph-liftlog-select-contrast-v1" content="enabled">
+<style id="conglobal-lph-liftlog-select-contrast-v1">
+.liftlog-src-select{color-scheme:dark}
+.liftlog-src-select option{background:#0d0d14!important;color:#f8fafc!important}
+</style>`;
+      return html.replace("</head>", patch + "\n</head>");
+    }
+
+    function withLphAccurateImportedLiftSources(html) {
+      if (!html || typeof html !== "string" || html.includes("conglobal-lph-accurate-imported-lift-sources-v1")) return html;
+      const marker = '<meta name="conglobal-lph-accurate-imported-lift-sources-v1" content="enabled">';
+      const patch = `<scr${""}ipt id="conglobal-lph-accurate-imported-lift-sources-v1">
+(function(){
+  window.parseHourFromCompletionTime=function(raw){
+    if(raw==null)return null;
+    if(raw instanceof Date&&!isNaN(raw.getTime()))return raw.getUTCHours();
+    if(typeof raw==="number"&&Number.isFinite(raw)){
+      var fraction=raw-Math.floor(raw),totalMinutes=Math.floor((fraction*1440)+0.000001);
+      return Math.floor(totalMinutes/60)%24;
+    }
+    var text=String(raw).trim();if(!text)return null;
+    var ampm=text.match(/(\\d{1,2}):(\\d{2})(?::\\d{2})?\\s*(AM|PM)\\s*$/i);
+    if(ampm){var ampmHour=parseInt(ampm[1],10)%12;if(ampm[3].toUpperCase()==="PM")ampmHour+=12;return ampmHour;}
+    var match=text.match(/(\\d{1,2}):(\\d{2})(?::\\d{2})?\\s*$/);
+    if(match)return parseInt(match[1],10)%24;
+    match=text.match(/T?(\\d{1,2}):(\\d{2})/);
+    return match?parseInt(match[1],10)%24:null;
+  };
+  window.readWorkbookRows=function(file){
+    return new Promise(function(resolve,reject){
+      var reader=new FileReader();reader.onerror=function(){reject(new Error("could not read file"));};
+      reader.onload=function(event){
+        try{
+          var data=new Uint8Array(event.target.result),workbook=XLSX.read(data,{type:"array",cellDates:false});
+          var sheet=workbook.Sheets[workbook.SheetNames[0]];
+          resolve(XLSX.utils.sheet_to_json(sheet,{defval:null}));
+        }catch(error){reject(error);}
+      };
+      reader.readAsArrayBuffer(file);
+    });
+  };
+  window.importedGroundSourceKey=function(trainId){
+    var normalized=normalizeSharedTrainName(trainId);
+    return normalized?"ground:"+normalized:null;
+  };
+  window.importedGroundSourceLabel=function(key){
+    var normalized=String(key||"").replace(/^ground:/,""),parts=normalized.match(/^([A-Z]+)(\\d+)$/);
+    var trainLabel=parts?parts[1]+" "+String(Number(parts[2])):normalized;
+    return trainLabel?trainLabel+" drop":"Imported inbound drop";
+  };
+  window.matchGroundsTrainId=function(trainId){
+    if(!trainId)return null;
+    var exact=normalizeSharedTrainName(trainId);if(!exact)return null;
+    var keys=Object.keys(TRAINS),i,key;
+    for(i=0;i<keys.length;i++){key=keys[i];if(normalizeSharedTrainName(trainNames[key])===exact)return key;}
+    for(i=0;i<keys.length;i++){key=keys[i];if(normalizeSharedTrainName(TRAINS[key].defLabel)===exact)return key;}
+    if(/\\d+$/.test(exact))return importedGroundSourceKey(trainId);
+    var matches=keys.filter(function(candidate){return normalizeSharedTrainName(trainNames[candidate]||TRAINS[candidate].defLabel).replace(/\\d+$/,"")===exact;});
+    return matches.length===1?matches[0]:importedGroundSourceKey(trainId);
+  };
+  window.impSourceLabel=function(mode,key){
+    if(key==null)return "Unmatched";
+    if(mode==="loads")return key==="ihosa"?"IHOSA load":"MHOAS load";
+    if(String(key).indexOf("ground:")===0)return importedGroundSourceLabel(key);
+    return getLabel(key)+" drop";
+  };
+  window.normalizeActualEntry=function(entry){
+    if(entry==null)return {value:null,srcs:[],sourceCounts:{},note:""};
+    if(typeof entry==="number")return {value:entry,srcs:[],sourceCounts:{},note:""};
+    var srcs=Array.isArray(entry.srcs)?entry.srcs.slice():[];
+    if(!Array.isArray(entry.srcs)){if(entry.src1)srcs.push(entry.src1);if(entry.src2)srcs.push(entry.src2);}
+    var sourceCounts={};
+    if(entry.sourceCounts&&typeof entry.sourceCounts==="object")Object.keys(entry.sourceCounts).forEach(function(key){var count=Number(entry.sourceCounts[key]);if(key&&Number.isFinite(count)&&count>0)sourceCounts[key]=count;});
+    return {value:entry.value!=null?entry.value:null,srcs:srcs,sourceCounts:sourceCounts,note:entry.note||""};
+  };
+  window.entryIsEmpty=function(entry){
+    var hasCounts=Object.keys(entry.sourceCounts||{}).some(function(key){return Number(entry.sourceCounts[key])>0;});
+    return entry.value==null&&entry.srcs.every(function(source){return !source;})&&!hasCounts&&!entry.note;
+  };
+  window.liftSourceOptionList=function(activeKeys,trainLabelMap){
+    var options=[{key:"",label:"—"}],seen={"":true};
+    function add(key,label){if(!key||seen[key])return;seen[key]=true;options.push({key:key,label:label});}
+    add("ihosa","IHOSA load");add("mhoas","MHOAS load");add("coh","COH load");add("carryover","Carry-over");
+    (activeKeys||[]).forEach(function(key){add(key,(trainLabelMap&&trainLabelMap[key]||key)+" drop");});
+    var actuals=loadHourlyActuals();
+    Object.keys(actuals).forEach(function(hour){
+      var entry=normalizeActualEntry(actuals[hour]);
+      entry.srcs.concat(Object.keys(entry.sourceCounts||{})).forEach(function(key){if(String(key).indexOf("ground:")===0)add(key,importedGroundSourceLabel(key));});
+    });
+    add("ups_work","UPS lift credit");return options;
+  };
+  function clearExactCounts(hour){
+    var map=loadHourlyActuals();if(map[hour]==null)return;
+    var entry=normalizeActualEntry(map[hour]);entry.sourceCounts={};map[hour]=entry;saveHourlyActuals(map);
+  }
+  var originalSetHourlyActual=window.setHourlyActual;
+  var originalSetHourlyActualSourceAt=window.setHourlyActualSourceAt;
+  var originalAddHourlyActualSource=window.addHourlyActualSource;
+  var originalRemoveHourlyActualSource=window.removeHourlyActualSource;
+  window.setHourlyActual=function(hour,value){clearExactCounts(hour);return originalSetHourlyActual(hour,value);};
+  window.setHourlyActualSourceAt=function(hour,index,value){clearExactCounts(hour);return originalSetHourlyActualSourceAt(hour,index,value);};
+  window.addHourlyActualSource=function(hour){clearExactCounts(hour);return originalAddHourlyActualSource(hour);};
+  window.removeHourlyActualSource=function(hour,index){clearExactCounts(hour);return originalRemoveHourlyActualSource(hour,index);};
+  window.applyImpPreview=function(){
+    var matched=_impPreviewRows.filter(function(row){return row.sourceKey!=null;});if(!matched.length)return;
+    var map=loadHourlyActuals(),byHour={};
+    matched.forEach(function(row){
+      byHour[row.hour]=byHour[row.hour]||{};
+      byHour[row.hour][row.sourceKey]=byHour[row.hour][row.sourceKey]||{count:0,files:{}};
+      byHour[row.hour][row.sourceKey].count+=row.units;
+      byHour[row.hour][row.sourceKey].files[row.file]=(byHour[row.hour][row.sourceKey].files[row.file]||0)+row.units;
+    });
+    Object.keys(byHour).forEach(function(hourString){
+      var hour=parseInt(hourString,10),counts=byHour[hourString];
+      var sourceEntries=Object.keys(counts).map(function(key){return {key:key,count:counts[key].count,files:counts[key].files};}).sort(function(a,b){return b.count-a.count;});
+      var hourTotal=sourceEntries.reduce(function(total,entry){return total+entry.count;},0);
+      var stored=normalizeActualEntry(map[hour]);var previous=stored.value!=null&&Number.isFinite(stored.value)?stored.value:0;stored.value=previous+hourTotal;
+      sourceEntries.forEach(function(sourceEntry){stored.sourceCounts[sourceEntry.key]=(stored.sourceCounts[sourceEntry.key]||0)+sourceEntry.count;if(stored.srcs.indexOf(sourceEntry.key)===-1)stored.srcs.push(sourceEntry.key);});
+      stored.srcs=stored.srcs.filter(function(source){return !!source;});
+      var fileTotals={};sourceEntries.forEach(function(sourceEntry){Object.keys(sourceEntry.files).forEach(function(file){fileTotals[file]=(fileTotals[file]||0)+sourceEntry.files[file];});});
+      var importNote=Object.keys(fileTotals).map(function(file){return file+": +"+fileTotals[file];}).join("  •  ");
+      stored.note=(stored.note?stored.note+" — ":"")+importNote;map[hour]=stored;
+    });
+    saveHourlyActuals(map);if(typeof simulate==="function")simulate();closeImpModal();
+  };
+  window.actualLiftBuckets=function(forecastBuckets,activeKeys,trainLabelMap){
+    var actuals=loadHourlyActuals(),optionMap={};liftSourceOptionList(activeKeys,trainLabelMap).forEach(function(option){if(option.key)optionMap[option.key]=option.label;});
+    return forecastBuckets.map(function(forecastBucket){
+      var entry=normalizeActualEntry(actuals[forecastBucket.hour]),value=entry.value;
+      if(value==null||!Number.isFinite(value))return {hour:forecastBucket.hour,total:0,sources:[],isBreak:forecastBucket.isBreak,breakLabels:forecastBucket.breakLabels};
+      var sourceKeys=entry.srcs.filter(function(source,index,all){return !!source&&all.indexOf(source)===index;});
+      var exactCounts=entry.sourceCounts||{},countedKeys=Object.keys(exactCounts).filter(function(key){return Number(exactCounts[key])>0;}),sources=[];
+      function sourceFor(key,lifts){return {key:key,label:optionMap[key]||(trainLabelMap[key]||key)+" drop",lifts:lifts,color:liftSourceColor(key,trainLabelMap)};}
+      if(countedKeys.length){
+        sources=countedKeys.map(function(key){return sourceFor(key,Math.round(Number(exactCounts[key])||0));});
+        var countedTotal=sources.reduce(function(total,source){return total+source.lifts;},0),residual=Math.max(0,Math.round(value)-countedTotal);
+        if(residual>0&&sourceKeys.length){var base=Math.floor(residual/sourceKeys.length),remainder=residual-(base*sourceKeys.length);sourceKeys.forEach(function(key,index){var addition=base+(index<remainder?1:0);if(!addition)return;var existing=sources.find(function(source){return source.key===key;});if(existing)existing.lifts+=addition;else sources.push(sourceFor(key,addition));});}
+        else if(residual>0)sources.push({key:"actual",label:"Logged actual",lifts:residual,color:"#4a9eff"});
+      }else if(sourceKeys.length){
+        var total=Math.round(value),base=Math.floor(total/sourceKeys.length),remainder=total-(base*sourceKeys.length);
+        sources=sourceKeys.map(function(key,index){return sourceFor(key,base+(index<remainder?1:0));});
+      }else sources=[{key:"actual",label:"Logged actual",lifts:Math.round(value),color:"#4a9eff"}];
+      return {hour:forecastBucket.hour,total:Math.round(value),sources:sources,isBreak:false};
+    });
+  };
+})();
+</scr${""}ipt>`;
+      const updated = html.replace("</head>", marker + "\n</head>");
+      const bodyClose = updated.toLowerCase().lastIndexOf("</body>");
+      return bodyClose >= 0 ? updated.slice(0, bodyClose) + patch + "\n" + updated.slice(bodyClose) : updated + patch;
+    }
+
     function withLphOperationsGuide(html) {
       if (!html || typeof html !== "string" || html.includes("settegast-lph-operations-guide-v1")) return html;
       const guideCard = `
@@ -9540,6 +9694,8 @@ document.getElementById("openYardCheck")?.addEventListener("click", function(){
           pageHtml = withLphInboundCountSelection(pageHtml);
           pageHtml = withLphChassisForecastInboundOptions(pageHtml);
           pageHtml = withLphEditableForecastArrival(pageHtml);
+          pageHtml = withLphLiftLogSelectContrast(pageHtml);
+          pageHtml = withLphAccurateImportedLiftSources(pageHtml);
           pageHtml = withLphOperationsGuide(pageHtml);
           pageHtml = withLphResetConfirmation(pageHtml);
           pageHtml = withLphCompactHourlyLog(pageHtml);

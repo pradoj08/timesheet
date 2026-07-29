@@ -2820,7 +2820,8 @@ body.lph-hydrating::after{
 .liftlog-delta.is-pos{color:var(--green);background:rgba(16,185,129,0.12);}
 .liftlog-delta.is-neg{color:var(--red);background:rgba(239,68,68,0.12);}
 .liftlog-delta.is-zero{color:var(--text3);background:rgba(255,255,255,0.04);}
-.liftlog-src-select{background:transparent;border:1px solid var(--border);border-radius:5px;color:var(--text2);font-family:var(--mono);font-size:10px;font-weight:500;padding:0 20px 0 5px;height:22px;line-height:20px;width:var(--source-width,68px);max-width:220px;cursor:pointer;transition:border-color .12s,background .12s;box-sizing:border-box;display:block;vertical-align:middle;-webkit-appearance:menulist;}
+.liftlog-src-select{background:transparent;border:1px solid var(--border);border-radius:5px;color:var(--text2);font-family:var(--mono);font-size:10px;font-weight:500;padding:0 20px 0 5px;height:22px;line-height:20px;width:var(--source-width,68px);max-width:220px;cursor:pointer;transition:border-color .12s,background .12s;box-sizing:border-box;display:block;vertical-align:middle;-webkit-appearance:menulist;color-scheme:dark;}
+.liftlog-src-select option{background:#0D0D14!important;color:#F8FAFC!important;}
 .liftlog-src-select:focus{outline:none;border-color:var(--amber);}
 .liftlog-src-select.is-set{color:var(--text2);border-color:color-mix(in srgb,var(--source-color,var(--amber)) 48%,transparent);background:color-mix(in srgb,var(--source-color,var(--amber)) 5%,transparent);}
 .liftlog-worktype-row{display:flex;align-items:center;gap:3px;overflow-x:auto;scrollbar-width:none;height:24px;}
@@ -5996,14 +5997,25 @@ function clearHourlyActuals(btn){
 // objects (if SheetJS parsed it as a date), and Excel's numeric date serials.
 function parseHourFromCompletionTime(raw){
   if(raw==null) return null;
-  if(raw instanceof Date && !isNaN(raw.getTime())) return raw.getHours();
+  // SheetJS represents Excel wall-clock dates in UTC. Reading getHours() here
+  // applies the browser's timezone and can shift a 0900 completion to 0400.
+  if(raw instanceof Date && !isNaN(raw.getTime())) return raw.getUTCHours();
   if(typeof raw==='number' && Number.isFinite(raw)){
     // Excel serial date: integer part = days since 1900, fraction = time of day.
     var frac=raw-Math.floor(raw);
-    return Math.floor(frac*24)%24;
+    var totalMinutes=Math.floor((frac*1440)+0.000001);
+    return Math.floor(totalMinutes/60)%24;
   }
   var s=String(raw).trim();
   if(!s) return null;
+  // Strings formatted with a meridiem must be converted before the generic
+  // 24-hour matcher so 4:15 PM is not incorrectly bucketed as 0400.
+  var ampm=s.match(/(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM)\s*$/i);
+  if(ampm){
+    var ampmHour=parseInt(ampm[1],10)%12;
+    if(ampm[3].toUpperCase()==='PM') ampmHour+=12;
+    return ampmHour;
+  }
   // "MM/DD/YYYY HH:MM" or "MM/DD/YYYY HH:MM:SS"
   var m=s.match(/(\d{1,2}):(\d{2})(?::\d{2})?\s*$/);
   if(m) return parseInt(m[1],10)%24;
@@ -6021,24 +6033,41 @@ function matchLoadsTrainId(trainId){
   if(/^YHO37R\b/.test(s) || /^YHO69R\b/.test(s) || /^MHOAS\b/.test(s)) return 'mhoas';
   return null;
 }
-// Grounds report: map a Train ID like "ZLBHO 10" or "ZPBHO 12" to the
-// matching inbound train key (zlbho1 / zpbho / zlbho2) by stripping the
-// trailing train number and comparing against the dashboard's train labels.
+function importedGroundSourceKey(trainId){
+  var normalized=normalizeSharedTrainName(trainId);
+  return normalized ? 'ground:'+normalized : null;
+}
+function importedGroundSourceLabel(key){
+  var normalized=String(key||'').replace(/^ground:/,'');
+  var parts=normalized.match(/^([A-Z]+)(\d+)$/);
+  var trainLabel=parts ? parts[1]+' '+String(Number(parts[2])) : normalized;
+  return trainLabel ? trainLabel+' drop' : 'Imported inbound drop';
+}
+// Grounds report: match the complete Train ID first so multiple inbounds with
+// the same prefix (for example ZLBHO 24 and ZLBHO 26) remain distinct.
 function matchGroundsTrainId(trainId){
   if(!trainId) return null;
-  var prefix=String(trainId).trim().replace(/\s*\d+\s*$/,'').trim().toUpperCase();
-  if(!prefix) return null;
+  var exact=normalizeSharedTrainName(trainId);
+  if(!exact) return null;
   var keys=Object.keys(TRAINS);
-  // Prefer the current custom label (trainNames), fall back to each train's default label.
+  // The selected Chassis Forecast label is authoritative for imported Grounds rows.
   for(var i=0;i<keys.length;i++){
     var k=keys[i];
-    if((trainNames[k]||'').trim().toUpperCase()===prefix) return k;
+    if(normalizeSharedTrainName(trainNames[k])===exact) return k;
   }
+  // Preserve the original manual-entry defaults when no forecast train is selected.
   for(var j=0;j<keys.length;j++){
     var k2=keys[j];
-    if((TRAINS[k2].defLabel||'').trim().toUpperCase()===prefix) return k2;
+    if(normalizeSharedTrainName(TRAINS[k2].defLabel)===exact) return k2;
   }
-  return null;
+  // Preserve an unselected numbered train as its own imported source instead
+  // of assigning it to a different train card with the same prefix.
+  if(/\d+$/.test(exact)) return importedGroundSourceKey(trainId);
+  var prefixMatches=keys.filter(function(key){
+    return normalizeSharedTrainName(trainNames[key]||TRAINS[key].defLabel).replace(/\d+$/,'')===exact;
+  });
+  if(prefixMatches.length===1) return prefixMatches[0];
+  return importedGroundSourceKey(trainId);
 }
 // Read a single File into XLSX rows via FileReader, wrapped in a Promise.
 function readWorkbookRows(file){
@@ -6048,7 +6077,9 @@ function readWorkbookRows(file){
     reader.onload=function(e){
       try{
         var data=new Uint8Array(e.target.result);
-        var wb=XLSX.read(data,{type:'array',cellDates:true});
+        // Keep Excel dates as serial values so the browser timezone cannot
+        // move wall-clock completion times into the wrong hourly bucket.
+        var wb=XLSX.read(data,{type:'array',cellDates:false});
         var sheet=wb.Sheets[wb.SheetNames[0]];
         var rows=XLSX.utils.sheet_to_json(sheet,{defval:null});
         resolve(rows);
@@ -6062,6 +6093,7 @@ function readWorkbookRows(file){
 function impSourceLabel(mode, key){
   if(key==null) return 'Unmatched';
   if(mode==='loads') return key==='ihosa' ? 'IHOSA load' : 'MHOAS load';
+  if(String(key).indexOf('ground:')===0) return importedGroundSourceLabel(key);
   return getLabel(key)+' drop';
 }
 
@@ -6280,6 +6312,10 @@ function applyImpPreview(){
     entry.value=prev+hourTotal;
     totalAdded+=hourTotal;
 
+    srcEntries.forEach(function(sourceEntry){
+      entry.sourceCounts[sourceEntry.key]=(entry.sourceCounts[sourceEntry.key]||0)+sourceEntry.count;
+    });
+
     var srcKeys=srcEntries.map(function(e){ return e.key; });
     srcKeys.forEach(function(k){
       if(entry.srcs.indexOf(k)===-1) entry.srcs.push(k);
@@ -6307,12 +6343,12 @@ function applyImpPreview(){
 
 
 
-// Normalize a stored entry to {value, srcs, note}. Older entries used src1/src2;
+// Normalize a stored entry to {value, srcs, sourceCounts, note}. Older entries used src1/src2;
 // srcs is now an array of work-type keys (can include trailing '' placeholders
 // for empty dropdown slots the user has added but not yet picked).
 function normalizeActualEntry(entry){
-  if(entry==null) return {value:null,srcs:[],note:''};
-  if(typeof entry==='number') return {value:entry,srcs:[],note:''};
+  if(entry==null) return {value:null,srcs:[],sourceCounts:{},note:''};
+  if(typeof entry==='number') return {value:entry,srcs:[],sourceCounts:{},note:''};
   var srcs;
   if(Array.isArray(entry.srcs)) srcs=entry.srcs.slice();
   else{
@@ -6320,10 +6356,18 @@ function normalizeActualEntry(entry){
     if(entry.src1) srcs.push(entry.src1);
     if(entry.src2) srcs.push(entry.src2);
   }
-  return {value:(entry.value!=null?entry.value:null),srcs:srcs,note:entry.note||''};
+  var sourceCounts={};
+  if(entry.sourceCounts&&typeof entry.sourceCounts==='object'){
+    Object.keys(entry.sourceCounts).forEach(function(key){
+      var count=Number(entry.sourceCounts[key]);
+      if(key&&Number.isFinite(count)&&count>0) sourceCounts[key]=count;
+    });
+  }
+  return {value:(entry.value!=null?entry.value:null),srcs:srcs,sourceCounts:sourceCounts,note:entry.note||''};
 }
 function entryIsEmpty(entry){
-  return entry.value==null && entry.srcs.every(function(s){return !s;}) && !entry.note;
+  var hasSourceCounts=Object.keys(entry.sourceCounts||{}).some(function(key){return Number(entry.sourceCounts[key])>0;});
+  return entry.value==null && entry.srcs.every(function(s){return !s;}) && !hasSourceCounts && !entry.note;
 }
 function setHourlyActual(hour, val){
   var map=loadHourlyActuals();
@@ -6331,6 +6375,7 @@ function setHourlyActual(hour, val){
   var entry=normalizeActualEntry(map[hour]);
   if(val===''||!Number.isFinite(n)) entry.value=null;
   else entry.value=n;
+  entry.sourceCounts={};
   if(entryIsEmpty(entry)) delete map[hour];
   else map[hour]=entry;
   saveHourlyActuals(map);
@@ -6344,6 +6389,7 @@ function setHourlyActual(hour, val){
 function setHourlyActualSourceAt(hour, index, val){
   var map=loadHourlyActuals();
   var entry=normalizeActualEntry(map[hour]);
+  entry.sourceCounts={};
   if(val===''){
     if(index<entry.srcs.length-1) entry.srcs.splice(index,1);
     else entry.srcs[index]='';
@@ -6359,6 +6405,7 @@ function setHourlyActualSourceAt(hour, index, val){
 function addHourlyActualSource(hour){
   var map=loadHourlyActuals();
   var entry=normalizeActualEntry(map[hour]);
+  entry.sourceCounts={};
   entry.srcs.push('');
   map[hour]=entry; // never empty after push, safe to always store
   saveHourlyActuals(map);
@@ -6368,6 +6415,7 @@ function addHourlyActualSource(hour){
 function removeHourlyActualSource(hour, index){
   var map=loadHourlyActuals();
   var entry=normalizeActualEntry(map[hour]);
+  entry.sourceCounts={};
   entry.srcs.splice(index,1);
   if(entryIsEmpty(entry)) delete map[hour];
   else map[hour]=entry;
@@ -6530,14 +6578,23 @@ function saveNoteModal(){
 // lift count per hour and a delta vs. the forecast total for that hour.
 function liftSourceOptionList(activeKeys,trainLabelMap){
   var opts=[{key:'',label:'\u2014'}];
-  opts.push({key:'ihosa',label:'IHOSA load'});
-  opts.push({key:'mhoas',label:'MHOAS load'});
-  opts.push({key:'coh',label:'COH load'});
-  opts.push({key:'carryover',label:'Carry-over'});
+  var seen={'':true};
+  function add(key,label){if(!key||seen[key])return;seen[key]=true;opts.push({key:key,label:label});}
+  add('ihosa','IHOSA load');
+  add('mhoas','MHOAS load');
+  add('coh','COH load');
+  add('carryover','Carry-over');
   (activeKeys||[]).forEach(function(k){
-    opts.push({key:k,label:(trainLabelMap&&trainLabelMap[k]||k)+' drop'});
+    add(k,(trainLabelMap&&trainLabelMap[k]||k)+' drop');
   });
-  opts.push({key:'ups_work',label:'UPS lift credit'});
+  var actuals=loadHourlyActuals();
+  Object.keys(actuals).forEach(function(hour){
+    var entry=normalizeActualEntry(actuals[hour]);
+    entry.srcs.concat(Object.keys(entry.sourceCounts||{})).forEach(function(key){
+      if(String(key).indexOf('ground:')===0) add(key,importedGroundSourceLabel(key));
+    });
+  });
+  add('ups_work','UPS lift credit');
   return opts;
 }
 
@@ -7241,12 +7298,32 @@ function actualLiftBuckets(forecastBuckets,activeKeys,trainLabelMap){
     if(!hasActual){
       return {hour:fb.hour,total:0,sources:[],isBreak:fb.isBreak,breakLabels:fb.breakLabels};
     }
-    var srcs=entry.srcs.filter(function(s){return !!s;});
+    var srcs=entry.srcs.filter(function(s,index,all){return !!s&&all.indexOf(s)===index;});
+    var exactCounts=entry.sourceCounts||{};
     var sources;
-    if(srcs.length){
-      var per=val/srcs.length;
-      sources=srcs.map(function(k){
-        return {key:k,label:optionMap[k]||(trainLabelMap[k]||k)+' drop',lifts:Math.round(per),color:liftSourceColor(k,trainLabelMap)};
+    var countedKeys=Object.keys(exactCounts).filter(function(key){return Number(exactCounts[key])>0;});
+    if(countedKeys.length){
+      sources=countedKeys.map(function(k){
+        return {key:k,label:optionMap[k]||(trainLabelMap[k]||k)+' drop',lifts:Math.round(Number(exactCounts[k])||0),color:liftSourceColor(k,trainLabelMap)};
+      });
+      var countedTotal=sources.reduce(function(total,source){return total+source.lifts;},0);
+      var residual=Math.max(0,Math.round(val)-countedTotal);
+      if(residual>0&&srcs.length){
+        var base=Math.floor(residual/srcs.length),remainder=residual-(base*srcs.length);
+        srcs.forEach(function(k,index){
+          var addition=base+(index<remainder?1:0);
+          if(!addition)return;
+          var existing=sources.find(function(source){return source.key===k;});
+          if(existing)existing.lifts+=addition;
+          else sources.push({key:k,label:optionMap[k]||(trainLabelMap[k]||k)+' drop',lifts:addition,color:liftSourceColor(k,trainLabelMap)});
+        });
+      }else if(residual>0){
+        sources.push({key:'actual',label:'Logged actual',lifts:residual,color:'#4a9eff'});
+      }
+    } else if(srcs.length){
+      var total=Math.round(val),base=Math.floor(total/srcs.length),remainder=total-(base*srcs.length);
+      sources=srcs.map(function(k,index){
+        return {key:k,label:optionMap[k]||(trainLabelMap[k]||k)+' drop',lifts:base+(index<remainder?1:0),color:liftSourceColor(k,trainLabelMap)};
       });
     } else {
       sources=[{key:'actual',label:'Logged actual',lifts:Math.round(val),color:'#4a9eff'}];
