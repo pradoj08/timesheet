@@ -782,7 +782,7 @@
       z-index: 1;
       padding: 9px 6px;
       background: #f0f4f8;
-      color: var(--muted);
+      color: #111827;
       border-bottom: 1px solid #e3e9f0;
       text-align: left;
       font-size: 11px;
@@ -870,6 +870,12 @@
       border-color: #f0b8a8;
       color: #b33b20;
       background: #fff7f4;
+    }
+
+    .bulk-action.duplicates-first[aria-pressed="true"] {
+      border-color: #d97706;
+      color: #92400e;
+      background: #fff3d6;
     }
 
     .bulk-action:hover {
@@ -2270,9 +2276,11 @@
         <button class="modal-close" data-close-files type="button" aria-label="Close files">X</button>
       </div>
       <div class="file-tabs">
-        <button id="filesLiftsTab" class="file-tab active" type="button">View lifts</button>
-        <button id="filesGateTab" class="file-tab" type="button">View gate Excels</button>
-        <button id="filesTimesheetsTab" class="file-tab" type="button">View timesheet Excels</button>
+        <button id="filesRampTab" class="file-tab active" type="button">Ramp</button>
+        <button id="filesDerampTab" class="file-tab" type="button">Deramp</button>
+        <button id="filesFlipsTab" class="file-tab" type="button">Flips</button>
+        <button id="filesGateTab" class="file-tab" type="button">Gate</button>
+        <button id="filesTimesheetsTab" class="file-tab" type="button">Timesheet</button>
       </div>
       <div class="modal-body">
         <div id="filesList"></div>
@@ -2298,6 +2306,7 @@
           <option value="included">Included</option>
           <option value="excluded">Excluded</option>
         </select>
+        <button id="duplicatesFirst" class="bulk-action duplicates-first" type="button" aria-pressed="false">Dupes First</button>
         <button id="bulkInclude" class="bulk-action" type="button">Include Selected</button>
         <button id="bulkExclude" class="bulk-action exclude" type="button">Exclude Selected</button>
         <label id="reasonFilterLabel" for="reasonFilter">Reason</label>
@@ -2352,7 +2361,7 @@
       moveDetails: [],
       importedFiles: [],
       importedCells: [],
-      filesView: "operations",
+      filesView: "ramp",
       lphHourSource: "timesheet",
       showGate: false,
       showExcludedCounts: false,
@@ -2369,6 +2378,7 @@
       groupMapMode: "groups",
       groupMapSelected: "",
       previewFilter: "all",
+      previewDuplicatesFirst: false,
       reasonFilter: "all",
       previewDate: "",
       previewField: "",
@@ -2419,6 +2429,7 @@
       excludedCountToggle: document.querySelector("#excludedCountToggle"),
       weekendHighlightToggle: document.querySelector("#weekendHighlightToggle"),
       previewFilter: document.querySelector("#previewFilter"),
+      duplicatesFirst: document.querySelector("#duplicatesFirst"),
       bulkInclude: document.querySelector("#bulkInclude"),
       bulkExclude: document.querySelector("#bulkExclude"),
       reasonFilter: document.querySelector("#reasonFilter"),
@@ -2465,7 +2476,9 @@
       analyticsReview: document.querySelector("#analyticsReview"),
       filesModal: document.querySelector("#filesModal"),
       filesList: document.querySelector("#filesList"),
-      filesLiftsTab: document.querySelector("#filesLiftsTab"),
+      filesRampTab: document.querySelector("#filesRampTab"),
+      filesDerampTab: document.querySelector("#filesDerampTab"),
+      filesFlipsTab: document.querySelector("#filesFlipsTab"),
       filesGateTab: document.querySelector("#filesGateTab"),
       filesTimesheetsTab: document.querySelector("#filesTimesheetsTab"),
       toast: document.querySelector("#toast")
@@ -2549,7 +2562,9 @@
     });
     els.timesheetHoursSource.addEventListener("click", () => setLphHourSource("timesheet"));
     els.powerBiHoursSource.addEventListener("click", () => setLphHourSource("powerbi"));
-    els.filesLiftsTab.addEventListener("click", () => setFilesView("operations"));
+    els.filesRampTab.addEventListener("click", () => setFilesView("ramp"));
+    els.filesDerampTab.addEventListener("click", () => setFilesView("deramp"));
+    els.filesFlipsTab.addEventListener("click", () => setFilesView("flips"));
     els.filesGateTab.addEventListener("click", () => setFilesView("gate"));
     els.filesTimesheetsTab.addEventListener("click", () => setFilesView("analytics"));
     els.filesModal.addEventListener("click", (event) => {
@@ -2580,6 +2595,10 @@
     });
     els.previewFilter.addEventListener("change", (event) => {
       state.previewFilter = event.target.value;
+      if (state.previewDate && state.previewField) openMoveModal(state.previewDate, state.previewField);
+    });
+    els.duplicatesFirst.addEventListener("click", () => {
+      state.previewDuplicatesFirst = !state.previewDuplicatesFirst;
       if (state.previewDate && state.previewField) openMoveModal(state.previewDate, state.previewField);
     });
     els.reasonFilter.addEventListener("change", (event) => {
@@ -3331,14 +3350,19 @@
         : "";
     }
 
-    function trackedFileViewType(file) {
-      if (!file) return "operations";
-      if (file.type === "analytics" || file.type === "gate") return file.type;
-      const gateDetails = state.moveDetails.some((detail) => detail.fileId === file.id && GATE_FIELDS.includes(detail.field));
-      const gateCells = state.importedCells.some((cell) => cell.fileId === file.id && GATE_FIELDS.includes(cell.field));
-      const liftDetails = state.moveDetails.some((detail) => detail.fileId === file.id && LIFT_FIELDS.includes(detail.field));
-      const liftCells = state.importedCells.some((cell) => cell.fileId === file.id && LIFT_FIELDS.includes(cell.field));
-      return (gateDetails || gateCells) && !liftDetails && !liftCells ? "gate" : "operations";
+    function trackedFileCategories(file) {
+      if (!file) return [];
+      if (file.type === "analytics" || file.type === "archiveTime") return ["timesheet"];
+      if (file.type === "gate") return ["gate"];
+      const fields = new Set();
+      state.moveDetails.filter((detail) => detail.fileId === file.id).forEach((detail) => fields.add(detail.field));
+      state.importedCells.filter((cell) => cell.fileId === file.id).forEach((cell) => fields.add(cell.field));
+      const categories = [];
+      if (fields.has("ramp")) categories.push("ramp");
+      if (fields.has("deramp")) categories.push("deramp");
+      if (["flip", "stacked", "unstacked", "chUnstacked", "chStacked"].some((field) => fields.has(field))) categories.push("flips");
+      if (GATE_FIELDS.some((field) => fields.has(field))) categories.push("gate");
+      return categories.length ? categories : ["ramp"];
     }
 
     function gateSummaryForFile(fileId) {
@@ -3359,25 +3383,27 @@
     }
 
     function renderFilesList() {
-      els.filesLiftsTab.classList.toggle("active", state.filesView === "operations");
+      els.filesRampTab.classList.toggle("active", state.filesView === "ramp");
+      els.filesDerampTab.classList.toggle("active", state.filesView === "deramp");
+      els.filesFlipsTab.classList.toggle("active", state.filesView === "flips");
       els.filesGateTab.classList.toggle("active", state.filesView === "gate");
-      els.filesTimesheetsTab.classList.toggle("active", state.filesView === "analytics");
-      const files = state.importedFiles.filter((file) => trackedFileViewType(file) === state.filesView);
+      els.filesTimesheetsTab.classList.toggle("active", state.filesView === "timesheet");
+      const files = state.importedFiles.filter((file) => trackedFileCategories(file).includes(state.filesView));
       if (!files.length) {
-        const label = state.filesView === "operations" ? "lift" : state.filesView === "gate" ? "gate Excel" : "timesheet";
+        const label = state.filesView === "gate" ? "gate Excel" : state.filesView === "timesheet" ? "timesheet" : state.filesView;
         els.filesList.innerHTML = `<div class="status-banner">No tracked ${label} uploads yet. Files imported before this feature was added cannot be removed by file.</div>`;
         return;
       }
       const rows = files.slice().reverse().map((file) => {
-        const nameCell = state.filesView === "analytics"
+        const nameCell = state.filesView === "timesheet"
           ? `<button class="file-preview-link" type="button" data-preview-timesheet="${file.id}">${escapeHtml(file.name)}</button>`
-          : state.filesView === "operations"
+          : ["ramp", "deramp", "flips"].includes(state.filesView)
             ? `<button class="file-preview-link" type="button" data-preview-operations="${file.id}">${escapeHtml(file.name)}</button>`
             : escapeHtml(file.name);
-        const sourceCell = state.filesView === "operations"
+        const sourceCell = ["ramp", "deramp", "flips"].includes(state.filesView)
           ? `<td>${liftSourceSummaryForFile(file.id)}</td>`
           : state.filesView === "gate" ? `<td>${gateSummaryForFile(file.id)}</td>` : "";
-        const managerCells = state.filesView === "analytics" ? `
+        const managerCells = state.filesView === "timesheet" ? `
           <td>${managerSelect(file, "day")}</td>
           <td>${managerSelect(file, "night")}</td>
         ` : "";
@@ -3392,9 +3418,9 @@
           </tr>
         `;
       }).join("");
-      const sourceHeader = state.filesView === "operations" ? "<th>Sources</th>" : state.filesView === "gate" ? "<th>Gate events</th>" : "";
-      const managerHeaders = state.filesView === "analytics" ? "<th>Day manager</th><th>Night manager</th>" : "";
-      const tableClass = state.filesView === "analytics" ? "file-list timesheet-file-list" : "file-list";
+      const sourceHeader = ["ramp", "deramp", "flips"].includes(state.filesView) ? "<th>Sources</th>" : state.filesView === "gate" ? "<th>Gate events</th>" : "";
+      const managerHeaders = state.filesView === "timesheet" ? "<th>Day manager</th><th>Night manager</th>" : "";
+      const tableClass = state.filesView === "timesheet" ? "file-list timesheet-file-list" : "file-list";
       els.filesList.innerHTML = `<table class="${tableClass}"><thead><tr><th>File</th><th>Rows</th>${sourceHeader}${managerHeaders}<th>Imported</th><th>Action</th></tr></thead><tbody>${rows}</tbody></table>`;
       bindManagerSelects(els.filesList);
       els.filesList.querySelectorAll("[data-remove-file]").forEach((button) => {
@@ -3404,7 +3430,7 @@
         button.addEventListener("click", () => renderTimesheetFilePreview(button.dataset.previewTimesheet));
       });
       els.filesList.querySelectorAll("[data-preview-operations]").forEach((button) => {
-        button.addEventListener("click", () => renderOperationFilePreview(button.dataset.previewOperations));
+        button.addEventListener("click", () => renderOperationFilePreview(button.dataset.previewOperations, state.filesView));
       });
     }
 
@@ -3419,15 +3445,23 @@
       return new Set(Array.from(counts.entries()).filter((entry) => entry[1] > 1).map((entry) => entry[0]));
     }
 
-    function renderOperationFilePreview(fileId) {
+    function operationPreviewFields(view) {
+      if (view === "ramp") return ["ramp"];
+      if (view === "deramp") return ["deramp"];
+      if (view === "flips") return ["flip", "stacked", "unstacked", "chUnstacked", "chStacked"];
+      return ["ramp", "deramp", "flip", "stacked", "unstacked", "chUnstacked", "chStacked"];
+    }
+
+    function renderOperationFilePreview(fileId, view) {
       const file = state.importedFiles.find((item) => item.id === fileId);
       if (!file) {
         renderFilesList();
         return;
       }
+      const fields = operationPreviewFields(view);
       const duplicateKeys = sameDayDuplicateEquipmentKeys();
       const details = state.moveDetails
-        .filter((detail) => detail.fileId === fileId && ["ramp", "deramp"].includes(detail.field))
+        .filter((detail) => detail.fileId === fileId && fields.includes(detail.field))
         .sort((a, b) => `${a.date}|${a.time}|${a.equipment}`.localeCompare(`${b.date}|${b.time}|${b.equipment}`));
       const included = details.filter((detail) => !detail.deleted).length;
       const duplicateCount = details.filter((detail) => duplicateKeys.has(`${detail.date}|${detail.field}|${detail.fileId || detail.source || ""}|${normalizeEquipment(detail.equipment || "")}`)).length;
@@ -3451,7 +3485,7 @@
         <div class="timesheet-preview-head">
           <div>
             <div class="timesheet-preview-title">${escapeHtml(file.name)}</div>
-            <div class="timesheet-preview-meta">${included} included of ${details.length} ramp/deramp units${duplicateCount ? ` - ${duplicateCount} same-day duplicate row${duplicateCount === 1 ? "" : "s"} highlighted` : ""}</div>
+            <div class="timesheet-preview-meta">${included} included of ${details.length} ${escapeHtml(view === "flips" ? "flip / stack" : view || "operation")} row${details.length === 1 ? "" : "s"}${duplicateCount ? ` - ${duplicateCount} same-day duplicate row${duplicateCount === 1 ? "" : "s"} highlighted` : ""}</div>
           </div>
           <button id="backToFilesList" class="bulk-action" type="button">Back to files</button>
         </div>
@@ -3462,15 +3496,15 @@
               <tbody>${rows}</tbody>
             </table>
           </div>
-        ` : `<div class="status-banner">No saved ramp or deramp unit rows are available for this file.</div>`}
+        ` : `<div class="status-banner">No saved ${escapeHtml(view === "flips" ? "flip or stack" : view || "operation")} rows are available for this file.</div>`}
       `;
       els.filesList.querySelector("#backToFilesList").addEventListener("click", renderFilesList);
       els.filesList.querySelectorAll("[data-toggle-file-unit]").forEach((button) => {
-        button.addEventListener("click", () => toggleOperationFileUnit(fileId, button.dataset.toggleFileUnit));
+        button.addEventListener("click", () => toggleOperationFileUnit(fileId, button.dataset.toggleFileUnit, view));
       });
     }
 
-    function toggleOperationFileUnit(fileId, detailId) {
+    function toggleOperationFileUnit(fileId, detailId, view) {
       const detail = state.moveDetails.find((item) => item.id === detailId && item.fileId === fileId);
       if (!detail) return;
       detail.deleted = !detail.deleted;
@@ -3478,7 +3512,7 @@
       persist();
       render();
       renderAnalytics();
-      renderOperationFilePreview(fileId);
+      renderOperationFilePreview(fileId, view);
     }
 
     function renderTimesheetFilePreview(fileId) {
@@ -3559,15 +3593,76 @@
       }
 
       const workbook = window.XLSX.utils.book_new();
+      addBillingSummarySheet(workbook);
       addDetailSheet(workbook, "Ramps", ["ramp"]);
       addDetailSheet(workbook, "Deramps", ["deramp"]);
+      addDetailSheet(workbook, "Flips", ["flip"]);
+      addStackingUnstackingSheet(workbook);
       addGateSheet(workbook);
-      addDetailSheet(workbook, "Stacking", ["stacked", "flip"]);
-      addUnstackingSheet(workbook);
 
       const safeMonth = state.month || currentMonth();
       window.XLSX.writeFile(workbook, `operations-export-${safeMonth}.xlsx`);
-      showToast("Exported operations workbook");
+      showToast("Exported Billing summary and operations workbook");
+    }
+
+    function addBillingSummarySheet(workbook) {
+      const headers = ["Date", "Ramp", "Deramp", "Total", "Flip", "Stacked", "Unstacked", "Flip + Stack", "Chassis Unstacked", "Chassis Stacked", "Chassis Total", "Lifts", "LPH"];
+      const [year, month] = state.month.split("-").map(Number);
+      const rows = Array.from({ length: new Date(year, month, 0).getDate() }, (_, index) => {
+          const date = `${year}-${pad2(month)}-${pad2(index + 1)}`;
+          const record = state.data[date] || {};
+          const lifts = operationLiftCount(record);
+          const hours = lphHoursForRecord(record);
+          return [
+            date,
+            record.ramp || 0,
+            record.deramp || 0,
+            sum(record.ramp, record.deramp) || 0,
+            record.flip || 0,
+            record.stacked || 0,
+            record.unstacked || 0,
+            sum(record.flip, record.stacked) || 0,
+            record.chUnstacked || 0,
+            record.chStacked || 0,
+            sum(record.chUnstacked, record.chStacked) || 0,
+            lifts || 0,
+            hours > 0 ? Math.round((lifts / hours) * 100) / 100 : ""
+          ];
+        });
+      const values = [headers].concat(rows);
+      const sheet = window.XLSX.utils.aoa_to_sheet(values);
+      const headerStyle = {
+        fill: { patternType: "solid", fgColor: { rgb: "000000" } },
+        font: { bold: true, color: { rgb: "FFFFFF" } },
+        alignment: { horizontal: "left", vertical: "center" }
+      };
+      const shadedStyle = {
+        fill: { patternType: "solid", fgColor: { rgb: "D9D9D9" } },
+        alignment: { horizontal: "right", vertical: "center" }
+      };
+      const dateStyle = {
+        fill: { patternType: "solid", fgColor: { rgb: "D9D9D9" } },
+        alignment: { horizontal: "left", vertical: "center" }
+      };
+      const shadedColumns = new Set([0, 3, 7, 10]);
+      headers.forEach((_, column) => {
+        const headerCell = sheet[window.XLSX.utils.encode_cell({ r: 0, c: column })];
+        if (headerCell) headerCell.s = headerStyle;
+      });
+      rows.forEach((_, rowIndex) => {
+        shadedColumns.forEach((column) => {
+          const cell = sheet[window.XLSX.utils.encode_cell({ r: rowIndex + 1, c: column })];
+          if (cell) cell.s = column === 0 ? dateStyle : shadedStyle;
+        });
+        const lphCell = sheet[window.XLSX.utils.encode_cell({ r: rowIndex + 1, c: 12 })];
+        if (lphCell && typeof lphCell.v === "number") lphCell.z = "0.00";
+      });
+      sheet["!cols"] = [
+        { wch: 14 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 9 }, { wch: 10 }, { wch: 11 },
+        { wch: 13 }, { wch: 18 }, { wch: 17 }, { wch: 15 }, { wch: 10 }, { wch: 8 }
+      ];
+      sheet["!autofilter"] = { ref: window.XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: rows.length, c: headers.length - 1 } }) };
+      window.XLSX.utils.book_append_sheet(workbook, sheet, "Billing Summary");
     }
 
     function addDetailSheet(workbook, sheetName, fields) {
@@ -3591,13 +3686,30 @@
       appendSheet(workbook, sheetName, [headers].concat(rows));
     }
 
-    function addUnstackingSheet(workbook) {
-      const headers = ["Date", "Unstacked", "Excluded", "Notes"];
-      const rows = Object.keys(state.data)
+    function addStackingUnstackingSheet(workbook) {
+      const headers = ["Date", "Type", "Units", "Equipment ID", "Train / Source", "Time", "Reason", "Lift Source", "Source File", "Source Row", "Excluded", "Notes"];
+      const stackingRows = state.moveDetails
+        .filter((detail) => detail.field === "stacked")
+        .map((detail) => [
+          detail.date || "",
+          "Stacked",
+          1,
+          detail.equipment || "",
+          detail.train || "",
+          detail.time || "",
+          detail.reason || "",
+          liftSourceLabel(detailLiftSource(detail)),
+          detail.fileName || detail.source || "",
+          detail.rowNumber || "",
+          detail.deleted ? "Yes" : "No",
+          detail.note || ""
+        ]);
+      const unstackingRows = Object.keys(state.data)
         .filter((date) => typeof state.data[date].unstacked === "number" && state.data[date].unstacked !== 0)
-        .sort()
-        .map((date) => [date, state.data[date].unstacked, "", ""]);
-      appendSheet(workbook, "Unstacking", [headers].concat(rows));
+        .map((date) => [date, "Unstacked", state.data[date].unstacked, "", "", "", "", "", "Billing table", "", "", ""]);
+      const rows = stackingRows.concat(unstackingRows)
+        .sort((a, b) => a[0].localeCompare(b[0]) || a[1].localeCompare(b[1]) || String(a[5]).localeCompare(String(b[5])) || String(a[3]).localeCompare(String(b[3])));
+      appendSheet(workbook, "Stacking-Unstacking", [headers].concat(rows));
     }
 
     function addGateSheet(workbook) {
@@ -4439,19 +4551,27 @@
       const activeDetails = details.filter((detail) => !detail.deleted);
       const hasReasons = details.some((detail) => String(detail.reason || "").trim());
       if (!hasReasons) state.reasonFilter = "all";
-      const visibleDetails = details.filter((detail) => {
+      let visibleDetails = details.filter((detail) => {
         if (hasReasons && state.reasonFilter !== "all" && reasonKey(detail.reason) !== state.reasonFilter) return false;
         if (state.previewFilter === "included") return !detail.deleted;
         if (state.previewFilter === "excluded") return detail.deleted;
         return true;
       });
       const duplicateSet = duplicateEquipmentSet(details);
+      if (state.previewDuplicatesFirst) {
+        visibleDetails = visibleDetails.slice().sort((a, b) => {
+          const aDuplicate = duplicateSet.has(`${a.fileId || a.source || ""}|${normalizeEquipment(a.equipment || "")}`);
+          const bDuplicate = duplicateSet.has(`${b.fileId || b.source || ""}|${normalizeEquipment(b.equipment || "")}`);
+          return Number(bDuplicate) - Number(aDuplicate);
+        });
+      }
 
       populateReasonFilter(details);
       els.reasonHeader.classList.toggle("hidden", !hasReasons);
       els.reasonFilterLabel.classList.toggle("hidden", !hasReasons);
       els.reasonFilter.classList.toggle("hidden", !hasReasons);
       els.previewFilter.value = state.previewFilter;
+      els.duplicatesFirst.setAttribute("aria-pressed", String(state.previewDuplicatesFirst));
       els.reasonFilter.value = state.reasonFilter;
       els.moveModalTitle.textContent = `${label} Preview`;
       els.moveModalSubtitle.textContent = `${date} - ${uniqueEquipmentCount(activeDetails)} included units - ${excludedUnitCount(date, field)} excluded units - select rows, then include or exclude them`;

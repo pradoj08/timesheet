@@ -2804,22 +2804,48 @@
     color: var(--muted); font-size: 13px; flex-wrap: wrap;
   }
   .dwell-format-note { font-family: "Cascadia Mono", "SFMono-Regular", Consolas, monospace; }
+  .inventory-panel {
+    border-color: #dfbba2;
+    background: linear-gradient(180deg, #fffdf9 0, #fff8f3 100%);
+    box-shadow: 0 10px 28px rgba(118, 67, 37, .10);
+  }
+  .inventory-panel > .details-head {
+    border-bottom-color: #e9c8b5;
+    background: linear-gradient(90deg, #fff0e4, #fffaf5 56%, #f2fbfb);
+  }
+  .inventory-panel > .details-head .panel-title { color: #7a2e18; }
+  .inventory-panel > .details-head .panel-subtitle { color: #8f5a45; }
   .inventory-toolbar { display: flex; gap: 7px; flex-wrap: wrap; align-items: center; margin-bottom: 9px; }
-  .inventory-meta { margin-left: auto; color: var(--muted); font-size: 10px; }
-  .table-scroll { overflow: auto; max-height: 520px; border: 1px solid var(--line); border-radius: 7px; }
+  .inventory-meta { margin-left: auto; color: #7c5a4d; font-size: 10px; font-weight: 750; }
+  .inventory-panel .table-scroll { overflow: auto; max-height: 520px; border: 1px solid #dfbba2; border-radius: 8px; background: #fff; }
   table { border-collapse: collapse; width: 100%; }
-  .data-table { min-width: 1250px; font-size: 9px; }
-  .data-table th {
-    position: sticky; top: 0; z-index: 2; background: #e7edf4; color: #3d4f68;
-    padding: 6px; border: 1px solid #d4dde7; text-transform: uppercase; letter-spacing: .04em;
+  .data-table { min-width: 1250px; font-size: 10px; }
+  .inventory-panel .data-table th {
+    position: sticky; top: 0; z-index: 2; padding: 7px 6px;
+    border: 1px solid #c87552; background: linear-gradient(180deg, #f8d7c7, #efbea8);
+    color: #69230f; text-transform: uppercase; letter-spacing: .06em; font-weight: 950;
   }
-  .data-table td { padding: 0; border: 1px solid #e0e6ed; background: white; }
-  .data-table input {
-    border: 0; border-radius: 0; min-width: 65px; width: 100%; padding: 6px;
-    background: transparent; font-size: 9px;
+  .inventory-panel .data-table td { padding: 0; border: 1px solid #ead8cd; background: #fff; }
+  .inventory-panel .data-table input {
+    border: 0; border-radius: 0; min-width: 65px; width: 100%; padding: 7px 6px;
+    background: transparent; color: #25364a; font: 750 10px/1.15 "Cascadia Mono", "SFMono-Regular", Consolas, monospace;
   }
-  .data-table .wide { min-width: 110px; }
-  .data-table .delete-cell { width: 36px; text-align: center; padding: 3px; }
+  .inventory-panel .data-table input:focus { background: rgba(255,255,255,.92); box-shadow: inset 0 0 0 2px #d97745; outline: none; }
+  .inventory-panel .data-table .wide { min-width: 110px; }
+  .inventory-panel .data-table .delete-cell { width: 36px; text-align: center; padding: 3px; }
+  .inventory-panel .data-table tr.inventory-row--teal td { background: #e2f6f3; border-color: #c0e5df; }
+  .inventory-panel .data-table tr.inventory-row--berry td { background: #fae9f1; border-color: #eac4d7; }
+  .inventory-panel .data-table tr.inventory-row--blue td { background: #e8f1ff; border-color: #c5dcf5; }
+  .inventory-panel .data-table tr.inventory-row--gold td { background: #fff3d7; border-color: #ecd69e; }
+  .inventory-panel .data-table tr.inventory-row--green td { background: #e7f6eb; border-color: #c4e4cd; }
+  .inventory-panel .data-table tr.inventory-row--purple td { background: #f0eaff; border-color: #d9ccf3; }
+  .inventory-panel .data-table tr[class*="inventory-row--"] td:first-child { border-left: 5px solid currentColor; }
+  .inventory-panel .data-table tr.inventory-row--teal { color: #0c766d; }
+  .inventory-panel .data-table tr.inventory-row--berry { color: #b02d66; }
+  .inventory-panel .data-table tr.inventory-row--blue { color: #2768a4; }
+  .inventory-panel .data-table tr.inventory-row--gold { color: #a66b02; }
+  .inventory-panel .data-table tr.inventory-row--green { color: #2d8650; }
+  .inventory-panel .data-table tr.inventory-row--purple { color: #7651ad; }
   .icon-btn {
     border: 0; border-radius: 5px; background: #fff0f0; color: var(--danger);
     width: 25px; height: 25px; font-weight: 900;
@@ -8182,8 +8208,15 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       body.innerHTML = `<tr><td colspan="14"><div class="empty-state">No rows loaded.</div></td></tr>`;
       return;
     }
+    const colorClasses = ["teal", "berry", "blue", "gold", "green", "purple"];
+    const groupColors = new Map();
+    const getColorClass = row => {
+      const key = clean(row[10]) || clean(row[12]) || clean(row[5]) || "unassigned";
+      if (!groupColors.has(key)) groupColors.set(key, colorClasses[groupColors.size % colorClasses.length]);
+      return groupColors.get(key);
+    };
     body.innerHTML = state.rows.map((row,rowIndex) => `
-      <tr>
+      <tr class="inventory-row--${getColorClass(row)}">
         ${row.slice(0, COLUMN_NAMES.length).map((value,colIndex) => `<td><input class="${[2,10,12].includes(colIndex)?"wide":""}" data-row="${rowIndex}" data-col="${colIndex}" value="${escapeAttr(value)}"></td>`).join("")}
         <td class="delete-cell"><button class="icon-btn" data-delete="${rowIndex}" title="Delete row">&times;</button></td>
       </tr>`).join("");
