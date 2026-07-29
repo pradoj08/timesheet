@@ -136,9 +136,10 @@
     .scw-popup.dragging { opacity: .96; user-select: none; }
     .scw-popup.third-column {
       right: 8px;
-      bottom: 8px;
+      bottom: auto;
       left: auto !important;
       width: calc(33.333vw - 14px);
+      height: min(585px, calc(100vh - 132px));
       max-width: none;
       display: flex;
       flex-direction: column;
@@ -200,7 +201,7 @@
     .scw-popup-link { color: #0369a1; font-size: 12px; font-weight: 900; text-decoration: none; }
     .scw-popup-status { padding: 18px 16px; color: #52617a; font-size: 13px; font-weight: 800; text-align: center; }
     @media (max-width: 900px) {
-      .scw-popup.third-column { right: 8px; width: calc(100vw - 16px); }
+      .scw-popup.third-column { right: 8px; width: calc(33.333vw - 14px); }
     }
     .workbook-tabs button.matrix-controls-nav {
       display: none;
@@ -2037,7 +2038,7 @@
     cursor: pointer;
   }
   #amFloatingTodayRoster .am-today-roster-row:hover { outline: 2px solid #f59e0b; outline-offset: -2px; }
-  #amFloatingTodayRoster .am-today-roster-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #amFloatingTodayRoster .am-today-roster-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
   #amFloatingTodayRoster .am-today-roster-statuses { display: inline-flex; align-items: center; gap: 2px; white-space: nowrap; }
   #amFloatingTodayRoster .am-today-roster-status { font-size: 9px; font-weight: 950; }
   #amFloatingTodayRoster .am-today-roster-crane { color: #9a5b00; }
@@ -2167,8 +2168,44 @@
   #amFloatingTodayRoster .amfr-checklist-status.missed { border-color: #efb4b7; background: #fff0f0; color: #a80f17; }
   #amFloatingTodayRoster .amfr-checklist-status.skipped { border-color: #e8cf9e; background: #fff7e7; color: #8a5a00; }
   #amFloatingTodayRoster .amfr-checklist-empty { padding: 20px 12px; color: #64748b; font-size: 10px; font-weight: 800; text-align: center; }
-  body.am-scw-third-column .am-three-day-workspace { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
-  body.am-scw-third-column .am-day-panel:nth-child(3) { display: none !important; }
+  body.am-scw-third-column .am-three-day-workspace { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+  body.am-scw-third-column .am-day-panel:nth-child(3) { display: block !important; }
+  #amScwLatestHost { display: none; width: 100%; margin: 0 0 8px; }
+  body.am-scw-third-column #amScwLatestHost { display: block; }
+  #amScwLatestHost .scw-popup[hidden] { display: none !important; }
+  #amScwLatestHost .scw-popup {
+    position: static !important;
+    display: flex;
+    width: 100% !important;
+    height: 585px !important;
+    max-width: none;
+    overflow: hidden;
+    border: 1px solid #334155;
+    border-radius: 11px;
+    background: #fff;
+    color: #172033;
+    box-shadow: 0 18px 44px rgba(15, 23, 42, .24);
+    flex-direction: column;
+  }
+  #amScwLatestHost .scw-popup-head { display: flex; min-height: 40px; align-items: center; justify-content: space-between; gap: 10px; padding: 7px 8px 7px 13px; background: #0f172a; color: #fff; }
+  #amScwLatestHost .scw-popup-head strong { font-size: 13px; letter-spacing: .04em; text-transform: uppercase; }
+  #amScwLatestHost .scw-popup-head-actions { display: inline-flex; gap: 5px; }
+  #amScwLatestHost .scw-popup-head button { width: 28px; height: 27px; padding: 0; border: 1px solid #64748b; border-radius: 5px; background: #1e293b; color: #fff; font-size: 16px; font-weight: 900; cursor: pointer; }
+  #amScwLatestHost .scw-popup-head button.scw-push-alert { width: auto; min-width: 48px; padding: 0 7px; border-color: #0d9488; background: #0f766e; font-size: 10px; letter-spacing: .03em; }
+  #amScwLatestHost .scw-popup-head button.scw-push-alert:disabled { cursor: wait; opacity: .78; }
+  #amScwLatestHost .scw-popup-body { min-height: 0; max-height: none; flex: 1; padding: 15px 16px 14px; overflow: auto; background: #fff; }
+  #amScwLatestHost .scw-popup-source { margin-bottom: 7px; color: #0f766e; font-size: 10px; font-weight: 950; letter-spacing: .08em; text-transform: uppercase; }
+  #amScwLatestHost .scw-popup-title { margin: 0; font-size: 20px; line-height: 1.18; }
+  #amScwLatestHost .scw-popup-date { margin-top: 7px; color: #64748b; font-size: 11px; font-weight: 750; }
+  #amScwLatestHost .scw-popup-summary { margin: 12px 0; color: #334155; font-size: 13px; font-weight: 650; line-height: 1.45; }
+  #amScwLatestHost .scw-popup-article { margin: 13px 0; color: #334155; font-size: 13px; font-weight: 600; line-height: 1.5; }
+  #amScwLatestHost .scw-popup-article h1, #amScwLatestHost .scw-popup-article h2, #amScwLatestHost .scw-popup-article h3 { color: #172033; line-height: 1.25; }
+  #amScwLatestHost .scw-popup-article img { display: block; max-width: 100%; height: auto; margin: 10px auto; border-radius: 7px; }
+  #amScwLatestHost .scw-popup-article a, #amScwLatestHost .scw-popup-link { color: #0369a1; }
+  #amScwLatestHost .scw-popup-article figure { max-width: 100%; margin: 12px 0; }
+  #amScwLatestHost .scw-popup-article iframe, #amScwLatestHost .scw-popup-article video { max-width: 100%; }
+  #amScwLatestHost .scw-popup-link { font-size: 12px; font-weight: 900; text-decoration: none; }
+  #amScwLatestHost .scw-popup-status { padding: 18px 16px; color: #52617a; font-size: 13px; font-weight: 800; text-align: center; }
   @media (max-width: 620px) {
     #amFloatingTodayRoster .amfr-dialog { top: 4px; left: 4px; width: calc(100vw - 8px); max-height: none; }
     #amFloatingTodayRoster .amfr-card { max-height: none; }
@@ -3786,6 +3823,64 @@
       return headClose >= 0 ? updated.slice(0, headClose) + marker + "\n" + updated.slice(headClose) : marker + updated;
     }
 
+    function withBillingSummaryExportStyles(html) {
+      if (!html || typeof html !== "string" || html.includes("conglobal-billing-summary-export-styles-v1")) return html;
+      const exportAnchor = "    function exportOperationalWorkbook() {";
+      if (!html.includes(exportAnchor)) return html;
+      const marker = '<meta name="conglobal-billing-summary-export-styles-v1" content="enabled">';
+      const helper = `
+    function billingSummaryStyleXml() {
+      return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><numFmts count="0"/><fonts count="2"><font><sz val="11"/><color theme="1"/><name val="Calibri"/><family val="2"/><scheme val="minor"/></font><font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/><family val="2"/><scheme val="minor"/></font></fonts><fills count="4"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF000000"/><bgColor indexed="64"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFD9D9D9"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="4"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf><xf numFmtId="0" fontId="0" fillId="3" borderId="0" xfId="0" applyFill="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf><xf numFmtId="0" fontId="0" fillId="3" borderId="0" xfId="0" applyFill="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles><dxfs count="0"/><tableStyles count="0" defaultTableStyle="TableStyleMedium9" defaultPivotStyle="PivotStyleMedium4"/></styleSheet>';
+    }
+    function billingUtf8Bytes(text) {
+      if (window.TextEncoder) return new TextEncoder().encode(text);
+      const encoded = unescape(encodeURIComponent(text));
+      return Uint8Array.from(encoded, function(character) { return character.charCodeAt(0); });
+    }
+    function billingZipText(content) {
+      if (window.TextDecoder) return new TextDecoder("utf-8").decode(content);
+      return Array.from(content, function(byte) { return String.fromCharCode(byte); }).join("");
+    }
+    function downloadStyledBillingWorkbook(workbook, fileName) {
+      const xlsx = window.XLSX;
+      if (!xlsx.CFB || !xlsx.CFB.read || !xlsx.CFB.write || !xlsx.CFB.find) { xlsx.writeFile(workbook, fileName); return; }
+      try {
+        const unstyledBytes = xlsx.write(workbook, { bookType: "xlsx", type: "array", compression: true });
+        const zipInput = unstyledBytes instanceof ArrayBuffer ? new Uint8Array(unstyledBytes) : unstyledBytes;
+        const zip = xlsx.CFB.read(zipInput, { type: "array" });
+        const stylesEntry = xlsx.CFB.find(zip, "/xl/styles.xml");
+        const summaryEntry = xlsx.CFB.find(zip, "/xl/worksheets/sheet1.xml");
+        if (!stylesEntry || !summaryEntry) throw new Error("Billing Summary workbook entries were not found");
+        const shadedColumns = new Set(["A", "D", "H", "K"]);
+        const styledSummaryXml = billingZipText(summaryEntry.content).replace(/<c([^>]*r="([A-Z]+)([0-9]+)"[^>]*)>/g, function(match, attributes, column, row) {
+          const styleId = row === "1" ? 1 : (column === "A" ? 3 : (shadedColumns.has(column) ? 2 : null));
+          const cleanAttributes = attributes.replace(/[ ]+s="[^"]*"/i, "");
+          return "<c" + cleanAttributes + (styleId === null ? "" : ' s="' + styleId + '"') + ">";
+        });
+        stylesEntry.content = billingUtf8Bytes(billingSummaryStyleXml());
+        stylesEntry.size = stylesEntry.content.length;
+        summaryEntry.content = billingUtf8Bytes(styledSummaryXml);
+        summaryEntry.size = summaryEntry.content.length;
+        const styledBytes = xlsx.CFB.write(zip, { fileType: "zip", type: "array", compression: true });
+        const workbookBlob = new Blob([styledBytes], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+        const downloadUrl = URL.createObjectURL(workbookBlob);
+        const downloadLink = document.createElement("a");
+        downloadLink.href = downloadUrl;
+        downloadLink.download = fileName;
+        downloadLink.click();
+        window.setTimeout(function() { URL.revokeObjectURL(downloadUrl); }, 1000);
+      } catch (error) {
+        console.warn("Billing export styling fallback", error);
+        xlsx.writeFile(workbook, fileName);
+      }
+    }`;
+      let updated = html
+        .replace(exportAnchor, helper + "\n\n" + exportAnchor)
+        .replace('window.XLSX.writeFile(workbook, `operations-export-${safeMonth}.xlsx`);', 'downloadStyledBillingWorkbook(workbook, `operations-export-${safeMonth}.xlsx`);');
+      const headClose = updated.toLowerCase().indexOf("</head>");
+      return headClose >= 0 ? updated.slice(0, headClose) + marker + "\n" + updated.slice(headClose) : marker + updated;
+    }
+
     function withBillingShiftLpmhGrid(html) {
       if (!html || typeof html !== "string" || html.includes("conglobal-billing-shift-lpmh-grid-v1")) return html;
       const injection = `<meta name="conglobal-billing-shift-lpmh-grid-v1" content="enabled">
@@ -5342,17 +5437,84 @@ function buildHourlyLiftLog(segs,activeKeys,rate,trainLabelMap,paceCtx){`
       return bodyClose >= 0 ? html.slice(0, bodyClose) + patch + "\n" + html.slice(bodyClose) : html + patch;
     }
 
+    function withLphCarsOnHandBeforeOutboundCommitments(html) {
+      if (!html || typeof html !== "string" || html.includes("lph-cars-on-hand-before-outbound-v1")) return html;
+      const patch = `
+<scr${""}ipt id="lph-cars-on-hand-before-outbound-v1">
+(function(){
+  var track=document.getElementById("input-menu-track");if(!track)return;
+  var slides=Array.prototype.slice.call(track.querySelectorAll(".input-menu-slide"));
+  function title(slide){var card=slide.querySelector(".sb-card");return card&&card.dataset.inputMenuTitle||slide.dataset.stackTitle||""}
+  var cars=slides.find(function(slide){return title(slide)==="Cars on Hand"});
+  var outbound=slides.find(function(slide){return title(slide)==="Outbound Commitments"});
+  if(cars&&outbound&&cars!==outbound)track.insertBefore(cars,outbound);
+  if(Array.isArray(window.lphInputSlides))window.lphInputSlides=Array.prototype.slice.call(track.querySelectorAll(".input-menu-slide"));
+})();
+</scr${""}ipt>`;
+      const bodyClose = html.toLowerCase().lastIndexOf("</body>");
+      return bodyClose >= 0 ? html.slice(0, bodyClose) + patch + "\n" + html.slice(bodyClose) : html + patch;
+    }
+
+    function withLphDefaultExpectedFlips(html) {
+      if (!html || typeof html !== "string" || html.includes("lph-default-expected-flips-v1")) return html;
+      const marker = '<meta name="lph-default-expected-flips-v1" content="35">';
+      const updated = html
+        .replace(/(id=["']v-flips["']>)0(<\/span>)/i, (match, before, after) => before + "35" + after)
+        .replace(/(id=["']flips["'][^>]*\bvalue=["'])0(["'])/i, (match, before, after) => before + "35" + after)
+        .replace("setControlValue('flips','0');", "setControlValue('flips','35');");
+      return updated.replace("</head>", marker + "\n</head>");
+    }
+
+    function withLphPrestartCarryoverSection(html) {
+      if (!html || typeof html !== "string" || html.includes("lph-prestart-carryover-section-v1")) return html;
+      const patch = `
+<scr${""}ipt id="lph-prestart-carryover-section-v1">
+(function(){
+  if(window.__lphPrestartCarryoverSectionInstalled)return;window.__lphPrestartCarryoverSectionInstalled=true;
+  var track=document.getElementById("input-menu-track");if(!track)return;
+  function slideFor(title){return Array.prototype.slice.call(track.querySelectorAll(".input-menu-slide")).find(function(slide){var card=slide.querySelector(".sb-card");return card&&card.dataset.inputMenuTitle===title})}
+  var crewSlide=slideFor("Crew & Lifts")||slideFor("Crew"),crewCard=crewSlide&&crewSlide.querySelector(".sb-card");
+  var preLifts=document.getElementById("prelifts"),carryOver=document.getElementById("carryover-lifts"),flips=document.getElementById("flips");
+  var preLiftsGroup=preLifts&&preLifts.closest(".ctrl-group"),carryOverGroup=carryOver&&carryOver.closest(".ctrl-group"),flipsGroup=flips&&flips.closest(".ctrl-group");
+  if(crewSlide&&crewCard&&preLiftsGroup&&carryOverGroup&&flipsGroup){
+    var prestartSlide=document.createElement("div");prestartSlide.className="input-menu-slide";
+    var prestartCard=document.createElement("div");prestartCard.className="sb-card sb-card-crew input-menu-compact";prestartCard.dataset.inputMenuTitle="Pre-Start & Carry-Over";
+    prestartCard.innerHTML='<div class="section-label">Pre-Start &amp; Carry-Over</div>';
+    prestartCard.appendChild(preLiftsGroup);prestartCard.appendChild(carryOverGroup);prestartCard.appendChild(flipsGroup);
+    prestartSlide.appendChild(prestartCard);track.insertBefore(prestartSlide,crewSlide.nextSibling);
+  }
+  if(crewCard){crewCard.dataset.inputMenuTitle="Crew";var crewLabel=crewCard.querySelector(".section-label");if(crewLabel)crewLabel.textContent="Crew";}
+  var profileSlide=slideFor("Profiles");
+  if(profileSlide){
+    var profileCard=profileSlide.querySelector(".sb-card"),stash=document.getElementById("lphProfilesHiddenStash");
+    if(!stash){stash=document.createElement("div");stash.id="lphProfilesHiddenStash";stash.hidden=true;document.body.appendChild(stash)}
+    if(profileCard)stash.appendChild(profileCard);profileSlide.remove();
+  }
+  window.lphInputSlides=Array.prototype.slice.call(track.querySelectorAll(".input-menu-slide"));
+})();
+</scr${""}ipt>`;
+      const bodyClose = html.toLowerCase().lastIndexOf("</body>");
+      return bodyClose >= 0 ? html.slice(0, bodyClose) + patch + "\n" + html.slice(bodyClose) : html + patch;
+    }
+
     function withLphCollapsibleControlSections(html) {
       if (!html || typeof html !== "string" || html.includes("lph-collapsible-control-sections-v1")) return html;
       const patch = `
 <style id="lph-collapsible-control-sections-v1">
+  .input-menu-track{gap:6px!important;grid-auto-rows:min-content!important;align-content:start!important}
   .input-menu-slide::before{display:none!important;content:none!important}
-  .input-menu-section-toggle{width:100%;min-height:41px;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border:0;border-bottom:1px solid rgba(45,212,191,.28);border-radius:9px 9px 0 0;background:linear-gradient(90deg,rgba(15,118,110,.50),rgba(4,35,38,.97));color:#d5fffa;font:700 13px/1.15 var(--cond);letter-spacing:.09em;text-align:left;text-transform:uppercase;text-shadow:0 0 12px rgba(45,212,191,.28);cursor:pointer}
+  .input-menu-section-head{display:flex;min-height:41px;align-items:stretch;border-bottom:1px solid rgba(45,212,191,.28);border-radius:9px 9px 0 0;background:linear-gradient(90deg,rgba(15,118,110,.50),rgba(4,35,38,.97));overflow:hidden}
+  .input-menu-section-toggle{flex:1;min-width:0;min-height:41px;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border:0;border-radius:9px 0 0 0;background:transparent;color:#d5fffa;font:700 13px/1.15 var(--cond);letter-spacing:.09em;text-align:left;text-transform:uppercase;text-shadow:0 0 12px rgba(45,212,191,.28);cursor:pointer}
   .input-menu-section-toggle::after{content:"−";flex:0 0 auto;color:#99f6e4;font:900 18px/1 var(--mono)}
   .input-menu-section-toggle:hover,.input-menu-section-toggle:focus-visible{background:linear-gradient(90deg,rgba(20,184,166,.62),rgba(4,35,38,.97));outline:2px solid rgba(94,234,212,.72);outline-offset:-2px}
-  .input-menu-slide.is-collapsed{min-height:0!important;grid-template-rows:auto!important}
+  .input-menu-section-complete{display:inline-flex;align-items:center;gap:5px;padding:0 11px;border-left:1px solid rgba(45,212,191,.24);color:#99f6e4;font:800 10px/1 var(--mono);letter-spacing:.04em;white-space:nowrap;cursor:pointer}
+  .input-menu-section-complete input{width:15px;height:15px;margin:0;accent-color:#10b981;cursor:pointer}
+  .input-menu-section-complete span{display:none;color:#4ade80;text-transform:uppercase}
+  .input-menu-section-complete input:checked + span{display:inline}
+  .input-menu-slide.is-collapsed{min-height:41px!important;height:41px!important;flex:0 0 41px!important;grid-template-rows:auto!important;margin:0!important;padding:0!important}
   .input-menu-slide.is-collapsed>.sb-card{display:none!important}
-  .input-menu-slide.is-collapsed .input-menu-section-toggle{border-bottom:0;border-radius:9px}
+  .input-menu-slide.is-collapsed .input-menu-section-head{border-bottom:0;border-radius:9px}
+  .input-menu-slide.is-collapsed .input-menu-section-toggle{border-radius:9px 0 0 9px}
   .input-menu-slide.is-collapsed .input-menu-section-toggle::after{content:"+"}
 </style>
 <scr${""}ipt>
@@ -5365,12 +5527,16 @@ function buildHourlyLiftLog(segs,activeKeys,rate,trainLabelMap,paceCtx){`
   slides.forEach(function(slide,index){
     var card=slide.querySelector(".sb-card"),title=card&&card.dataset.inputMenuTitle||slide.dataset.stackTitle||"Control Module";
     slide.dataset.stackTitle=title;
+    var head=document.createElement("div");head.className="input-menu-section-head";
     var toggle=document.createElement("button");toggle.type="button";toggle.className="input-menu-section-toggle";toggle.textContent=title;
+    var complete=document.createElement("label");complete.className="input-menu-section-complete";complete.title="Visual completion marker only";
+    var checkbox=document.createElement("input");checkbox.type="checkbox";checkbox.setAttribute("aria-label","Mark "+title+" complete (visual only)");
+    var completeText=document.createElement("span");completeText.textContent="Complete";complete.appendChild(checkbox);complete.appendChild(completeText);head.appendChild(toggle);head.appendChild(complete);
     var contentId="lph-input-section-"+index;if(card)card.id=contentId;toggle.setAttribute("aria-controls",contentId);
     function apply(value){slide.classList.toggle("is-collapsed",value);toggle.setAttribute("aria-expanded",value?"false":"true")}
     apply(collapsed.indexOf(title)>=0);
     toggle.addEventListener("click",function(){apply(!slide.classList.contains("is-collapsed"));collapsed=slides.filter(function(item){return item.classList.contains("is-collapsed")}).map(function(item){return item.dataset.stackTitle});save()});
-    slide.insertBefore(toggle,card||slide.firstChild);
+    slide.insertBefore(head,card||slide.firstChild);
   });
 })();
 </scr${""}ipt>`;
@@ -5808,7 +5974,7 @@ function renderTimeMap(elId, buckets, opts){`
 
     function withExcelLphInputMenuSource(html) {
       if (!html || typeof html !== "string" || html.includes("excel-lph-input-source-ready")) return html;
-      const lphPage = pages.lphTracker && withLphControlStack(pages.lphTracker.html);
+      const lphPage = pages.lphTracker && withLphEditableForecastArrival(withLphChassisForecastInboundOptions(withLphCollapsibleControlSections(withLphPrestartCarryoverSection(withLphCarsOnHandBeforeOutboundCommitments(withLphControlStack(withLphDefaultExpectedFlips(pages.lphTracker.html)))))));
       if (!lphPage) return html;
       const sourcePattern = /(<script\s+id=["']lphInputMenuPageSource["'][^>]*>)[\s\S]*?(<\/script>)/i;
       if (!sourcePattern.test(html)) return html;
@@ -6311,6 +6477,133 @@ function renderTimeMap(elId, buckets, opts){`
         "if(autoToggle&&autoToggle.checked)return;",
         "if(autoToggle&&autoToggle.checked){\n    lphSetUseTodayInbounds(false,false);\n  }"
       );
+    }
+
+    function withLphChassisForecastInboundOptions(html) {
+      if (!html || typeof html !== "string" || html.includes("conglobal-lph-chassis-forecast-inbound-options-v1")) return html;
+      const marker = '<meta name="conglobal-lph-chassis-forecast-inbound-options-v1" content="enabled">';
+      const patch = `<scr${""}ipt id="conglobal-lph-chassis-forecast-inbound-options-v1">
+(function(){
+  var FORECAST_KEY="chassisForecastReport";
+  function stores(){
+    var result=[];
+    try{result.push(window.localStorage);}catch(error){}
+    try{if(window.parent&&window.parent!==window&&window.parent.localStorage&&!result.includes(window.parent.localStorage))result.push(window.parent.localStorage);}catch(error){}
+    return result;
+  }
+  function forecast(){
+    var list=stores();
+    for(var index=0;index<list.length;index+=1){
+      try{var raw=list[index].getItem(FORECAST_KEY);if(raw)return JSON.parse(raw)||{};}catch(error){}
+    }
+    return {};
+  }
+  function forecastInbounds(){
+    var state=forecast();
+    var units=Array.isArray(state.importedUnits)?state.importedUnits:[];
+    var grouped={};
+    units.forEach(function(unit){
+      var train=String(unit&&(unit.trainId||unit.train||unit.scheduledObjective||unit.scheduledObjectiveTrain)||"").trim();
+      var trainKey=normalizeSharedTrainName(train);
+      if(!train||!trainKey||trainKey==="TRAIN"||trainKey==="NOTRAINLISTED")return;
+      if(!grouped[trainKey])grouped[trainKey]={train:train,units:0,eta:""};
+      grouped[trainKey].units+=1;
+      if(!grouped[trainKey].eta&&unit&&unit.etaHour!=null)grouped[trainKey].eta=String(unit.etaHour).trim();
+    });
+    return Object.keys(grouped).map(function(key){return grouped[key];}).sort(function(a,b){return a.train.localeCompare(b.train,undefined,{numeric:true});});
+  }
+  window.populateInboundSourceSelect=function(select,key){
+    if(!select)return;
+    var currentKey=normalizeSharedTrainName(trainNames[key]);
+    var inbounds=forecastInbounds();
+    select.innerHTML="";
+    var manual=document.createElement("option");
+    manual.value="";manual.textContent="Manual entry";select.appendChild(manual);
+    inbounds.forEach(function(inbound,index){
+      var option=document.createElement("option");
+      option.value=String(index);option.dataset.train=inbound.train;option.dataset.units=String(inbound.units);option.dataset.eta=inbound.eta;
+      option.textContent=inbound.train+" | "+inbound.units+" units";select.appendChild(option);
+      if(normalizeSharedTrainName(inbound.train)===currentKey)select.value=String(index);
+    });
+    select.disabled=false;
+    var status=select.parentElement&&select.parentElement.querySelector(".sb-train-source-units");
+    if(status){
+      var selected=select.value!==""?inbounds[Number(select.value)]:null;
+      status.textContent=selected?(selected.units+" units"):"Manual entry";
+      status.classList.toggle("matched",!!selected&&selected.units>0);
+      status.classList.toggle("missing",!!selected&&selected.units===0);
+    }
+  };
+  function refresh(){
+    document.querySelectorAll(".sb-train-source-select[data-train-key]").forEach(function(select){window.populateInboundSourceSelect(select,select.dataset.trainKey);});
+  }
+  document.addEventListener("change",function(event){
+    var select=event.target;
+    if(!select||!select.matches(".sb-train-source-select")||select.value!=="")return;
+    var status=select.parentElement&&select.parentElement.querySelector(".sb-train-source-units");
+    if(status){status.textContent="Manual entry";status.classList.remove("matched","missing");}
+  });
+  window.addEventListener("storage",function(event){if(event.key===FORECAST_KEY)refresh();});
+  refresh();
+})();
+</scr${""}ipt>`;
+      const updated = html.replace("</head>", marker + "\n</head>");
+      const bodyClose = updated.toLowerCase().lastIndexOf("</body>");
+      return bodyClose >= 0 ? updated.slice(0, bodyClose) + patch + "\n" + updated.slice(bodyClose) : updated + patch;
+    }
+
+    function withLphEditableForecastArrival(html) {
+      if (!html || typeof html !== "string" || html.includes("conglobal-lph-editable-forecast-arrival-v1")) return html;
+      const marker = '<meta name="conglobal-lph-editable-forecast-arrival-v1" content="enabled">';
+      const styles = `<style id="conglobal-lph-editable-forecast-arrival-styles">
+.sb-train-arrival-editor{width:62px;min-width:62px;font-family:var(--mono);font-size:10px;font-weight:700;color:var(--amber);background:rgba(245,158,11,.08);padding:2px 8px;border-radius:3px;border:1px solid rgba(245,158,11,.2);text-align:center;outline:none}
+.sb-train-arrival-editor:focus{border-color:var(--amber);background:rgba(245,158,11,.16)}
+.sb-train-arrival-source-value{display:none!important}
+</style>`;
+      const patch = `<scr${""}ipt id="conglobal-lph-editable-forecast-arrival-v1">
+(function(){
+  function format(hours){return typeof fmtH==="function"?fmtH(hours):String(hours||"");}
+  function parse(value){return typeof lphInboundEtaHours==="function"?lphInboundEtaHours(value):NaN;}
+  function install(display){
+    if(!display||display.tagName!=="SPAN"||display.dataset.arrivalEditorInstalled)return;
+    var key=display.id.replace(/^v-/,"").replace(/-arr$/,"");
+    var slider=document.getElementById(key+"-arr");
+    if(!key||!slider)return;
+    display.dataset.arrivalEditorInstalled="true";
+    var editor=document.createElement("input");
+    editor.type="text";editor.inputMode="numeric";editor.maxLength=5;
+    editor.className="sb-train-arrival-editor";editor.value=(display.textContent||"").trim()||format(Number(slider.value));
+    editor.title="Enter arrival as HHMM or HH:MM";
+    editor.setAttribute("aria-label","Edit train arrival time");
+    display.parentNode.insertBefore(editor,display);
+    display.classList.add("sb-train-arrival-source-value");
+    new MutationObserver(function(){
+      var value=(display.textContent||"").trim();
+      if(value)editor.value=value;
+    }).observe(display,{childList:true,characterData:true,subtree:true});
+    function commit(){
+      var hours=parse(editor.value);
+      if(!Number.isFinite(hours)){
+        editor.setCustomValidity("Use HHMM or HH:MM.");editor.reportValidity();
+        editor.value=(display.textContent||"").trim()||format(Number(slider.value));
+        return;
+      }
+      editor.setCustomValidity("");
+      slider.value=String(hours);
+      display.textContent=format(hours);
+      editor.value=format(hours);
+      slider.dispatchEvent(new Event("input",{bubbles:true}));
+    }
+    editor.addEventListener("change",commit);
+    editor.addEventListener("keydown",function(event){if(event.key==="Enter"){event.preventDefault();editor.blur();}});
+    slider.addEventListener("input",function(){editor.value=(display.textContent||"").trim()||format(Number(slider.value));});
+  }
+  document.querySelectorAll(".sb-train-card .ctrl-val[id^='v-'][id$='-arr']").forEach(install);
+})();
+</scr${""}ipt>`;
+      const updated = html.replace("</head>", marker + "\n" + styles + "\n</head>");
+      const bodyClose = updated.toLowerCase().lastIndexOf("</body>");
+      return bodyClose >= 0 ? updated.slice(0, bodyClose) + patch + "\n" + updated.slice(bodyClose) : updated + patch;
     }
 
     function withLphOperationsGuide(html) {
@@ -7346,23 +7639,44 @@ document.addEventListener('click',function(event){
       return localStorage.getItem(SCW_COLUMN_MODE_KEY) !== "table";
     }
 
+    function restoreScwToWorkbookShell() {
+      if (scwLatestPopup.parentNode !== document.body) document.body.insertBefore(scwLatestPopup, primaryFrame);
+      ["top", "right", "bottom", "left", "width", "height"].forEach((property) => scwLatestPopup.style.removeProperty(property));
+    }
+
+    function mountScwAboveThirdReport() {
+      try {
+        if (primaryFrame.dataset.page !== "amReport") return false;
+        const reportDocument = primaryFrame.contentDocument;
+        const thirdPanel = reportDocument && reportDocument.querySelector(".am-day-panel:nth-child(3)");
+        if (!thirdPanel) return false;
+        let host = reportDocument.getElementById("amScwLatestHost");
+        if (!host) {
+          host = reportDocument.createElement("div");
+          host.id = "amScwLatestHost";
+          thirdPanel.insertBefore(host, thirdPanel.firstChild);
+        }
+        host.appendChild(scwLatestPopup);
+        ["top", "right", "bottom", "left", "width", "height"].forEach((property) => scwLatestPopup.style.removeProperty(property));
+        return true;
+      } catch (_) {
+        return false;
+      }
+    }
+
     function syncScwColumnMode(loadPost = false) {
       const useWeather = weatherUsesThirdColumn();
       const toggle = document.getElementById("amHeaderThirdColumn");
-      toggle.textContent = useWeather ? "Show 3rd Day" : "Show Weather";
+      toggle.textContent = useWeather ? "Hide Weather" : "Show Weather";
       toggle.setAttribute("aria-pressed", String(useWeather));
       scwLatestPopup.classList.toggle("third-column", useWeather);
-      if (useWeather) {
-        scwLatestPopup.style.top = `${workbookChromeHeight() + 8}px`;
-        scwLatestPopup.style.height = "auto";
-        scwLatestPopup.style.left = "";
-        scwLatestPopup.style.right = "";
-      }
       const shouldShow = activePage === "amReport" && useWeather;
-      scwLatestPopup.hidden = !shouldShow;
+      const mountedInThirdColumn = shouldShow && mountScwAboveThirdReport();
+      if (!mountedInThirdColumn) restoreScwToWorkbookShell();
+      scwLatestPopup.hidden = !mountedInThirdColumn;
       if (primaryFrame.contentWindow && primaryFrame.dataset.page === "amReport") {
-        primaryFrame.contentWindow.postMessage({ type: "conglobal-am-third-column-mode", weather: false }, "*");
-        primaryFrame.contentWindow.postMessage({ type: "conglobal-am-third-day-visibility", visible: !useWeather }, "*");
+        primaryFrame.contentWindow.postMessage({ type: "conglobal-am-third-column-mode", weather: useWeather }, "*");
+        primaryFrame.contentWindow.postMessage({ type: "conglobal-am-third-day-visibility", visible: true }, "*");
         if (activePage === "amReport") {
           primaryFrame.contentWindow.postMessage({ type: "conglobal-open-todays-roster" }, "*");
         }
@@ -9206,13 +9520,16 @@ document.getElementById("openYardCheck")?.addEventListener("click", function(){
         }
         if (id === "timeMd") pageHtml = withTimeMdResponsiveWidth(pageHtml);
         if (id === "timeOff") pageHtml = withTimeOffCurrentRosterSnapshot(withTimeOffCameInActions(withTimeOffMonthlyWeeklyStyle(pageHtml)));
-        if (id === "billing") pageHtml = withBillingDailyShiftProjection(withBillingPerformanceArchiveIndexedDb(withBillingShiftLpmhGrid(withBillingLpmhSourcePair(withBillingPowerBiImport(withBillingQuotaSafePersistence(withBillingAnalyticsLiftFallback(withBillingAnalyticsArchiveHydration(withBillingManHoursPrecision(withBillingArchiveIndexedDb(withBillingHeaderRemoved(pageHtml)))))))))));
+        if (id === "billing") pageHtml = withBillingDailyShiftProjection(withBillingPerformanceArchiveIndexedDb(withBillingShiftLpmhGrid(withBillingSummaryExportStyles(withBillingLpmhSourcePair(withBillingPowerBiImport(withBillingQuotaSafePersistence(withBillingAnalyticsLiftFallback(withBillingAnalyticsArchiveHydration(withBillingManHoursPrecision(withBillingArchiveIndexedDb(withBillingHeaderRemoved(pageHtml))))))))))));
         if (id === "lphTracker") {
+          pageHtml = withLphDefaultExpectedFlips(pageHtml);
           pageHtml = withLphLunchDuringDowntime(pageHtml);
           pageHtml = withLphLunchTimeMapLabels(pageHtml);
           pageHtml = withLphMidnightPreshiftMetrics(pageHtml);
           pageHtml = withLphReleaseAnalysisPopup(pageHtml);
           pageHtml = withLphControlStack(pageHtml);
+          pageHtml = withLphCarsOnHandBeforeOutboundCommitments(pageHtml);
+          pageHtml = withLphPrestartCarryoverSection(pageHtml);
           pageHtml = withLphCollapsibleControlSections(pageHtml);
           pageHtml = withLphPreviousShiftHourlyRows(pageHtml);
           pageHtml = withLphRealityBasedForecast(pageHtml);
@@ -9221,6 +9538,8 @@ document.getElementById("openYardCheck")?.addEventListener("click", function(){
           pageHtml = withLphTimeMapViewModes(pageHtml);
           pageHtml = withLphCarryOverShiftStart(pageHtml);
           pageHtml = withLphInboundCountSelection(pageHtml);
+          pageHtml = withLphChassisForecastInboundOptions(pageHtml);
+          pageHtml = withLphEditableForecastArrival(pageHtml);
           pageHtml = withLphOperationsGuide(pageHtml);
           pageHtml = withLphResetConfirmation(pageHtml);
           pageHtml = withLphCompactHourlyLog(pageHtml);

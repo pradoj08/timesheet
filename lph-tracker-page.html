@@ -311,6 +311,8 @@ body.input-menu-embed .input-menu-dialog{
   background:rgba(245,158,11,0.08);padding:2px 8px;border-radius:3px;
   border:1px solid rgba(245,158,11,0.2);min-width:44px;text-align:center;
 }
+.sb-train-arrival-input{width:62px;min-width:62px;outline:none;}
+.sb-train-arrival-input:focus{border-color:var(--amber);background:rgba(245,158,11,0.16);}
 
 input[type=range]{
   width:100%;height:3px;-webkit-appearance:none;appearance:none;
@@ -2506,8 +2508,8 @@ body.lph-hydrating::after{
 </div>
 <div class="total-delay" id="total-delay-note">Total delays: <span>1.0h</span></div>
 </div>
-<div class="sb-card sb-card-crew" data-input-menu-title="Crew &amp; Lifts">
-<div class="section-label">Crew &amp; Lifts</div>
+<div class="sb-card sb-card-crew" data-input-menu-title="Crew">
+<div class="section-label">Crew</div>
 <div class="ctrl-group">
 <div class="ctrl-header">
 <span class="ctrl-name">Day shift crew <span class="shift-badge" id="s1-badge" style="background:rgba(56,189,248,0.12);color:var(--blue);">0300-1500</span></span>
@@ -2553,8 +2555,8 @@ body.lph-hydrating::after{
 <div class="note" id="carryover-note" style="color:#EF4444;">Unfinished work from the prior shift — must be completed before today's operations can begin.</div>
 </div>
 <div class="ctrl-group">
-<div class="ctrl-header"><span class="ctrl-name">Expected flips (1 each)</span><span class="ctrl-val" id="v-flips">0</span></div>
-<input id="flips" max="100" min="0" step="1" type="range" value="0"/>
+<div class="ctrl-header"><span class="ctrl-name">Expected flips (1 each)</span><span class="ctrl-val" id="v-flips">35</span></div>
+<input id="flips" max="100" min="0" step="1" type="range" value="35"/>
 <div class="note">Day shift · each flip = 1 lift</div>
 </div>
 </div>
@@ -4162,6 +4164,23 @@ function chassisForecastUnitsForInbound(trainName){
   },0);
 }
 
+function readChassisForecastInbounds(){
+  var forecast=readSharedJson(CHASSIS_FORECAST_STORAGE_KEY);
+  var units=Array.isArray(forecast.importedUnits)?forecast.importedUnits:[];
+  var grouped={};
+  units.forEach(function(unit){
+    var train=String(unit&&(unit.trainId||unit.train||unit.scheduledObjective||unit.scheduledObjectiveTrain)||'').trim();
+    var key=normalizeSharedTrainName(train);
+    if(!train||!key||key==='TRAIN'||key==='NOTRAINLISTED')return;
+    if(!grouped[key])grouped[key]={train:train,units:0,eta:''};
+    grouped[key].units+=1;
+    if(!grouped[key].eta&&unit&&unit.etaHour!=null)grouped[key].eta=String(unit.etaHour).trim();
+  });
+  return Object.keys(grouped).map(function(key){return grouped[key];}).sort(function(a,b){
+    return a.train.localeCompare(b.train,undefined,{numeric:true});
+  });
+}
+
 function readExcelViewInbounds(){
   var excelState=readSharedJson(EXCEL_INBOUND_STORAGE_KEY);
   var plans=Array.isArray(excelState.inboundPlans)?excelState.inboundPlans:[];
@@ -4230,27 +4249,27 @@ function readTodayExcelViewInbounds(){
 function populateInboundSourceSelect(select,key){
   if(!select) return;
   var currentKey=normalizeSharedTrainName(trainNames[key]);
-  var inbounds=readExcelViewInbounds();
+  var inbounds=readChassisForecastInbounds();
   select.innerHTML='';
-  var prompt=document.createElement('option');
-  prompt.value='';
-  prompt.textContent=inbounds.length?'Select Excel View inbound':'No Excel View inbounds available';
-  select.appendChild(prompt);
+  var manual=document.createElement('option');
+  manual.value='';
+  manual.textContent='Manual entry';
+  select.appendChild(manual);
   inbounds.forEach(function(inbound,index){
     var option=document.createElement('option');
     option.value=String(index);
     option.dataset.train=inbound.train;
     option.dataset.units=String(inbound.units);
     option.dataset.eta=inbound.eta;
-    option.textContent=inbound.train+(inbound.day?' | '+inbound.day:'')+' | '+inbound.units+' units';
+    option.textContent=inbound.train+' | '+inbound.units+' units';
     select.appendChild(option);
     if(normalizeSharedTrainName(inbound.train)===currentKey) select.value=String(index);
   });
-  select.disabled=!inbounds.length;
+  select.disabled=false;
   var status=select.parentElement&&select.parentElement.querySelector('.sb-train-source-units');
   if(status){
     var matched=select.value!==''?inbounds[Number(select.value)]:null;
-    status.textContent=matched?(matched.units+' units'):'Manual';
+    status.textContent=matched?(matched.units+' units'):'Manual entry';
     status.classList.toggle('matched',!!matched&&matched.units>0);
     status.classList.toggle('missing',!!matched&&matched.units===0);
   }
@@ -5035,7 +5054,7 @@ function buildTrains(){
     var arrDiv=document.createElement('div');arrDiv.className='ctrl-group';
     var arrHeader=document.createElement('div');arrHeader.className='ctrl-header';
     var arrLabel=document.createElement('span');arrLabel.className='ctrl-name';arrLabel.textContent='Arrival';
-    var arrVal=document.createElement('span');arrVal.className='ctrl-val';arrVal.id='v-'+key+'-arr';arrVal.textContent=fmtH(t.arrDef);
+    var arrVal=document.createElement('input');arrVal.type='text';arrVal.className='ctrl-val sb-train-arrival-input';arrVal.id='v-'+key+'-arr';arrVal.value=fmtH(t.arrDef);arrVal.inputMode='numeric';arrVal.maxLength=5;arrVal.title='Enter arrival as HHMM or HH:MM';arrVal.setAttribute('aria-label','Arrival time for Train '+(idx+1));
     arrHeader.appendChild(arrLabel);arrHeader.appendChild(arrVal);
     var arrSlider=document.createElement('input');arrSlider.type='range';
     arrSlider.min=t.arrMin;arrSlider.max=t.arrMax;arrSlider.step=0.25;arrSlider.value=t.arrDef;arrSlider.id=key+'-arr';
@@ -5066,10 +5085,10 @@ function buildTrains(){
     sourceSelect.className='sb-train-source-select';
     sourceSelect.dataset.trainKey=key;
     sourceSelect.style.setProperty('--thumb-color',t.color);
-    sourceSelect.setAttribute('aria-label','Select an inbound from Excel View for Train '+(idx+1));
+    sourceSelect.setAttribute('aria-label','Select a Chassis Forecast train or use manual entry for Train '+(idx+1));
     var sourceUnits=document.createElement('span');
     sourceUnits.className='sb-train-source-units';
-    sourceUnits.textContent='Manual';
+    sourceUnits.textContent='Manual entry';
     sourceRow.appendChild(sourceSelect);sourceRow.appendChild(sourceUnits);
 
     arrDiv.appendChild(arrHeader);arrDiv.appendChild(arrSlider);
@@ -5093,7 +5112,7 @@ function buildTrains(){
       var option=sourceSelect.options[sourceSelect.selectedIndex];
       if(!option||!option.dataset.train){
         uSlider.step='5';
-        sourceUnits.textContent='Manual';
+        sourceUnits.textContent='Manual entry';
         sourceUnits.classList.remove('matched','missing');
         return;
       }
@@ -5104,7 +5123,7 @@ function buildTrains(){
       nameInput.value=selectedTrain;
       if(Number.isFinite(selectedArrival)){
         arrSlider.value=String(selectedArrival);
-        arrVal.textContent=fmtH(selectedArrival);
+        arrVal.value=fmtH(selectedArrival);
       }
       uSlider.step='1';
       uSlider.max=String(Math.max(300,Math.ceil(selectedUnits/5)*5));
@@ -5116,8 +5135,22 @@ function buildTrains(){
       simulate();
     });
     sourceSelect.addEventListener('pointerdown',function(){populateInboundSourceSelect(sourceSelect,key);});
+    arrVal.addEventListener('change',function(){
+      var selectedArrival=lphInboundEtaHours(arrVal.value);
+      if(!Number.isFinite(selectedArrival)){
+        arrVal.setCustomValidity('Use HHMM or HH:MM.');
+        arrVal.reportValidity();
+        arrVal.value=fmtH(parseFloat(arrSlider.value));
+        return;
+      }
+      arrVal.setCustomValidity('');
+      arrSlider.value=String(selectedArrival);
+      arrVal.value=fmtH(selectedArrival);
+      updateCoh();simulate();
+    });
+    arrVal.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();arrVal.blur();}});
     arrSlider.addEventListener('input',function(e){
-      document.getElementById('v-'+key+'-arr').textContent=fmtH(parseFloat(e.target.value));
+      document.getElementById('v-'+key+'-arr').value=fmtH(parseFloat(e.target.value));
       updateCoh();simulate();
     });
     uSlider.addEventListener('input',function(e){
@@ -8714,7 +8747,7 @@ function resetLeftInputs(){
   setControlValue('prelifts','0');
   setControlValue('carryover-lifts','0');
   setControlValue('carryover-type','mhoas');
-  setControlValue('flips','0');
+  setControlValue('flips','35');
 
   buildTrains();
   updateStaticControlLabels();

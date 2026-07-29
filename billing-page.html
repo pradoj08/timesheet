@@ -3601,8 +3601,88 @@
       addGateSheet(workbook);
 
       const safeMonth = state.month || currentMonth();
-      window.XLSX.writeFile(workbook, `operations-export-${safeMonth}.xlsx`);
+      downloadStyledBillingWorkbook(workbook, `operations-export-${safeMonth}.xlsx`);
       showToast("Exported Billing summary and operations workbook");
+    }
+
+    function billingSummaryStyleXml() {
+      return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+  <numFmts count="0"/>
+  <fonts count="2">
+    <font><sz val="11"/><color theme="1"/><name val="Calibri"/><family val="2"/><scheme val="minor"/></font>
+    <font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/><family val="2"/><scheme val="minor"/></font>
+  </fonts>
+  <fills count="4">
+    <fill><patternFill patternType="none"/></fill>
+    <fill><patternFill patternType="gray125"/></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FF000000"/><bgColor indexed="64"/></patternFill></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FFD9D9D9"/><bgColor indexed="64"/></patternFill></fill>
+  </fills>
+  <borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>
+  <cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
+  <cellXfs count="4">
+    <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
+    <xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>
+    <xf numFmtId="0" fontId="0" fillId="3" borderId="0" xfId="0" applyFill="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>
+    <xf numFmtId="0" fontId="0" fillId="3" borderId="0" xfId="0" applyFill="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>
+  </cellXfs>
+  <cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>
+  <dxfs count="0"/>
+  <tableStyles count="0" defaultTableStyle="TableStyleMedium9" defaultPivotStyle="PivotStyleMedium4"/>
+</styleSheet>`;
+    }
+
+    function billingUtf8Bytes(text) {
+      if (window.TextEncoder) return new TextEncoder().encode(text);
+      const encoded = unescape(encodeURIComponent(text));
+      return Uint8Array.from(encoded, (character) => character.charCodeAt(0));
+    }
+
+    function billingZipText(content) {
+      if (window.TextDecoder) return new TextDecoder("utf-8").decode(content);
+      return Array.from(content, (byte) => String.fromCharCode(byte)).join("");
+    }
+
+    function downloadStyledBillingWorkbook(workbook, fileName) {
+      const xlsx = window.XLSX;
+      if (!xlsx.CFB || !xlsx.CFB.read || !xlsx.CFB.write || !xlsx.CFB.find) {
+        xlsx.writeFile(workbook, fileName);
+        return;
+      }
+
+      try {
+        const unstyledBytes = xlsx.write(workbook, { bookType: "xlsx", type: "array", compression: true });
+        const zipInput = unstyledBytes instanceof ArrayBuffer ? new Uint8Array(unstyledBytes) : unstyledBytes;
+        const zip = xlsx.CFB.read(zipInput, { type: "array" });
+        const stylesEntry = xlsx.CFB.find(zip, "/xl/styles.xml");
+        const summaryEntry = xlsx.CFB.find(zip, "/xl/worksheets/sheet1.xml");
+        if (!stylesEntry || !summaryEntry) throw new Error("Billing Summary workbook entries were not found");
+
+        const shadedColumns = new Set(["A", "D", "H", "K"]);
+        const styledSummaryXml = billingZipText(summaryEntry.content).replace(/<c([^>]*r="([A-Z]+)(\d+)"[^>]*)>/g, (match, attributes, column, row) => {
+          const styleId = row === "1" ? 1 : (column === "A" ? 3 : (shadedColumns.has(column) ? 2 : null));
+          const cleanAttributes = attributes.replace(/\s+s="[^"]*"/i, "");
+          return `<c${cleanAttributes}${styleId === null ? "" : ` s="${styleId}"`}>`;
+        });
+
+        stylesEntry.content = billingUtf8Bytes(billingSummaryStyleXml());
+        stylesEntry.size = stylesEntry.content.length;
+        summaryEntry.content = billingUtf8Bytes(styledSummaryXml);
+        summaryEntry.size = summaryEntry.content.length;
+
+        const styledBytes = xlsx.CFB.write(zip, { fileType: "zip", type: "array", compression: true });
+        const workbookBlob = new Blob([styledBytes], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+        const downloadUrl = URL.createObjectURL(workbookBlob);
+        const downloadLink = document.createElement("a");
+        downloadLink.href = downloadUrl;
+        downloadLink.download = fileName;
+        downloadLink.click();
+        window.setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
+      } catch (error) {
+        console.warn("Billing export styling fallback", error);
+        xlsx.writeFile(workbook, fileName);
+      }
     }
 
     function addBillingSummarySheet(workbook) {
@@ -3654,8 +3734,6 @@
           const cell = sheet[window.XLSX.utils.encode_cell({ r: rowIndex + 1, c: column })];
           if (cell) cell.s = column === 0 ? dateStyle : shadedStyle;
         });
-        const lphCell = sheet[window.XLSX.utils.encode_cell({ r: rowIndex + 1, c: 12 })];
-        if (lphCell && typeof lphCell.v === "number") lphCell.z = "0.00";
       });
       sheet["!cols"] = [
         { wch: 14 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 9 }, { wch: 10 }, { wch: 11 },
