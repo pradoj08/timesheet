@@ -1482,6 +1482,25 @@
   .dashboard-controls {
     display: flex; align-items: center; gap: 8px; flex-wrap: nowrap; justify-content: flex-end; min-width: 0;
   }
+  .table-density-control {
+    min-width: 132px;
+    height: 34px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 7px;
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    background: #f8fafc;
+    color: #475569;
+    font-size: 8px;
+    font-weight: 900;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .table-density-control input { width: 64px; min-width: 0; margin: 0; accent-color: #315e8d; cursor: pointer; }
+  .table-density-control output { min-width: 25px; color: #173a63; font-variant-numeric: tabular-nums; text-align: right; }
   .view-picker { position: relative; width: 242px; min-width: 242px; }
   .view-select {
     width: 242px;
@@ -1566,7 +1585,7 @@
     margin-top: 0;
   }
   .blank-grid-separator {
-    min-height: 28px;
+    min-height: calc(28px * var(--excel-table-scale, 1));
     min-width: 1312px;
     display: flex;
     align-items: center;
@@ -1577,7 +1596,7 @@
     border-bottom: 1px solid #c6ced9;
   }
   .blank-grid-separator:empty {
-    min-height: 16px;
+    min-height: calc(16px * var(--excel-table-scale, 1));
     padding: 0;
   }
   .blank-grid-title {
@@ -2094,7 +2113,7 @@
     cursor: default;
   }
   .grid-head {
-    background: #b42318; color: #ffffff; padding: 8px 7px;
+    background: #b42318; color: #ffffff; padding: calc(8px * var(--excel-table-scale, 1)) 7px;
     border-right: 0; border-bottom: 1px solid #8f1c14;
     font-family: var(--grid-header-font, "Aptos Narrow", "Arial Narrow", "Roboto Condensed", Arial, sans-serif);
     font-size: var(--grid-header-size, 11px); font-weight: var(--grid-header-weight, 700); letter-spacing: .07em; text-transform: uppercase;
@@ -2144,7 +2163,7 @@
     outline-offset: 1px;
   }
   .track-label, .track-total, .track-remaining, .cut-cell {
-    min-height: 23px; border-right: 0; border-bottom: 1px solid #d8e0e9;
+    min-height: calc(23px * var(--excel-table-scale, 1)); border-right: 0; border-bottom: 1px solid #d8e0e9;
     display: flex; align-items: center; justify-content: center; padding: 0 3px;
   }
   .track-label { background: #f6f8fb; font-size: 12px; font-weight: 700; color: #2f4058; }
@@ -2158,6 +2177,7 @@
     letter-spacing: 0; text-wrap: balance; white-space: nowrap;
     background: white; position: relative; word-break: normal; overflow: hidden;
   }
+  .grid-wrap .cut-cell { padding-top: calc(1px * var(--excel-table-scale, 1)); padding-bottom: calc(1px * var(--excel-table-scale, 1)); }
   .cut-cell.block-text-wrap {
     white-space: normal;
     overflow-wrap: anywhere;
@@ -3784,6 +3804,11 @@
             <div class="panel-subtitle" id="viewDescription"></div>
           </div>
           <div class="dashboard-controls">
+            <label class="table-density-control" title="Condense or expand all ramp tables">
+              <span>Table space</span>
+              <input id="tableDensityRange" type="range" min="0" max="100" step="1" value="50" aria-label="Table spacing from condensed to expanded">
+              <output id="tableDensityValue">50%</output>
+            </label>
             <button class="btn btn-light undo-grid-btn" id="undoExcelView" type="button" disabled title="Undo the last block move, edit, delete, or other saved change">Undo</button>
             <button class="btn btn-white btn-small" id="toggleSplitView" type="button">Split View</button>
             <button class="btn btn-white btn-small" id="toggleYardView" type="button">Yard (0) / Pierce (0)</button>
@@ -4263,6 +4288,11 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     };
   }
 
+  function normalizeTableDensity(value) {
+    const density = Number(value);
+    return Number.isFinite(density) ? Math.max(0, Math.min(100, Math.round(density))) : 50;
+  }
+
   function applyGridDisplayBaseline(target, savedSource) {
     const next = target && typeof target === "object" ? target : defaultState();
     const savedVersion = Number(savedSource && savedSource.gridDisplayBaselineVersion) || 0;
@@ -4394,6 +4424,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       trackTarget: 2500,
       hideTrackIds: true,
       hideDwell: false,
+      tableDensity: 50,
       inboundPlannerVisible: false,
       inboundPlannerPopupMigrated: true,
       inboundPlans: defaultInboundPlans(),
@@ -4488,6 +4519,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         merged.inboundPlans = normalizeInboundPlans(saved.inboundPlans);
         merged.inboundArchive = normalizeInboundArchive(saved.inboundArchive);
         merged.gridTypography = normalizeGridTypography(saved.gridTypography);
+        merged.tableDensity = normalizeTableDensity(saved.tableDensity);
         const savedColorRules = normalizeColorRules(merged.colorRules);
         if (persistedColorRules) {
           merged.colorRules = persistedColorRules;
@@ -4503,6 +4535,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     fallback.inboundPlans = normalizeInboundPlans(fallback.inboundPlans);
     fallback.inboundArchive = [];
     fallback.gridTypography = normalizeGridTypography(fallback.gridTypography);
+    fallback.tableDensity = normalizeTableDensity(fallback.tableDensity);
     if (persistedColorRules) fallback.colorRules = persistedColorRules;
     return fallback;
   }
@@ -6013,6 +6046,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   }
 
   function renderAll() {
+    applyTableDensity();
     applyGridTypography();
     computed = calculate(state.rows);
     publishLiveSnapshot();
@@ -8118,6 +8152,16 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     root.style.setProperty("--grid-header-weight", state.gridTypography.headerBold ? "700" : "400");
   }
 
+  function applyTableDensity() {
+    state.tableDensity = normalizeTableDensity(state.tableDensity);
+    const scale = .72 + (state.tableDensity / 100) * .63;
+    document.documentElement.style.setProperty("--excel-table-scale", scale.toFixed(3));
+    const slider = $("#tableDensityRange");
+    const output = $("#tableDensityValue");
+    if (slider) slider.value = String(state.tableDensity);
+    if (output) output.textContent = `${state.tableDensity}%`;
+  }
+
   function renderGridTypographyControls() {
     state.gridTypography = normalizeGridTypography(state.gridTypography);
     const fontOptions = selected => GRID_FONT_OPTIONS.map(font =>
@@ -8271,6 +8315,9 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     ]);
     if (arrival < 0) arrival = firstHeaderIndex(h,[/^(TIME IN|TIME IN DISP|TIME IN DISPLAY|TIME IN YARD|YARD ARRIVAL)$/]);
     if (arrival < 0) arrival = firstHeaderIndex(h,[/\bARRIVAL\b/]);
+    const arrivalCandidates = h.map((header, index) =>
+      /\bARRIVAL\b|^(TIME IN DISP|TIME IN DISPLAY|TIME IN YARD|YARD ARRIVAL)$/.test(header) ? index : -1
+    ).filter(index => index >= 0);
     const yardBlock = firstHeaderIndex(h,["YARD BLOCK","YD BLOCK"]);
     let pStatus = firstHeaderIndex(h,["TRAIN TRACK","PRIMARY STATUS","P STATUS"]);
     let qStatus = firstHeaderIndex(h,["HOLD CODE","SECONDARY STATUS","Q STATUS"]);
@@ -8283,7 +8330,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     if (holdStart >= 0 && hours < 0) hours = holdStart + 2;
     const required = [track,seq,equipment,tons,length];
     if (required.some(i=>i<0)) return null;
-    return {track,seq,equipment,tons,length,pStatus,qStatus,holdStart,days,hours,inbound,arrival,yardBlock};
+    return {track,seq,equipment,tons,length,pStatus,qStatus,holdStart,days,hours,inbound,arrival,arrivalCandidates,yardBlock};
   }
 
   function mappedValue(row, index) {
@@ -8295,7 +8342,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       mappedValue(row,map.track), mappedValue(row,map.seq), mappedValue(row,map.equipment),
       mappedValue(row,map.tons), mappedValue(row,map.length), mappedValue(row,map.pStatus),
       mappedValue(row,map.qStatus), mappedValue(row,map.holdStart), mappedValue(row,map.days),
-      mappedValue(row,map.hours), mappedValue(row,map.inbound), mappedValue(row,map.arrival),
+      mappedValue(row,map.hours), mappedValue(row,map.inbound),
+      clean(mappedValue(row,map.arrival)) || (map.arrivalCandidates || []).map(index => mappedValue(row,index)).find(value => clean(value)) || "",
       mappedValue(row,map.yardBlock)
     ]);
   }
@@ -9489,6 +9537,11 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       "conglobal-time-off-calendar-v1", "conglobal-timesheet-notes-v1", "settegast-staff-role-preferences-v1"].includes(event.key)
       && !$("#todayRosterPopup").hidden) renderTodayRoster();
   });
+  $("#tableDensityRange").addEventListener("input", event => {
+    state.tableDensity = normalizeTableDensity(event.target.value);
+    applyTableDensity();
+  });
+  $("#tableDensityRange").addEventListener("change", () => saveState());
   window.addEventListener("message", event => {
     if (!event.data || event.data.type !== "conglobal-current-day-roster-snapshot" || !event.data.snapshot) return;
     try { localStorage.setItem(TODAY_ROSTER_SNAPSHOT_KEY, JSON.stringify(event.data.snapshot)); } catch (_) {}

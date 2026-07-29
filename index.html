@@ -4306,6 +4306,22 @@
 </head>`);
     }
 
+    function withExcelTableDensityControl(html) {
+      if (!html || typeof html !== "string" || html.includes("excel-table-density-control-v1")) return html;
+      const style = `<style id="excel-table-density-control-v1">
+.table-density-control{min-width:132px;height:34px;display:inline-flex;align-items:center;gap:6px;padding:4px 7px;border:1px solid var(--line,#cbd5e1);border-radius:7px;background:#f8fafc;color:#475569;font-size:8px;font-weight:900;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap}
+.table-density-control input{width:64px;min-width:0;margin:0;accent-color:#315e8d;cursor:pointer}.table-density-control output{min-width:25px;color:#173a63;font-variant-numeric:tabular-nums;text-align:right}
+.grid-head{padding:calc(8px * var(--excel-table-scale,1)) 7px!important}.track-label,.track-total,.track-remaining,.cut-cell{min-height:calc(23px * var(--excel-table-scale,1))!important}.grid-wrap .cut-cell{padding-top:calc(1px * var(--excel-table-scale,1))!important;padding-bottom:calc(1px * var(--excel-table-scale,1))!important}.blank-grid-separator{min-height:calc(28px * var(--excel-table-scale,1))!important}.blank-grid-separator:empty{min-height:calc(16px * var(--excel-table-scale,1))!important}
+</style>`;
+      const control = `<label class="table-density-control" title="Condense or expand all ramp tables"><span>Table space</span><input id="tableDensityRange" type="range" min="0" max="100" step="1" value="50" aria-label="Table spacing from condensed to expanded"><output id="tableDensityValue">50%</output></label>`;
+      html = html.replace(/(<button[^>]*id=["']undoExcelView["'][^>]*>)/i, control + "$1");
+      const script = `<scr${""}ipt id="excel-table-density-control-script-v1">(()=>{const key="conglobal-excel-table-density-v1";const range=document.getElementById("tableDensityRange");const output=document.getElementById("tableDensityValue");if(!range||!output)return;const normalized=value=>{const number=Number(value);return Number.isFinite(number)?Math.max(0,Math.min(100,Math.round(number))):50};const apply=value=>{const density=normalized(value);document.documentElement.style.setProperty("--excel-table-scale",(.72+(density/100)*.63).toFixed(3));range.value=String(density);output.textContent=density+"%"};let saved=50;try{saved=normalized(localStorage.getItem(key))}catch(error){}apply(saved);range.addEventListener("input",event=>apply(event.target.value));range.addEventListener("change",event=>{const density=normalized(event.target.value);apply(density);try{localStorage.setItem(key,String(density))}catch(error){}})})();</scr${""}ipt>`;
+      const headClose = html.toLowerCase().lastIndexOf("</head>");
+      if (headClose >= 0) html = html.slice(0, headClose) + style + "\n" + html.slice(headClose);
+      const bodyClose = html.toLowerCase().lastIndexOf("</body>");
+      return bodyClose >= 0 ? html.slice(0, bodyClose) + script + "\n" + html.slice(bodyClose) : html + script;
+    }
+
     function withExcelSelectionHighlight(html) {
       if (!html || typeof html !== "string" || html.includes("excel-selection-highlight-v1")) return html;
       const style = `<style id="excel-selection-highlight-v1">
@@ -5607,6 +5623,18 @@ function renderTimeMap(elId, buckets, opts){`
       patched = patched.replace(
         'let arrival = firstHeaderIndex(h,[/^(ARRIVAL|ARRIVAL TIME|ARRIVAL DATE|ETA|EST ARRIVAL)$/]);\n    if (arrival < 0) arrival = firstHeaderIndex(h,[/^(TIME IN|TIME IN DISP)$/]);',
         'let arrival = firstHeaderIndex(h,[/^(ARRIVAL|ARRIVAL TIME|ARRIVAL DATE|ARRIVAL DATE TIME|ARRIVAL DATETIME|ARRIVAL EVENT DATE TIME|ARRIVAL EVENT DATETIME)$/,/^(ETA|EST ARRIVAL|ESTIMATED ARRIVAL|INBOUND ARRIVAL)$/,/^ARRIVAL .*(DATE|TIME)/]);\n    if (arrival < 0) arrival = firstHeaderIndex(h,[/^(TIME IN|TIME IN DISP|TIME IN DISPLAY|TIME IN YARD|YARD ARRIVAL)$/]);\n    if (arrival < 0) arrival = firstHeaderIndex(h,[/\\bARRIVAL\\b/]);'
+      );
+      patched = patched.replace(
+        'if (arrival < 0) arrival = firstHeaderIndex(h,[/\\bARRIVAL\\b/]);\n    const yardBlock',
+        'if (arrival < 0) arrival = firstHeaderIndex(h,[/\\bARRIVAL\\b/]);\n    const arrivalCandidates = h.map((header, index) => /\\bARRIVAL\\b|^(TIME IN DISP|TIME IN DISPLAY|TIME IN YARD|YARD ARRIVAL)$/.test(header) ? index : -1).filter(index => index >= 0);\n    const yardBlock'
+      );
+      patched = patched.replace(
+        'return {track,seq,equipment,tons,length,pStatus,qStatus,holdStart,days,hours,inbound,arrival,yardBlock};',
+        'return {track,seq,equipment,tons,length,pStatus,qStatus,holdStart,days,hours,inbound,arrival,arrivalCandidates,yardBlock};'
+      );
+      patched = patched.replace(
+        'mappedValue(row,map.hours), mappedValue(row,map.inbound), mappedValue(row,map.arrival),\n      mappedValue(row,map.yardBlock)',
+        'mappedValue(row,map.hours), mappedValue(row,map.inbound), clean(mappedValue(row,map.arrival)) || (map.arrivalCandidates || []).map(index => mappedValue(row,index)).find(value => clean(value)) || "",\n      mappedValue(row,map.yardBlock)'
       );
       patched = patched.replace(
         /function parseMddhhmm\(value, reference = new Date\(\)\) \{[\s\S]*?\n  \}\n\n  function hoursBetween/,
@@ -9171,6 +9199,7 @@ document.getElementById("openYardCheck")?.addEventListener("click", function(){
         if (id === "audits") pageHtml = withAuditsClearKeepsView(pageHtml);
         if (id === "excelView") {
           pageHtml = withExcelDarkerGreyBackground(pageHtml);
+          pageHtml = withExcelTableDensityControl(pageHtml);
           pageHtml = withExcelCurrentRosterSnapshotParity(pageHtml);
           pageHtml = withExcelSelectionHighlight(pageHtml);
           pageHtml = withExcelToolbarGroups(pageHtml);
