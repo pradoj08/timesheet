@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Settegast Alerts",
-  "version": "1.0.7",
+  "version": "1.0.20",
   "description": "Exports UP mismatch Excel files and captures AlertMeter and UP Yard Check snapshots for YardMate push alerts.",
   "permissions": ["activeTab", "alarms", "scripting", "storage", "tabs"],
   "host_permissions": ["<all_urls>", "https://employees.www.uprr.com/*", "https://app.alertmeter.com/*", "http://127.0.0.1:43127/*"],

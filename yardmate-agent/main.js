@@ -6,10 +6,17 @@ const path = require('node:path');
 const sharp = require('sharp');
 const XLSX = require('xlsx');
 
+// Some managed/remote Windows environments cannot load Electron's GPU DLLs.
+// Disable the GPU path before Chromium initializes so the local API still starts.
+app.commandLine.appendSwitch('disable-gpu');
+app.commandLine.appendSwitch('in-process-gpu');
+app.commandLine.appendSwitch('disable-gpu-compositing');
+
 const EXPORT_PATTERN = /^Mismatched Equipments(?: \(\d+\))?\.(?:xls|xlsx)$/i;
 const MAX_SOURCE_REFRESH_AGE_MS = 10 * 60 * 1000;
 const MAX_EXPORT_AGE_MS = 10 * 60 * 1000;
 const EXPORT_REFRESH_TOLERANCE_MS = 5000;
+const EVERY_HOUR_VISION_TIMES = Array.from({ length: 24 }, (_value, hour) => `${String(hour).padStart(2, '0')}00`);
 let settingsWindow;
 let tray;
 let watcher;
@@ -22,27 +29,33 @@ let lastPreview = Buffer.alloc(0);
 let lastAlertMeterPreview = Buffer.alloc(0);
 let lastAlertMeterCapturedAt = '';
 let lastYardCheckPreview = Buffer.alloc(0);
+let lastVisionPreview = Buffer.alloc(0);
 let lastExtensionSeenAt = '';
 let extensionSchedule = {
   mismatchEnabled: false,
   alertMeterEnabled: false,
   yardCheckEnabled: false,
+  visionEnabled: false,
   mismatchNextAt: '',
   alertMeterNextAt: '',
   yardCheckNextAt: '',
+  visionNextAt: '',
 };
 let programmedSchedules = {
   mismatchEnabled: false,
   alertMeterEnabled: false,
   yardCheckEnabled: false,
+  visionEnabled: false,
   mismatchTimes: [],
   alertMeterTimes: [],
   yardCheckTimes: [],
+  visionTimes: [],
 };
 let lastRows = [];
 let sourceRefresh = { timestamp: '', observedAt: '', ageMinutes: null, verified: false, changed: false };
 let alertMeterCommand = { id: '', status: 'idle', requestedAt: '', claimedAt: '', completedAt: '', error: '' };
 let yardCheckCommand = { id: '', status: 'idle', requestedAt: '', claimedAt: '', completedAt: '', error: '' };
+let visionCommand = { id: '', status: 'idle', requestedAt: '', claimedAt: '', completedAt: '', error: '' };
 const queued = new Map();
 const processed = new Set();
 const processing = new Set();
@@ -64,13 +77,16 @@ function normalizeProgrammedSchedules(value = {}) {
   const mismatchTimes = normalizeScheduleTimes(value.mismatchTimes);
   const alertMeterTimes = normalizeScheduleTimes(value.alertMeterTimes);
   const yardCheckTimes = normalizeScheduleTimes(value.yardCheckTimes);
+  const visionTimes = normalizeScheduleTimes(value.visionTimes ?? EVERY_HOUR_VISION_TIMES);
   return {
     mismatchEnabled: Boolean(value.mismatchEnabled) && mismatchTimes.length > 0,
     alertMeterEnabled: Boolean(value.alertMeterEnabled) && alertMeterTimes.length > 0,
     yardCheckEnabled: Boolean(value.yardCheckEnabled) && yardCheckTimes.length > 0,
+    visionEnabled: (value.visionEnabled === undefined ? true : Boolean(value.visionEnabled)) && visionTimes.length > 0,
     mismatchTimes,
     alertMeterTimes,
     yardCheckTimes,
+    visionTimes,
   };
 }
 
@@ -151,6 +167,7 @@ function publicState() {
     lastFile: lastFile ? path.basename(lastFile) : '',
     previewAvailable: Boolean(lastPreview.length),
     alertMeterPreviewAvailable: Boolean(lastAlertMeterPreview.length),
+    visionPreviewAvailable: Boolean(lastVisionPreview.length),
     alertMeterCapturedAt: lastAlertMeterCapturedAt,
     extensionConnected: Number.isFinite(extensionAge) && extensionAge < 90000,
     yardCheckOnline: Number.isFinite(extensionAge) && extensionAge < 90000,
@@ -169,6 +186,12 @@ function publicState() {
       requestedAt: yardCheckCommand.requestedAt,
       completedAt: yardCheckCommand.completedAt,
       error: yardCheckCommand.error,
+    },
+    visionCommand: {
+      status: visionCommand.status,
+      requestedAt: visionCommand.requestedAt,
+      completedAt: visionCommand.completedAt,
+      error: visionCommand.error,
     },
     counts: { total: lastRows.length, noMates, mismatches: lastRows.length - noMates },
   };
@@ -492,6 +515,52 @@ async function pushYardCheckSnapshot(payload) {
   if (!response.ok || result.status !== 1) throw new Error(result.errors?.join(' ') || `Pushover returned ${response.status}.`);
 }
 
+async function captureVisionSnapshot(payload) {
+  if (!settings.appToken || !settings.userKey) throw new Error('Enter both Pushover keys in YardMate Agent.');
+  const match = text(payload.imageDataUrl).match(/^data:image\/(?:png|jpeg);base64,(.+)$/i);
+  if (!match) throw new Error('The Vision dashboard screenshot was missing or invalid.');
+  const screenshot = Buffer.from(match[1], 'base64');
+  const image = sharp(screenshot, { failOn: 'warning' });
+  const metadata = await image.metadata();
+  const crop = payload.crop && typeof payload.crop === 'object' ? payload.crop : null;
+  let processed = image;
+  if (crop && metadata.width && metadata.height) {
+    const viewportWidth = Number(crop.viewportWidth);
+    const viewportHeight = Number(crop.viewportHeight);
+    const scaleX = viewportWidth > 0 ? metadata.width / viewportWidth : 1;
+    const scaleY = viewportHeight > 0 ? metadata.height / viewportHeight : 1;
+    const left = Math.max(0, Math.floor(Number(crop.x || 0) * scaleX));
+    const top = Math.max(0, Math.floor(Number(crop.y || 0) * scaleY));
+    const width = Math.min(metadata.width - left, Math.max(1, Math.floor(Number(crop.width || viewportWidth) * scaleX)));
+    const height = Math.min(metadata.height - top, Math.max(1, Math.floor(Number(crop.height || viewportHeight) * scaleY)));
+    if (width > 0 && height > 0) processed = processed.extract({ left, top, width, height });
+  }
+  lastVisionPreview = await processed
+    .resize({ width: 1500, height: 1900, fit: 'inside', withoutEnlargement: true })
+    .jpeg({ quality: 84, mozjpeg: true })
+    .toBuffer();
+  const capturedAt = payload.capturedAt ? new Date(payload.capturedAt) : new Date();
+  const timeLabel = Number.isNaN(capturedAt.getTime())
+    ? new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+    : capturedAt.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  const response = await fetch('https://api.pushover.net/1/messages.json', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      token: settings.appToken,
+      user: settings.userKey,
+      title: `UP Vision B 372 [${timeLabel}]`,
+      message: 'Latest UP Vision B 372 snapshot attached.',
+      attachment_base64: lastVisionPreview.toString('base64'),
+      attachment_type: 'image/jpeg',
+      url: 'https://employees.www.uprr.com/imx/vision/secure/#/?circ7=B%20372',
+      url_title: 'Open UP Vision B 372',
+    }),
+  });
+  const result = await response.json();
+  if (!response.ok || result.status !== 1) throw new Error(result.errors?.join(' ') || `Pushover returned ${response.status}.`);
+}
+
 async function pushWeather(payload) {
   if (!settings.appToken || !settings.userKey) throw new Error('Enter both Pushover keys in YardMate Agent.');
   const postTitle = text(payload.title || 'Latest weather update').slice(0, 240);
@@ -778,6 +847,21 @@ function startControlServer() {
       if (request.method === 'GET' && url.pathname === '/api/schedules') {
         return sendJson(response, 200, { ok: true, programmedSchedules });
       }
+      if (request.method === 'POST' && url.pathname === '/api/settings') {
+        const body = await readJsonBody(request);
+        const appToken = text(body.appToken).trim();
+        const userKey = text(body.userKey).trim();
+        if (!appToken || !userKey) throw new Error('Enter both the Pushover application token and user/group key.');
+        settings = {
+          ...settings,
+          appToken: appToken.slice(0, 128),
+          userKey: userKey.slice(0, 128),
+        };
+        await persistSettings();
+        lastMessage = 'Pushover settings saved securely.';
+        publishState();
+        return sendJson(response, 200, { ok: true, ...publicState() });
+      }
       if (request.method === 'POST' && url.pathname === '/api/schedules') {
         const body = await readJsonBody(request);
         programmedSchedules = normalizeProgrammedSchedules(body);
@@ -792,9 +876,11 @@ function startControlServer() {
           mismatchEnabled: url.searchParams.get('mismatchEnabled') === '1',
           alertMeterEnabled: url.searchParams.get('alertMeterEnabled') === '1',
           yardCheckEnabled: url.searchParams.get('yardCheckEnabled') === '1',
+          visionEnabled: url.searchParams.get('visionEnabled') === '1',
           mismatchNextAt: url.searchParams.get('mismatchNextAt') || '',
           alertMeterNextAt: url.searchParams.get('alertMeterNextAt') || '',
           yardCheckNextAt: url.searchParams.get('yardCheckNextAt') || '',
+          visionNextAt: url.searchParams.get('visionNextAt') || '',
         };
         const claimExpired = alertMeterCommand.status === 'processing'
           && Date.now() - new Date(alertMeterCommand.claimedAt || 0).getTime() > 120000;
@@ -809,6 +895,13 @@ function startControlServer() {
           yardCheckCommand.status = 'processing';
           yardCheckCommand.claimedAt = new Date().toISOString();
           return sendJson(response, 200, { ok: true, command: { id: yardCheckCommand.id, type: 'capture-yardcheck' } });
+        }
+        const visionClaimExpired = visionCommand.status === 'processing'
+          && Date.now() - new Date(visionCommand.claimedAt || 0).getTime() > 120000;
+        if (visionCommand.status === 'pending' || visionClaimExpired) {
+          visionCommand.status = 'processing';
+          visionCommand.claimedAt = new Date().toISOString();
+          return sendJson(response, 200, { ok: true, command: { id: visionCommand.id, type: 'capture-vision' } });
         }
         return sendJson(response, 200, { ok: true, command: null });
       }
@@ -841,6 +934,15 @@ function startControlServer() {
           'Content-Type': 'image/jpeg',
         });
         return response.end(lastYardCheckPreview);
+      }
+      if (request.method === 'GET' && url.pathname === '/api/vision-preview') {
+        if (!lastVisionPreview.length) return sendJson(response, 404, { error: 'No Vision preview has been captured yet.' });
+        response.writeHead(200, {
+          'Access-Control-Allow-Origin': 'null',
+          'Cache-Control': 'no-store',
+          'Content-Type': 'image/jpeg',
+        });
+        return response.end(lastVisionPreview);
       }
       if (request.method === 'POST' && url.pathname === '/api/source-refresh') {
         const body = await readJsonBody(request);
@@ -914,6 +1016,32 @@ function startControlServer() {
         }
         return sendJson(response, 200, publicState());
       }
+      if (request.method === 'POST' && url.pathname === '/api/request-vision') {
+        visionCommand = {
+          id: `vision-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          status: 'pending',
+          requestedAt: new Date().toISOString(),
+          claimedAt: '',
+          completedAt: '',
+          error: '',
+        };
+        lastMessage = 'Vision dashboard capture queued. Settegast Alerts will capture it locally.';
+        publishState();
+        return sendJson(response, 200, publicState());
+      }
+      if (request.method === 'POST' && url.pathname === '/api/complete-vision-command') {
+        const body = await readJsonBody(request);
+        if (text(body.id) && text(body.id) === visionCommand.id) {
+          visionCommand.status = body.ok ? 'completed' : 'failed';
+          visionCommand.completedAt = new Date().toISOString();
+          visionCommand.error = body.ok ? '' : text(body.error).slice(0, 500);
+          lastMessage = body.ok
+            ? 'UP Vision B 372 screenshot captured and pushed successfully.'
+            : `Vision capture failed: ${visionCommand.error || 'Unknown error'}`;
+          publishState();
+        }
+        return sendJson(response, 200, publicState());
+      }
       if (request.method === 'POST' && url.pathname === '/api/watch') {
         const body = await readJsonBody(request);
         settings.enabled = Boolean(body.enabled);
@@ -954,6 +1082,13 @@ function startControlServer() {
         const body = await readJsonBody(request, 12 * 1024 * 1024);
         await pushYardCheckSnapshot(body);
         lastMessage = `Sent UP Yard Check snapshot at ${new Date().toLocaleTimeString()}.`;
+        publishState();
+        return sendJson(response, 200, { ok: true, state: publicState() });
+      }
+      if (request.method === 'POST' && url.pathname === '/api/capture-vision') {
+        const body = await readJsonBody(request, 12 * 1024 * 1024);
+        await captureVisionSnapshot(body);
+        lastMessage = `Captured and sent UP Vision B 372 at ${new Date().toLocaleTimeString()}.`;
         publishState();
         return sendJson(response, 200, { ok: true, state: publicState() });
       }
@@ -1058,6 +1193,9 @@ ipcMain.handle('yardmate:choose-download-folder', async () => {
   return response.canceled ? null : response.filePaths[0];
 });
 
+// The control API must remain available even when Chromium cannot initialize
+// hardware acceleration (common on headless/remote desktop sessions).
+app.disableHardwareAcceleration();
 app.requestSingleInstanceLock();
 app.on('second-instance', createWindow);
 app.on('activate', createWindow);
@@ -1065,9 +1203,14 @@ app.whenReady().then(async () => {
   settingsPath = path.join(app.getPath('userData'), 'settings.json');
   settings = await loadSettings();
   createTray();
-  createWindow();
   restartWatcher();
   startControlServer();
+  try {
+    createWindow();
+  } catch (error) {
+    lastMessage = `YardMate window unavailable: ${error instanceof Error ? error.message : String(error)}`;
+    publishState();
+  }
 });
 app.on('window-all-closed', () => {});
 app.on('before-quit', () => { app.isQuitting = true; watcher?.close(); controlServer?.close(); });

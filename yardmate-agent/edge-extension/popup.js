@@ -1,6 +1,7 @@
 const runButton = document.getElementById('run');
 const alertMeterButton = document.getElementById('alertMeter');
 const yardCheckButton = document.getElementById('yardCheck');
+const visionButton = document.getElementById('vision');
 const status = document.getElementById('status');
 document.getElementById('version').textContent = `v${chrome.runtime.getManifest().version}`;
 
@@ -47,6 +48,20 @@ yardCheckButton.addEventListener('click', async () => {
     status.textContent = error instanceof Error ? error.message : String(error);
   } finally {
     yardCheckButton.disabled = false;
+  }
+});
+
+visionButton.addEventListener('click', async () => {
+  visionButton.disabled = true;
+  status.textContent = 'Capturing and sending UP Vision B 372…';
+  try {
+    const response = await chrome.runtime.sendMessage({ type: 'mori-capture-vision' });
+    if (!response?.ok) throw new Error(response?.error || 'The Vision snapshot could not be captured.');
+    status.textContent = response.message;
+  } catch (error) {
+    status.textContent = error instanceof Error ? error.message : String(error);
+  } finally {
+    visionButton.disabled = false;
   }
 });
 

@@ -91,6 +91,39 @@
     return Boolean(hours);
   };
   const findApply = () => controls().find((node) => /^(apply|search|submit|run)$/.test(normalize(node.textContent || node.value || node.getAttribute?.('aria-label'))));
+  const waitForControls = async (timeoutMs = 25000) => {
+    const deadline = Date.now() + timeoutMs;
+    while (Date.now() < deadline) {
+      if (chooseYardInput() && findApply()) return;
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
+    throw new Error('The Yard Check controls did not finish loading.');
+  };
+  const resultsSignature = () => {
+    const resultNodes = [...document.querySelectorAll('table,[role="grid"],.ag-root,.grid,.results,.result')].filter(visible);
+    const rowCount = document.querySelectorAll('tbody tr,[role="row"],.ag-row').length;
+    const text = resultNodes.map((node) => normalize(node.innerText || node.textContent)).join('|');
+    return `${rowCount}:${text.length}:${text.slice(-600)}`;
+  };
+  const pageIsBusy = () => [...document.querySelectorAll(
+    '[aria-busy="true"],.spinner,.loading,.loader,.progress,.progress-bar,mat-spinner,mat-progress-spinner'
+  )].some((node) => visible(node));
+  const waitForStableResults = async (timeoutMs = 35000) => {
+    const startedAt = Date.now();
+    const deadline = startedAt + timeoutMs;
+    let previous = '';
+    let stableSamples = 0;
+    while (Date.now() < deadline) {
+      const signature = resultsSignature();
+      const minimumWaitComplete = Date.now() - startedAt >= 10000;
+      if (minimumWaitComplete && !pageIsBusy() && signature && signature === previous) stableSamples += 1;
+      else stableSamples = 0;
+      if (stableSamples >= 3) return;
+      previous = signature;
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
+    throw new Error('The Yard Check results did not finish loading before the screenshot timeout.');
+  };
   const resultCrop = () => {
     const pageText = normalize(document.body?.innerText);
     const bounds = [...document.querySelectorAll(
@@ -121,6 +154,7 @@
     if (!location.hash.toLowerCase().includes('yardcheck')) {
       throw new Error('The UP Yard Check screen is not open.');
     }
+    await waitForControls();
     const yardInput = chooseYardInput();
     if (!yardInput) throw new Error('The Yard field was not found on the Yard Check page.');
     setValue(yardInput, 'B 372');
@@ -134,7 +168,7 @@
     const apply = findApply();
     if (!apply) throw new Error('The Apply button was not found.');
     apply.click();
-    await new Promise((resolve) => setTimeout(resolve, 2500));
+    await waitForStableResults();
     const result = resultCrop();
     return { ok: true, yard: 'B 372', lookbackHours: 12, checked, ...result };
   }

@@ -88,10 +88,18 @@
     }
 
     .actions {
+      position: relative;
+      z-index: 60;
       display: flex;
       align-items: center;
-      gap: 12px;
-      flex-wrap: wrap;
+      gap: 8px;
+      width: 100%;
+      flex-wrap: nowrap;
+      overflow: visible;
+    }
+
+    .actions > * {
+      flex: 0 0 auto;
     }
 
     .month-input,
@@ -104,8 +112,9 @@
     }
 
     .month-input {
+      width: 150px;
       border: 1px solid var(--line);
-      padding: 8px 12px;
+      padding: 8px;
       color: var(--ink);
       background: var(--panel);
     }
@@ -114,7 +123,7 @@
       border: 1px solid var(--line);
       color: var(--muted);
       background: var(--panel);
-      padding: 9px 16px;
+      padding: 9px 10px;
       cursor: pointer;
     }
 
@@ -165,7 +174,7 @@
       position: absolute;
       right: 0;
       top: calc(100% + 8px);
-      z-index: 30;
+      z-index: 80;
       min-width: 190px;
       padding: 6px;
       border: 1px solid var(--line);
@@ -645,6 +654,21 @@
       box-shadow: inset 0 0 0 2px var(--indigo);
     }
 
+    .duplicate-investigation-flag {
+      display: inline-flex;
+      align-items: center;
+      margin-left: 6px;
+      border: 1px solid #dc2626;
+      border-radius: 999px;
+      padding: 1px 5px;
+      color: #b91c1c;
+      background: #fee2e2;
+      font-size: 10px;
+      font-weight: 900;
+      line-height: 1.2;
+      vertical-align: middle;
+    }
+
     .modal-backdrop {
       position: fixed;
       inset: 0;
@@ -732,7 +756,8 @@
     }
 
     .modal-body {
-      overflow: auto;
+      overflow-x: hidden;
+      overflow-y: auto;
     }
 
     .modal-foot {
@@ -745,7 +770,9 @@
     }
 
     .preview-table {
-      min-width: 780px;
+      width: 100%;
+      min-width: 0;
+      table-layout: fixed;
       user-select: none;
     }
 
@@ -753,7 +780,7 @@
       position: sticky;
       top: 0;
       z-index: 1;
-      padding: 10px 12px;
+      padding: 9px 6px;
       background: #f0f4f8;
       color: var(--muted);
       border-bottom: 1px solid #e3e9f0;
@@ -765,11 +792,25 @@
     }
 
     .preview-table td {
-      padding: 10px 12px;
+      min-width: 0;
+      padding: 9px 6px;
       text-align: left;
       border-bottom: 1px solid #eff3f7;
       font-size: 13px;
+      overflow-wrap: anywhere;
+      word-break: break-word;
     }
+
+    .preview-table th:nth-child(1) { width: 5%; }
+    .preview-table th:nth-child(2) { width: 13%; }
+    .preview-table th:nth-child(3) { width: 13%; }
+    .preview-table th:nth-child(4) { width: 15%; }
+    .preview-table th:nth-child(5) { width: 10%; }
+    .preview-table th:nth-child(6) { width: 10%; }
+    .preview-table th:nth-child(7) { width: 11%; }
+    .preview-table th:nth-child(8) { width: 5%; }
+    .preview-table th:nth-child(9) { width: 11%; }
+    .preview-table th:nth-child(10) { width: 7%; }
 
     .preview-table tr.duplicate-row {
       background: #fff3d6;
@@ -966,6 +1007,31 @@
       text-decoration: underline;
       text-underline-offset: 3px;
     }
+    .operation-file-preview { min-width: 920px; }
+    .operation-file-preview tr.same-day-duplicate td {
+      background: #fff1b8;
+      color: #7c2d12;
+      box-shadow: inset 0 1px #f59e0b, inset 0 -1px #f59e0b;
+    }
+    .operation-file-preview tr.excluded-unit td {
+      color: #8a94a6;
+      background: #f1f3f6;
+      text-decoration: line-through;
+    }
+    .duplicate-unit-badge {
+      display: inline-flex;
+      margin-left: 7px;
+      padding: 2px 6px;
+      border: 1px solid #d97706;
+      border-radius: 999px;
+      background: #fef3c7;
+      color: #92400e;
+      font-size: 10px;
+      font-weight: 900;
+      text-decoration: none;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
 
     .source-chip {
       display: inline-flex;
@@ -1112,7 +1178,9 @@
     }
 
     .note-input {
-      width: 220px;
+      width: 100%;
+      min-width: 0;
+      max-width: 100%;
       border: 1px solid var(--line);
       border-radius: 8px;
       padding: 7px 9px;
@@ -1141,8 +1209,8 @@
 
     .nav-tabs {
       display: inline-flex;
-      gap: 6px;
-      padding: 4px;
+      gap: 2px;
+      padding: 3px;
       border: 1px solid var(--line);
       border-radius: 8px;
       background: #fff;
@@ -1151,7 +1219,7 @@
     .nav-tab {
       border: none;
       border-radius: 6px;
-      padding: 8px 12px;
+      padding: 8px 9px;
       background: transparent;
       color: var(--muted);
       font-size: 13px;
@@ -1982,15 +2050,16 @@
         </div>
         <button id="filesButton" class="button" type="button">Uploaded files</button>
         <button id="exportButton" class="button" type="button">Export</button>
-        <label id="importPowerBiButton" class="import-button" for="importPowerBiFile" role="button" tabindex="0">Import PowerBI</label>
         <div class="import-menu">
           <button id="importMenuButton" class="import-button import-menu-button" type="button">Import files</button>
           <div id="importMenuList" class="import-menu-list hidden">
              <button id="importLiftsButton" type="button">Import lifts</button>
              <button id="importGateButton" type="button">Import gate</button>
             <button id="importTimesheetsButton" type="button">Import timesheets</button>
+            <button id="importPowerBiButton" type="button">Import PowerBI</button>
           </div>
         </div>
+        <button id="duplicatesButton" class="button" type="button" aria-pressed="false">Duplicates</button>
         <input id="fileInput" class="file-input" type="file" multiple accept=".csv,.xlsx,.xls,.htm,.html">
         <input id="importPowerBiFile" class="file-input" type="file" accept=".csv,.xlsx,.xls">
       </div>
@@ -2288,6 +2357,7 @@
       showGate: false,
       showExcludedCounts: false,
       weekendHighlight: true,
+      showDuplicates: false,
       page: "operations",
       analyticsRows: [],
       analyticsReviewRows: [],
@@ -2324,6 +2394,7 @@
       operationsTable: document.querySelector("#operationsTable"),
       filesButton: document.querySelector("#filesButton"),
       exportButton: document.querySelector("#exportButton"),
+      duplicatesButton: document.querySelector("#duplicatesButton"),
       importPowerBiButton: document.querySelector("#importPowerBiButton"),
       importPowerBiFile: document.querySelector("#importPowerBiFile"),
       timesheetHoursSource: document.querySelector("#timesheetHoursSource"),
@@ -2471,6 +2542,11 @@
     });
     els.filesButton.addEventListener("click", openFilesModal);
     els.exportButton.addEventListener("click", exportOperationalWorkbook);
+    els.duplicatesButton.addEventListener("click", () => {
+      state.showDuplicates = !state.showDuplicates;
+      persist();
+      render();
+    });
     els.timesheetHoursSource.addEventListener("click", () => setLphHourSource("timesheet"));
     els.powerBiHoursSource.addEventListener("click", () => setLphHourSource("powerbi"));
     els.filesLiftsTab.addEventListener("click", () => setFilesView("operations"));
@@ -2666,6 +2742,7 @@
           state.showGate = !!saved.showGate;
           state.showExcludedCounts = !!saved.showExcludedCounts;
           state.weekendHighlight = saved.weekendHighlight !== false;
+          state.showDuplicates = !!saved.showDuplicates;
           state.analyticsRows = Array.isArray(saved.analyticsRows) ? saved.analyticsRows : [];
           state.analyticsReviewRows = Array.isArray(saved.analyticsReviewRows) ? saved.analyticsReviewRows : [];
           state.analyticsExcludedEmployees = Array.isArray(saved.analyticsExcludedEmployees) ? saved.analyticsExcludedEmployees : [];
@@ -2758,6 +2835,7 @@
         showGate: state.showGate,
         showExcludedCounts: state.showExcludedCounts,
         weekendHighlight: state.weekendHighlight,
+        showDuplicates: state.showDuplicates,
         analyticsRows: state.analyticsRows,
         analyticsReviewRows: state.analyticsReviewRows,
         analyticsExcludedEmployees: state.analyticsExcludedEmployees,
@@ -3291,7 +3369,11 @@
         return;
       }
       const rows = files.slice().reverse().map((file) => {
-        const nameCell = state.filesView === "analytics" ? `<button class="file-preview-link" type="button" data-preview-timesheet="${file.id}">${escapeHtml(file.name)}</button>` : escapeHtml(file.name);
+        const nameCell = state.filesView === "analytics"
+          ? `<button class="file-preview-link" type="button" data-preview-timesheet="${file.id}">${escapeHtml(file.name)}</button>`
+          : state.filesView === "operations"
+            ? `<button class="file-preview-link" type="button" data-preview-operations="${file.id}">${escapeHtml(file.name)}</button>`
+            : escapeHtml(file.name);
         const sourceCell = state.filesView === "operations"
           ? `<td>${liftSourceSummaryForFile(file.id)}</td>`
           : state.filesView === "gate" ? `<td>${gateSummaryForFile(file.id)}</td>` : "";
@@ -3321,6 +3403,82 @@
       els.filesList.querySelectorAll("[data-preview-timesheet]").forEach((button) => {
         button.addEventListener("click", () => renderTimesheetFilePreview(button.dataset.previewTimesheet));
       });
+      els.filesList.querySelectorAll("[data-preview-operations]").forEach((button) => {
+        button.addEventListener("click", () => renderOperationFilePreview(button.dataset.previewOperations));
+      });
+    }
+
+    function sameDayDuplicateEquipmentKeys() {
+      const counts = new Map();
+      state.moveDetails.forEach((detail) => {
+        const equipment = normalizeEquipment(detail.equipment || "");
+        if (detail.deleted || !detail.date || !equipment || !["ramp", "deramp"].includes(detail.field)) return;
+        const key = `${detail.date}|${detail.field}|${detail.fileId || detail.source || ""}|${equipment}`;
+        counts.set(key, (counts.get(key) || 0) + 1);
+      });
+      return new Set(Array.from(counts.entries()).filter((entry) => entry[1] > 1).map((entry) => entry[0]));
+    }
+
+    function renderOperationFilePreview(fileId) {
+      const file = state.importedFiles.find((item) => item.id === fileId);
+      if (!file) {
+        renderFilesList();
+        return;
+      }
+      const duplicateKeys = sameDayDuplicateEquipmentKeys();
+      const details = state.moveDetails
+        .filter((detail) => detail.fileId === fileId && ["ramp", "deramp"].includes(detail.field))
+        .sort((a, b) => `${a.date}|${a.time}|${a.equipment}`.localeCompare(`${b.date}|${b.time}|${b.equipment}`));
+      const included = details.filter((detail) => !detail.deleted).length;
+      const duplicateCount = details.filter((detail) => duplicateKeys.has(`${detail.date}|${detail.field}|${detail.fileId || detail.source || ""}|${normalizeEquipment(detail.equipment || "")}`)).length;
+      const rows = details.map((detail) => {
+        const duplicate = duplicateKeys.has(`${detail.date}|${detail.field}|${detail.fileId || detail.source || ""}|${normalizeEquipment(detail.equipment || "")}`);
+        const rowClass = [duplicate ? "same-day-duplicate" : "", detail.deleted ? "excluded-unit" : ""].filter(Boolean).join(" ");
+        return `
+          <tr${rowClass ? ` class="${rowClass}"` : ""}>
+            <td>${escapeHtml(detail.date || "")}</td>
+            <td>${escapeHtml(detail.equipment || "")}${duplicate ? '<span class="duplicate-unit-badge">Same-day duplicate</span>' : ""}</td>
+            <td>${escapeHtml(fieldLabel(detail.field))}</td>
+            <td>${escapeHtml(detail.train || "")}</td>
+            <td>${escapeHtml(detail.time || "")}</td>
+            <td>${escapeHtml(detail.sheet || "")}</td>
+            <td>${escapeHtml(detail.rowNumber || "")}</td>
+            <td><button class="delete-row" type="button" data-toggle-file-unit="${escapeHtml(detail.id)}">${detail.deleted ? "Include" : "Exclude"}</button></td>
+          </tr>
+        `;
+      }).join("");
+      els.filesList.innerHTML = `
+        <div class="timesheet-preview-head">
+          <div>
+            <div class="timesheet-preview-title">${escapeHtml(file.name)}</div>
+            <div class="timesheet-preview-meta">${included} included of ${details.length} ramp/deramp units${duplicateCount ? ` - ${duplicateCount} same-day duplicate row${duplicateCount === 1 ? "" : "s"} highlighted` : ""}</div>
+          </div>
+          <button id="backToFilesList" class="bulk-action" type="button">Back to files</button>
+        </div>
+        ${details.length ? `
+          <div class="table-scroll">
+            <table class="file-list operation-file-preview">
+              <thead><tr><th>Date</th><th>Equipment ID</th><th>Move</th><th>Train / Source</th><th>Completion</th><th>Sheet</th><th>Row</th><th>Action</th></tr></thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </div>
+        ` : `<div class="status-banner">No saved ramp or deramp unit rows are available for this file.</div>`}
+      `;
+      els.filesList.querySelector("#backToFilesList").addEventListener("click", renderFilesList);
+      els.filesList.querySelectorAll("[data-toggle-file-unit]").forEach((button) => {
+        button.addEventListener("click", () => toggleOperationFileUnit(fileId, button.dataset.toggleFileUnit));
+      });
+    }
+
+    function toggleOperationFileUnit(fileId, detailId) {
+      const detail = state.moveDetails.find((item) => item.id === detailId && item.fileId === fileId);
+      if (!detail) return;
+      detail.deleted = !detail.deleted;
+      recalculateMoveCount(detail.date, detail.field);
+      persist();
+      render();
+      renderAnalytics();
+      renderOperationFilePreview(fileId);
     }
 
     function renderTimesheetFilePreview(fileId) {
@@ -3485,6 +3643,8 @@
       els.gateToggleButton.classList.toggle("active", state.showGate);
       els.gateToggleButton.setAttribute("aria-pressed", String(state.showGate));
       els.gateToggleButton.textContent = state.showGate ? "Hide Gate" : "Show Gate";
+      els.duplicatesButton.classList.toggle("active", state.showDuplicates);
+      els.duplicatesButton.setAttribute("aria-pressed", String(state.showDuplicates));
       setPage(state.page);
       els.monthTitle.textContent = monthTitle(state.month);
       els.tableBody.innerHTML = "";
@@ -3578,11 +3738,43 @@
       const button = document.createElement("button");
       button.className = "move-drill";
       button.type = "button";
-      button.textContent = detailValueLabel(key, field, value);
+      const valueText = document.createElement("span");
+      valueText.textContent = detailValueLabel(key, field, value);
+      button.append(valueText);
+      const duplicateDetails = duplicateDetailsForCell(key, field);
+      if (state.showDuplicates && duplicateDetails.length) {
+        const flag = document.createElement("span");
+        flag.className = "duplicate-investigation-flag";
+        flag.textContent = `${duplicateDetails.length} DUPES`;
+        flag.title = "Click to review the highlighted duplicate rows";
+        button.append(flag);
+      }
       button.title = `Preview ${fieldLabel(field).toLowerCase()} rows`;
       button.addEventListener("click", () => openMoveModal(key, field));
       cell.append(button);
       return cell;
+    }
+
+    function duplicateDetailsForCell(date, field) {
+      if (!["ramp", "deramp"].includes(field)) return [];
+      const details = state.moveDetails.filter((detail) =>
+        detail.date === date &&
+        detail.field === field &&
+        !detail.deleted &&
+        normalizeEquipment(detail.equipment || "")
+      );
+      const counts = new Map();
+      details.forEach((detail) => {
+        const equipment = normalizeEquipment(detail.equipment || "");
+        const key = `${detail.fileId || detail.source || ""}|${equipment}`;
+        counts.set(key, (counts.get(key) || 0) + 1);
+      });
+      const duplicateKeys = new Set(
+        Array.from(counts.entries()).filter((entry) => entry[1] > 1).map((entry) => entry[0])
+      );
+      return details.filter((detail) =>
+        duplicateKeys.has(`${detail.fileId || detail.source || ""}|${normalizeEquipment(detail.equipment || "")}`)
+      );
     }
 
     function detailValueLabel(date, field, value) {
@@ -4232,7 +4424,8 @@
     function duplicateEquipmentSet(details) {
       const counts = new Map();
       details.filter((detail) => !detail.deleted).forEach((detail) => {
-        counts.set(detail.equipment, (counts.get(detail.equipment) || 0) + 1);
+        const key = `${detail.fileId || detail.source || ""}|${normalizeEquipment(detail.equipment || "")}`;
+        counts.set(key, (counts.get(key) || 0) + 1);
       });
       return new Set(Array.from(counts.entries()).filter((entry) => entry[1] > 1).map((entry) => entry[0]));
     }
@@ -4273,7 +4466,7 @@
         els.moveModalBody.append(row);
       } else {
         visibleDetails.forEach((detail) => {
-          const isDuplicate = duplicateSet.has(detail.equipment);
+          const isDuplicate = duplicateSet.has(`${detail.fileId || detail.source || ""}|${normalizeEquipment(detail.equipment || "")}`);
           const row = document.createElement("tr");
           if (isDuplicate) row.classList.add("duplicate-row");
           if (detail.deleted) row.classList.add("deleted-row");
