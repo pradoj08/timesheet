@@ -3757,6 +3757,35 @@
       return headClose >= 0 ? updated.slice(0, headClose) + marker + "\n" + updated.slice(headClose) : marker + updated;
     }
 
+    function withBillingLpmhSourcePair(html) {
+      if (!html || typeof html !== "string" || html.includes("conglobal-billing-lpmh-source-pair-v1")) return html;
+      const marker = '<meta name="conglobal-billing-lpmh-source-pair-v1" content="enabled">';
+      let updated = html
+        .replace(
+          /(\s*function lphHoursForRecord\(record\) \{\r?\n\s*return state\.lphHourSource === "powerbi" \? record\.powerBiManHours \|\| 0 : record\.manHours \|\| 0;\r?\n\s*\})/,
+          '$1\n\n    function lphLiftsForRecord(record) {\n      return state.lphHourSource === "powerbi" ? record.powerBiLifts || 0 : operationLiftCount(record);\n    }'
+        )
+        .replace(
+          /(\s*const lphHours = lphHoursForRecord\(record\);\r?\n)(\s*)const dayLpmh = lphHours > 0 \? dailyLifts \/ lphHours : null;/,
+          '$1$2const lphLifts = lphLiftsForRecord(record);\n$2const dayLpmh = lphHours > 0 ? lphLifts / lphHours : null;'
+        )
+        .replace(
+          /(\s*)lifts: dailyLifts,(\r?\n\s*manHours: lphHours \|\| 0,)/,
+          '$1lifts: lphLifts,$2'
+        )
+        .replace(
+          /(\s*const lphHours = state\.lphHourSource === "powerbi" \? sums\.powerBiManHours : sums\.manHours;\r?\n)(\s*)const lpmh = lphHours > 0 \? sums\.lifts \/ lphHours : null;/,
+          '$1$2const lphLifts = state.lphHourSource === "powerbi" ? sums.powerBiLifts : sums.lifts;\n$2const lpmh = lphHours > 0 ? lphLifts / lphHours : null;'
+        )
+        .replace(
+          /(function renderLpmhBreakdown\([\s\S]*?const lphHours = state\.lphHourSource === "powerbi" \? sums\.powerBiManHours : sums\.manHours;\r?\n)(\s*)els\.summaryLpmh\.textContent/,
+          '$1$2const lphLifts = state.lphHourSource === "powerbi" ? sums.powerBiLifts : sums.lifts;\n$2els.summaryLpmh.textContent'
+        )
+        .replace(/els\.summaryLifts\.textContent = formatNonZero\(sums\.lifts\);/g, 'els.summaryLifts.textContent = formatNonZero(lphLifts);');
+      const headClose = updated.toLowerCase().indexOf("</head>");
+      return headClose >= 0 ? updated.slice(0, headClose) + marker + "\n" + updated.slice(headClose) : marker + updated;
+    }
+
     function withBillingShiftLpmhGrid(html) {
       if (!html || typeof html !== "string" || html.includes("conglobal-billing-shift-lpmh-grid-v1")) return html;
       const injection = `<meta name="conglobal-billing-shift-lpmh-grid-v1" content="enabled">
@@ -4312,6 +4341,7 @@
 .table-density-control{min-width:132px;height:34px;display:inline-flex;align-items:center;gap:6px;padding:4px 7px;border:1px solid var(--line,#cbd5e1);border-radius:7px;background:#f8fafc;color:#475569;font-size:8px;font-weight:900;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap}
 .table-density-control input{width:64px;min-width:0;margin:0;accent-color:#315e8d;cursor:pointer}.table-density-control output{min-width:25px;color:#173a63;font-variant-numeric:tabular-nums;text-align:right}
 .grid-head{padding:calc(8px * var(--excel-table-scale,1)) 7px!important}.track-label,.track-total,.track-remaining,.cut-cell{min-height:calc(23px * var(--excel-table-scale,1))!important}.grid-wrap .cut-cell{padding-top:calc(1px * var(--excel-table-scale,1))!important;padding-bottom:calc(1px * var(--excel-table-scale,1))!important}.blank-grid-separator{min-height:calc(28px * var(--excel-table-scale,1))!important}.blank-grid-separator:empty{min-height:calc(16px * var(--excel-table-scale,1))!important}
+.inventory-panel .data-table{font-size:12px!important}.inventory-panel .data-table input{font-size:12px!important}
 </style>`;
       const control = `<label class="table-density-control" title="Condense or expand all ramp tables"><span>Table space</span><input id="tableDensityRange" type="range" min="0" max="100" step="1" value="50" aria-label="Table spacing from condensed to expanded"><output id="tableDensityValue">50%</output></label>`;
       html = html.replace(/(<button[^>]*id=["']undoExcelView["'][^>]*>)/i, control + "$1");
@@ -9176,7 +9206,7 @@ document.getElementById("openYardCheck")?.addEventListener("click", function(){
         }
         if (id === "timeMd") pageHtml = withTimeMdResponsiveWidth(pageHtml);
         if (id === "timeOff") pageHtml = withTimeOffCurrentRosterSnapshot(withTimeOffCameInActions(withTimeOffMonthlyWeeklyStyle(pageHtml)));
-        if (id === "billing") pageHtml = withBillingDailyShiftProjection(withBillingPerformanceArchiveIndexedDb(withBillingShiftLpmhGrid(withBillingPowerBiImport(withBillingQuotaSafePersistence(withBillingAnalyticsLiftFallback(withBillingAnalyticsArchiveHydration(withBillingManHoursPrecision(withBillingArchiveIndexedDb(withBillingHeaderRemoved(pageHtml))))))))));
+        if (id === "billing") pageHtml = withBillingDailyShiftProjection(withBillingPerformanceArchiveIndexedDb(withBillingShiftLpmhGrid(withBillingLpmhSourcePair(withBillingPowerBiImport(withBillingQuotaSafePersistence(withBillingAnalyticsLiftFallback(withBillingAnalyticsArchiveHydration(withBillingManHoursPrecision(withBillingArchiveIndexedDb(withBillingHeaderRemoved(pageHtml)))))))))));
         if (id === "lphTracker") {
           pageHtml = withLphLunchDuringDowntime(pageHtml);
           pageHtml = withLphLunchTimeMapLabels(pageHtml);

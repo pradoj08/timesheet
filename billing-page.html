@@ -3611,7 +3611,7 @@
       const rows = Array.from({ length: new Date(year, month, 0).getDate() }, (_, index) => {
           const date = `${year}-${pad2(month)}-${pad2(index + 1)}`;
           const record = state.data[date] || {};
-          const lifts = operationLiftCount(record);
+          const lifts = lphLiftsForRecord(record);
           const hours = lphHoursForRecord(record);
           return [
             date,
@@ -3766,7 +3766,8 @@
         const record = state.data[key] || {};
         const dailyLifts = operationLiftCount(record);
         const lphHours = lphHoursForRecord(record);
-        const dayLpmh = lphHours > 0 ? dailyLifts / lphHours : null;
+        const lphLifts = lphLiftsForRecord(record);
+        const dayLpmh = lphHours > 0 ? lphLifts / lphHours : null;
         const date = new Date(year, month - 1, day);
         const row = document.createElement("tr");
         if (state.weekendHighlight && (date.getDay() === 0 || date.getDay() === 6)) row.classList.add("weekend");
@@ -3805,7 +3806,7 @@
           key,
           day,
           label: `${SHORT_MONTHS[month - 1]} ${day} - ${DAY_NAMES[date.getDay()]}`,
-          lifts: dailyLifts,
+          lifts: lphLifts,
           manHours: lphHours || 0,
           timesheetManHours: record.manHours || 0,
           powerBiManHours: record.powerBiManHours || 0,
@@ -3909,6 +3910,10 @@
 
     function lphHoursForRecord(record) {
       return state.lphHourSource === "powerbi" ? record.powerBiManHours || 0 : record.manHours || 0;
+    }
+
+    function lphLiftsForRecord(record) {
+      return state.lphHourSource === "powerbi" ? record.powerBiLifts || 0 : operationLiftCount(record);
     }
 
     function projectionLpmhClass(value) {
@@ -4112,7 +4117,8 @@
       const flipStack = sums.flip + sums.stacked;
       const chassis = sums.chUnstacked + sums.chStacked;
       const lphHours = state.lphHourSource === "powerbi" ? sums.powerBiManHours : sums.manHours;
-      const lpmh = lphHours > 0 ? sums.lifts / lphHours : null;
+      const lphLifts = state.lphHourSource === "powerbi" ? sums.powerBiLifts : sums.lifts;
+      const lpmh = lphHours > 0 ? lphLifts / lphHours : null;
       const values = [
         "Total", sums.ramp, sums.deramp, moves, sums.ingates, sums.outgates, sums.ingateRefusals, sums.outgateRefusals, sums.flip, sums.stacked, sums.unstacked,
         flipStack, sums.chUnstacked, sums.chStacked, chassis, sums.manHours, sums.powerBiManHours, sums.powerBiLifts, sums.lifts, lpmh
@@ -4128,7 +4134,7 @@
 
       els.summaryHours.textContent = formatNonZero(lphHours);
       els.summaryHoursLabel.textContent = state.lphHourSource === "powerbi" ? "PowerBI hours" : "Timesheet hours";
-      els.summaryLifts.textContent = formatNonZero(sums.lifts);
+      els.summaryLifts.textContent = formatNonZero(lphLifts);
       els.summaryLpmh.textContent = formatNonZero(lpmh, 2);
       renderLpmhBreakdown(dailyStats, sums, lpmh);
     }
@@ -4136,10 +4142,11 @@
     function renderLpmhBreakdown(dailyStats, sums, lpmh) {
       const daysWithLpmh = dailyStats.filter((day) => day.lpmh != null && day.lpmh > 0);
       const lphHours = state.lphHourSource === "powerbi" ? sums.powerBiManHours : sums.manHours;
+      const lphLifts = state.lphHourSource === "powerbi" ? sums.powerBiLifts : sums.lifts;
       els.summaryLpmh.textContent = formatNonZero(lpmh, 2);
       els.summaryHours.textContent = formatNonZero(lphHours);
       els.summaryHoursLabel.textContent = state.lphHourSource === "powerbi" ? "PowerBI hours" : "Timesheet hours";
-      els.summaryLifts.textContent = formatNonZero(sums.lifts);
+      els.summaryLifts.textContent = formatNonZero(lphLifts);
 
       const maxLpmh = Math.max(...daysWithLpmh.map((day) => day.lpmh), 0);
       els.summaryBars.innerHTML = "";
