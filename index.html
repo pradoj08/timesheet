@@ -4721,6 +4721,15 @@
 </head>`);
     }
 
+    function withExcelInboundPlannerClosedAtBoot(html) {
+      if (!html || typeof html !== "string" || html.includes("conglobal-excel-inbound-closed-at-boot-v1")) return html;
+      const before = '<section class="workspace has-inbound" id="excelWorkspace">';
+      if (!html.includes(before)) return html;
+      return html
+        .replace(before, '<section class="workspace inbound-hidden" id="excelWorkspace">')
+        .replace("</head>", '<meta name="conglobal-excel-inbound-closed-at-boot-v1" content="enabled">\n</head>');
+    }
+
     function withExcelTableDensityControl(html) {
       if (!html || typeof html !== "string" || html.includes("excel-table-density-control-v1")) return html;
       const style = `<style id="excel-table-density-control-v1">
@@ -8026,9 +8035,9 @@ document.addEventListener('click',function(event){
     }
 
     function withChassisSoftDeficitPills(html) {
-      if (!html || typeof html !== "string" || html.includes("chassis-soft-deficit-pills-v3")) return html;
+      if (!html || typeof html !== "string" || html.includes("chassis-soft-deficit-pills-v6")) return html;
       const patch = `
-<style id="chassis-soft-deficit-pills-v3">
+<style id="chassis-soft-deficit-pills-v6">
 #forecastConcernGroupsCard .forecast-deficit-count{
   display:inline-flex!important;align-items:center!important;justify-content:center!important;
   min-width:61px!important;height:24px!important;padding:0 10px!important;
@@ -8036,18 +8045,39 @@ document.addEventListener('click',function(event){
   color:#991b1b!important;font-size:13px!important;font-weight:900!important;
   line-height:24px!important;box-shadow:none!important
 }
-#forecastExcelView .forecast-excel-table th.forecast-excel-net-cell.request-net-red{background:inherit!important}
+#forecastExcelView .forecast-excel-table th.forecast-excel-net-cell:is(.request-net-red,.request-net-yellow){background:inherit!important}
+#forecastExcelView .forecast-excel-table th.forecast-excel-net-cell:is(.request-net-red,.request-net-yellow) :is(.request-net-value,.calculator-net-value),
+#forecastExcelView .forecast-excel-table :is(.request-net-flag,.calculator-net-flag):is(.request-net-red,.request-net-yellow){
+  display:inline-flex!important;align-items:center!important;justify-content:center!important;
+  min-width:var(--forecast-excel-net-pill-width,54px)!important;
+  width:var(--forecast-excel-net-pill-width,54px)!important;height:24px!important;
+  padding:0 var(--forecast-excel-net-padding,10px)!important;
+  border:0!important;border-radius:8px!important;
+  font-size:var(--forecast-excel-net-font-size,8.3px)!important;
+  font-weight:900!important;line-height:24px!important;transform:none!important;box-shadow:none!important
+}
 #forecastExcelView .forecast-excel-table th.forecast-excel-net-cell.request-net-red :is(.request-net-value,.calculator-net-value),
 #forecastExcelView .forecast-excel-table :is(.request-net-flag,.calculator-net-flag).request-net-red{
-  display:inline-flex!important;align-items:center!important;justify-content:center!important;
-  min-width:61px!important;height:24px!important;padding:0 10px!important;
-  border:0!important;border-radius:8px!important;background:#fee2e2!important;
-  color:#991b1b!important;font-size:13px!important;font-weight:900!important;
-  line-height:24px!important;box-shadow:none!important
+  background:#fee2e2!important;color:#991b1b!important
+}
+#forecastExcelView .forecast-excel-table th.forecast-excel-net-cell.request-net-yellow :is(.request-net-value,.calculator-net-value),
+#forecastExcelView .forecast-excel-table :is(.request-net-flag,.calculator-net-flag).request-net-yellow{
+  background:#fef3c7!important;color:#854d0e!important
+}
+#forecastExcelView .forecast-excel-table :is(.request-net-flag,.calculator-net-flag):is(.request-net-red,.request-net-yellow) :is(.request-net-value,.calculator-net-value){
+  font:inherit!important;padding:0!important;transform:none!important
 }
 </style>`;
-      const headClose = html.toLowerCase().indexOf("</head>");
-      return headClose >= 0 ? html.slice(0, headClose) + patch + "\n" + html.slice(headClose) : patch + html;
+      let updated = html.replace(
+        '  page.style.setProperty("--forecast-excel-net-text-scale",String(netText/8.3));',
+        '  page.style.setProperty("--forecast-excel-net-text-scale",String(netText/8.3));\n  page.style.setProperty("--forecast-excel-net-font-size",`${netText}px`);'
+      );
+      updated = updated.replace(
+        '  page.style.setProperty("--forecast-excel-net-padding",`${netPadding}px`);',
+        '  page.style.setProperty("--forecast-excel-net-padding",`${netPadding}px`);\n  page.style.setProperty("--forecast-excel-net-pill-width",`${34+(netPadding*2)}px`);'
+      );
+      const headClose = updated.toLowerCase().indexOf("</head>");
+      return headClose >= 0 ? updated.slice(0, headClose) + patch + "\n" + updated.slice(headClose) : patch + updated;
     }
 
     function withChassisForecastPersistence(html) {
@@ -8180,6 +8210,24 @@ document.addEventListener('click',function(event){
         html: withStandardMatrixPage(pages.matrixWide.html)
       };
     }
+    pages.idTracker = {
+      label: "ID Tracker",
+      html: `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>ID Tracker</title>
+  <style>
+    html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#0f1117}
+    iframe{display:block;width:100%;height:100%;border:0;background:#0f1117}
+  </style>
+</head>
+<body>
+  <iframe src="id-tracker-page.html" title="ID Tracker"></iframe>
+</body>
+</html>`
+    };
     const tabs = document.querySelector(".workbook-tabs");
     const amReportActions = document.getElementById("amReportActions");
     const scwLatestPopup = document.getElementById("scwLatestPopup");
@@ -8199,6 +8247,7 @@ document.addEventListener('click',function(event){
     let matrixMenuButton = null;
     let reportMenuButton = null;
     let excelLphMenuButton = null;
+    let timesheetMenuButton = null;
     let obsidianMenuButton = null;
     let scwLoadTimer = 0;
     function pageFromHash() {
@@ -10138,6 +10187,7 @@ document.getElementById("openYardCheck")?.addEventListener("click", function(){
         if (id === "roster") pageHtml = withSchedulePersistence(pageHtml);
         if (id === "audits") pageHtml = withAuditsClearKeepsView(pageHtml);
         if (id === "excelView") {
+          pageHtml = withExcelInboundPlannerClosedAtBoot(pageHtml);
           pageHtml = withExcelDarkerGreyBackground(pageHtml);
           pageHtml = withExcelTableDensityControl(pageHtml);
           pageHtml = withExcelCurrentRosterSnapshotParity(pageHtml);
@@ -10278,6 +10328,7 @@ document.getElementById("openYardCheck")?.addEventListener("click", function(){
       });
       if (reportMenuButton) reportMenuButton.classList.toggle("active", ["amReport", "chassisStatus"].includes(activePage));
       if (excelLphMenuButton) excelLphMenuButton.classList.toggle("active", ["excelView", "lphTracker"].includes(activePage));
+      if (timesheetMenuButton) timesheetMenuButton.classList.toggle("active", ["timeMd", "idTracker"].includes(activePage));
       if (matrixMenuButton) matrixMenuButton.classList.toggle("active", ["matrix", "matrixWide"].includes(activePage));
       if (obsidianMenuButton) obsidianMenuButton.classList.toggle("active", ["obsidian", "reading"].includes(activePage));
       amReportActions.hidden = activePage !== "amReport";
@@ -10623,6 +10674,40 @@ document.getElementById("openYardCheck")?.addEventListener("click", function(){
         return;
       }
       if (id === "lphTracker") return;
+      if (id === "timeMd") {
+        const group = document.createElement("div");
+        group.className = "matrix-nav-group timesheet-id-nav-group";
+        timesheetMenuButton = document.createElement("button");
+        timesheetMenuButton.type = "button";
+        timesheetMenuButton.textContent = "Timesheet";
+        timesheetMenuButton.setAttribute("aria-haspopup", "menu");
+        timesheetMenuButton.setAttribute("aria-expanded", "false");
+        const menu = document.createElement("div");
+        menu.className = "matrix-nav-menu timesheet-id-nav-menu";
+        menu.setAttribute("role", "menu");
+        [["timeMd", "Timesheet"], ["idTracker", "ID Tracker"]].forEach(([pageId, label]) => {
+          if (!pages[pageId]) return;
+          const option = document.createElement("button");
+          option.type = "button";
+          option.dataset.page = pageId;
+          option.textContent = label;
+          option.setAttribute("role", "menuitem");
+          option.addEventListener("click", () => {
+            group.classList.remove("open");
+            timesheetMenuButton.setAttribute("aria-expanded", "false");
+            option.blur();
+            selectPage(pageId);
+          });
+          menu.appendChild(option);
+        });
+        timesheetMenuButton.addEventListener("click", () => {
+          const open = group.classList.toggle("open");
+          timesheetMenuButton.setAttribute("aria-expanded", String(open));
+        });
+        group.append(timesheetMenuButton, menu);
+        tabs.appendChild(group);
+        return;
+      }
       if (id === "matrix") {
         tabs.appendChild(matrixControlsNav);
         const group = document.createElement("div");
@@ -10699,7 +10784,7 @@ document.getElementById("openYardCheck")?.addEventListener("click", function(){
       tabs.appendChild(button);
     });
     document.addEventListener("click", (event) => {
-      [reportMenuButton, excelLphMenuButton, matrixMenuButton, obsidianMenuButton].forEach((menuButton) => {
+      [reportMenuButton, excelLphMenuButton, timesheetMenuButton, matrixMenuButton, obsidianMenuButton].forEach((menuButton) => {
         const group = menuButton && menuButton.closest(".matrix-nav-group");
         if (!group || group.contains(event.target)) return;
         group.classList.remove("open");
