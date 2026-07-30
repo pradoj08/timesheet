@@ -166,6 +166,19 @@
       min-width: 170px;
     }
 
+    #clearMenuButton {
+      border-color: #f3b6b6;
+      background: #fde8e8;
+      color: #9f1d1d;
+    }
+
+    #clearMenuButton:hover,
+    #clearMenuButton:focus-visible {
+      border-color: #e98f8f;
+      background: #fbd5d5;
+      color: #7f1d1d;
+    }
+
     .import-menu-button {
       border: none;
     }
@@ -635,6 +648,7 @@
     }
 
     .move-drill {
+      position: relative;
       width: 100%;
       min-width: 62px;
       border: none;
@@ -646,6 +660,13 @@
       text-align: center;
       font-size: 13.5px;
       cursor: pointer;
+    }
+
+    .move-drill > span:first-child {
+      display: block;
+      width: 100%;
+      text-align: center;
+      font-variant-numeric: tabular-nums;
     }
 
     .move-drill:hover,
@@ -667,6 +688,133 @@
       font-weight: 900;
       line-height: 1.2;
       vertical-align: middle;
+    }
+
+    .excluded-investigation-flag {
+      display: inline-flex;
+      align-items: center;
+      border: 1px solid #d97706;
+      border-radius: 999px;
+      padding: 1px 5px;
+      color: #92400e;
+      background: #fef3c7;
+      font-size: 9px;
+      font-weight: 900;
+      line-height: 1.2;
+      white-space: nowrap;
+    }
+
+    .cell-flag-rail {
+      position: absolute;
+      left: calc(50% + 16px);
+      top: 50%;
+      transform: translateY(-50%);
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      white-space: nowrap;
+      z-index: 1;
+    }
+
+    .cell-flag-rail .duplicate-investigation-flag {
+      position: static !important;
+      transform: none !important;
+      margin: 0 !important;
+    }
+
+    /* Compact monthly operations grid */
+    #operationsTable {
+      min-width: 1040px;
+    }
+
+    #operationsTable:not(.gate-columns-hidden) {
+      min-width: 1300px;
+    }
+
+    #operationsTable thead tr:first-child th {
+      padding: 7px 5px;
+      font-size: 12px;
+    }
+
+    #operationsTable .date-head {
+      min-width: 96px;
+      padding: 8px 9px !important;
+      font-size: 10px !important;
+    }
+
+    #operationsTable thead tr:nth-child(2) th {
+      padding: 6px 3px;
+      font-size: 9px;
+      letter-spacing: 0.045em;
+    }
+
+    #operationsTable td {
+      font-size: 12px;
+    }
+
+    #operationsTable .date-cell {
+      padding: 0 8px;
+    }
+
+    #operationsTable .day {
+      font-size: 12px;
+    }
+
+    #operationsTable .weekday {
+      margin-left: 4px;
+      font-size: 9px;
+    }
+
+    #operationsTable .cell-input,
+    #operationsTable .move-drill {
+      min-width: 46px;
+      padding: 5px 2px;
+      font-size: 12px;
+    }
+
+    #operationsTable .total-cell {
+      padding: 5px 4px;
+    }
+
+    #operationsTable .duplicate-investigation-flag {
+      margin-left: 3px;
+      padding: 0 4px;
+      font-size: 8px;
+    }
+
+    #operationsTable .move-drill .duplicate-investigation-flag {
+      position: absolute;
+      left: calc(50% + 16px);
+      top: 50%;
+      transform: translateY(-50%);
+      margin-left: 0;
+      white-space: nowrap;
+      z-index: 1;
+    }
+
+    #operationsTable .cell-flag-rail .duplicate-investigation-flag,
+    #operationsTable .cell-flag-rail .excluded-investigation-flag {
+      padding: 0 4px;
+      font-size: 8px;
+    }
+
+    .flip-review-header {
+      width: 100%;
+      border: 0;
+      background: transparent;
+      color: inherit;
+      font: inherit;
+      font-weight: inherit;
+      letter-spacing: inherit;
+      text-transform: inherit;
+      cursor: pointer;
+    }
+
+    .flip-review-header:hover,
+    .flip-review-header:focus-visible {
+      color: #1d4ed8;
+      text-decoration: underline;
+      outline: 0;
     }
 
     .modal-backdrop {
@@ -782,7 +930,7 @@
       z-index: 1;
       padding: 9px 6px;
       background: #f0f4f8;
-      color: #111827;
+      color: #111827 !important;
       border-bottom: 1px solid #e3e9f0;
       text-align: left;
       font-size: 11px;
@@ -837,6 +985,12 @@
       width: 16px;
       height: 16px;
       accent-color: var(--indigo);
+    }
+
+    .select-all-preview {
+      margin: 0;
+      cursor: pointer;
+      vertical-align: middle;
     }
 
     .delete-row {
@@ -2046,7 +2200,7 @@
         <button id="gateToggleButton" class="button" type="button" aria-pressed="false">Show Gate</button>
         <button id="importArchiveTimeButton" class="button" type="button">Import Time From Archive</button>
         <div class="clear-month-menu">
-          <button id="clearMenuButton" class="button" type="button" aria-expanded="false">Clear month</button>
+          <button id="clearMenuButton" class="button" type="button" aria-expanded="false">Clear</button>
           <div id="clearMenuList" class="import-menu-list hidden">
              <button type="button" data-clear-month="lifts">Clear lifts</button>
              <button type="button" data-clear-month="gate">Clear gate</button>
@@ -2094,7 +2248,7 @@
               <th class="gate-column">Outgates</th>
               <th class="gate-column">Ingate Refusals</th>
               <th class="gate-column">Outgate Refusals</th>
-              <th class="split-left">Flip</th>
+              <th class="split-left"><button id="flipReviewHeader" class="flip-review-header" type="button" title="Review all flips for this month">Flip</button></th>
               <th>Stacked</th>
               <th>Unstacked</th>
               <th>Flip + Stack</th>
@@ -2309,6 +2463,7 @@
         <button id="duplicatesFirst" class="bulk-action duplicates-first" type="button" aria-pressed="false">Dupes First</button>
         <button id="bulkInclude" class="bulk-action" type="button">Include Selected</button>
         <button id="bulkExclude" class="bulk-action exclude" type="button">Exclude Selected</button>
+        <button id="bulkExcludeReason" class="bulk-action exclude" type="button">Exclude Reason</button>
         <label id="reasonFilterLabel" for="reasonFilter">Reason</label>
         <select id="reasonFilter">
           <option value="all">All reasons</option>
@@ -2318,7 +2473,7 @@
         <table class="preview-table">
           <thead>
             <tr>
-              <th class="select-cell">Select</th>
+              <th class="select-cell"><input id="selectAllMoveDetails" class="select-all-preview" type="checkbox" aria-label="Select all visible rows" title="Select all visible rows"></th>
               <th>Equipment ID</th>
               <th>Train / Source</th>
               <th>Completion Time</th>
@@ -2432,11 +2587,14 @@
       duplicatesFirst: document.querySelector("#duplicatesFirst"),
       bulkInclude: document.querySelector("#bulkInclude"),
       bulkExclude: document.querySelector("#bulkExclude"),
+      bulkExcludeReason: document.querySelector("#bulkExcludeReason"),
+      flipReviewHeader: document.querySelector("#flipReviewHeader"),
       reasonFilter: document.querySelector("#reasonFilter"),
       moveModal: document.querySelector("#moveModal"),
       moveModalTitle: document.querySelector("#moveModalTitle"),
       moveModalSubtitle: document.querySelector("#moveModalSubtitle"),
       moveModalBody: document.querySelector("#moveModalBody"),
+      selectAllMoveDetails: document.querySelector("#selectAllMoveDetails"),
       moveModalClose: document.querySelector("#moveModalClose"),
       reasonHeader: document.querySelector("#reasonHeader"),
       reasonFilterLabel: document.querySelector("#reasonFilterLabel"),
@@ -2607,6 +2765,17 @@
     });
     els.bulkInclude.addEventListener("click", () => applyBulkMoveDetailState(false));
     els.bulkExclude.addEventListener("click", () => applyBulkMoveDetailState(true));
+    els.bulkExcludeReason.addEventListener("click", excludeMoveDetailsByReason);
+    els.flipReviewHeader.addEventListener("click", () => openMoveModal("__month__", "flip"));
+    els.selectAllMoveDetails.addEventListener("change", () => {
+      const checkboxes = Array.from(els.moveModalBody.querySelectorAll('input[data-detail-id]'));
+      checkboxes.forEach((checkbox) => {
+        checkbox.checked = els.selectAllMoveDetails.checked;
+        setDetailSelected(checkbox.dataset.detailId, checkbox.checked);
+        checkbox.closest("tr")?.classList.toggle("selected-row", checkbox.checked);
+      });
+      els.selectAllMoveDetails.indeterminate = false;
+    });
     document.addEventListener("mouseup", () => {
       state.draggingSelect = false;
     });
@@ -2773,6 +2942,7 @@
           state.groupMapMode = saved.groupMapMode === "shifts" ? "shifts" : "groups";
           state.groupMapSelected = saved.groupMapSelected || "";
           state.page = saved.page || "operations";
+          reconcileImportedMoveFiles();
           normalizeExistingTimesheetDates();
           syncTimesheetManHoursFromAnalytics();
         }
@@ -3365,6 +3535,53 @@
       return categories.length ? categories : ["ramp"];
     }
 
+    function reconcileImportedMoveFiles() {
+      const operationFiles = state.importedFiles.filter((file) => file && file.type !== "analytics" && file.type !== "archiveTime");
+      const byId = new Map(operationFiles.filter((file) => file.id).map((file) => [String(file.id), file]));
+      const byName = new Map(operationFiles.filter((file) => file.name).map((file) => [String(file.name).trim().toLowerCase(), file]));
+      const orphanGroups = new Map();
+
+      state.moveDetails.forEach((detail) => {
+        if (!detail) return;
+        const existing = detail.fileId && byId.get(String(detail.fileId));
+        if (existing) return;
+        const fileName = String(detail.fileName || detail.source || "").trim();
+        const namedFile = fileName && byName.get(fileName.toLowerCase());
+        if (namedFile) {
+          detail.fileId = namedFile.id;
+          if (!detail.fileName) detail.fileName = namedFile.name;
+          return;
+        }
+        const orphanKey = String(detail.fileId || fileName).trim();
+        if (!orphanKey) return;
+        if (!orphanGroups.has(orphanKey)) orphanGroups.set(orphanKey, []);
+        orphanGroups.get(orphanKey).push(detail);
+      });
+
+      orphanGroups.forEach((details, orphanKey) => {
+        let hash = 0;
+        for (let index = 0; index < orphanKey.length; index += 1) hash = ((hash << 5) - hash + orphanKey.charCodeAt(index)) | 0;
+        let fileId = details[0].fileId || `legacy-operations-${Math.abs(hash)}`;
+        while (byId.has(String(fileId))) fileId += "-legacy";
+        const fileName = details[0].fileName || details[0].source || "Legacy operations import";
+        const file = {
+          id: fileId,
+          name: fileName,
+          type: "operations",
+          importedAt: "",
+          rows: details.length,
+          recovered: true
+        };
+        state.importedFiles.push(file);
+        byId.set(String(fileId), file);
+        if (fileName) byName.set(String(fileName).trim().toLowerCase(), file);
+        details.forEach((detail) => {
+          detail.fileId = fileId;
+          if (!detail.fileName) detail.fileName = fileName;
+        });
+      });
+    }
+
     function gateSummaryForFile(fileId) {
       const detailCounts = {};
       state.moveDetails
@@ -3932,14 +4149,28 @@
       const valueText = document.createElement("span");
       valueText.textContent = detailValueLabel(key, field, value);
       button.append(valueText);
+      const flagRail = document.createElement("span");
+      flagRail.className = "cell-flag-rail";
       const duplicateDetails = duplicateDetailsForCell(key, field);
       if (state.showDuplicates && duplicateDetails.length) {
+        const duplicateGroupCount = new Set(duplicateDetails.map((detail) =>
+          `${detail.fileId || detail.source || ""}|${normalizeEquipment(detail.equipment || "")}`
+        )).size;
         const flag = document.createElement("span");
         flag.className = "duplicate-investigation-flag";
-        flag.textContent = `${duplicateDetails.length} DUPES`;
-        flag.title = "Click to review the highlighted duplicate rows";
-        button.append(flag);
+        flag.textContent = `${duplicateGroupCount} DUPE`;
+        flag.title = "Click to review the highlighted duplicate groups";
+        flagRail.append(flag);
       }
+      const excludedCount = field === "flip" ? excludedUnitCount(key, field) : 0;
+      if (excludedCount > 0) {
+        const flag = document.createElement("span");
+        flag.className = "excluded-investigation-flag";
+        flag.textContent = `${excludedCount} EXCL`;
+        flag.title = `${excludedCount} excluded flip row${excludedCount === 1 ? "" : "s"}. Click to review.`;
+        flagRail.append(flag);
+      }
+      if (flagRail.childElementCount) button.append(flagRail);
       button.title = `Preview ${fieldLabel(field).toLowerCase()} rows`;
       button.addEventListener("click", () => openMoveModal(key, field));
       cell.append(button);
@@ -3970,6 +4201,7 @@
 
     function detailValueLabel(date, field, value) {
       const base = typeof value === "number" && value !== 0 ? String(value) : "";
+      if (field === "flip") return base;
       const excluded = excludedUnitCount(date, field);
       if (!state.showExcludedCounts || !excluded) return base;
       return `${base} (${excluded})`;
@@ -4614,6 +4846,12 @@
       return state.moveDetails.filter((detail) => detail.date === date && detail.field === field);
     }
 
+    function previewMoveDetails(date, field) {
+      if (date !== "__month__") return getMoveDetails(date, field);
+      const monthPrefix = `${state.month}-`;
+      return state.moveDetails.filter((detail) => detail.field === field && String(detail.date || "").startsWith(monthPrefix));
+    }
+
     function activeMoveDetails(date, field) {
       return getMoveDetails(date, field).filter((detail) => !detail.deleted);
     }
@@ -4630,9 +4868,9 @@
     function openMoveModal(date, field) {
       state.previewDate = date;
       state.previewField = field;
-      state.selectedDetailIds = new Set(Array.from(state.selectedDetailIds).filter((id) => getMoveDetails(date, field).some((detail) => detail.id === id)));
+      state.selectedDetailIds = new Set(Array.from(state.selectedDetailIds).filter((id) => previewMoveDetails(date, field).some((detail) => detail.id === id)));
       const label = fieldLabel(field);
-      const details = getMoveDetails(date, field);
+      const details = previewMoveDetails(date, field);
       const activeDetails = details.filter((detail) => !detail.deleted);
       const hasReasons = details.some((detail) => String(detail.reason || "").trim());
       if (!hasReasons) state.reasonFilter = "all";
@@ -4658,8 +4896,10 @@
       els.previewFilter.value = state.previewFilter;
       els.duplicatesFirst.setAttribute("aria-pressed", String(state.previewDuplicatesFirst));
       els.reasonFilter.value = state.reasonFilter;
-      els.moveModalTitle.textContent = `${label} Preview`;
-      els.moveModalSubtitle.textContent = `${date} - ${uniqueEquipmentCount(activeDetails)} included units - ${excludedUnitCount(date, field)} excluded units - select rows, then include or exclude them`;
+      const excludedCount = details.filter((detail) => detail.deleted).length;
+      const previewLabel = date === "__month__" ? `${monthLabel(state.month)} - all flips` : date;
+      els.moveModalTitle.textContent = date === "__month__" ? "Monthly Flip Review" : `${label} Preview`;
+      els.moveModalSubtitle.textContent = `${previewLabel} - ${uniqueEquipmentCount(activeDetails)} included units - ${excludedCount} excluded rows - select rows, filter a reason, or exclude that reason`;
       els.moveModalBody.innerHTML = "";
 
       if (!visibleDetails.length) {
@@ -4711,7 +4951,7 @@
           button.textContent = detail.deleted ? "Include" : "Exclude";
           button.addEventListener("click", (event) => {
             event.stopPropagation();
-            toggleMoveDetail(detail.id, date, field);
+            toggleMoveDetail(detail.id, detail.date, field);
           });
           actionCell.append(button);
           row.append(actionCell);
@@ -4720,6 +4960,11 @@
         });
       }
 
+      const visibleChecks = Array.from(els.moveModalBody.querySelectorAll('input[data-detail-id]'));
+      const selectedVisible = visibleChecks.filter((checkbox) => checkbox.checked).length;
+      els.selectAllMoveDetails.checked = visibleChecks.length > 0 && selectedVisible === visibleChecks.length;
+      els.selectAllMoveDetails.indeterminate = selectedVisible > 0 && selectedVisible < visibleChecks.length;
+      els.selectAllMoveDetails.disabled = visibleChecks.length === 0;
       els.moveModal.classList.remove("hidden");
       positionMoveModalInViewport();
     }
@@ -4769,6 +5014,7 @@
       cell.className = "select-cell";
       const checkbox = document.createElement("input");
       checkbox.type = "checkbox";
+      checkbox.dataset.detailId = id;
       checkbox.checked = state.selectedDetailIds.has(id);
       checkbox.addEventListener("click", (event) => event.stopPropagation());
       checkbox.addEventListener("change", () => {
@@ -4788,8 +5034,27 @@
       if (!state.selectedDetailIds.size || !state.previewDate || !state.previewField) return;
       const selected = new Set(state.selectedDetailIds);
       state.moveDetails = state.moveDetails.map((detail) => selected.has(detail.id) ? { ...detail, deleted } : detail);
-      recalculateMoveCount(state.previewDate, state.previewField);
+      if (state.previewDate === "__month__") {
+        Array.from(new Set(state.moveDetails.filter((detail) => selected.has(detail.id)).map((detail) => detail.date)))
+          .forEach((date) => recalculateMoveCount(date, state.previewField));
+      } else {
+        recalculateMoveCount(state.previewDate, state.previewField);
+      }
       state.selectedDetailIds.clear();
+      persist();
+      render();
+      openMoveModal(state.previewDate, state.previewField);
+    }
+
+    function excludeMoveDetailsByReason() {
+      if (!state.previewDate || !state.previewField || state.reasonFilter === "all") return;
+      const matching = previewMoveDetails(state.previewDate, state.previewField)
+        .filter((detail) => reasonKey(detail.reason) === state.reasonFilter);
+      if (!matching.length) return;
+      const ids = new Set(matching.map((detail) => detail.id));
+      const dates = new Set(matching.map((detail) => detail.date));
+      state.moveDetails = state.moveDetails.map((detail) => ids.has(detail.id) ? { ...detail, deleted: true } : detail);
+      dates.forEach((date) => recalculateMoveCount(date, state.previewField));
       persist();
       render();
       openMoveModal(state.previewDate, state.previewField);
@@ -4839,11 +5104,12 @@
       persist();
     }
     function toggleMoveDetail(id, date, field) {
+      const previewDate = state.previewDate;
       state.moveDetails = state.moveDetails.map((detail) => detail.id === id ? { ...detail, deleted: !detail.deleted } : detail);
       recalculateMoveCount(date, field);
       persist();
       render();
-      openMoveModal(date, field);
+      openMoveModal(previewDate || date, field);
     }
 
     function recalculateMoveCount(date, field) {
@@ -6150,7 +6416,7 @@
           if (!date || !equipment) return [];
 
           const reason = String(row[reasonIndex] == null ? "" : row[reasonIndex]).trim();
-          const field = normalizeHeader(reason) === "stack" ? "stacked" : "flip";
+          const field = /\bstack(?:ed|ing)?\b/i.test(reason) ? "stacked" : "flip";
           return {
             date,
             __kind: "detailMove",
