@@ -3294,7 +3294,7 @@
 
     function withBillingSplitLiftAndChassisClear(html) {
       if (!html || typeof html !== "string" || html.includes("billing-split-lift-chassis-clear-v1")) return html;
-      let updated = html
+      const updated = html
         .replace(
           '<button type="button" data-clear-month="lifts">Clear lifts</button>',
           '<button type="button" data-clear-month="lifts">Clear lifts &amp; stacking</button><button type="button" data-clear-month="chassis">Clear chassis stack &amp; unstack</button>'
@@ -3319,7 +3319,7 @@
       const style = `<style id="billing-pb-lifts-delta-v1">
 .pb-lifts-delta-cell{position:relative}
 .pb-lifts-delta-cell .cell-input{padding-right:29px;padding-left:29px}
-.pb-lifts-delta-flag{position:absolute;top:50%;right:3px;min-width:24px;padding:1px 3px;transform:translateY(-50%);border-radius:999px;background:#e2e8f0;color:#475569;font-size:8px;font-weight:900;line-height:1.35;text-align:center;pointer-events:none}
+.pb-lifts-delta-flag{position:absolute;top:50%;right:3px;min-width:24px;padding:1px 3px;transform:translateY(-50%);border-radius:999px;background:#e2e8f0;color:#475569;font-size:10px;font-weight:900;line-height:1.35;text-align:center;pointer-events:none}
 .pb-lifts-delta-flag.positive{background:#dcfce7;color:#166534}
 .pb-lifts-delta-flag.negative{background:#fee2e2;color:#991b1b}
 </style>`;
@@ -3352,6 +3352,7 @@
       if (!html || typeof html !== "string" || html.includes("billing-display-flags-menu-v1")) return html;
       const style = `<style id="billing-display-flags-menu-v1">
 .pb-lifts-delta-hidden .pb-lifts-delta-flag{display:none}
+#operationsTable.man-hours-hidden .hours-man-hours-column,#operationsTable.pb-lifts-column-hidden .hours-pb-lifts-column{display:none!important}
 #operationsTable tr.pb-lifts-discrepancy td{background:#fff4d6;box-shadow:inset 0 1px #f59e0b,inset 0 -1px #f59e0b}
 #operationsTable tr.pb-lifts-discrepancy td:first-child{box-shadow:inset 3px 0 #f59e0b,inset 0 1px #f59e0b,inset 0 -1px #f59e0b}
 .display-flags-menu{position:relative}
@@ -3370,12 +3371,14 @@
             <label class="display-flags-option"><input id="showDuplicateFlagsToggle" type="checkbox"> Duplicate flags</label>
             <label class="display-flags-option"><input id="showPbLiftFlagsToggle" type="checkbox"> PB Lifts delta flags</label>
             <label class="display-flags-option"><input id="highlightPbDiscrepanciesToggle" type="checkbox"> Highlight PB Lifts / Lifts discrepancies</label>
+            <label class="display-flags-option"><input id="showManHoursColumnToggle" type="checkbox"> Show Man Hours column</label>
+            <label class="display-flags-option"><input id="showPbLiftsColumnToggle" type="checkbox"> Show PB Lifts column</label>
           </div>
         </div>`
         )
         .replace(
           '      showDuplicates: false,\n      page: "operations",',
-          '      showDuplicates: false,\n      showPbLiftFlags: true,\n      highlightPbDiscrepancies: false,\n      page: "operations",'
+          '      showDuplicates: false,\n      showPbLiftFlags: true,\n      highlightPbDiscrepancies: false,\n      showManHoursColumn: true,\n      showPbLiftsColumn: true,\n      page: "operations",'
         )
         .replace(
           '      duplicatesButton: document.querySelector("#duplicatesButton"),',
@@ -3383,7 +3386,9 @@
       displayFlagsMenuList: document.querySelector("#displayFlagsMenuList"),
       showDuplicateFlagsToggle: document.querySelector("#showDuplicateFlagsToggle"),
       showPbLiftFlagsToggle: document.querySelector("#showPbLiftFlagsToggle"),
-      highlightPbDiscrepanciesToggle: document.querySelector("#highlightPbDiscrepanciesToggle"),`
+      highlightPbDiscrepanciesToggle: document.querySelector("#highlightPbDiscrepanciesToggle"),
+      showManHoursColumnToggle: document.querySelector("#showManHoursColumnToggle"),
+      showPbLiftsColumnToggle: document.querySelector("#showPbLiftsColumnToggle"),`
         )
         .replace(
           /    els\.duplicatesButton\.addEventListener\("click", \(\) => \{\r?\n      state\.showDuplicates = !state\.showDuplicates;\r?\n      persist\(\);\r?\n      render\(\);\r?\n    \}\);/,
@@ -3411,15 +3416,25 @@
       state.highlightPbDiscrepancies = els.highlightPbDiscrepanciesToggle.checked;
       persist();
       render();
+    });
+    els.showManHoursColumnToggle.addEventListener("change", () => {
+      state.showManHoursColumn = els.showManHoursColumnToggle.checked;
+      persist();
+      render();
+    });
+    els.showPbLiftsColumnToggle.addEventListener("change", () => {
+      state.showPbLiftsColumn = els.showPbLiftsColumnToggle.checked;
+      persist();
+      render();
     });`
         )
         .replace(
           '          state.showDuplicates = !!saved.showDuplicates;',
-          '          state.showDuplicates = !!saved.showDuplicates;\n          state.showPbLiftFlags = saved.showPbLiftFlags !== false;\n          state.highlightPbDiscrepancies = !!saved.highlightPbDiscrepancies;'
+          '          state.showDuplicates = !!saved.showDuplicates;\n          state.showPbLiftFlags = saved.showPbLiftFlags !== false;\n          state.highlightPbDiscrepancies = !!saved.highlightPbDiscrepancies;\n          state.showManHoursColumn = saved.showManHoursColumn !== false;\n          state.showPbLiftsColumn = saved.showPbLiftsColumn !== false;'
         )
         .replace(
           '        showDuplicates: state.showDuplicates,',
-          '        showDuplicates: state.showDuplicates,\n        showPbLiftFlags: state.showPbLiftFlags,\n        highlightPbDiscrepancies: state.highlightPbDiscrepancies,'
+          '        showDuplicates: state.showDuplicates,\n        showPbLiftFlags: state.showPbLiftFlags,\n        highlightPbDiscrepancies: state.highlightPbDiscrepancies,\n        showManHoursColumn: state.showManHoursColumn,\n        showPbLiftsColumn: state.showPbLiftsColumn,'
         )
         .replace(
           /      els\.duplicatesButton\.classList\.toggle\("active", state\.showDuplicates\);\r?\n      els\.duplicatesButton\.setAttribute\("aria-pressed", String\(state\.showDuplicates\)\);/,
@@ -3427,7 +3442,13 @@
       els.showDuplicateFlagsToggle.checked = state.showDuplicates;
       els.showPbLiftFlagsToggle.checked = state.showPbLiftFlags;
       els.highlightPbDiscrepanciesToggle.checked = state.highlightPbDiscrepancies;
-      els.operationsTable.classList.toggle("pb-lifts-delta-hidden", !state.showPbLiftFlags);`
+      els.showManHoursColumnToggle.checked = state.showManHoursColumn;
+      els.showPbLiftsColumnToggle.checked = state.showPbLiftsColumn;
+      els.operationsTable.classList.toggle("pb-lifts-delta-hidden", !state.showPbLiftFlags);
+      els.operationsTable.classList.toggle("man-hours-hidden", !state.showManHoursColumn);
+      els.operationsTable.classList.toggle("pb-lifts-column-hidden", !state.showPbLiftsColumn);
+      const hoursGroupHeader = els.operationsTable.querySelector(".group-hours");
+      if (hoursGroupHeader) hoursGroupHeader.colSpan = 5 - Number(!state.showManHoursColumn) - Number(!state.showPbLiftsColumn);`
         )
         .replace(
           '        if (state.weekendHighlight && (date.getDay() === 0 || date.getDay() === 6)) row.classList.add("weekend");',
@@ -3442,27 +3463,35 @@
       let updated = html
         .replace(
           /<th class="split-left"><button id="timesheetHoursSource" class="hour-source-button active" type="button">Man Hours<\/button><\/th>\s*<th><button id="powerBiHoursSource" class="hour-source-button" type="button">PB Hours<\/button><\/th>\s*<th>PB Lifts<\/th>\s*<th>Lifts<\/th>\s*<th>LPH<\/th>/,
-          `<th class="split-left">Lifts</th>
-              <th>PB Lifts</th>
-              <th><button id="powerBiHoursSource" class="hour-source-button" type="button">PB Hours</button></th>
-              <th><button id="timesheetHoursSource" class="hour-source-button active" type="button">Man Hours</button></th>
-              <th>LPH</th>`
+          `<th class="hours-pb-lifts-column split-left">PB Lifts</th>
+              <th class="hours-pb-hours-column"><button id="powerBiHoursSource" class="hour-source-button" type="button">PB Hours</button></th>
+              <th class="hours-man-hours-column"><button id="timesheetHoursSource" class="hour-source-button active" type="button">Man Hours</button></th>
+              <th class="hours-lifts-column">Lifts</th>
+              <th class="hours-lph-column">LPH</th>`
         )
         .replace(
           /        row\.append\(inputCell\(key, "manHours", record\.manHours, "decimal"\)\);\s*row\.append\(inputCell\(key, "powerBiManHours", record\.powerBiManHours, "decimal"\)\);\s*row\.append\(powerBiLiftsCell\(key, record\.powerBiLifts, dailyLifts\)\);\s*row\.append\(totalCell\(dailyLifts, "lph-total"\)\);\s*row\.append\(totalCell\(dayLpmh, "lph-total", 2\)\);/,
-          `        row.append(totalCell(dailyLifts, "lph-total"));
-        row.append(powerBiLiftsCell(key, record.powerBiLifts, dailyLifts));
-        row.append(inputCell(key, "powerBiManHours", record.powerBiManHours, "decimal"));
-        row.append(inputCell(key, "manHours", record.manHours, "decimal"));
+          `        const pbLiftsCell = powerBiLiftsCell(key, record.powerBiLifts, dailyLifts);
+        pbLiftsCell.classList.add("hours-pb-lifts-column");
+        row.append(pbLiftsCell);
+        const pbHoursCell = inputCell(key, "powerBiManHours", record.powerBiManHours, "decimal");
+        pbHoursCell.classList.add("hours-pb-hours-column");
+        row.append(pbHoursCell);
+        const manHoursCell = inputCell(key, "manHours", record.manHours, "decimal");
+        manHoursCell.classList.add("hours-man-hours-column");
+        row.append(manHoursCell);
+        const liftsCell = totalCell(dailyLifts, "lph-total");
+        liftsCell.classList.add("hours-lifts-column");
+        row.append(liftsCell);
         row.append(totalCell(dayLpmh, "lph-total", 2));`
         )
         .replace(
           "flipStack, sums.chUnstacked, sums.chStacked, chassis, sums.manHours, sums.powerBiManHours, sums.powerBiLifts, sums.lifts, lpmh",
-          "flipStack, sums.chUnstacked, sums.chStacked, chassis, sums.lifts, sums.powerBiLifts, sums.powerBiManHours, sums.manHours, lpmh"
+          "flipStack, sums.chUnstacked, sums.chStacked, chassis, sums.powerBiLifts, sums.powerBiManHours, sums.manHours, sums.lifts, lpmh"
         )
         .replace(
           "index === 15 || index === 16 ? 1 : index === 19 ? 2 : null",
-          "index === 17 || index === 18 ? 1 : index === 19 ? 2 : null"
+          "index === 16 || index === 17 ? 1 : index === 19 ? 2 : null"
         );
       return updated.replace("</head>", '<meta name="billing-hours-column-order-v1" content="enabled">\n</head>');
     }
@@ -3496,7 +3525,7 @@ tfoot .lph-target-pill.below-target{background:#fecaca;color:#7f1d1d}
           '    function totalCell(value, className, digits = null) {',
           `    function lphPillCell(value) {
       const cell = document.createElement("td");
-      cell.className = "total-cell lph-value-cell";
+      cell.className = "total-cell lph-value-cell hours-lph-column";
       if (typeof value !== "number") return cell;
       const pill = document.createElement("span");
       pill.className = "lph-target-pill " + (value >= 2.1 ? "on-target" : "below-target");
@@ -3509,15 +3538,27 @@ tfoot .lph-target-pill.below-target{background:#fecaca;color:#7f1d1d}
     function totalCell(value, className, digits = null) {`
         )
         .replace(
-          '        cell.textContent = typeof value === "number" ? formatNonZero(value, index === 17 || index === 18 ? 1 : index === 19 ? 2 : null) : value;',
+          '        cell.textContent = typeof value === "number" ? formatNonZero(value, index === 16 || index === 17 ? 1 : index === 19 ? 2 : null) : value;',
           `        if (index === 19 && typeof value === "number") {
           const pill = document.createElement("span");
           pill.className = "lph-target-pill " + (value >= 2.1 ? "on-target" : "below-target");
           pill.textContent = value.toFixed(2);
           cell.append(pill);
         } else {
-          cell.textContent = typeof value === "number" ? formatNonZero(value, index === 17 || index === 18 ? 1 : null) : value;
+          cell.textContent = typeof value === "number" ? formatNonZero(value, index === 16 || index === 17 ? 1 : null) : value;
         }`
+        )
+        .replace(
+          '      els.totalRow.innerHTML = "";',
+          `      const columnClasses = [
+        "", "", "", "", "", "", "", "", "", "", "", "", "", "", "",
+        "hours-pb-lifts-column", "hours-pb-hours-column", "hours-man-hours-column", "hours-lifts-column", "hours-lph-column"
+      ];
+      els.totalRow.innerHTML = "";`
+        )
+        .replace(
+          '        if (index >= 4 && index <= 7) cell.classList.add("gate-column");',
+          '        if (index >= 4 && index <= 7) cell.classList.add("gate-column");\n        if (columnClasses[index]) cell.classList.add(columnClasses[index]);'
         );
       const headClose = updated.toLowerCase().indexOf("</head>");
       return headClose >= 0 ? updated.slice(0, headClose) + style + "\n" + updated.slice(headClose) : style + updated;
@@ -3639,7 +3680,12 @@ tfoot .lph-target-pill.below-target{background:#fecaca;color:#7f1d1d}
       button.textContent = config.label;
       heading.append(button);
     }
-    button.addEventListener("click", () => openMoveModal(MONTH_VIEW, config.field));
+    button.addEventListener("click", () => {
+      state.previewFilter = "all";
+      state.reasonFilter = "all";
+      state.previewDuplicatesFirst = false;
+      openMoveModal(MONTH_VIEW, config.field);
+    });
   });
   const baseOpenMoveModalForRampDeramp = openMoveModal;
   openMoveModal = function(date, field) {
@@ -3803,6 +3849,12 @@ tfoot .lph-target-pill.below-target{background:#fecaca;color:#7f1d1d}
     const details = previewMoveDetails(date, field);
     const duplicateSet = duplicateEquipmentSet(details);
     const visibleDuplicateRows = els.moveModalBody.querySelectorAll("tr.duplicate-row").length;
+    if (date === "__duplicates__" && field === "allDuplicates") {
+      els.moveModalTitle.textContent = "Duplicate Review";
+      els.moveModalSubtitle.textContent = String(state.month || "") + " - duplicate rows grouped by day and Ramp, Deramp, or Flip - select rows, then include or exclude them";
+      els.moveModalSubtitle.style.removeProperty("color");
+      return;
+    }
     const previewLabel = date === "__month__" ? monthLabel(state.month) + " - all " + fieldLabel(field).toLowerCase() + " rows" : date;
     els.moveModalSubtitle.textContent = previewLabel + " - showing " + visibleDuplicateRows + " duplicate rows across " + duplicateSet.size + " duplicate group" + (duplicateSet.size === 1 ? "" : "s");
     els.moveModalSubtitle.style.removeProperty("color");
@@ -3827,7 +3879,7 @@ tfoot .lph-target-pill.below-target{background:#fecaca;color:#7f1d1d}
     function withBillingArchiveIndexedDb(html) {
       if (!html || typeof html !== "string" || html.includes("conglobal-billing-archive-indexeddb-v1")) return html;
       const marker = '<meta name="conglobal-billing-archive-indexeddb-v1" content="enabled">';
-      const updated = html
+      let updated = html
         .replace(
           '    function readTimesheetArchive() {\n      try {',
           `    async function readTimesheetArchive() {
@@ -3970,17 +4022,44 @@ tfoot .lph-target-pill.below-target{background:#fecaca;color:#7f1d1d}
     }
 
     function withBillingQuotaSafePersistence(html) {
-      if (!html || typeof html !== "string" || html.includes("conglobal-billing-quota-safe-v1")) return html;
-      const marker = '<meta name="conglobal-billing-quota-safe-v1" content="enabled">';
-      const updated = html
+      if (!html || typeof html !== "string" || html.includes("conglobal-billing-quota-safe-v2")) return html;
+      const marker = '<meta name="conglobal-billing-quota-safe-v2" content="enabled">';
+      let updated = html
         .replace(
           '    function persist() {\n      localStorage.setItem(STORE_KEY, JSON.stringify({',
           '    function persist() {\n      try {\n        localStorage.setItem(STORE_KEY, JSON.stringify({'
         )
         .replace(
           '      }));\n    }\n\n    let performanceResizeObserver',
-          '        }));\n      } catch (error) {\n        if (error && (error.name === "QuotaExceededError" || error.code === 22)) {\n          try {\n            localStorage.setItem(STORE_KEY, JSON.stringify({ month: state.month, data: state.data, importedFiles: state.importedFiles, analyticsRows: state.analyticsRows, analyticsReviewRows: state.analyticsReviewRows, analyticsExcludedEmployees: state.analyticsExcludedEmployees, analyticsExclusionReasons: state.analyticsExclusionReasons, managerNames: state.managerNames, managerContextEnabled: state.managerContextEnabled, page: state.page }));\n            state.persistenceWarning = true;\n            return;\n          } catch (compactError) {}\n        }\n        throw error;\n      }\n    }\n\n    let performanceResizeObserver'
+          '        }));\n      } catch (error) {\n        if (error && (error.name === "QuotaExceededError" || error.code === 22)) {\n          try {\n            localStorage.setItem(STORE_KEY, JSON.stringify({ month: state.month, data: state.data, moveDetails: state.moveDetails, importedFiles: Array.isArray(state.importedFiles) ? state.importedFiles.map(function(file) { return { id: file.id, name: file.name, type: file.type, importedAt: file.importedAt, rows: file.rows, dayManager: file.dayManager || "", nightManager: file.nightManager || "" }; }) : [], importedCells: [], analyticsRows: [], analyticsReviewRows: [], analyticsExcludedEmployees: [], analyticsExclusionReasons: {}, managerNames: state.managerNames, managerContextEnabled: state.managerContextEnabled, page: state.page }));\n            state.persistenceWarning = true;\n            return;\n          } catch (compactError) {\n            state.persistenceWarning = true;\n            return;\n          }\n        }\n        throw error;\n      }\n    }\n\n    let performanceResizeObserver'
         );
+      const hydrationGuard = /([\r\n]\s*)}\s*catch \(error\) \{\s*state\.data = \{\};\s*state\.moveDetails = \[\];\s*}/;
+      updated = updated.replace(hydrationGuard, "$1} catch (error) {\n        state.persistenceWarning = true;\n        console.warn(\"Billing state hydration warning\", error);\n      }");
+      // The embedded billing baseline may already use the newer payload
+      // shape, so the older quota replacement above can be a no-op. Never
+      // replace the detailed lift/flip rows with an empty array in that case.
+      updated = updated.replace(/(const compactPayload = \{[\s\S]*?\.\.\.payload,\s*)moveDetails:\s*\[\],\s*importedCells:\s*\[\]/, "$1importedCells: []");
+      updated = updated.replace(/state\.data = \{\};\s*state\.moveDetails = \[\];/, "state.persistenceWarning = true;\n        console.warn(\"Billing state hydration warning\", error);");
+      const headClose = updated.toLowerCase().indexOf("</head>");
+      return headClose >= 0 ? updated.slice(0, headClose) + marker + "\n" + updated.slice(headClose) : marker + updated;
+    }
+
+    // The embedded billing page can come from an older combined baseline than
+    // billing-page.html. Apply the destructive-state guard after all other
+    // billing transforms so that a stale baseline cannot erase detailed
+    // lift/flip rows when hydration or a quota fallback encounters an error.
+    function withBillingLiftFlipPersistenceV2(html) {
+      if (!html || typeof html !== "string" || html.includes("conglobal-billing-lift-flip-persistence-v2")) return html;
+      const marker = '<meta name="conglobal-billing-lift-flip-persistence-v2" content="enabled">';
+      let updated = html;
+      updated = updated.replace(
+        /state\.data\s*=\s*\{\};\s*state\.moveDetails\s*=\s*\[\];/,
+        'state.persistenceWarning = true;\n        console.warn("Billing state hydration warning", error);'
+      );
+      updated = updated.replace(
+        /(const compactPayload\s*=\s*\{[\s\S]*?\.\.\.payload,\s*)moveDetails\s*:\s*\[\],\s*/,
+        "$1"
+      );
       const headClose = updated.toLowerCase().indexOf("</head>");
       return headClose >= 0 ? updated.slice(0, headClose) + marker + "\n" + updated.slice(headClose) : marker + updated;
     }
@@ -4330,14 +4409,14 @@ tfoot .lph-target-pill.below-target{background:#fecaca;color:#7f1d1d}
       const compactStyle = `<style id="conglobal-billing-compact-operations-grid-v1">
 #operationsTable{min-width:1040px}
 #operationsTable:not(.gate-columns-hidden){min-width:1300px}
-#operationsTable thead tr:first-child th{padding:7px 5px;font-size:12px}
-#operationsTable .date-head{min-width:96px;padding:8px 9px!important;font-size:10px!important}
-#operationsTable thead tr:nth-child(2) th{padding:6px 3px;font-size:9px;letter-spacing:.045em}
-#operationsTable td{font-size:12px}
+#operationsTable thead tr:first-child th{padding:7px 5px;font-size:14px}
+#operationsTable .date-head{min-width:96px;padding:8px 9px!important;font-size:12px!important}
+#operationsTable thead tr:nth-child(2) th{padding:6px 3px;font-size:11px;letter-spacing:.045em}
+#operationsTable td{font-size:14.5px}
 #operationsTable .date-cell{padding:0 8px}
 #operationsTable .day{font-size:12px}
 #operationsTable .weekday{margin-left:4px;font-size:9px}
-#operationsTable .cell-input,#operationsTable .move-drill{min-width:46px;padding:5px 2px;font-size:12px}
+#operationsTable .cell-input,#operationsTable .move-drill{min-width:46px;padding:5px 2px;font-size:14.5px}
 #operationsTable .total-cell{padding:5px 4px}
 #operationsTable .move-drill{position:relative}
 #operationsTable .move-drill>span:first-child{display:block;width:100%;text-align:center;font-variant-numeric:tabular-nums}
@@ -4461,7 +4540,7 @@ tfoot .lph-target-pill.below-target{background:#fecaca;color:#7f1d1d}
 #clearMenuButton:hover,#clearMenuButton:focus-visible{border-color:#e98f8f!important;background:#fbd5d5!important;color:#7f1d1d!important}
 .cell-flag-rail{position:absolute;left:calc(50% + 16px);top:50%;transform:translateY(-50%);display:inline-flex;align-items:center;gap:3px;white-space:nowrap;z-index:2}
 .cell-flag-rail .duplicate-investigation-flag{position:static!important;transform:none!important;margin:0!important}
-.excluded-investigation-flag{display:inline-flex;align-items:center;border:1px solid #d97706;border-radius:999px;padding:0 4px;color:#92400e;background:#fef3c7;font-size:8px;font-weight:900;line-height:1.2;white-space:nowrap}
+.excluded-investigation-flag{display:inline-flex;align-items:center;border:1px solid #d97706;border-radius:999px;padding:0 4px;color:#92400e;background:#fef3c7;font-size:9px;font-weight:900;line-height:1.2;white-space:nowrap}
 </style>
 <scr${""}ipt id="conglobal-billing-monthly-flip-review-v1">
 (() => {
@@ -4526,6 +4605,14 @@ tfoot .lph-target-pill.below-target{background:#fecaca;color:#7f1d1d}
       selectAll.disabled = visible.length === 0;
     }
   };
+  const baseCloseMoveModal = closeMoveModal;
+  closeMoveModal = function() {
+    baseCloseMoveModal();
+    state.previewFilter = "all";
+    state.reasonFilter = "all";
+    state.previewDuplicatesFirst = false;
+    state.selectedDetailIds.clear();
+  };
   const baseSelectCell = selectCell;
   selectCell = function(id) {
     const cell = baseSelectCell(id);
@@ -4565,7 +4652,12 @@ tfoot .lph-target-pill.below-target{background:#fecaca;color:#7f1d1d}
     button.type = "button";
     button.title = "Review all flips for this month";
     button.textContent = "Flip";
-    button.addEventListener("click", () => openMoveModal(MONTH, "flip"));
+    button.addEventListener("click", () => {
+      state.previewFilter = "all";
+      state.reasonFilter = "all";
+      state.previewDuplicatesFirst = false;
+      openMoveModal(MONTH, "flip");
+    });
     flipHeading.append(button);
   }
   if (!document.getElementById("bulkExcludeReason")) {
@@ -4851,7 +4943,7 @@ tfoot .lph-target-pill.below-target{background:#fecaca;color:#7f1d1d}
   function renderEmployeeNames(names){return names.map(function(name){return '<span class="shift-lpmh-employee-name'+(isCraneOperatorName(name)?' crane-operator':'')+'">'+escapeHtml(name)+'</span>';}).join('<span class="shift-lpmh-employee-separator">, </span>');}
   function decorateEmployeeNames(container){if(!container)return;container.querySelectorAll(".shift-lpmh-employees").forEach(function(element){if(element.querySelector(".shift-lpmh-employee-name"))return;var names=element.textContent.split(",").map(function(name){return name.trim();}).filter(Boolean);if(names.length)element.innerHTML=renderEmployeeNames(names);});}
   var employeeContainer=document.getElementById("groupMapContainer");
-  if(employeeContainer&&window.MutationObserver){new MutationObserver(function(){decorateEmployeeNames(employeeContainer);}).observe(employeeContainer,{childList:true,subtree:true});}
+  if(employeeContainer instanceof Node&&window.MutationObserver){new MutationObserver(function(){decorateEmployeeNames(employeeContainer);}).observe(employeeContainer,{childList:true,subtree:true});}
   function openBreakdown(detail){
     if(!detail)return;
     closeBreakdown();
@@ -10674,6 +10766,729 @@ document.getElementById("openYardCheck")?.addEventListener("click", function(){
       return html.replace("</head>", style + "\n</head>");
     }
 
+    function withBillingUnifiedDuplicateReview(html) {
+      if (!html || typeof html !== "string" || html.includes("billing-unified-duplicate-review-v1")) return html;
+      // The analytics renderer references the shift-LPMH roster declared later
+      // in the page script. Defer its first pass until the script has finished
+      // initializing so popup listeners are not skipped by a TDZ error.
+      html = html.replace(/(\s*load\(\);\s*render\(\);\s*)renderAnalytics\(\);/, "$1window.setTimeout(() => renderAnalytics(), 0);");
+      html = html.replace(/monthLabel\(state\.month\)/g, "monthTitle(state.month)");
+const script = `<style id="billing-unified-duplicate-review-v1">
+#operationsTable .move-drill{font-size:14.5px}
+#operationsTable .cell-input{font-size:14.5px;padding-top:3px;padding-bottom:3px}
+#operationsTable .move-drill{padding-top:3px;padding-bottom:3px}
+#operationsTable .total-cell{padding-top:3px;padding-bottom:3px}
+.app{padding-left:14px;padding-right:14px}
+.topbar,.layout{width:100%;max-width:none}
+.layout{grid-template-columns:minmax(0,1fr) 280px}
+#operationsTable tbody td{font-size:14.5px;font-weight:500}
+#operationsTable tbody td .cell-input{font-size:14.5px;font-weight:500}
+.preview-table tr.deleted-row{color:#7c8796;background:#fff7f7}
+.preview-table tr.deleted-row td:not(.select-cell):not(:last-child){color:#7c8796;text-decoration-line:line-through;text-decoration-color:rgba(127,29,29,.42);text-decoration-thickness:1px}
+.preview-table tr.duplicate-review-group td{background:#dbeafe;color:#17365d;font-weight:900;letter-spacing:.045em;text-transform:uppercase;border-top:2px solid #8fb3dc;padding:8px 12px;text-align:left;white-space:nowrap}
+.modal-backdrop.duplicates-only .preview-table td{vertical-align:middle}
+.modal-backdrop.duplicates-only .preview-table td:nth-child(2),.modal-backdrop.duplicates-only .preview-table td:nth-child(3),.modal-backdrop.duplicates-only .preview-table td:nth-last-child(4),.modal-backdrop.duplicates-only .preview-table td:nth-last-child(3){overflow:hidden;text-overflow:ellipsis;white-space:nowrap;word-break:normal}
+</style><scr${""}ipt>
+(() => {
+  const REVIEW_DATE = "__duplicates__";
+  const REVIEW_FIELD = "allDuplicates";
+  const reviewFields = ["ramp", "deramp", "flip"];
+  const fieldOrder = { ramp: 0, deramp: 1, flip: 2 };
+  const reviewMonthLabel = () => {
+    const parts = String(state.month || "").split("-");
+    const date = new Date(Number(parts[0]) || 2000, Math.max(0, (Number(parts[1]) || 1) - 1), 1);
+    return date.toLocaleDateString(undefined, { month:"long", year:"numeric" });
+  };
+  const flags = document.querySelector(".display-flags-menu");
+  let launch = document.getElementById("showOnlyDupesButton");
+  if (!launch && flags) {
+    launch = document.createElement("button");
+    launch.id = "showOnlyDupesButton";
+    launch.className = "button";
+    launch.type = "button";
+    launch.textContent = "Show Only Dupes";
+    flags.before(launch);
+  }
+  let exportDupes = document.getElementById("exportDuplicateRows");
+  if (!exportDupes) {
+    exportDupes = document.createElement("button");
+    exportDupes.id = "exportDuplicateRows";
+    exportDupes.className = "bulk-action hidden";
+    exportDupes.type = "button";
+    exportDupes.textContent = "Export Dupes";
+    const selectOne = document.getElementById("excludeDuplicateRows");
+    if (selectOne) selectOne.after(exportDupes);
+    else document.getElementById("bulkInclude")?.before(exportDupes);
+  }
+  let exportExcluded = document.getElementById("exportExcludedRows");
+  if (!exportExcluded) {
+    exportExcluded = document.createElement("button");
+    exportExcluded.id = "exportExcludedRows";
+    exportExcluded.className = "bulk-action";
+    exportExcluded.type = "button";
+    exportExcluded.textContent = "Export Excluded";
+    exportDupes?.after(exportExcluded);
+  }
+
+  const baseGetMoveDetailsForUnifiedReview = getMoveDetails;
+  getMoveDetails = function(date, field) {
+    if (date !== REVIEW_DATE || field !== REVIEW_FIELD) return baseGetMoveDetailsForUnifiedReview(date, field);
+    const prefix = state.month + "-";
+    return state.moveDetails.filter((detail) => reviewFields.includes(detail.field) && String(detail.date || "").startsWith(prefix));
+  };
+  window.previewMoveDetails = getMoveDetails;
+
+  duplicateDetailKey = function(detail) {
+    return [detail.date || "", detail.field || "", detail.fileId || detail.source || "", normalizeEquipment(detail.equipment || "")].join("|");
+  };
+  duplicateEquipmentSet = function(details) {
+    const counts = new Map();
+    details.forEach((detail) => {
+      const key = duplicateDetailKey(detail);
+      counts.set(key, (counts.get(key) || 0) + 1);
+    });
+    return new Set(Array.from(counts.entries()).filter((entry) => entry[1] > 1).map((entry) => entry[0]));
+  };
+
+  function duplicateReviewStyleXml() {
+    return [
+      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>',
+      '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">',
+      '<numFmts count="0"/>',
+      '<fonts count="2">',
+      '<font><sz val="11"/><color rgb="FF172033"/><name val="Calibri"/><family val="2"/><scheme val="minor"/></font>',
+      '<font><b/><sz val="11"/><color rgb="FF17365D"/><name val="Calibri"/><family val="2"/><scheme val="minor"/></font>',
+      '</fonts>',
+      '<fills count="5">',
+      '<fill><patternFill patternType="none"/></fill>',
+      '<fill><patternFill patternType="gray125"/></fill>',
+      '<fill><patternFill patternType="solid"><fgColor rgb="FFD9EAFE"/><bgColor indexed="64"/></patternFill></fill>',
+      '<fill><patternFill patternType="solid"><fgColor rgb="FFFFF2CC"/><bgColor indexed="64"/></patternFill></fill>',
+      '<fill><patternFill patternType="solid"><fgColor rgb="FFEAF2F8"/><bgColor indexed="64"/></patternFill></fill>',
+      '</fills>',
+      '<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>',
+      '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>',
+      '<cellXfs count="4">',
+      '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>',
+      '<xf numFmtId="0" fontId="1" fillId="4" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>',
+      '<xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>',
+      '<xf numFmtId="0" fontId="0" fillId="3" borderId="0" xfId="0" applyFill="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>',
+      '</cellXfs>',
+      '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>',
+      '<dxfs count="0"/>',
+      '<tableStyles count="0" defaultTableStyle="TableStyleMedium2" defaultPivotStyle="PivotStyleMedium4"/>',
+      '</styleSheet>'
+    ].join("");
+  }
+
+  function downloadStyledUnifiedDuplicateReviewWorkbook(workbook, fileName, groupRows, dataRows) {
+    const xlsx = window.XLSX;
+    if (!xlsx.CFB || !xlsx.CFB.read || !xlsx.CFB.write || !xlsx.CFB.find) {
+      xlsx.writeFile(workbook, fileName);
+      return;
+    }
+
+    try {
+      const bytes = xlsx.write(workbook, { bookType:"xlsx", type:"array", compression:true });
+      const input = bytes instanceof ArrayBuffer ? new Uint8Array(bytes) : bytes;
+      const zip = xlsx.CFB.read(input, { type:"array" });
+      const stylesEntry = xlsx.CFB.find(zip, "/xl/styles.xml");
+      const sheetEntry = xlsx.CFB.find(zip, "/xl/worksheets/sheet1.xml");
+      if (!stylesEntry || !sheetEntry) throw new Error("Duplicate Review workbook entries were not found");
+      const groups = new Set(groupRows);
+      const source = typeof billingZipText === "function" ? billingZipText(sheetEntry.content) : new TextDecoder("utf-8").decode(sheetEntry.content);
+      const styledSheetXml = source.replace(/<c([^>]*r="([A-Z]+)(\d+)"[^>]*)>/g, (match, attributes, column, row) => {
+        const rowNumber = Number(row);
+        const styleId = rowNumber === 1 ? 1 : (groups.has(rowNumber) ? 2 : (dataRows.has(rowNumber) ? 3 : null));
+        const cleanAttributes = attributes.replace(/\s+s="[^"]*"/i, "");
+       return "<c" + cleanAttributes + (styleId === null ? "" : ' s="' + styleId + '"') + ">";
+      });
+      const utf8 = typeof billingUtf8Bytes === "function" ? billingUtf8Bytes : (value) => new TextEncoder().encode(value);
+      stylesEntry.content = utf8(duplicateReviewStyleXml());
+      stylesEntry.size = stylesEntry.content.length;
+      sheetEntry.content = utf8(styledSheetXml);
+      sheetEntry.size = sheetEntry.content.length;
+      const output = xlsx.CFB.write(zip, { fileType:"zip", type:"array", compression:true });
+      const blob = new Blob([output], { type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName;
+      link.click();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (error) {
+      console.warn("Duplicate Review export styling fallback", error);
+      xlsx.writeFile(workbook, fileName);
+    }
+  }
+
+  function exportUnifiedDuplicateReview() {
+    const details = getMoveDetails(REVIEW_DATE, REVIEW_FIELD);
+    const duplicateSet = duplicateEquipmentSet(details);
+    const sortedDetails = details.filter((detail) => duplicateSet.has(duplicateDetailKey(detail))).slice().sort((a, b) =>
+      String(a.date || "").localeCompare(String(b.date || "")) ||
+      (fieldOrder[a.field] ?? 9) - (fieldOrder[b.field] ?? 9) ||
+      String(a.equipment || "").localeCompare(String(b.equipment || ""), undefined, { numeric:true }) ||
+      String(a.time || "").localeCompare(String(b.time || ""))
+    );
+    if (!sortedDetails.length) {
+      showToast("No duplicate rows are available to export.");
+      return;
+    }
+    const headers = ["Equipment ID", "Train / Source", "Completion Time", "Reason", "Lift Source", "File", "Row", "Note"];
+    const rows = [headers];
+    const groupRows = [];
+    const dataRows = new Set();
+    for (let index = 0; index < sortedDetails.length;) {
+      const detail = sortedDetails[index];
+      const key = String(detail.date || "") + "|" + String(detail.field || "");
+      let end = index + 1;
+      while (end < sortedDetails.length && String(sortedDetails[end].date || "") + "|" + String(sortedDetails[end].field || "") === key) end += 1;
+      const count = end - index;
+      groupRows.push(rows.length + 1);
+      rows.push([String(detail.date || "") + " - " + String(fieldLabel(detail.field)).toUpperCase() + " - " + count + " DUPLICATE ROW" + (count === 1 ? "" : "S"), "", "", "", "", "", "", ""]);
+      for (let rowIndex = index; rowIndex < end; rowIndex += 1) {
+        const item = sortedDetails[rowIndex];
+        rows.push([
+          item.equipment || "",
+          item.train || "",
+          item.time || "",
+          item.reason || "",
+          liftSourceLabel(detailLiftSource(item)),
+          item.source || "",
+          item.rowNumber || "",
+          item.note || ""
+        ]);
+        dataRows.add(rows.length);
+      }
+      index = end;
+    }
+    const sheet = window.XLSX.utils.aoa_to_sheet(rows);
+    sheet["!cols"] = [20,20,19,42,16,24,8,24].map((wch) => ({ wch }));
+    sheet["!merges"] = groupRows.map((row) => ({ s:{ r:row - 1, c:0 }, e:{ r:row - 1, c:headers.length - 1 } }));
+    const workbook = window.XLSX.utils.book_new();
+    window.XLSX.utils.book_append_sheet(workbook, sheet, "Duplicate Review");
+    downloadStyledUnifiedDuplicateReviewWorkbook(workbook, "billing-duplicates-" + state.month + ".xlsx", groupRows, dataRows);
+    showToast("Exported " + sortedDetails.length + " duplicate rows.");
+  }
+  exportDupes?.addEventListener("click", exportUnifiedDuplicateReview);
+
+  function exportExcludedReview() {
+    const prefix = state.month + "-";
+    const sortedDetails = state.moveDetails.filter((detail) => detail.deleted && reviewFields.includes(detail.field) && String(detail.date || "").startsWith(prefix)).slice().sort((a, b) =>
+      String(a.date || "").localeCompare(String(b.date || "")) ||
+      (fieldOrder[a.field] ?? 9) - (fieldOrder[b.field] ?? 9) ||
+      String(a.equipment || "").localeCompare(String(b.equipment || ""), undefined, { numeric:true }) ||
+      String(a.time || "").localeCompare(String(b.time || ""))
+    );
+    if (!sortedDetails.length) {
+      showToast("No excluded rows are available to export.");
+      return;
+    }
+    const headers = ["Equipment ID", "Train / Source", "Completion Time", "Reason", "Lift Source", "File", "Row", "Note"];
+    const rows = [headers];
+    const groupRows = [];
+    const dataRows = new Set();
+    for (let index = 0; index < sortedDetails.length;) {
+      const detail = sortedDetails[index];
+      const key = String(detail.date || "") + "|" + String(detail.field || "");
+      let end = index + 1;
+      while (end < sortedDetails.length && String(sortedDetails[end].date || "") + "|" + String(sortedDetails[end].field || "") === key) end += 1;
+      const count = end - index;
+      groupRows.push(rows.length + 1);
+      rows.push([String(detail.date || "") + " - " + String(fieldLabel(detail.field)).toUpperCase() + " - " + count + " EXCLUDED ROW" + (count === 1 ? "" : "S"), "", "", "", "", "", "", ""]);
+      for (let rowIndex = index; rowIndex < end; rowIndex += 1) {
+        const item = sortedDetails[rowIndex];
+        rows.push([item.equipment || "", item.train || "", item.time || "", item.reason || "", liftSourceLabel(detailLiftSource(item)), item.source || "", item.rowNumber || "", item.note || ""]);
+        dataRows.add(rows.length);
+      }
+      index = end;
+    }
+    const sheet = window.XLSX.utils.aoa_to_sheet(rows);
+    sheet["!cols"] = [20,20,19,42,16,24,8,24].map((wch) => ({ wch }));
+    sheet["!merges"] = groupRows.map((row) => ({ s:{ r:row - 1, c:0 }, e:{ r:row - 1, c:headers.length - 1 } }));
+    const workbook = window.XLSX.utils.book_new();
+    window.XLSX.utils.book_append_sheet(workbook, sheet, "Excluded Review");
+    downloadStyledUnifiedDuplicateReviewWorkbook(workbook, "billing-excluded-" + state.month + ".xlsx", groupRows, dataRows);
+    showToast("Exported " + sortedDetails.length + " excluded rows.");
+  }
+  exportExcluded?.addEventListener("click", exportExcludedReview);
+
+  function isUnifiedReview() {
+    return state.previewDate === REVIEW_DATE && state.previewField === REVIEW_FIELD;
+  }
+  const unifiedSubtitleObserver = new MutationObserver(() => {
+    if (!isUnifiedReview() || !els.moveModalSubtitle.textContent.startsWith(REVIEW_DATE)) return;
+    els.moveModalSubtitle.textContent = reviewMonthLabel() + " - duplicate rows grouped by day and Ramp, Deramp, or Flip - select rows, then include or exclude them";
+  });
+  if (els.moveModalSubtitle instanceof Node) unifiedSubtitleObserver.observe(els.moveModalSubtitle, { childList:true, characterData:true, subtree:true });
+
+  function organizeRows() {
+    if (!isUnifiedReview()) return;
+    const body = els.moveModalBody;
+    const allDetails = getMoveDetails(REVIEW_DATE, REVIEW_FIELD);
+    const duplicateSet = duplicateEquipmentSet(allDetails);
+    const hasReasons = allDetails.some((detail) => String(detail.reason || "").trim());
+    let rows = allDetails.filter((detail) => duplicateSet.has(duplicateDetailKey(detail)));
+    if (state.reasonFilter !== "all") rows = rows.filter((detail) => reasonKey(detail.reason) === state.reasonFilter);
+    if (state.previewFilter === "excluded") rows = rows.filter((detail) => detail.deleted);
+    else rows = rows.filter((detail) => !detail.deleted);
+    rows.sort((a, b) => String(a.date || "").localeCompare(String(b.date || "")) ||
+      (fieldOrder[a.field] ?? 9) - (fieldOrder[b.field] ?? 9) ||
+      String(a.equipment || "").localeCompare(String(b.equipment || ""), undefined, { numeric:true }) ||
+      String(a.time || "").localeCompare(String(b.time || "")));
+    body.innerHTML = "";
+    let section = "";
+    rows.forEach((detail) => {
+      const row = document.createElement("tr");
+      row.classList.add("duplicate-row");
+      if (detail.deleted) row.classList.add("deleted-row");
+      if (state.selectedDetailIds.has(detail.id)) row.classList.add("selected-row");
+      const key = detail.date + "|" + detail.field;
+      if (key !== section) {
+        section = key;
+        const groupRows = rows.filter((item) => item.date === detail.date && item.field === detail.field);
+        const header = document.createElement("tr");
+        header.className = "duplicate-row duplicate-review-group";
+        const cell = document.createElement("td");
+        cell.colSpan = hasReasons ? 10 : 9;
+        cell.textContent = detail.date + " - " + fieldLabel(detail.field) + " - " + groupRows.length + " duplicate rows";
+        header.append(cell);
+        body.append(header);
+      }
+      row.append(selectCell(detail.id));
+      row.append(previewCell(detail.equipment));
+      row.append(previewCell(detail.train || ""));
+      row.append(previewCell(detail.time || ""));
+      if (hasReasons) row.append(previewCell(detail.reason || ""));
+      row.append(previewCell(liftSourceLabel(detailLiftSource(detail))));
+      row.append(previewCell(detail.source || ""));
+      row.append(previewCell(detail.rowNumber || ""));
+      row.append(noteCell(detail.id, detail.note || ""));
+      const actionCell = document.createElement("td");
+      const action = document.createElement("button");
+      action.className = "delete-row";
+      action.type = "button";
+      action.textContent = detail.deleted ? "Include" : "Exclude";
+      actionCell.append(action);
+      row.append(actionCell);
+      body.append(row);
+    });
+    populateReasonFilter(allDetails);
+    els.reasonHeader.classList.toggle("hidden", !hasReasons);
+    els.reasonFilterLabel.classList.toggle("hidden", !hasReasons);
+    els.reasonFilter.classList.toggle("hidden", !hasReasons);
+    els.previewFilter.value = state.previewFilter;
+    els.reasonFilter.value = state.reasonFilter;
+    els.moveModalTitle.textContent = "Duplicate Review";
+    const duplicateRows = rows.length;
+    const groups = new Set(rows.map(duplicateDetailKey)).size;
+    const visibleChecks = Array.from(body.querySelectorAll('input[data-detail-id]'));
+    const selectedVisible = visibleChecks.filter((checkbox) => checkbox.checked).length;
+    const selectAll = document.getElementById("selectAllMoveDetails");
+    if (selectAll) {
+      selectAll.disabled = visibleChecks.length === 0;
+      selectAll.checked = visibleChecks.length > 0 && selectedVisible === visibleChecks.length;
+      selectAll.indeterminate = selectedVisible > 0 && selectedVisible < visibleChecks.length;
+    }
+    els.moveModalSubtitle.textContent = reviewMonthLabel() + " - " + duplicateRows + " duplicate rows across " + groups + " groups - grouped by day and Ramp, Deramp, or Flip";
+    if (!rows.length) els.moveModalSubtitle.textContent = reviewMonthLabel() + " - no included Ramp, Deramp, or Flip duplicates found";
+  }
+
+  const baseOpenMoveModal = openMoveModal;
+  openMoveModal = function(date, field) {
+    exportDupes?.classList.toggle("hidden", !(date === REVIEW_DATE && field === REVIEW_FIELD));
+    baseOpenMoveModal(date, field);
+    if (date === REVIEW_DATE && field === REVIEW_FIELD) window.setTimeout(organizeRows, 0);
+  };
+
+  function recalculateSelected(ids) {
+    const affected = new Set(state.moveDetails.filter((detail) => ids.has(detail.id)).map((detail) => detail.date + "|" + detail.field));
+    affected.forEach((key) => {
+      const split = key.lastIndexOf("|");
+      recalculateMoveCount(key.slice(0, split), key.slice(split + 1));
+    });
+  }
+
+  els.moveModal.addEventListener("click", (event) => {
+    if (!isUnifiedReview()) return;
+    const target = event.target.closest("button");
+    if (!target) return;
+    if (target === els.excludeDuplicateRows || target.id === "excludeDuplicateRows") {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      const included = getMoveDetails(REVIEW_DATE, REVIEW_FIELD).filter((detail) => !detail.deleted);
+      const duplicateKeys = duplicateEquipmentSet(included);
+      const seen = new Set();
+      const selected = new Set();
+      included.forEach((detail) => {
+        const key = duplicateDetailKey(detail);
+        if (!duplicateKeys.has(key)) return;
+        if (seen.has(key) && !selected.has(key)) selected.add(detail.id);
+        else seen.add(key);
+      });
+      state.selectedDetailIds = selected;
+      openMoveModal(REVIEW_DATE, REVIEW_FIELD);
+      showToast("Selected one row from " + selected.size + " duplicate group" + (selected.size === 1 ? "" : "s") + ". Click Exclude Selected to apply.");
+      return;
+    }
+    let ids = null;
+    let deleted = null;
+    if (target === els.bulkInclude || target === els.bulkExclude) {
+      ids = new Set(state.selectedDetailIds);
+      deleted = target === els.bulkExclude;
+    } else if (target === els.bulkExcludeReason && state.reasonFilter !== "all") {
+      ids = new Set(getMoveDetails(REVIEW_DATE, REVIEW_FIELD).filter((detail) => reasonKey(detail.reason) === state.reasonFilter).map((detail) => detail.id));
+      deleted = true;
+    } else if (target.classList.contains("delete-row")) {
+      const id = target.closest("tr")?.querySelector("input[data-detail-id]")?.dataset.detailId;
+      if (id) {
+        ids = new Set([id]);
+        const detail = state.moveDetails.find((item) => String(item.id) === String(id));
+        deleted = !detail?.deleted;
+      }
+    }
+    if (!ids || !ids.size || deleted === null) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    state.moveDetails = state.moveDetails.map((detail) => ids.has(detail.id) || ids.has(String(detail.id)) ? { ...detail, deleted } : detail);
+    recalculateSelected(new Set(state.moveDetails.filter((detail) => ids.has(detail.id) || ids.has(String(detail.id))).map((detail) => detail.id)));
+    state.selectedDetailIds.clear();
+    persist();
+    render();
+    openMoveModal(REVIEW_DATE, REVIEW_FIELD);
+  }, true);
+
+  launch?.addEventListener("click", () => {
+    state.previewFilter = "duplicates";
+    state.reasonFilter = "all";
+    state.previewDuplicatesFirst = false;
+    openMoveModal(REVIEW_DATE, REVIEW_FIELD);
+    window.setTimeout(() => {
+      els.moveModalTitle.textContent = "Duplicate Review";
+      els.moveModalSubtitle.textContent = reviewMonthLabel() + " - duplicate rows grouped by day and Ramp, Deramp, or Flip - select rows, then include or exclude them";
+    }, 20);
+  });
+})();
+</scr${""}ipt>`;
+      const bodyClose = html.toLowerCase().lastIndexOf("</body>");
+      return bodyClose >= 0 ? html.slice(0, bodyClose) + script + "\n" + html.slice(bodyClose) : html + script;
+    }
+
+    function withBillingImportFeedbackV1(html) {
+      if (!html || typeof html !== "string" || html.includes("billing-import-feedback-v1")) return html;
+      const handlerStart = 'els.fileInput.addEventListener("change", async (event) => {';
+      const start = html.indexOf(handlerStart);
+      if (start < 0) return html;
+      const nextHandler = html.indexOf('els.analyticsTimesheetInput.addEventListener("change"', start);
+      if (nextHandler < 0) return html;
+      let block = html.slice(start, nextHandler);
+      block = block.replace(
+        '      let rows = [];\n      const failed = [];',
+        '      const importButtonLabel = els.importMenuButton.textContent;\n      els.importMenuButton.disabled = true;\n      els.importMenuButton.setAttribute("aria-busy", "true");\n      els.importMenuButton.textContent = "Importing " + files.length + "...";\n      showToast("Importing " + files.length + " selected file" + (files.length === 1 ? "" : "s") + "...");\n      await new Promise((resolve) => requestAnimationFrame(resolve));\n\n      let rows = [];\n      const failed = [];'
+      );
+      block = block.replace('      for (const file of files) {', '      for (let fileIndex = 0; fileIndex < files.length; fileIndex += 1) {\n        const file = files[fileIndex];');
+      block = block.replace(
+        '        } catch (error) {\n          failed.push(`${file.name}: ${error.message}`);\n        }\n      }',
+        '        } catch (error) {\n          failed.push(`${file.name}: ${error.message}`);\n        }\n      }\n\n      els.importMenuButton.disabled = false;\n      els.importMenuButton.removeAttribute("aria-busy");\n      els.importMenuButton.textContent = importButtonLabel;'
+      );
+      block = block.replace(
+        '      if (!prepared) return;',
+        '      if (!prepared) {\n        els.importMenuButton.disabled = false;\n        els.importMenuButton.removeAttribute("aria-busy");\n        els.importMenuButton.textContent = importButtonLabel;\n        return;\n      }'
+      );
+      block = block.replace(
+        '      showToast(`Imported ${dayCount} day${dayCount === 1 ? "" : "s"} from ${files.length} file${files.length === 1 ? "" : "s"}.${uniqueNote}${duplicateNote}${suffix}${persistenceNote}`);',
+        '      showToast(`Imported ${dayCount} day${dayCount === 1 ? "" : "s"} from ${files.length} file${files.length === 1 ? "" : "s"}.${uniqueNote}${duplicateNote}${suffix}${persistenceNote}`);\n      els.importMenuButton.disabled = false;\n      els.importMenuButton.removeAttribute("aria-busy");\n      els.importMenuButton.textContent = importButtonLabel;'
+      );
+      if (block === html.slice(start, nextHandler)) return html;
+      const marker = '<meta id="billing-import-feedback-v1">';
+      return html.replace(html.slice(start, nextHandler), block).replace("</head>", marker + "\n</head>");
+    }
+
+    function withBillingLiftFolderImportV1(html) {
+      if (!html || typeof html !== "string" || html.includes("billing-lift-folder-import-v1")) return html;
+      const liftButton = '<button id="importLiftsButton" type="button">Import lifts</button>';
+      const fileInput = '<input id="fileInput" class="file-input" type="file" multiple accept=".csv,.xlsx,.xls,.htm,.html">';
+      if (!html.includes(liftButton) || !html.includes(fileInput)) return html;
+      html = html.replace(
+        liftButton,
+        '<button id="importLiftFolderButton" type="button">Import lift folder</button>\n             <button id="importLiftsButton" type="button">Import lift files</button>'
+      );
+      html = html.replace(
+        fileInput,
+        fileInput + '\n        <input id="liftFolderInput" class="file-input" type="file" multiple webkitdirectory directory accept=".csv,.xlsx,.xls,.htm,.html">'
+      );
+      const handlerStart = 'els.fileInput.addEventListener("change", async (event) => {';
+      const handlerIndex = html.indexOf(handlerStart);
+      const nextHandlerIndex = html.indexOf('els.analyticsTimesheetInput.addEventListener("change"', handlerIndex);
+      if (handlerIndex < 0 || nextHandlerIndex < 0) return html;
+      let handler = html.slice(handlerIndex, nextHandlerIndex);
+      handler = handler.replace(handlerStart, "async function importOperationalFiles(fileList) {");
+      handler = handler.replace(
+        '      const files = Array.from(event.target.files || []);\n      event.target.value = "";',
+        '      const files = Array.from(fileList || []).filter((file) => /\\.(?:csv|xlsx?|html?)$/i.test(file.name));'
+      );
+      const handlerClose = handler.lastIndexOf("    });");
+      if (handlerClose < 0) return html;
+      handler = handler.slice(0, handlerClose) + `    }
+
+    els.fileInput.addEventListener("change", async (event) => {
+      const files = Array.from(event.target.files || []);
+      event.target.value = "";
+      await importOperationalFiles(files);
+    });
+
+    const liftFolderButton = document.getElementById("importLiftFolderButton");
+    const liftFolderInput = document.getElementById("liftFolderInput");
+    liftFolderButton.addEventListener("click", () => {
+      els.importMenuList.classList.add("hidden");
+      liftFolderInput.click();
+    });
+    liftFolderInput.addEventListener("change", async (event) => {
+      const files = Array.from(event.target.files || []);
+      event.target.value = "";
+      if (!files.some((file) => /\\.(?:csv|xlsx?|html?)$/i.test(file.name))) {
+        showToast("No supported lift workbooks were found in that folder.");
+        return;
+      }
+      await importOperationalFiles(files);
+    });
+
+` + handler.slice(handlerClose + 7);
+      html = html.slice(0, handlerIndex) + handler + html.slice(nextHandlerIndex);
+      return html.replace("</head>", '<meta id="billing-lift-folder-import-v1">\n</head>');
+    }
+
+    function withBillingMoveDetailsIndexedDbV1(html) {
+      if (!html || typeof html !== "string" || html.includes("billing-move-details-indexeddb-v1")) return html;
+      const persistNeedle = "    function persist() {";
+      const compactNeedle = "          const compactPayload = {\n            ...payload,";
+      const loadNeedle = "    load();\n    render();\n    window.setTimeout(() => renderAnalytics(), 0);";
+      if (!html.includes(persistNeedle) || !html.includes(compactNeedle) || !html.includes(loadNeedle)) return html;
+      const storageCode = `    // billing-move-details-indexeddb-v1
+    const BILLING_MOVE_DETAILS_DB = "conglobal-billing-move-details-db-v1";
+    const BILLING_MOVE_DETAILS_STORE = "details";
+    function openBillingMoveDetailsDb() {
+      return new Promise((resolve, reject) => {
+        const request = indexedDB.open(BILLING_MOVE_DETAILS_DB, 1);
+        request.onupgradeneeded = () => {
+          if (!request.result.objectStoreNames.contains(BILLING_MOVE_DETAILS_STORE)) request.result.createObjectStore(BILLING_MOVE_DETAILS_STORE);
+        };
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error || new Error("Could not open Billing detail storage."));
+      });
+    }
+    async function saveBillingMoveDetails(details) {
+      if (!window.indexedDB) return;
+      const database = await openBillingMoveDetailsDb();
+      await new Promise((resolve, reject) => {
+        const transaction = database.transaction(BILLING_MOVE_DETAILS_STORE, "readwrite");
+        transaction.objectStore(BILLING_MOVE_DETAILS_STORE).put(Array.isArray(details) ? details : [], "main");
+        transaction.oncomplete = () => resolve();
+        transaction.onerror = () => reject(transaction.error || new Error("Could not save Billing details."));
+        transaction.onabort = () => reject(transaction.error || new Error("Billing detail save was interrupted."));
+      });
+      database.close();
+    }
+    async function hydrateBillingMoveDetails() {
+      if (!window.indexedDB) return;
+      const detailsAtStart = state.moveDetails;
+      const database = await openBillingMoveDetailsDb();
+      const saved = await new Promise((resolve, reject) => {
+        const request = database.transaction(BILLING_MOVE_DETAILS_STORE, "readonly").objectStore(BILLING_MOVE_DETAILS_STORE).get("main");
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error || new Error("Could not read Billing details."));
+      });
+      database.close();
+      if (!Array.isArray(saved) || !saved.length) return;
+      if (state.moveDetails !== detailsAtStart) return;
+      state.moveDetails = saved.map((detail) => ({ note: "", ...detail, liftSource: detailLiftSource(detail) }));
+      recalculateAllMoveDetailCounts();
+      render();
+    }
+
+`;
+      html = html.replace(persistNeedle, storageCode + persistNeedle);
+      html = html.replace(persistNeedle, "    function persist() {\n      if (typeof persistBillingHourlyLifts === \"function\") persistBillingHourlyLifts();\n      saveBillingMoveDetails(state.moveDetails).catch((error) => {\n        state.persistenceWarning = true;\n        console.warn(\"Billing detail persistence warning\", error);\n      });");
+      html = html.replace(compactNeedle, compactNeedle + "\n            moveDetails: [],");
+      html = html.replace(
+        "          } catch (compactError) {}\n        }\n        throw error;",
+        "          } catch (compactError) {\n            state.persistenceWarning = true;\n            return;\n          }\n        }\n        throw error;"
+      );
+      html = html.replace(loadNeedle, loadNeedle + "\n    window.setTimeout(() => hydrateBillingMoveDetails().catch((error) => console.warn(\"Billing detail hydration warning\", error)), 0);");
+      return html;
+    }
+
+    function withBillingOperationalLphGuardV1(html) {
+      if (!html || typeof html !== "string" || html.includes("billing-operational-lph-guard-v1")) return html;
+      const dailyNeedle = "const dayLpmh = lphHours > 0 ? lphLifts / lphHours : null;";
+      const totalNeedle = "const lpmh = lphHours > 0 ? lphLifts / lphHours : null;";
+      if (!html.includes(dailyNeedle) || !html.includes(totalNeedle)) return html;
+      html = html.replace(dailyNeedle, "const dayLpmh = dailyLifts > 0 && lphHours > 0 ? lphLifts / lphHours : null;");
+      html = html.replace(totalNeedle, "const lpmh = sums.lifts > 0 && lphHours > 0 ? lphLifts / lphHours : null;");
+      return html.replace("</head>", '<meta id="billing-operational-lph-guard-v1">\n</head>');
+    }
+
+    function withBillingDuplicateStatusPillsV1(html) {
+      if (!html || typeof html !== "string" || html.includes("billing-duplicate-status-pills-v1")) return html;
+      const style = `<style id="billing-duplicate-status-pills-v1">
+.duplicate-investigation-flag{border-color:#16a34a!important;color:#166534!important;background:#dcfce7!important}
+.excluded-investigation-flag{border-color:#dc2626!important;color:#b91c1c!important;background:#fee2e2!important}
+.excluded-investigation-flag.flip-excluded-flag{border-color:#d97706!important;color:#92400e!important;background:#fef3c7!important}
+#operationsTable .duplicate-investigation-flag{font-size:9px!important}
+#operationsTable .cell-flag-rail .duplicate-investigation-flag,#operationsTable .cell-flag-rail .excluded-investigation-flag{font-size:10px!important}
+.cell-flag-rail{left:auto!important;right:2px!important;flex-direction:row!important;gap:2px!important}
+#operationsTable tbody :is(td:nth-child(2),td:nth-child(3),td:nth-child(9)){min-width:132px!important}
+#operationsTable tbody :is(td:nth-child(2),td:nth-child(3),td:nth-child(9)) .move-drill{display:inline-grid!important;grid-template-columns:42px 42px 42px!important;justify-content:center!important;align-items:center!important;column-gap:0!important}
+#operationsTable tbody :is(td:nth-child(2),td:nth-child(3),td:nth-child(9)) .move-drill>span:first-child{grid-column:1!important;width:auto!important}
+#operationsTable tbody :is(td:nth-child(2),td:nth-child(3),td:nth-child(9)) .move-drill .cell-flag-rail{grid-column:2/4!important;justify-self:start!important;position:static!important;left:auto!important;right:auto!important;top:auto!important;transform:none!important}
+#operationsTable tbody :is(td:nth-child(2),td:nth-child(3),td:nth-child(9)) .move-drill>.duplicate-investigation-flag{grid-column:2!important;justify-self:start!important;position:static!important;left:auto!important;right:auto!important;top:auto!important;transform:none!important;margin:0!important}
+#operationsTable tbody :is(td:nth-child(2),td:nth-child(3),td:nth-child(9)) .move-drill:has(>.duplicate-investigation-flag) .cell-flag-rail{grid-column:3!important}
+#operationsTable tbody td:nth-child(9):has(.cell-flag-rail>:nth-child(3)){min-width:174px!important}
+#operationsTable tbody td:nth-child(9) .move-drill:has(.cell-flag-rail>:nth-child(3)){grid-template-columns:42px 126px!important}
+#operationsTable tbody td:nth-child(9) .move-drill:has(.cell-flag-rail>:nth-child(3)) .cell-flag-rail{grid-column:2!important}
+</style>`;
+      html = html.replaceAll('flag.textContent = count + " EXCL";', 'flag.textContent = count + " DUPE";');
+      html = html.replaceAll('flag.textContent = `${excludedCount} EXCL`;', 'flag.textContent = `${excludedCount} DUPE`;');
+      html = html.replaceAll(
+        'flag.title = count + " excluded " + fieldLabel(field).toLowerCase() + " row" + (count === 1 ? "" : "s") + ". Click to review.";',
+        'flag.title = count + " duplicate " + fieldLabel(field).toLowerCase() + " row" + (count === 1 ? " is" : "s are") + " excluded and not counted. Click to review.";'
+      );
+      html = html.replaceAll(
+        `const flag = document.createElement("span");
+    flag.className = "excluded-investigation-flag";
+    flag.textContent = count + " DUPE";
+    flag.title = count + " excluded flip row" + (count === 1 ? "" : "s") + ". Click to review.";
+    rail.append(flag);`,
+        `const allFlipDetails = baseGetMoveDetails(key, field);
+    const flipEquipmentCounts = new Map();
+    allFlipDetails.forEach((detail) => {
+      const equipment = normalizeEquipment(detail.equipment || "");
+      if (!equipment) return;
+      const duplicateKey = (detail.fileId || detail.source || "") + "|" + equipment;
+      flipEquipmentCounts.set(duplicateKey, (flipEquipmentCounts.get(duplicateKey) || 0) + 1);
+    });
+    let excludedDuplicateCount = 0;
+    let excludedOtherCount = 0;
+    allFlipDetails.filter((detail) => detail.deleted).forEach((detail) => {
+      const equipment = normalizeEquipment(detail.equipment || "");
+      const duplicateKey = (detail.fileId || detail.source || "") + "|" + equipment;
+      if (equipment && (flipEquipmentCounts.get(duplicateKey) || 0) > 1) excludedDuplicateCount += 1;
+      else excludedOtherCount += 1;
+    });
+    if (excludedDuplicateCount > 0) {
+      const duplicateFlag = document.createElement("span");
+      duplicateFlag.className = "excluded-investigation-flag";
+      duplicateFlag.textContent = excludedDuplicateCount + " DUPE";
+      duplicateFlag.title = excludedDuplicateCount + " duplicate flip row" + (excludedDuplicateCount === 1 ? " is" : "s are") + " excluded and not counted. Click to review.";
+      rail.append(duplicateFlag);
+    }
+    if (excludedOtherCount > 0) {
+      const excludedFlag = document.createElement("span");
+      excludedFlag.className = "excluded-investigation-flag flip-excluded-flag";
+      excludedFlag.textContent = excludedOtherCount + " EXCL";
+      excludedFlag.title = excludedOtherCount + " excluded non-duplicate flip row" + (excludedOtherCount === 1 ? "" : "s") + ". Click to review.";
+      rail.append(excludedFlag);
+    }`
+      );
+      return html.replace("</head>", style + "\n</head>");
+    }
+
+    function withBillingExportDropdownV1(html) {
+      if (!html || typeof html !== "string" || html.includes("billing-export-dropdown-v1")) return html;
+      const injection = `<meta id="billing-export-dropdown-v1"><scr${""}ipt>
+(() => {
+  const exportButton = document.getElementById("exportButton");
+  if (!exportButton || document.getElementById("exportMenuList")) return;
+  const menu = document.createElement("div");
+  menu.className = "import-menu";
+  exportButton.before(menu);
+  menu.append(exportButton);
+  exportButton.textContent = "Export ▾";
+  exportButton.setAttribute("aria-expanded", "false");
+  const list = document.createElement("div");
+  list.id = "exportMenuList";
+  list.className = "import-menu-list hidden";
+  list.innerHTML = '<button id="exportOperationsButton" type="button">Operations Export</button><button id="exportDupesExclButton" type="button">Dupes and Excl Export</button>';
+  menu.append(list);
+
+  function closeMenu() {
+    list.classList.add("hidden");
+    exportButton.setAttribute("aria-expanded", "false");
+  }
+  exportButton.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    const open = list.classList.toggle("hidden") === false;
+    exportButton.setAttribute("aria-expanded", String(open));
+  }, true);
+  list.addEventListener("click", (event) => event.stopPropagation());
+  document.addEventListener("click", closeMenu);
+  document.getElementById("exportOperationsButton").addEventListener("click", () => {
+    closeMenu();
+    exportOperationalWorkbook();
+  });
+
+  function styleXml() {
+    return ['<?xml version="1.0" encoding="UTF-8" standalone="yes"?>','<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">','<numFmts count="0"/>','<fonts count="2"><font><sz val="16"/><color rgb="FF000000"/><name val="Calibri"/><family val="2"/></font><font><b/><sz val="16"/><color rgb="FFFFFFFF"/><name val="Calibri"/><family val="2"/></font></fonts>','<fills count="4"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF000000"/><bgColor indexed="64"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFD9D9D9"/><bgColor indexed="64"/></patternFill></fill></fills>','<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>','<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>','<cellXfs count="3"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment vertical="center"/></xf><xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment vertical="center"/></xf><xf numFmtId="0" fontId="0" fillId="3" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment vertical="center"/></xf></cellXfs>','<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles><dxfs count="0"/><tableStyles count="0" defaultTableStyle="TableStyleMedium2" defaultPivotStyle="PivotStyleMedium4"/>','</styleSheet>'].join("");
+  }
+  function download(workbook, fileName) {
+    const xlsx = window.XLSX;
+    try {
+      if (!xlsx.CFB?.read || !xlsx.CFB?.write || !xlsx.CFB?.find) throw new Error("CFB unavailable");
+      const bytes = xlsx.write(workbook, { bookType:"xlsx", type:"array", compression:true });
+      const zip = xlsx.CFB.read(bytes instanceof ArrayBuffer ? new Uint8Array(bytes) : bytes, { type:"array" });
+      const stylesEntry = xlsx.CFB.find(zip, "/xl/styles.xml");
+      const sheetEntry = xlsx.CFB.find(zip, "/xl/worksheets/sheet1.xml");
+      if (!stylesEntry || !sheetEntry) throw new Error("Workbook entries unavailable");
+      const source = typeof billingZipText === "function" ? billingZipText(sheetEntry.content) : new TextDecoder("utf-8").decode(sheetEntry.content);
+      const styled = source.replace(/<c([^>]*r="([A-Z]+)(\d+)"[^>]*)>/g, (match, attrs, column, row) => {
+        const rowNumber = Number(row);
+        const styleId = rowNumber === 1 ? 1 : (rowNumber % 2 === 0 ? 2 : 0);
+        return '<c' + attrs.replace(/\s+s="[^"]*"/i, "") + ' s="' + styleId + '">';
+      });
+      const encode = typeof billingUtf8Bytes === "function" ? billingUtf8Bytes : (value) => new TextEncoder().encode(value);
+      stylesEntry.content = encode(styleXml()); stylesEntry.size = stylesEntry.content.length;
+      sheetEntry.content = encode(styled); sheetEntry.size = sheetEntry.content.length;
+      const output = xlsx.CFB.write(zip, { fileType:"zip", type:"array", compression:true });
+      const url = URL.createObjectURL(new Blob([output], { type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }));
+      const link = document.createElement("a"); link.href = url; link.download = fileName; link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (error) {
+      console.warn("Dupes and Excl export styling fallback", error);
+      xlsx.writeFile(workbook, fileName);
+    }
+  }
+  function exportDupesAndExcl() {
+    if (!window.XLSX) return showToast("Excel export parser is not loaded");
+    const fields = ["ramp", "deramp", "flip"];
+    const order = { ramp:0, deramp:1, flip:2 };
+    const prefix = state.month + "-";
+    const monthDetails = state.moveDetails.filter((detail) => fields.includes(detail.field) && String(detail.date || "").startsWith(prefix));
+    const duplicates = duplicateEquipmentSet(monthDetails);
+    const details = monthDetails.filter((detail) => detail.deleted || duplicates.has(duplicateDetailKey(detail))).slice().sort((a,b) => String(a.date||"").localeCompare(String(b.date||"")) || (order[a.field]??9)-(order[b.field]??9) || String(a.equipment||"").localeCompare(String(b.equipment||""),undefined,{numeric:true}) || String(a.time||"").localeCompare(String(b.time||"")));
+    if (!details.length) return showToast("No duplicate or excluded rows are available to export.");
+    const rows = [["Date","Type","Status","Equipment ID","Train / Source","Completion Time","Reason","Lift Source","File","Row","Note"]];
+    details.forEach((detail) => {
+      const dupe = duplicates.has(duplicateDetailKey(detail));
+      rows.push([detail.date||"",fieldLabel(detail.field),dupe?(detail.deleted?"DUPLICATE - EXCLUDED":"DUPLICATE - COUNTED"):"EXCLUDED",detail.equipment||"",detail.train||"",detail.time||"",detail.reason||"",liftSourceLabel(detailLiftSource(detail)),detail.source||"",detail.rowNumber||"",detail.note||""]);
+    });
+    const sheet = XLSX.utils.aoa_to_sheet(rows);
+    sheet["!cols"] = [13,11,23,20,20,20,42,16,24,8,24].map((wch)=>({wch}));
+    sheet["!rows"] = rows.map(()=>({hpt:22}));
+    sheet["!autofilter"] = {ref:"A1:K" + rows.length};
+    sheet["!freeze"] = {xSplit:0,ySplit:1,topLeftCell:"A2",activePane:"bottomLeft",state:"frozen"};
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, sheet, "Dupes and Excluded");
+    download(workbook, "billing-dupes-and-excl-" + state.month + ".xlsx");
+    showToast("Exported " + details.length + " duplicate and excluded rows.");
+  }
+  document.getElementById("exportDupesExclButton").addEventListener("click", () => { closeMenu(); exportDupesAndExcl(); });
+})();
+</scr${""}ipt>`;
+      return html.replace("</body>", injection + "\n</body>");
+    }
+
     function bridgedHtmlForPage(id) {
       if (!bridgedPageHtml.has(id)) {
         let pageHtml = pages[id].html;
@@ -10690,7 +11505,7 @@ document.getElementById("openYardCheck")?.addEventListener("click", function(){
         }
         if (id === "timeMd") pageHtml = withTimeMdResponsiveWidth(pageHtml);
         if (id === "timeOff") pageHtml = withTimeOffCurrentRosterSnapshot(withTimeOffCameInActions(withTimeOffMonthlyWeeklyStyle(pageHtml)));
-        if (id === "billing") pageHtml = withBillingExcludeDuplicateRows(withBillingRampDerampMonthlyReview(withBillingRampDerampExcludedFlags(withBillingCountDuplicateRows(withBillingLphTargetPills(withBillingFlipDuplicateFlags(withBillingMonthlyFlipReview(withBillingStackReasonRouting(withBillingCompactDuplicateGroups(withBillingDailyShiftProjection(withBillingPerformanceArchiveIndexedDb(withBillingShiftLpmhGrid(withBillingSummaryExportStyles(withBillingLpmhSourcePair(withBillingHoursColumnOrder(withBillingDisplayFlagsMenu(withBillingPowerBiLiftDeltaFlag(withBillingPowerBiImport(withBillingQuotaSafePersistence(withBillingAnalyticsLiftFallback(withBillingAnalyticsArchiveHydration(withBillingManHoursPrecision(withBillingArchiveIndexedDb(withBillingSplitLiftAndChassisClear(withBillingHeaderRemoved(pageHtml)))))))))))))))))))))))));
+        if (id === "billing") pageHtml = withBillingExportDropdownV1(withBillingDuplicateStatusPillsV1(withBillingOperationalLphGuardV1(withBillingMoveDetailsIndexedDbV1(withBillingLiftFolderImportV1(withBillingImportFeedbackV1(withBillingLiftFlipPersistenceV2(withBillingUnifiedDuplicateReview(withBillingExcludeDuplicateRows(withBillingRampDerampMonthlyReview(withBillingRampDerampExcludedFlags(withBillingCountDuplicateRows(withBillingLphTargetPills(withBillingFlipDuplicateFlags(withBillingMonthlyFlipReview(withBillingStackReasonRouting(withBillingCompactDuplicateGroups(withBillingDailyShiftProjection(withBillingPerformanceArchiveIndexedDb(withBillingShiftLpmhGrid(withBillingSummaryExportStyles(withBillingLpmhSourcePair(withBillingHoursColumnOrder(withBillingDisplayFlagsMenu(withBillingPowerBiLiftDeltaFlag(withBillingPowerBiImport(withBillingQuotaSafePersistence(withBillingAnalyticsLiftFallback(withBillingAnalyticsArchiveHydration(withBillingManHoursPrecision(withBillingArchiveIndexedDb(withBillingSplitLiftAndChassisClear(withBillingHeaderRemoved(pageHtml)))))))))))))))))))))))))))))))));
         if (id === "lphTracker") {
           pageHtml = withLphDefaultExpectedFlips(pageHtml);
           pageHtml = withLphLunchDuringDowntime(pageHtml);
