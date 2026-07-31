@@ -368,6 +368,69 @@
       box-shadow: inset 0 0 0 2px var(--blue);
     }
 
+    .pb-lifts-delta-cell {
+      position: relative;
+    }
+
+    .pb-lifts-delta-cell .cell-input {
+      padding-right: 29px;
+      padding-left: 29px;
+    }
+
+    .pb-lifts-delta-flag {
+      position: absolute;
+      top: 50%;
+      right: 3px;
+      min-width: 24px;
+      padding: 1px 3px;
+      transform: translateY(-50%);
+      border-radius: 999px;
+      background: #e2e8f0;
+      color: #475569;
+      font-size: 8px;
+      font-weight: 900;
+      line-height: 1.35;
+      text-align: center;
+      pointer-events: none;
+    }
+
+    .pb-lifts-delta-flag.positive { background: #dcfce7; color: #166534; }
+    .pb-lifts-delta-flag.negative { background: #fee2e2; color: #991b1b; }
+    .pb-lifts-delta-hidden .pb-lifts-delta-flag { display: none; }
+    #operationsTable tr.pb-lifts-discrepancy td {
+      background: #fff4d6;
+      box-shadow: inset 0 1px #f59e0b, inset 0 -1px #f59e0b;
+    }
+    #operationsTable tr.pb-lifts-discrepancy td:first-child { box-shadow: inset 3px 0 #f59e0b, inset 0 1px #f59e0b, inset 0 -1px #f59e0b; }
+    .display-flags-menu { position: relative; }
+    .display-flags-menu-list {
+      position: absolute;
+      z-index: 80;
+      top: calc(100% + 6px);
+      right: 0;
+      width: 250px;
+      padding: 7px;
+      border: 1px solid #bfd0e3;
+      border-radius: 10px;
+      background: #fff;
+      box-shadow: 0 14px 34px rgba(15, 23, 42, .18);
+    }
+    .display-flags-menu-list.hidden { display: none; }
+    .display-flags-option {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      width: 100%;
+      padding: 8px 9px;
+      border-radius: 7px;
+      color: #1e293b;
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    .display-flags-option:hover { background: #eff6ff; }
+    .display-flags-option input { accent-color: #2563eb; }
+
     .total-cell {
       padding: 9px 8px;
       font-weight: 800;
@@ -392,6 +455,30 @@
       color: #0b9a7d;
       background: rgba(20, 201, 166, 0.09);
     }
+
+    .lph-value-cell {
+      padding: 5px 4px;
+      color: inherit;
+      background: transparent;
+    }
+
+    .lph-target-pill {
+      display: inline-flex;
+      min-width: 42px;
+      align-items: center;
+      justify-content: center;
+      padding: 3px 7px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 900;
+      line-height: 1.15;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .lph-target-pill.on-target { background: #dcfce7; color: #166534; }
+    .lph-target-pill.below-target { background: #fee2e2; color: #991b1b; }
+    tfoot .lph-target-pill.on-target { background: #bbf7d0; color: #14532d; }
+    tfoot .lph-target-pill.below-target { background: #fecaca; color: #7f1d1d; }
 
     tfoot td {
       padding: 14px 6px;
@@ -964,10 +1051,25 @@
       background: #fff3d6;
     }
 
+    .modal-backdrop.duplicates-only #moveModalBody tr:not(.duplicate-row) {
+      display: none;
+    }
+
     .preview-table tr.deleted-row {
       color: #8ca0b3;
-      background: #f5f7fa;
-      text-decoration: line-through;
+      background: #ffe8e8;
+    }
+
+    .preview-table tr.deleted-row td:not(.select-cell):not(:last-child) {
+      color: #9f1239;
+      text-decoration-line: line-through;
+      text-decoration-color: #dc2626;
+      text-decoration-thickness: 2px;
+    }
+
+    .preview-table tr.deleted-row input,
+    .preview-table tr.deleted-row button {
+      text-decoration: none;
     }
 
     .preview-table tr.selected-row {
@@ -2202,7 +2304,8 @@
         <div class="clear-month-menu">
           <button id="clearMenuButton" class="button" type="button" aria-expanded="false">Clear</button>
           <div id="clearMenuList" class="import-menu-list hidden">
-             <button type="button" data-clear-month="lifts">Clear lifts</button>
+             <button type="button" data-clear-month="lifts">Clear lifts &amp; stacking</button>
+             <button type="button" data-clear-month="chassis">Clear chassis stack &amp; unstack</button>
              <button type="button" data-clear-month="gate">Clear gate</button>
             <button type="button" data-clear-month="manHours">Clear man hours</button>
             <button type="button" data-clear-month="powerBi">Clear PowerBI</button>
@@ -2219,7 +2322,14 @@
             <button id="importPowerBiButton" type="button">Import PowerBI</button>
           </div>
         </div>
-        <button id="duplicatesButton" class="button" type="button" aria-pressed="false">Duplicates</button>
+        <div class="display-flags-menu">
+          <button id="duplicatesButton" class="button" type="button" aria-expanded="false">Flags ▾</button>
+          <div id="displayFlagsMenuList" class="display-flags-menu-list hidden">
+            <label class="display-flags-option"><input id="showDuplicateFlagsToggle" type="checkbox"> Duplicate flags</label>
+            <label class="display-flags-option"><input id="showPbLiftFlagsToggle" type="checkbox"> PB Lifts delta flags</label>
+            <label class="display-flags-option"><input id="highlightPbDiscrepanciesToggle" type="checkbox"> Highlight PB Lifts / Lifts discrepancies</label>
+          </div>
+        </div>
         <input id="fileInput" class="file-input" type="file" multiple accept=".csv,.xlsx,.xls,.htm,.html">
         <input id="importPowerBiFile" class="file-input" type="file" accept=".csv,.xlsx,.xls">
       </div>
@@ -2241,8 +2351,8 @@
               <th class="group-hours" colspan="5">Hours &amp; Lifts</th>
             </tr>
             <tr>
-              <th class="split-left">Ramp</th>
-              <th>Deramp</th>
+              <th class="split-left"><button id="rampReviewHeader" class="flip-review-header" type="button" title="Review all ramp rows for this month">Ramp</button></th>
+              <th><button id="derampReviewHeader" class="flip-review-header" type="button" title="Review all deramp rows for this month">Deramp</button></th>
               <th>Total</th>
               <th class="split-left gate-column">Ingates</th>
               <th class="gate-column">Outgates</th>
@@ -2255,10 +2365,10 @@
               <th class="split-left">Unstacked</th>
               <th>Stacked</th>
               <th>Total</th>
-              <th class="split-left"><button id="timesheetHoursSource" class="hour-source-button active" type="button">Man Hours</button></th>
-              <th><button id="powerBiHoursSource" class="hour-source-button" type="button">PB Hours</button></th>
+              <th class="split-left">Lifts</th>
               <th>PB Lifts</th>
-              <th>Lifts</th>
+              <th><button id="powerBiHoursSource" class="hour-source-button" type="button">PB Hours</button></th>
+              <th><button id="timesheetHoursSource" class="hour-source-button active" type="button">Man Hours</button></th>
               <th>LPH</th>
             </tr>
           </thead>
@@ -2458,9 +2568,11 @@
         <select id="previewFilter">
           <option value="all">All</option>
           <option value="included">Included</option>
+          <option value="duplicates">Dupes Only</option>
           <option value="excluded">Excluded</option>
         </select>
         <button id="duplicatesFirst" class="bulk-action duplicates-first" type="button" aria-pressed="false">Dupes First</button>
+        <button id="excludeDuplicateRows" class="bulk-action exclude" type="button" onclick="window.billingSelectOneDuplicateRowPerGroup(event)">Select One of Each</button>
         <button id="bulkInclude" class="bulk-action" type="button">Include Selected</button>
         <button id="bulkExclude" class="bulk-action exclude" type="button">Exclude Selected</button>
         <button id="bulkExcludeReason" class="bulk-action exclude" type="button">Exclude Reason</button>
@@ -2504,6 +2616,8 @@
     const SHIFT_GRID_RESTORE_KEY = "ops-monthly-shift-grid-restored-v1";
     const TIMESHEET_ARCHIVE_KEY = "conglobal-timesheet-archive-v1";
     const LIFT_FIELDS = ["ramp", "deramp", "flip", "stacked", "unstacked", "chUnstacked", "chStacked"];
+    const LIFT_AND_STACK_FIELDS = ["ramp", "deramp", "flip", "stacked", "unstacked"];
+    const CHASSIS_STACK_FIELDS = ["chUnstacked", "chStacked"];
     const GATE_FIELDS = ["ingates", "outgates", "ingateRefusals", "outgateRefusals"];
     const FIELDS = [...LIFT_FIELDS, ...GATE_FIELDS, "manHours", "powerBiManHours", "powerBiLifts"];
     const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -2522,6 +2636,8 @@
       showExcludedCounts: false,
       weekendHighlight: true,
       showDuplicates: false,
+      showPbLiftFlags: true,
+      highlightPbDiscrepancies: false,
       page: "operations",
       analyticsRows: [],
       analyticsReviewRows: [],
@@ -2560,6 +2676,10 @@
       filesButton: document.querySelector("#filesButton"),
       exportButton: document.querySelector("#exportButton"),
       duplicatesButton: document.querySelector("#duplicatesButton"),
+      displayFlagsMenuList: document.querySelector("#displayFlagsMenuList"),
+      showDuplicateFlagsToggle: document.querySelector("#showDuplicateFlagsToggle"),
+      showPbLiftFlagsToggle: document.querySelector("#showPbLiftFlagsToggle"),
+      highlightPbDiscrepanciesToggle: document.querySelector("#highlightPbDiscrepanciesToggle"),
       importPowerBiButton: document.querySelector("#importPowerBiButton"),
       importPowerBiFile: document.querySelector("#importPowerBiFile"),
       timesheetHoursSource: document.querySelector("#timesheetHoursSource"),
@@ -2585,9 +2705,12 @@
       weekendHighlightToggle: document.querySelector("#weekendHighlightToggle"),
       previewFilter: document.querySelector("#previewFilter"),
       duplicatesFirst: document.querySelector("#duplicatesFirst"),
+      excludeDuplicateRows: document.querySelector("#excludeDuplicateRows"),
       bulkInclude: document.querySelector("#bulkInclude"),
       bulkExclude: document.querySelector("#bulkExclude"),
       bulkExcludeReason: document.querySelector("#bulkExcludeReason"),
+      rampReviewHeader: document.querySelector("#rampReviewHeader"),
+      derampReviewHeader: document.querySelector("#derampReviewHeader"),
       flipReviewHeader: document.querySelector("#flipReviewHeader"),
       reasonFilter: document.querySelector("#reasonFilter"),
       moveModal: document.querySelector("#moveModal"),
@@ -2713,8 +2836,28 @@
     });
     els.filesButton.addEventListener("click", openFilesModal);
     els.exportButton.addEventListener("click", exportOperationalWorkbook);
-    els.duplicatesButton.addEventListener("click", () => {
-      state.showDuplicates = !state.showDuplicates;
+    els.duplicatesButton.addEventListener("click", (event) => {
+      event.stopPropagation();
+      const open = els.displayFlagsMenuList.classList.toggle("hidden") === false;
+      els.duplicatesButton.setAttribute("aria-expanded", String(open));
+    });
+    els.displayFlagsMenuList.addEventListener("click", (event) => event.stopPropagation());
+    document.addEventListener("click", () => {
+      els.displayFlagsMenuList.classList.add("hidden");
+      els.duplicatesButton.setAttribute("aria-expanded", "false");
+    });
+    els.showDuplicateFlagsToggle.addEventListener("change", () => {
+      state.showDuplicates = els.showDuplicateFlagsToggle.checked;
+      persist();
+      render();
+    });
+    els.showPbLiftFlagsToggle.addEventListener("change", () => {
+      state.showPbLiftFlags = els.showPbLiftFlagsToggle.checked;
+      persist();
+      render();
+    });
+    els.highlightPbDiscrepanciesToggle.addEventListener("change", () => {
+      state.highlightPbDiscrepancies = els.highlightPbDiscrepanciesToggle.checked;
       persist();
       render();
     });
@@ -2759,6 +2902,7 @@
       state.previewDuplicatesFirst = !state.previewDuplicatesFirst;
       if (state.previewDate && state.previewField) openMoveModal(state.previewDate, state.previewField);
     });
+    window.billingSelectOneDuplicateRowPerGroup = selectOneDuplicateRowPerGroup;
     els.reasonFilter.addEventListener("change", (event) => {
       state.reasonFilter = event.target.value;
       if (state.previewDate && state.previewField) openMoveModal(state.previewDate, state.previewField);
@@ -2766,6 +2910,8 @@
     els.bulkInclude.addEventListener("click", () => applyBulkMoveDetailState(false));
     els.bulkExclude.addEventListener("click", () => applyBulkMoveDetailState(true));
     els.bulkExcludeReason.addEventListener("click", excludeMoveDetailsByReason);
+    els.rampReviewHeader.addEventListener("click", () => openMoveModal("__month__", "ramp"));
+    els.derampReviewHeader.addEventListener("click", () => openMoveModal("__month__", "deramp"));
     els.flipReviewHeader.addEventListener("click", () => openMoveModal("__month__", "flip"));
     els.selectAllMoveDetails.addEventListener("change", () => {
       const checkboxes = Array.from(els.moveModalBody.querySelectorAll('input[data-detail-id]'));
@@ -2834,8 +2980,8 @@
       importRows(prepared.rows, prepared.details);
       const dayCount = new Set(prepared.rows.map((row) => row.date)).size;
       const suffix = failed.length ? ` Failed: ${failed.join(", ")}` : "";
-      const duplicateNote = prepared.skippedDuplicates ? ` Counted ${prepared.skippedDuplicates} duplicate${prepared.skippedDuplicates === 1 ? "" : "s"} once.` : "";
-      const uniqueNote = prepared.uniqueMoveRows ? ` Counted ${prepared.uniqueMoveRows} unique ramp/deramp unit${prepared.uniqueMoveRows === 1 ? "" : "s"}.` : "";
+      const duplicateNote = prepared.skippedDuplicates ? ` Retained ${prepared.skippedDuplicates} duplicate row${prepared.skippedDuplicates === 1 ? "" : "s"} until manually excluded.` : "";
+      const uniqueNote = prepared.uniqueMoveRows ? ` Counted ${prepared.uniqueMoveRows} operational row${prepared.uniqueMoveRows === 1 ? "" : "s"}.` : "";
       const persistenceNote = state.persistenceWarning ? " Detailed import history exceeded browser storage; totals were retained." : "";
       showToast(`Imported ${dayCount} day${dayCount === 1 ? "" : "s"} from ${files.length} file${files.length === 1 ? "" : "s"}.${uniqueNote}${duplicateNote}${suffix}${persistenceNote}`);
     });
@@ -2931,6 +3077,8 @@
           state.showExcludedCounts = !!saved.showExcludedCounts;
           state.weekendHighlight = saved.weekendHighlight !== false;
           state.showDuplicates = !!saved.showDuplicates;
+          state.showPbLiftFlags = saved.showPbLiftFlags !== false;
+          state.highlightPbDiscrepancies = !!saved.highlightPbDiscrepancies;
           state.analyticsRows = Array.isArray(saved.analyticsRows) ? saved.analyticsRows : [];
           state.analyticsReviewRows = Array.isArray(saved.analyticsReviewRows) ? saved.analyticsReviewRows : [];
           state.analyticsExcludedEmployees = Array.isArray(saved.analyticsExcludedEmployees) ? saved.analyticsExcludedEmployees : [];
@@ -2943,6 +3091,7 @@
           state.groupMapSelected = saved.groupMapSelected || "";
           state.page = saved.page || "operations";
           reconcileImportedMoveFiles();
+          recalculateAllMoveDetailCounts();
           normalizeExistingTimesheetDates();
           syncTimesheetManHoursFromAnalytics();
         }
@@ -3025,6 +3174,8 @@
         showExcludedCounts: state.showExcludedCounts,
         weekendHighlight: state.weekendHighlight,
         showDuplicates: state.showDuplicates,
+        showPbLiftFlags: state.showPbLiftFlags,
+        highlightPbDiscrepancies: state.highlightPbDiscrepancies,
         analyticsRows: state.analyticsRows,
         analyticsReviewRows: state.analyticsReviewRows,
         analyticsExcludedEmployees: state.analyticsExcludedEmployees,
@@ -3202,7 +3353,8 @@
 
     function clearMonthSelection(type) {
       const actions = {
-        lifts: { label: "lifts", fields: LIFT_FIELDS, clearMoveDetails: true },
+        lifts: { label: "lifts and stacking", fields: LIFT_AND_STACK_FIELDS, clearMoveDetails: true },
+        chassis: { label: "chassis stack and unstack", fields: CHASSIS_STACK_FIELDS, clearMoveDetails: true },
         gate: { label: "gate counts", fields: GATE_FIELDS, clearMoveDetails: false },
         manHours: { label: "man hours", fields: ["manHours"], clearMoveDetails: false },
         powerBi: { label: "PowerBI hours and lifts", fields: ["powerBiManHours", "powerBiLifts"], clearMoveDetails: false }
@@ -3229,7 +3381,9 @@
       });
 
       if (clearMoveDetails) {
-        state.moveDetails = state.moveDetails.filter((detail) => !String(detail.date || "").startsWith(state.month));
+        state.moveDetails = state.moveDetails.filter((detail) => {
+          return !(String(detail.date || "").startsWith(state.month) && fieldSet.has(detail.field));
+        });
       }
 
       persist();
@@ -4050,8 +4204,11 @@
       els.gateToggleButton.classList.toggle("active", state.showGate);
       els.gateToggleButton.setAttribute("aria-pressed", String(state.showGate));
       els.gateToggleButton.textContent = state.showGate ? "Hide Gate" : "Show Gate";
-      els.duplicatesButton.classList.toggle("active", state.showDuplicates);
-      els.duplicatesButton.setAttribute("aria-pressed", String(state.showDuplicates));
+      els.duplicatesButton.classList.toggle("active", state.showDuplicates || !state.showPbLiftFlags || state.highlightPbDiscrepancies);
+      els.showDuplicateFlagsToggle.checked = state.showDuplicates;
+      els.showPbLiftFlagsToggle.checked = state.showPbLiftFlags;
+      els.highlightPbDiscrepanciesToggle.checked = state.highlightPbDiscrepancies;
+      els.operationsTable.classList.toggle("pb-lifts-delta-hidden", !state.showPbLiftFlags);
       setPage(state.page);
       els.monthTitle.textContent = monthTitle(state.month);
       els.tableBody.innerHTML = "";
@@ -4066,6 +4223,7 @@
         const date = new Date(year, month - 1, day);
         const row = document.createElement("tr");
         if (state.weekendHighlight && (date.getDay() === 0 || date.getDay() === 6)) row.classList.add("weekend");
+        if (state.highlightPbDiscrepancies && typeof record.powerBiLifts === "number" && record.powerBiLifts !== dailyLifts) row.classList.add("pb-lifts-discrepancy");
 
         row.append(dateCell(month, day, date));
         row.append(moveCell(key, "ramp", record.ramp));
@@ -4083,11 +4241,11 @@
         row.append(inputCell(key, "chUnstacked", record.chUnstacked));
         row.append(inputCell(key, "chStacked", record.chStacked));
         row.append(totalCell(sum(record.chUnstacked, record.chStacked), "chassis-total"));
-        row.append(inputCell(key, "manHours", record.manHours, "decimal"));
-        row.append(inputCell(key, "powerBiManHours", record.powerBiManHours, "decimal"));
-        row.append(inputCell(key, "powerBiLifts", record.powerBiLifts));
         row.append(totalCell(dailyLifts, "lph-total"));
-        row.append(totalCell(dayLpmh, "lph-total", 2));
+        row.append(powerBiLiftsCell(key, record.powerBiLifts, dailyLifts));
+        row.append(inputCell(key, "powerBiManHours", record.powerBiManHours, "decimal"));
+        row.append(inputCell(key, "manHours", record.manHours, "decimal"));
+        row.append(lphPillCell(dayLpmh));
 
         FIELDS.forEach((field) => {
           if (typeof record[field] === "number") {
@@ -4134,6 +4292,19 @@
       return cell;
     }
 
+    function powerBiLiftsCell(key, value, lifts) {
+      const cell = inputCell(key, "powerBiLifts", value);
+      cell.classList.add("pb-lifts-delta-cell");
+      if (typeof value !== "number") return cell;
+      const delta = value - lifts;
+      const flag = document.createElement("span");
+      flag.className = `pb-lifts-delta-flag ${delta > 0 ? "positive" : delta < 0 ? "negative" : "match"}`;
+      flag.textContent = delta > 0 ? `+${delta}` : String(delta);
+      flag.title = `PB Lifts ${delta > 0 ? "exceed" : delta < 0 ? "trail" : "match"} Lifts by ${Math.abs(delta)}`;
+      cell.append(flag);
+      return cell;
+    }
+
     function moveCell(key, field, value) {
       return detailCell(key, field, value);
     }
@@ -4162,12 +4333,12 @@
         flag.title = "Click to review the highlighted duplicate groups";
         flagRail.append(flag);
       }
-      const excludedCount = field === "flip" ? excludedUnitCount(key, field) : 0;
+      const excludedCount = ["ramp", "deramp", "flip"].includes(field) ? excludedUnitCount(key, field) : 0;
       if (excludedCount > 0) {
         const flag = document.createElement("span");
         flag.className = "excluded-investigation-flag";
         flag.textContent = `${excludedCount} EXCL`;
-        flag.title = `${excludedCount} excluded flip row${excludedCount === 1 ? "" : "s"}. Click to review.`;
+        flag.title = `${excludedCount} excluded ${fieldLabel(field).toLowerCase()} row${excludedCount === 1 ? "" : "s"}. Click to review.`;
         flagRail.append(flag);
       }
       if (flagRail.childElementCount) button.append(flagRail);
@@ -4178,7 +4349,7 @@
     }
 
     function duplicateDetailsForCell(date, field) {
-      if (!["ramp", "deramp"].includes(field)) return [];
+      if (!["ramp", "deramp", "flip"].includes(field)) return [];
       const details = state.moveDetails.filter((detail) =>
         detail.date === date &&
         detail.field === field &&
@@ -4205,6 +4376,18 @@
       const excluded = excludedUnitCount(date, field);
       if (!state.showExcludedCounts || !excluded) return base;
       return `${base} (${excluded})`;
+    }
+
+    function lphPillCell(value) {
+      const cell = document.createElement("td");
+      cell.className = "total-cell lph-value-cell";
+      if (typeof value !== "number") return cell;
+      const pill = document.createElement("span");
+      pill.className = `lph-target-pill ${value >= 2.1 ? "on-target" : "below-target"}`;
+      pill.textContent = value.toFixed(2);
+      pill.title = value >= 2.1 ? "At or above the 2.10 LPH target" : "Below the 2.10 LPH target";
+      cell.append(pill);
+      return cell;
     }
 
     function totalCell(value, className, digits = null) {
@@ -4431,14 +4614,21 @@
       const lpmh = lphHours > 0 ? lphLifts / lphHours : null;
       const values = [
         "Total", sums.ramp, sums.deramp, moves, sums.ingates, sums.outgates, sums.ingateRefusals, sums.outgateRefusals, sums.flip, sums.stacked, sums.unstacked,
-        flipStack, sums.chUnstacked, sums.chStacked, chassis, sums.manHours, sums.powerBiManHours, sums.powerBiLifts, sums.lifts, lpmh
+        flipStack, sums.chUnstacked, sums.chStacked, chassis, sums.lifts, sums.powerBiLifts, sums.powerBiManHours, sums.manHours, lpmh
       ];
 
       els.totalRow.innerHTML = "";
       values.forEach((value, index) => {
         const cell = document.createElement("td");
         if (index >= 4 && index <= 7) cell.classList.add("gate-column");
-        cell.textContent = typeof value === "number" ? formatNonZero(value, index === 15 || index === 16 ? 1 : index === 19 ? 2 : null) : value;
+        if (index === 19 && typeof value === "number") {
+          const pill = document.createElement("span");
+          pill.className = `lph-target-pill ${value >= 2.1 ? "on-target" : "below-target"}`;
+          pill.textContent = value.toFixed(2);
+          cell.append(pill);
+        } else {
+          cell.textContent = typeof value === "number" ? formatNonZero(value, index === 17 || index === 18 ? 1 : null) : value;
+        }
         els.totalRow.append(cell);
       });
 
@@ -4790,17 +4980,14 @@
       moveRows.forEach((row) => {
         const source = row.__liftSource || liftSourceKeyFor(row.__field, row.__equipment, row.__source, row.__reason, row.__train);
         const duplicateKey = `${row.date}|${row.__field}|${source}|${row.__equipment}|${row.__train || ""}`;
-        if (counted.has(duplicateKey)) {
-          skippedDuplicates += 1;
-        } else {
-          counted.add(duplicateKey);
-          uniqueMoveRows += 1;
+        if (counted.has(duplicateKey)) skippedDuplicates += 1;
+        else counted.add(duplicateKey);
+        uniqueMoveRows += 1;
 
-          const countKey = `${row.date}|${row.__field}`;
-          const existing = counts.get(countKey) || { date: row.date, [row.__field]: 0 };
-          existing[row.__field] += 1;
-          counts.set(countKey, existing);
-        }
+        const countKey = `${row.date}|${row.__field}`;
+        const existing = counts.get(countKey) || { date: row.date, [row.__field]: 0 };
+        existing[row.__field] += 1;
+        counts.set(countKey, existing);
       });
 
       const details = moveRows.map((row, index) => ({
@@ -4858,11 +5045,15 @@
 
     function duplicateEquipmentSet(details) {
       const counts = new Map();
-      details.filter((detail) => !detail.deleted).forEach((detail) => {
-        const key = `${detail.fileId || detail.source || ""}|${normalizeEquipment(detail.equipment || "")}`;
+      details.forEach((detail) => {
+        const key = duplicateDetailKey(detail);
         counts.set(key, (counts.get(key) || 0) + 1);
       });
       return new Set(Array.from(counts.entries()).filter((entry) => entry[1] > 1).map((entry) => entry[0]));
+    }
+
+    function duplicateDetailKey(detail) {
+      return `${detail.date || ""}|${detail.fileId || detail.source || ""}|${normalizeEquipment(detail.equipment || "")}`;
     }
 
     function openMoveModal(date, field) {
@@ -4873,18 +5064,19 @@
       const details = previewMoveDetails(date, field);
       const activeDetails = details.filter((detail) => !detail.deleted);
       const hasReasons = details.some((detail) => String(detail.reason || "").trim());
+      const duplicateSet = duplicateEquipmentSet(details);
       if (!hasReasons) state.reasonFilter = "all";
       let visibleDetails = details.filter((detail) => {
         if (hasReasons && state.reasonFilter !== "all" && reasonKey(detail.reason) !== state.reasonFilter) return false;
         if (state.previewFilter === "included") return !detail.deleted;
+        if (state.previewFilter === "duplicates") return !detail.deleted && duplicateSet.has(duplicateDetailKey(detail));
         if (state.previewFilter === "excluded") return detail.deleted;
         return true;
       });
-      const duplicateSet = duplicateEquipmentSet(details);
       if (state.previewDuplicatesFirst) {
         visibleDetails = visibleDetails.slice().sort((a, b) => {
-          const aDuplicate = duplicateSet.has(`${a.fileId || a.source || ""}|${normalizeEquipment(a.equipment || "")}`);
-          const bDuplicate = duplicateSet.has(`${b.fileId || b.source || ""}|${normalizeEquipment(b.equipment || "")}`);
+          const aDuplicate = duplicateSet.has(duplicateDetailKey(a));
+          const bDuplicate = duplicateSet.has(duplicateDetailKey(b));
           return Number(bDuplicate) - Number(aDuplicate);
         });
       }
@@ -4894,12 +5086,17 @@
       els.reasonFilterLabel.classList.toggle("hidden", !hasReasons);
       els.reasonFilter.classList.toggle("hidden", !hasReasons);
       els.previewFilter.value = state.previewFilter;
+      els.moveModal.classList.toggle("duplicates-only", state.previewFilter === "duplicates");
       els.duplicatesFirst.setAttribute("aria-pressed", String(state.previewDuplicatesFirst));
       els.reasonFilter.value = state.reasonFilter;
       const excludedCount = details.filter((detail) => detail.deleted).length;
-      const previewLabel = date === "__month__" ? `${monthLabel(state.month)} - all flips` : date;
-      els.moveModalTitle.textContent = date === "__month__" ? "Monthly Flip Review" : `${label} Preview`;
-      els.moveModalSubtitle.textContent = `${previewLabel} - ${uniqueEquipmentCount(activeDetails)} included units - ${excludedCount} excluded rows - select rows, filter a reason, or exclude that reason`;
+      const previewLabel = date === "__month__" ? `${monthLabel(state.month)} - all ${label.toLowerCase()} rows` : date;
+      els.moveModalTitle.textContent = date === "__month__" ? `Monthly ${label} Review` : `${label} Preview`;
+      els.moveModalSubtitle.textContent = `${previewLabel} - ${activeDetails.length} included units - ${excludedCount} excluded rows - select rows, filter a reason, or exclude that reason`;
+      if (state.previewFilter === "duplicates") {
+        els.moveModalSubtitle.textContent = `${previewLabel} - showing ${visibleDetails.length} duplicate rows across ${duplicateSet.size} duplicate group${duplicateSet.size === 1 ? "" : "s"}`;
+      }
+      els.moveModalSubtitle.style.removeProperty("color");
       els.moveModalBody.innerHTML = "";
 
       if (!visibleDetails.length) {
@@ -4911,7 +5108,7 @@
         els.moveModalBody.append(row);
       } else {
         visibleDetails.forEach((detail) => {
-          const isDuplicate = duplicateSet.has(`${detail.fileId || detail.source || ""}|${normalizeEquipment(detail.equipment || "")}`);
+          const isDuplicate = duplicateSet.has(duplicateDetailKey(detail));
           const row = document.createElement("tr");
           if (isDuplicate) row.classList.add("duplicate-row");
           if (detail.deleted) row.classList.add("deleted-row");
@@ -5046,6 +5243,42 @@
       openMoveModal(state.previewDate, state.previewField);
     }
 
+    function selectOneDuplicateRowPerGroup(event) {
+      event?.preventDefault();
+      event?.stopPropagation();
+      if (!state.previewDate || !state.previewField) {
+        els.moveModalSubtitle.textContent = "Duplicate selection could not run because this review is no longer active.";
+        return;
+      }
+      const previewDate = state.previewDate;
+      const previewField = state.previewField;
+      const previewDetails = previewMoveDetails(previewDate, previewField).filter((detail) => !detail.deleted);
+      const duplicateKeys = duplicateEquipmentSet(previewDetails);
+      const seenKeys = new Set();
+      const selectedKeys = new Set();
+      const selectedIds = new Set();
+      previewDetails.forEach((detail) => {
+        const key = duplicateDetailKey(detail);
+        if (!duplicateKeys.has(key)) return;
+        if (seenKeys.has(key) && !selectedKeys.has(key)) {
+          selectedIds.add(detail.id);
+          selectedKeys.add(key);
+        } else {
+          seenKeys.add(key);
+        }
+      });
+      if (!selectedIds.size) {
+        els.moveModalSubtitle.textContent = "No included duplicate groups were found in the rows currently shown.";
+        els.moveModalSubtitle.style.color = "#b91c1c";
+        showToast("No included duplicate groups found in this review.");
+        return;
+      }
+      state.selectedDetailIds = selectedIds;
+      state.previewFilter = "duplicates";
+      openMoveModal(previewDate, previewField);
+      showToast(`Selected one row from ${selectedIds.size} duplicate group${selectedIds.size === 1 ? "" : "s"}. Click Exclude Selected to apply.`);
+    }
+
     function excludeMoveDetailsByReason() {
       if (!state.previewDate || !state.previewField || state.reasonFilter === "all") return;
       const matching = previewMoveDetails(state.previewDate, state.previewField)
@@ -5105,16 +5338,32 @@
     }
     function toggleMoveDetail(id, date, field) {
       const previewDate = state.previewDate;
+      const current = state.moveDetails.find((detail) => detail.id === id);
+      const nextDeleted = current ? !current.deleted : true;
       state.moveDetails = state.moveDetails.map((detail) => detail.id === id ? { ...detail, deleted: !detail.deleted } : detail);
       recalculateMoveCount(date, field);
       persist();
       render();
       openMoveModal(previewDate || date, field);
+      showToast(`${nextDeleted ? "Excluded" : "Included"} ${current?.equipment || "selected unit"}.`);
+    }
+
+    function recalculateAllMoveDetailCounts() {
+      const groups = new Map();
+      state.moveDetails.forEach((detail) => {
+        if (!detail?.date || !detail.field) return;
+        const key = `${detail.date}|${detail.field}`;
+        if (!groups.has(key)) groups.set(key, { date: detail.date, field: detail.field, count: 0 });
+        if (!detail.deleted) groups.get(key).count += 1;
+      });
+      groups.forEach(({ date, field, count }) => {
+        state.data[date] = { ...(state.data[date] || {}), [field]: count };
+      });
     }
 
     function recalculateMoveCount(date, field) {
       const record = { ...(state.data[date] || {}) };
-      record[field] = uniqueEquipmentCount(activeMoveDetails(date, field));
+      record[field] = activeMoveDetails(date, field).length;
       state.data[date] = record;
     }
 
@@ -5123,7 +5372,7 @@
     }
 
     function excludedUnitCount(date, field) {
-      return uniqueEquipmentCount(getMoveDetails(date, field).filter((detail) => detail.deleted));
+      return getMoveDetails(date, field).filter((detail) => detail.deleted).length;
     }
 
     function fieldLabel(field) {
