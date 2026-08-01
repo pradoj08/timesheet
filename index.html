@@ -3862,7 +3862,8 @@ tfoot .lph-target-pill.below-target{background:#fecaca;color:#7f1d1d}
 })();
 </scr${""}ipt>`;
       if (!updated.includes('id="billing-dupes-filter-runtime-v1"')) {
-        updated = updated.replace("</body>", duplicateFilterRuntime + "\n</body>");
+        const bodyClose = updated.toLowerCase().lastIndexOf("</body>");
+        updated = bodyClose >= 0 ? updated.slice(0, bodyClose) + duplicateFilterRuntime + "\n" + updated.slice(bodyClose) : updated + duplicateFilterRuntime;
       }
       const required = [
         'id="excludeDuplicateRows"',
@@ -11486,7 +11487,302 @@ const script = `<style id="billing-unified-duplicate-review-v1">
   document.getElementById("exportDupesExclButton").addEventListener("click", () => { closeMenu(); exportDupesAndExcl(); });
 })();
 </scr${""}ipt>`;
-      return html.replace("</body>", injection + "\n</body>");
+      const bodyClose = html.toLowerCase().lastIndexOf("</body>");
+      return bodyClose >= 0 ? html.slice(0, bodyClose) + injection + "\n" + html.slice(bodyClose) : html + injection;
+    }
+
+    function withBillingFlipStackReclassificationV1(html) {
+      if (!html || typeof html !== "string" || html.includes("billing-flip-stack-reclassification-v1")) return html;
+      const injection = `<style id="billing-flip-stack-reclassification-v1">
+#moveModal .modal{width:min(1120px,100%)}
+#moveModal .preview-table th:nth-child(4){width:13%}
+#moveModal .preview-table th:nth-child(5){width:8%}
+#moveModal .preview-table th:nth-child(6){width:8%}
+#moveModal .preview-table th:nth-child(7){width:9%}
+#moveModal .preview-table th:nth-child(9){width:9%}
+#moveModal .preview-table th:nth-child(10){width:16%}
+#moveModal .preview-table th:last-child,#moveModal .preview-table td:last-child{white-space:nowrap;word-break:normal;overflow-wrap:normal}
+#moveModal .delete-row,#moveModal .move-classification-action{white-space:nowrap;word-break:normal;overflow-wrap:normal}
+#moveModal .preview-table th.popup-sortable{cursor:pointer;user-select:none}
+#moveModal .preview-table th.popup-sortable:hover,#moveModal .preview-table th.popup-sortable:focus-visible{background:#dbeafe;color:#1d4ed8;outline:0}
+#moveModal .preview-table th.popup-sortable::after{content:" ↕";color:#94a3b8;font-size:10px}
+#moveModal .preview-table th.popup-sortable[aria-sort="ascending"]::after{content:" ▲";color:#1d4ed8}
+#moveModal .preview-table th.popup-sortable[aria-sort="descending"]::after{content:" ▼";color:#1d4ed8}
+#operationsTable #rampReviewHeader,#operationsTable #derampReviewHeader{display:block;width:42px;padding:0;text-align:center}
+#operationsTable #flipReviewHeader{text-align:left;padding-left:16px}
+.pb-hours-pending-cell{position:relative;cursor:pointer}
+.pb-hours-pending-cell .cell-input{visibility:hidden}
+.pb-hours-pending-pill{position:absolute;inset:50% auto auto 50%;transform:translate(-50%,-50%);display:inline-flex;align-items:center;justify-content:center;min-height:20px;padding:2px 8px;border:1px solid #f59e0b;border-radius:999px;background:#fef3c7;color:#92400e;font-size:10px;font-weight:900;letter-spacing:.03em;line-height:1;white-space:nowrap}
+.pb-hours-status-menu{position:fixed;z-index:250;display:flex;gap:6px;padding:6px;border:1px solid #d6dee8;border-radius:8px;background:#fff;box-shadow:0 10px 28px rgba(15,23,42,.2)}
+.pb-hours-status-menu[hidden]{display:none}
+.pb-hours-status-menu button{padding:6px 9px;border:1px solid #d6dee8;border-radius:6px;background:#fff;color:#26364d;font-size:11px;font-weight:800;white-space:nowrap;cursor:pointer}
+.pb-hours-status-menu button[data-pb-hours-status="pending"]{border-color:#f59e0b;background:#fef3c7;color:#92400e}
+.move-classification-pill{display:inline-flex;align-items:center;min-height:18px;margin-left:7px;padding:1px 6px;border:1px solid #7c3aed;border-radius:999px;background:#ede9fe;color:#5b21b6;font-size:10px;font-weight:900;line-height:1;white-space:nowrap;vertical-align:middle}
+.move-classification-action{display:inline-flex;align-items:center;justify-content:center;min-height:30px;margin:0 0 0 6px;padding:4px 8px;border:1px solid #7c3aed;border-radius:7px;background:#f5f3ff;color:#5b21b6;font-size:11px;font-weight:900;line-height:1.1;cursor:pointer}
+.move-classification-action:hover{background:#ede9fe}
+.move-history-section td{padding:8px 12px;background:#ede9fe;color:#4c1d95;font-size:11px;font-weight:900;letter-spacing:.04em;text-transform:uppercase}
+.move-history-row td{background:#faf7ff;color:#5b21b6}
+</style>
+<scr${""}ipt>
+(() => {
+  const CLASS_FIELDS = new Set(["flip", "stacked"]);
+  const PB_HOURS_PENDING_KEY = "conglobal-billing-pb-hours-pending-v1";
+  const baseOpenMoveModalForClassification = openMoveModal;
+  const flipHeaderCell = document.getElementById("flipReviewHeader")?.closest("th");
+  const flipStackTotalHeader = flipHeaderCell?.nextElementSibling?.nextElementSibling?.nextElementSibling;
+  if (flipStackTotalHeader) flipStackTotalHeader.textContent = "Total";
+
+  function readPendingPbHours() {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(PB_HOURS_PENDING_KEY) || "{}");
+      return parsed && typeof parsed === "object" ? parsed : {};
+    } catch (_) {
+      return {};
+    }
+  }
+
+  function writePendingPbHours(value) {
+    localStorage.setItem(PB_HOURS_PENDING_KEY, JSON.stringify(value));
+  }
+
+  function pendingMenu() {
+    let menu = document.getElementById("pbHoursStatusMenu");
+    if (menu) return menu;
+    menu = document.createElement("div");
+    menu.id = "pbHoursStatusMenu";
+    menu.className = "pb-hours-status-menu";
+    menu.hidden = true;
+    menu.innerHTML = '<button type="button" data-pb-hours-status="pending">Pending</button><button type="button" data-pb-hours-status="clear">Show Value</button>';
+    menu.addEventListener("click", (event) => {
+      const button = event.target.closest("button[data-pb-hours-status]");
+      if (!button || !menu.dataset.date) return;
+      const pending = readPendingPbHours();
+      if (button.dataset.pbHoursStatus === "pending") pending[menu.dataset.date] = true;
+      else delete pending[menu.dataset.date];
+      writePendingPbHours(pending);
+      menu.hidden = true;
+      decoratePendingPbHours();
+    });
+    document.body.append(menu);
+    return menu;
+  }
+
+  function openPendingMenu(cell, date) {
+    const menu = pendingMenu();
+    const rect = cell.getBoundingClientRect();
+    menu.dataset.date = date;
+    menu.hidden = false;
+    const menuWidth = menu.offsetWidth || 170;
+    menu.style.left = Math.max(6, Math.min(rect.left, innerWidth - menuWidth - 6)) + "px";
+    menu.style.top = Math.min(innerHeight - (menu.offsetHeight || 40) - 6, rect.bottom + 4) + "px";
+  }
+
+  function decoratePendingPbHours() {
+    const pending = readPendingPbHours();
+    const [year, month] = String(state.month || "").split("-");
+    Array.from(els.tableBody?.rows || []).forEach((row, index) => {
+      const cell = row.querySelector("td.hours-pb-hours-column");
+      if (!cell) return;
+      const date = year + "-" + month + "-" + String(index + 1).padStart(2, "0");
+      cell.classList.toggle("pb-hours-pending-cell", Boolean(pending[date]));
+      cell.querySelector(".pb-hours-pending-pill")?.remove();
+      if (pending[date]) {
+        const pill = document.createElement("span");
+        pill.className = "pb-hours-pending-pill";
+        pill.textContent = "PENDING";
+        cell.append(pill);
+      }
+      cell.onclick = (event) => {
+        event.stopPropagation();
+        openPendingMenu(cell, date);
+      };
+    });
+  }
+
+  const baseRenderForPendingPbHours = render;
+  render = function() {
+    baseRenderForPendingPbHours();
+    decoratePendingPbHours();
+  };
+
+  document.addEventListener("click", (event) => {
+    const menu = document.getElementById("pbHoursStatusMenu");
+    if (menu && !menu.hidden && !menu.contains(event.target)) menu.hidden = true;
+  });
+
+  function previewMatches(detail, date, field) {
+    if (!detail || detail.movedFrom !== field || detail.field === field) return false;
+    if (date === "__month__") return String(detail.date || "").startsWith(String(state.month || "") + "-");
+    return detail.date === date;
+  }
+
+  function classificationLabel(detail, viewField) {
+    if (viewField && detail.field !== viewField) return "MOVED TO " + fieldLabel(detail.field).toUpperCase();
+    const last = Array.isArray(detail.classificationHistory) && detail.classificationHistory.length
+      ? detail.classificationHistory[detail.classificationHistory.length - 1]
+      : { from: detail.movedFrom, to: detail.field };
+    return last && last.from ? "MOVED FROM " + fieldLabel(last.from).toUpperCase() : "MOVED";
+  }
+
+  function appendClassificationPill(cell, detail, viewField) {
+    if (!cell || !detail || (!detail.movedAt && !(Array.isArray(detail.classificationHistory) && detail.classificationHistory.length))) return;
+    if (cell.querySelector(".move-classification-pill")) return;
+    const pill = document.createElement("span");
+    pill.className = "move-classification-pill";
+    pill.textContent = classificationLabel(detail, viewField);
+    const last = Array.isArray(detail.classificationHistory) && detail.classificationHistory.length
+      ? detail.classificationHistory[detail.classificationHistory.length - 1]
+      : null;
+    pill.title = last ? fieldLabel(last.from) + " to " + fieldLabel(last.to) + (last.at ? " · " + new Date(last.at).toLocaleString() : "") : "Manually reclassified";
+    cell.append(pill);
+  }
+
+  function reclassifyMoveDetail(id, targetField) {
+    if (!CLASS_FIELDS.has(targetField)) return;
+    const previewDate = state.previewDate;
+    const previewField = state.previewField;
+    const current = state.moveDetails.find((detail) => String(detail.id) === String(id));
+    if (!current || !CLASS_FIELDS.has(current.field) || current.field === targetField) return;
+    const fromField = current.field;
+    const at = new Date().toISOString();
+    state.moveDetails = state.moveDetails.map((detail) => {
+      if (String(detail.id) !== String(id)) return detail;
+      const history = Array.isArray(detail.classificationHistory) ? detail.classificationHistory.slice() : [];
+      history.push({ from: fromField, to: targetField, at });
+      return { ...detail, field: targetField, movedFrom: fromField, movedTo: targetField, movedAt: at, classificationHistory: history };
+    });
+    recalculateMoveCount(current.date, fromField);
+    recalculateMoveCount(current.date, targetField);
+    if (state.data[current.date] && state.data[current.date][fromField] === 0) {
+      delete state.data[current.date][fromField];
+    }
+    persist();
+    render();
+    baseOpenMoveModalForClassification(previewDate || current.date, previewField || targetField);
+    decorateClassificationReview(previewDate || current.date, previewField || targetField);
+    showToast((current.equipment || "Selected unit") + " moved from " + fieldLabel(fromField) + " to " + fieldLabel(targetField) + ".");
+  }
+
+  function actionButton(detail) {
+    const targetField = detail.field === "flip" ? "stacked" : "flip";
+    const button = document.createElement("button");
+    button.className = "move-classification-action";
+    button.type = "button";
+    button.textContent = "Move to " + fieldLabel(targetField);
+    button.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      reclassifyMoveDetail(detail.id, targetField);
+    });
+    return button;
+  }
+
+  function sortPopupRows(columnIndex, direction) {
+    if (!els.moveModalBody) return;
+    const rows = Array.from(els.moveModalBody.children);
+    const sections = [];
+    let current = { heading: null, rows: [] };
+    rows.forEach((row) => {
+      if (row.classList.contains("move-history-section")) {
+        sections.push(current);
+        current = { heading: row, rows: [] };
+      } else {
+        current.rows.push(row);
+      }
+    });
+    sections.push(current);
+    const factor = direction === "descending" ? -1 : 1;
+    sections.forEach((section) => {
+      section.rows.sort((left, right) => {
+        const leftText = (left.children[columnIndex]?.textContent || "").trim();
+        const rightText = (right.children[columnIndex]?.textContent || "").trim();
+        return factor * leftText.localeCompare(rightText, undefined, { numeric: true, sensitivity: "base" });
+      });
+      if (section.heading) els.moveModalBody.append(section.heading);
+      section.rows.forEach((row) => els.moveModalBody.append(row));
+    });
+  }
+
+  function installPopupSorting() {
+    const headers = Array.from(document.querySelectorAll("#moveModal .preview-table thead th"));
+    headers.forEach((header, columnIndex) => {
+      if (columnIndex === 0 || columnIndex === headers.length - 1) return;
+      header.classList.add("popup-sortable");
+      header.tabIndex = 0;
+      header.setAttribute("role", "button");
+      header.setAttribute("aria-sort", "none");
+      const activate = () => {
+        const nextDirection = header.getAttribute("aria-sort") === "ascending" ? "descending" : "ascending";
+        headers.forEach((item) => {
+          if (item.classList.contains("popup-sortable")) item.setAttribute("aria-sort", "none");
+        });
+        header.setAttribute("aria-sort", nextDirection);
+        sortPopupRows(columnIndex, nextDirection);
+      };
+      header.onclick = activate;
+      header.onkeydown = (event) => {
+        if (event.key !== "Enter" && event.key !== " ") return;
+        event.preventDefault();
+        activate();
+      };
+    });
+  }
+
+  function decorateClassificationReview(date, field) {
+    if (!CLASS_FIELDS.has(field) || !els.moveModalBody) return;
+    Array.from(els.moveModalBody.querySelectorAll("input[data-detail-id]")).forEach((checkbox) => {
+      const detail = state.moveDetails.find((item) => String(item.id) === String(checkbox.dataset.detailId));
+      const row = checkbox.closest("tr");
+      if (!detail || !row || !CLASS_FIELDS.has(detail.field)) return;
+      appendClassificationPill(row.children[1], detail, field);
+      const actionCell = row.lastElementChild;
+      if (actionCell && !actionCell.querySelector(".move-classification-action")) actionCell.append(actionButton(detail));
+    });
+
+    const movedOut = state.moveDetails.filter((detail) => previewMatches(detail, date, field));
+    installPopupSorting();
+    if (!movedOut.length) return;
+    const reasonVisible = !els.reasonHeader.classList.contains("hidden");
+    const columnCount = reasonVisible ? 10 : 9;
+    const section = document.createElement("tr");
+    section.className = "move-history-section";
+    const heading = document.createElement("td");
+    heading.colSpan = columnCount;
+    heading.textContent = "Moved out of " + fieldLabel(field) + " · " + movedOut.length + " unit" + (movedOut.length === 1 ? "" : "s");
+    section.append(heading);
+    els.moveModalBody.append(section);
+
+    movedOut.forEach((detail) => {
+      const row = document.createElement("tr");
+      row.className = "move-history-row";
+      row.append(previewCell(""));
+      const equipmentCell = previewCell(detail.equipment || "");
+      appendClassificationPill(equipmentCell, detail, field);
+      row.append(equipmentCell);
+      row.append(previewCell(detail.train || ""));
+      row.append(previewCell(detail.time || ""));
+      if (reasonVisible) row.append(previewCell(detail.reason || ""));
+      row.append(previewCell(liftSourceLabel(detailLiftSource(detail))));
+      row.append(previewCell(detail.source || ""));
+      row.append(previewCell(detail.rowNumber || ""));
+      row.append(previewCell(detail.note || ""));
+      const actionCell = document.createElement("td");
+      actionCell.append(actionButton(detail));
+      row.append(actionCell);
+      els.moveModalBody.append(row);
+    });
+    installPopupSorting();
+  }
+
+  openMoveModal = function(date, field) {
+    baseOpenMoveModalForClassification(date, field);
+    decorateClassificationReview(date, field);
+  };
+  decoratePendingPbHours();
+})();
+</scr${""}ipt>`;
+      const bodyClose = html.toLowerCase().lastIndexOf("</body>");
+      return bodyClose >= 0 ? html.slice(0, bodyClose) + injection + "\n" + html.slice(bodyClose) : html + injection;
     }
 
     function bridgedHtmlForPage(id) {
@@ -11505,7 +11801,7 @@ const script = `<style id="billing-unified-duplicate-review-v1">
         }
         if (id === "timeMd") pageHtml = withTimeMdResponsiveWidth(pageHtml);
         if (id === "timeOff") pageHtml = withTimeOffCurrentRosterSnapshot(withTimeOffCameInActions(withTimeOffMonthlyWeeklyStyle(pageHtml)));
-        if (id === "billing") pageHtml = withBillingExportDropdownV1(withBillingDuplicateStatusPillsV1(withBillingOperationalLphGuardV1(withBillingMoveDetailsIndexedDbV1(withBillingLiftFolderImportV1(withBillingImportFeedbackV1(withBillingLiftFlipPersistenceV2(withBillingUnifiedDuplicateReview(withBillingExcludeDuplicateRows(withBillingRampDerampMonthlyReview(withBillingRampDerampExcludedFlags(withBillingCountDuplicateRows(withBillingLphTargetPills(withBillingFlipDuplicateFlags(withBillingMonthlyFlipReview(withBillingStackReasonRouting(withBillingCompactDuplicateGroups(withBillingDailyShiftProjection(withBillingPerformanceArchiveIndexedDb(withBillingShiftLpmhGrid(withBillingSummaryExportStyles(withBillingLpmhSourcePair(withBillingHoursColumnOrder(withBillingDisplayFlagsMenu(withBillingPowerBiLiftDeltaFlag(withBillingPowerBiImport(withBillingQuotaSafePersistence(withBillingAnalyticsLiftFallback(withBillingAnalyticsArchiveHydration(withBillingManHoursPrecision(withBillingArchiveIndexedDb(withBillingSplitLiftAndChassisClear(withBillingHeaderRemoved(pageHtml)))))))))))))))))))))))))))))))));
+        if (id === "billing") pageHtml = withBillingFlipStackReclassificationV1(withBillingExportDropdownV1(withBillingDuplicateStatusPillsV1(withBillingOperationalLphGuardV1(withBillingMoveDetailsIndexedDbV1(withBillingLiftFolderImportV1(withBillingImportFeedbackV1(withBillingLiftFlipPersistenceV2(withBillingUnifiedDuplicateReview(withBillingExcludeDuplicateRows(withBillingRampDerampMonthlyReview(withBillingRampDerampExcludedFlags(withBillingCountDuplicateRows(withBillingLphTargetPills(withBillingFlipDuplicateFlags(withBillingMonthlyFlipReview(withBillingStackReasonRouting(withBillingCompactDuplicateGroups(withBillingDailyShiftProjection(withBillingPerformanceArchiveIndexedDb(withBillingShiftLpmhGrid(withBillingSummaryExportStyles(withBillingLpmhSourcePair(withBillingHoursColumnOrder(withBillingDisplayFlagsMenu(withBillingPowerBiLiftDeltaFlag(withBillingPowerBiImport(withBillingQuotaSafePersistence(withBillingAnalyticsLiftFallback(withBillingAnalyticsArchiveHydration(withBillingManHoursPrecision(withBillingArchiveIndexedDb(withBillingSplitLiftAndChassisClear(withBillingHeaderRemoved(pageHtml))))))))))))))))))))))))))))))))));
         if (id === "lphTracker") {
           pageHtml = withLphDefaultExpectedFlips(pageHtml);
           pageHtml = withLphLunchDuringDowntime(pageHtml);
