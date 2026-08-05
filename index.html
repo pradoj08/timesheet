@@ -8854,6 +8854,55 @@ document.addEventListener('click',function(event){
 </body>
 </html>`
     };
+    pages.archiveBot = {
+      label: "Archive Bot",
+      html: `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Archive Bot</title>
+  <style>
+    html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#f5efe6}
+    iframe{display:block;width:100%;height:100%;border:0;background:#f5efe6}
+  </style>
+</head>
+<body>
+  <iframe src="http://127.0.0.1:4317/?workbook=talking-points-1" title="Archive Bot"></iframe>
+</body>
+</html>`
+    };
+    pages.talkingPoints = {
+      label: "Talking Points",
+      html: `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Talking Points</title>
+  <style>
+    html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#eef2f6}
+    iframe{display:block;width:100%;height:100%;border:0;background:#eef2f6}
+  </style>
+</head>
+<body>
+  <iframe id="talkingPointsApp" src="talking-points-page.html?v=talking-points-2" title="Talking Points"></iframe>
+  <script>
+    let pendingTalkingPointsImport = null;
+    const talkingPointsApp = document.getElementById("talkingPointsApp");
+    talkingPointsApp.addEventListener("load", () => {
+      if (pendingTalkingPointsImport) talkingPointsApp.contentWindow.postMessage(pendingTalkingPointsImport, "*");
+    });
+    window.addEventListener("message", event => {
+      if (event.data && event.data.type === "archive-bot-import-talking-points") {
+        pendingTalkingPointsImport = event.data;
+        talkingPointsApp.contentWindow.postMessage(event.data, "*");
+      }
+    });
+  <\/script>
+</body>
+</html>`
+    };
     const tabs = document.querySelector(".workbook-tabs");
     const amReportActions = document.getElementById("amReportActions");
     const scwLatestPopup = document.getElementById("scwLatestPopup");
@@ -8866,6 +8915,7 @@ document.addEventListener('click',function(event){
     const chassisFrame = document.getElementById("chassisPageFrame");
     const excelFrame = document.getElementById("excelPageFrame");
     let frame = primaryFrame;
+    let pendingTalkingPointsArticle = null;
     let pendingExcelColorRulesRestore = null;
     let pendingExcelColorRulesRestoreTimer = 0;
     const bridgedPageHtml = new Map();
@@ -9252,7 +9302,7 @@ document.addEventListener('click',function(event){
         targetFrame.style.height = "calc(100vh - " + chromeHeight + "px)";
         return;
       }
-      if (activePage === "reading") {
+      if (["reading", "archiveBot", "talkingPoints"].includes(activePage)) {
         targetFrame.style.height = "calc(100vh - " + chromeHeight + "px)";
         targetFrame.style.minHeight = "calc(100vh - " + chromeHeight + "px)";
         return;
@@ -9866,6 +9916,7 @@ const net=getForecastRequestOnHandCount(pool,size)+drayIn-drayOut-getForecastReq
       );
       const style = `<style id="chassis-unified-request-board-v2">
 #forecastModal .forecast-chassis-request-board{display:block!important;padding:12px!important}
+#forecastModal #forecastChassisRequestBoard[hidden]{display:none!important}
 #forecastModal .forecast-request-unified-shell{width:100%!important;overflow:hidden!important;border:1px solid rgba(148,163,184,.28)!important;border-radius:14px!important;background:#080f1e!important;box-shadow:0 12px 30px rgba(2,6,23,.28),inset 0 1px 0 rgba(255,255,255,.035)!important}
 #forecastModal .forecast-request-unified-shell .forecast-request-table-wrap{width:100%!important;overflow-x:auto!important;scrollbar-color:rgba(148,163,184,.32) transparent!important}
 #forecastModal .forecast-request-unified-table{width:100%!important;min-width:1120px!important;table-layout:fixed!important;border-collapse:separate!important;border-spacing:0!important}
@@ -11510,6 +11561,8 @@ const script = `<style id="billing-unified-duplicate-review-v1">
 #moveModal .preview-table th.popup-sortable[aria-sort="descending"]::after{content:" ▼";color:#1d4ed8}
 #operationsTable #rampReviewHeader,#operationsTable #derampReviewHeader{display:block;width:42px;padding:0;text-align:center}
 #operationsTable #flipReviewHeader{text-align:left;padding-left:16px}
+#operationsTable tfoot td.value-slot-total-cell{padding-left:0;text-align:left}
+#operationsTable .value-slot-total{display:inline-flex;width:42px;align-items:center;justify-content:center}
 .pb-hours-pending-cell{position:relative;cursor:pointer}
 .pb-hours-pending-cell .cell-input{visibility:hidden}
 .pb-hours-pending-pill{position:absolute;inset:50% auto auto 50%;transform:translate(-50%,-50%);display:inline-flex;align-items:center;justify-content:center;min-height:20px;padding:2px 8px;border:1px solid #f59e0b;border-radius:999px;background:#fef3c7;color:#92400e;font-size:10px;font-weight:900;letter-spacing:.03em;line-height:1;white-space:nowrap}
@@ -11599,10 +11652,24 @@ const script = `<style id="billing-unified-duplicate-review-v1">
     });
   }
 
+  function alignValueSlotTotals() {
+    [1, 2, 8].forEach((columnIndex) => {
+      const cell = els.totalRow?.children[columnIndex];
+      if (!cell) return;
+      const value = cell.textContent;
+      const slot = document.createElement("span");
+      slot.className = "value-slot-total";
+      slot.textContent = value;
+      cell.classList.add("value-slot-total-cell");
+      cell.replaceChildren(slot);
+    });
+  }
+
   const baseRenderForPendingPbHours = render;
   render = function() {
     baseRenderForPendingPbHours();
     decoratePendingPbHours();
+    alignValueSlotTotals();
   };
 
   document.addEventListener("click", (event) => {
@@ -11779,10 +11846,92 @@ const script = `<style id="billing-unified-duplicate-review-v1">
     decorateClassificationReview(date, field);
   };
   decoratePendingPbHours();
+  alignValueSlotTotals();
 })();
 </scr${""}ipt>`;
       const bodyClose = html.toLowerCase().lastIndexOf("</body>");
       return bodyClose >= 0 ? html.slice(0, bodyClose) + injection + "\n" + html.slice(bodyClose) : html + injection;
+    }
+
+    function withReadingArchiveBotImport(html) {
+      if (!html || html.includes('id="archive-bot-prados-notes-import"')) return html;
+      const injection = `<scr${""}ipt id="archive-bot-prados-notes-import">
+(()=>{
+  window.addEventListener("message", async event => {
+    const payload = event.data;
+    if (!payload || payload.type !== "archive-bot-import-pdf" || !payload.pdfUrl) return;
+    const modal = document.getElementById("articleModal");
+    const input = document.getElementById("importPdfInput");
+    const status = document.getElementById("importStatus");
+    if (!modal || !input) return;
+    modal.classList.add("open");
+    modal.setAttribute("aria-hidden", "false");
+    if (status) {
+      status.textContent = "Receiving PDF from Archive Bot...";
+      status.style.color = "#38bdf8";
+    }
+    try {
+      const response = await fetch(payload.pdfUrl, { cache: "no-store" });
+      if (!response.ok) throw new Error("Archive Bot returned " + response.status);
+      const blob = await response.blob();
+      const fileName = String(payload.fileName || payload.title || "archived-article.pdf").replace(/[\\/:*?"<>|]+/g, "-");
+      const file = new File([blob], /\\.pdf$/i.test(fileName) ? fileName : fileName + ".pdf", { type: "application/pdf" });
+      const transfer = new DataTransfer();
+      transfer.items.add(file);
+      input.files = transfer.files;
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+    } catch (error) {
+      if (status) {
+        status.textContent = "PDF import failed: " + (error && error.message ? error.message : String(error));
+        status.style.color = "#f87171";
+      }
+    }
+  });
+})();
+</scr${""}ipt>`;
+      const bodyClose = html.toLowerCase().lastIndexOf("</body>");
+      return bodyClose >= 0 ? html.slice(0, bodyClose) + injection + "\n" + html.slice(bodyClose) : html + injection;
+    }
+
+    function withExcelArchivePdfReader(html) {
+      if (!html || typeof html !== "string" || html.includes("excel-archive-pdf-reader-v1")) return html;
+      html = html.replace(
+        '<button class="btn btn-white btn-small grid-color-tab-btn" id="colorTabBtn" type="button">Color Tab</button>',
+        '<button class="btn btn-white btn-small grid-color-tab-btn" id="colorTabBtn" type="button">Color Tab</button>\n            <button class="btn btn-white btn-small" id="openArchivePdfReader" type="button">PDF Reader</button>'
+      );
+      const style = `<style id="excel-archive-pdf-reader-v1">
+  .archive-pdf-reader{position:fixed;top:72px;left:50%;transform:translateX(-50%);z-index:95;width:min(980px,calc(100vw - 32px));height:min(760px,calc(100vh - 92px));min-width:440px;min-height:340px;display:grid;grid-template-rows:auto auto 1fr;overflow:hidden;resize:both;background:#eef2f6;border:1px solid #17243a;box-shadow:0 24px 60px rgba(15,23,42,.38)}
+  .archive-pdf-reader[hidden]{display:none}.archive-pdf-reader.dragging{opacity:.96}
+  .archive-pdf-reader-head{min-height:36px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:5px 8px 5px 13px;background:#12233e;color:#fff;cursor:move;user-select:none}
+  .archive-pdf-reader-title{font-size:13px;font-weight:950;letter-spacing:.08em;text-transform:uppercase}.archive-pdf-reader-head button{width:28px;height:26px;border:1px solid rgba(255,255,255,.3);border-radius:5px;background:rgba(255,255,255,.1);color:#fff;font-weight:950}
+  .archive-pdf-reader-toolbar{display:grid;grid-template-columns:minmax(190px,1fr) auto auto;gap:8px;align-items:center;padding:8px;background:#dce3ec;border-bottom:1px solid #bac5d3}
+  .archive-pdf-reader-toolbar select{min-width:0;height:34px;border:1px solid #aab6c5;border-radius:6px;background:#fff;padding:0 9px;color:#132036;font-size:12px;font-weight:750}
+  .archive-pdf-reader-zoom{display:flex;align-items:center;gap:5px}.archive-pdf-reader-zoom button,.archive-pdf-reader-refresh{height:32px;border:1px solid #9cabbc;border-radius:6px;background:#fff;color:#17243a;font-weight:900}.archive-pdf-reader-zoom button{width:32px}.archive-pdf-reader-zoom output{min-width:48px;text-align:center;font-size:11px;font-weight:900}
+  .archive-pdf-reader-stage{position:relative;min-height:0;background:#59616c}.archive-pdf-reader-frame{width:100%;height:100%;border:0;background:#fff}.archive-pdf-reader-empty{position:absolute;inset:0;display:grid;place-items:center;padding:30px;color:#fff;text-align:center;font-size:13px;font-weight:750;pointer-events:none}
+  @media(max-width:650px){.archive-pdf-reader{min-width:320px}.archive-pdf-reader-toolbar{grid-template-columns:1fr auto}.archive-pdf-reader-refresh{display:none}}
+</style>`;
+      html = html.replace("</style>", "</style>\n" + style);
+      const popup = `<section class="archive-pdf-reader" id="archivePdfReader" aria-label="Archive Bot PDF Reader" hidden>
+  <header class="archive-pdf-reader-head" id="archivePdfReaderDrag"><span class="archive-pdf-reader-title">Archive Bot PDF Reader</span><button id="closeArchivePdfReader" type="button" aria-label="Close PDF Reader">&times;</button></header>
+  <div class="archive-pdf-reader-toolbar"><select id="archivePdfArticleSelect" aria-label="Choose archived article"><option value="">Loading saved articles...</option></select><div class="archive-pdf-reader-zoom"><button id="archivePdfZoomOut" type="button" aria-label="Zoom out">−</button><output id="archivePdfZoomValue">100%</output><button id="archivePdfZoomIn" type="button" aria-label="Zoom in">+</button></div><button class="archive-pdf-reader-refresh" id="refreshArchivePdfReader" type="button">Refresh List</button></div>
+  <div class="archive-pdf-reader-stage"><iframe class="archive-pdf-reader-frame" id="archivePdfFrame" title="Archived article PDF"></iframe><div class="archive-pdf-reader-empty" id="archivePdfReaderEmpty">Choose an archived article to begin reading.</div></div>
+</section>`;
+      const script = `<script data-excel-archive-pdf-reader="v1">
+(() => {
+  const panel=document.getElementById("archivePdfReader"),openButton=document.getElementById("openArchivePdfReader"),closeButton=document.getElementById("closeArchivePdfReader"),select=document.getElementById("archivePdfArticleSelect"),frame=document.getElementById("archivePdfFrame"),empty=document.getElementById("archivePdfReaderEmpty"),zoomValue=document.getElementById("archivePdfZoomValue"),layoutKey="conglobal-archive-pdf-reader-layout-v1";
+  let zoom=100;
+  function showPdf(){const url=select.value;if(!url){frame.removeAttribute("src");empty.hidden=false;return}empty.hidden=true;frame.src=url+"#zoom="+zoom+"&view=FitH"}
+  async function loadLibrary(){select.innerHTML='<option value="">Loading saved articles...</option>';try{const response=await fetch("http://127.0.0.1:4317/api/reader-library",{cache:"no-store"});if(!response.ok)throw new Error("Archive Bot did not respond");const result=await response.json();const items=Array.isArray(result.library)?result.library:[];select.innerHTML='<option value="">Choose an archived article...</option>'+items.map(item=>'<option value="'+String(item.pdfUrl||"").replace(/&/g,"&amp;").replace(/"/g,"&quot;")+'">'+String(item.title||"Untitled article").replace(/&/g,"&amp;").replace(/</g,"&lt;")+'</option>').join("");empty.textContent=items.length?"Choose an archived article to begin reading.":"No saved Archive Bot PDFs were found."}catch(error){select.innerHTML='<option value="">Archive Bot unavailable</option>';empty.hidden=false;empty.textContent="Start Archive Bot, then click Refresh List."}}
+  function saveLayout(){const rect=panel.getBoundingClientRect();localStorage.setItem(layoutKey,JSON.stringify({left:Math.round(rect.left),top:Math.round(rect.top),width:Math.round(rect.width),height:Math.round(rect.height)}))}
+  function restoreLayout(){try{const saved=JSON.parse(localStorage.getItem(layoutKey)||"null");if(!saved)return;panel.style.transform="none";panel.style.left=Math.max(0,Math.min(saved.left,innerWidth-220))+"px";panel.style.top=Math.max(42,Math.min(saved.top,innerHeight-80))+"px";panel.style.width=Math.max(440,Math.min(saved.width,innerWidth-8))+"px";panel.style.height=Math.max(340,Math.min(saved.height,innerHeight-46))+"px"}catch(_){}}
+  openButton.addEventListener("click",()=>{panel.hidden=false;restoreLayout();loadLibrary()});closeButton.addEventListener("click",()=>{panel.hidden=true;saveLayout()});select.addEventListener("change",showPdf);document.getElementById("refreshArchivePdfReader").addEventListener("click",loadLibrary);
+  document.getElementById("archivePdfZoomOut").addEventListener("click",()=>{zoom=Math.max(50,zoom-25);zoomValue.textContent=zoom+"%";showPdf()});document.getElementById("archivePdfZoomIn").addEventListener("click",()=>{zoom=Math.min(200,zoom+25);zoomValue.textContent=zoom+"%";showPdf()});
+  document.getElementById("archivePdfReaderDrag").addEventListener("pointerdown",event=>{if(event.target.closest("button"))return;const start=panel.getBoundingClientRect(),startX=event.clientX,startY=event.clientY;panel.style.left=start.left+"px";panel.style.top=start.top+"px";panel.style.transform="none";panel.classList.add("dragging");const move=moveEvent=>{panel.style.left=Math.max(0,Math.min(start.left+moveEvent.clientX-startX,innerWidth-panel.offsetWidth))+"px";panel.style.top=Math.max(42,Math.min(start.top+moveEvent.clientY-startY,innerHeight-55))+"px"};const stop=()=>{panel.classList.remove("dragging");document.removeEventListener("pointermove",move);document.removeEventListener("pointerup",stop);saveLayout()};document.addEventListener("pointermove",move);document.addEventListener("pointerup",stop)});
+  new ResizeObserver(()=>{if(!panel.hidden)saveLayout()}).observe(panel);document.addEventListener("keydown",event=>{if(event.key==="Escape"&&!panel.hidden){panel.hidden=true;saveLayout()}});
+})();
+</scr${""}ipt>`;
+      const bodyClose = html.toLowerCase().lastIndexOf("</body>");
+      return bodyClose >= 0 ? html.slice(0, bodyClose) + popup + "\n" + script + "\n" + html.slice(bodyClose) : html + popup + script;
     }
 
     function bridgedHtmlForPage(id) {
@@ -11799,6 +11948,7 @@ const script = `<style id="billing-unified-duplicate-review-v1">
           pageHtml = withAmReportInboundConcernReadout(pageHtml);
           pageHtml = withAmReportDataImport(pageHtml);
         }
+        if (id === "reading") pageHtml = withReadingArchiveBotImport(pageHtml);
         if (id === "timeMd") pageHtml = withTimeMdResponsiveWidth(pageHtml);
         if (id === "timeOff") pageHtml = withTimeOffCurrentRosterSnapshot(withTimeOffCameInActions(withTimeOffMonthlyWeeklyStyle(pageHtml)));
         if (id === "billing") pageHtml = withBillingFlipStackReclassificationV1(withBillingExportDropdownV1(withBillingDuplicateStatusPillsV1(withBillingOperationalLphGuardV1(withBillingMoveDetailsIndexedDbV1(withBillingLiftFolderImportV1(withBillingImportFeedbackV1(withBillingLiftFlipPersistenceV2(withBillingUnifiedDuplicateReview(withBillingExcludeDuplicateRows(withBillingRampDerampMonthlyReview(withBillingRampDerampExcludedFlags(withBillingCountDuplicateRows(withBillingLphTargetPills(withBillingFlipDuplicateFlags(withBillingMonthlyFlipReview(withBillingStackReasonRouting(withBillingCompactDuplicateGroups(withBillingDailyShiftProjection(withBillingPerformanceArchiveIndexedDb(withBillingShiftLpmhGrid(withBillingSummaryExportStyles(withBillingLpmhSourcePair(withBillingHoursColumnOrder(withBillingDisplayFlagsMenu(withBillingPowerBiLiftDeltaFlag(withBillingPowerBiImport(withBillingQuotaSafePersistence(withBillingAnalyticsLiftFallback(withBillingAnalyticsArchiveHydration(withBillingManHoursPrecision(withBillingArchiveIndexedDb(withBillingSplitLiftAndChassisClear(withBillingHeaderRemoved(pageHtml))))))))))))))))))))))))))))))))));
@@ -11853,6 +12003,7 @@ const script = `<style id="billing-unified-duplicate-review-v1">
           pageHtml = withExcelInboundArchiveSavepoints(pageHtml);
           pageHtml = withExcelMorningMeetingPushFix(pageHtml);
           pageHtml = withExcelAfternoonMeeting(pageHtml);
+          pageHtml = withExcelArchivePdfReader(pageHtml);
         }
         if (id === "chassisStatus") {
           pageHtml = withChassisGreenExcelHero(pageHtml);
@@ -11976,7 +12127,7 @@ const script = `<style id="billing-unified-duplicate-review-v1">
       if (excelLphMenuButton) excelLphMenuButton.classList.toggle("active", ["excelView", "lphTracker"].includes(activePage));
       if (timesheetMenuButton) timesheetMenuButton.classList.toggle("active", ["timeMd", "idTracker"].includes(activePage));
       if (matrixMenuButton) matrixMenuButton.classList.toggle("active", ["matrix", "matrixWide"].includes(activePage));
-      if (obsidianMenuButton) obsidianMenuButton.classList.toggle("active", ["obsidian", "reading"].includes(activePage));
+      if (obsidianMenuButton) obsidianMenuButton.classList.toggle("active", ["obsidian", "reading", "archiveBot", "talkingPoints"].includes(activePage));
       amReportActions.hidden = activePage !== "amReport";
       syncScwColumnMode(activePage === "amReport");
       if (matrixControlsNav) matrixControlsNav.classList.toggle("visible", ["matrix", "matrixWide"].includes(activePage));
@@ -11997,6 +12148,11 @@ const script = `<style id="billing-unified-duplicate-review-v1">
           : pageHtml;
       } else {
         resizeFrame(frame);
+        if (activePage === "talkingPoints" && pendingTalkingPointsArticle && frame.contentWindow) {
+          const payload = pendingTalkingPointsArticle;
+          pendingTalkingPointsArticle = null;
+          frame.contentWindow.postMessage({ type: "archive-bot-import-talking-points", ...payload }, "*");
+        }
       }
     }
 
@@ -12399,7 +12555,7 @@ const script = `<style id="billing-unified-duplicate-review-v1">
         const menu = document.createElement("div");
         menu.className = "matrix-nav-menu obsidian-reading-nav-menu";
         menu.setAttribute("role", "menu");
-        [["obsidian", "Obsidian"], ["reading", "Reading"]].forEach(([pageId, label]) => {
+        [["obsidian", "Obsidian"], ["reading", "Reading"], ["talkingPoints", "Talking Points"], ["archiveBot", "Archive Bot"]].forEach(([pageId, label]) => {
           if (!pages[pageId]) return;
           const option = document.createElement("button");
           option.type = "button";
@@ -12511,6 +12667,11 @@ const script = `<style id="billing-unified-duplicate-review-v1">
     function handleWorkbookFrameLoad(event) {
       const loadedFrame = event.currentTarget;
       resizeFrame(loadedFrame);
+      if (loadedFrame === primaryFrame && loadedFrame.dataset.page === "talkingPoints" && pendingTalkingPointsArticle) {
+        const payload = pendingTalkingPointsArticle;
+        pendingTalkingPointsArticle = null;
+        loadedFrame.contentWindow.postMessage({ type: "archive-bot-import-talking-points", ...payload }, "*");
+      }
       if (loadedFrame === primaryFrame && loadedFrame.dataset.page === "amReport") {
         syncScwColumnMode(false);
       }
@@ -12542,6 +12703,17 @@ const script = `<style id="billing-unified-duplicate-review-v1">
     excelFrame.addEventListener("load", handleWorkbookFrameLoad);
     window.addEventListener("resize", () => resizeFrame(frame));
     window.addEventListener("message", (event) => {
+      if (event.data && event.data.type === "archive-bot-send-to-talking-points" && event.origin === "http://127.0.0.1:4317") {
+        pendingTalkingPointsArticle = {
+          title: String(event.data.title || "Archived article"),
+          author: String(event.data.author || ""),
+          published: String(event.data.published || ""),
+          fileName: String(event.data.fileName || "archived-article.pdf"),
+          pdfUrl: String(event.data.pdfUrl || "")
+        };
+        selectPage("talkingPoints");
+        return;
+      }
       if (event.data && event.data.type === "conglobal-chassis-forecast-state-request" && event.source === chassisFrame.contentWindow) {
         let state = {};
         try {
