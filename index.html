@@ -11797,6 +11797,22 @@ const script = `<style id="billing-unified-duplicate-review-v1">
       return html.replace("</head>", style + "\n</head>");
     }
 
+    function withChassisRequestTableBorders(html) {
+      if (!html || typeof html !== "string" || html.includes("chassis-request-table-borders-v1")) return html;
+      const style = `<style id="chassis-request-table-borders-v1">
+body #forecastExcelView .forecast-excel-block.request .forecast-excel-table {
+  border-collapse: collapse !important;
+  border: 1px solid #334155 !important;
+}
+body #forecastExcelView .forecast-excel-block.request .forecast-excel-table th,
+body #forecastExcelView .forecast-excel-block.request .forecast-excel-table td {
+  border: 1px solid #334155 !important;
+}
+</style>`;
+      const headClose = html.toLowerCase().lastIndexOf("</head>");
+      return headClose >= 0 ? html.slice(0, headClose) + style + "\n" + html.slice(headClose) : style + html;
+    }
+
     function withChassisLowStockWarningRules(html) {
       if (!html || typeof html !== "string" || html.includes("chassis-low-stock-warning-rules-v1")) return html;
       const marker = "<!-- chassis-low-stock-warning-rules-v1 -->";
@@ -12373,6 +12389,7 @@ const script = `<style id="billing-unified-duplicate-review-v1">
           pageHtml = withChassisGreenExcelHero(pageHtml);
           pageHtml = withChassisNetTextOnePixelLower(pageHtml);
           pageHtml = withChassisScrollablePreviewSections(pageHtml);
+          pageHtml = withChassisRequestTableBorders(pageHtml);
           pageHtml = withChassisLowStockWarningRules(pageHtml);
           pageHtml = withChassisForecastPersistence(pageHtml);
           pageHtml = withChassisInventoryRequestBoardRefresh(pageHtml);
