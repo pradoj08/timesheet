@@ -5720,6 +5720,68 @@ tfoot .lph-target-pill.below-target{background:#fecaca;color:#7f1d1d}
       return headClose >= 0 ? html.slice(0, headClose) + style + "\n" + html.slice(headClose) : style + html;
     }
 
+    function withExcelSsResolverNumericMatching(html) {
+      if (!html || typeof html !== "string" || html.includes("excel-ss-resolver-numeric-matching-v1")) return html;
+      html = html.replace(
+        `  function ssParseCarHeader(line) {`,
+        `  function ssNumericCarId(value) {
+    const digits = ssNormalizeCarId(value).replace(/\\D/g, "").replace(/^0+(?=\\d)/, "");
+    return digits.length >= 3 ? digits : "";
+  }
+
+  function ssParseCarHeader(line) {`
+      );
+      html = html.replace(
+        `    const recordMap = new Map();
+    records.forEach(record => {
+      const key = ssNormalizeCarId(record.exampleCar);
+      if (key && !recordMap.has(key)) recordMap.set(key, record);
+    });`,
+        `    const recordMap = new Map();
+    const numericRecordMap = new Map();
+    records.forEach(record => {
+      const key = ssNormalizeCarId(record.exampleCar);
+      if (key && !recordMap.has(key)) recordMap.set(key, record);
+      const numericKey = ssNumericCarId(record.exampleCar);
+      if (!numericKey) return;
+      if (!numericRecordMap.has(numericKey)) numericRecordMap.set(numericKey, record);
+      else numericRecordMap.set(numericKey, null);
+    });`
+      );
+      html = html.replace(
+        `      const record = recordMap.get(row.carKey || ssNormalizeCarId(row.car));`,
+        `      const exactKey = row.carKey || ssNormalizeCarId(row.car);
+      const record = recordMap.get(exactKey) || numericRecordMap.get(ssNumericCarId(exactKey));`
+      );
+      return html.replace("</head>", '<meta name="excel-ss-resolver-numeric-matching-v1" content="enabled">\n</head>');
+    }
+
+    function withExcelSsResolverDirectSend(html) {
+      if (!html || typeof html !== "string" || html.includes("excel-ss-resolver-direct-send-v1")) return html;
+      html = html
+        .replace(/>Copy SS Columns<\/button>/g, ">Send SS Columns</button>")
+        .replace(/Paste traces, then parse\. Copy SS Columns copies only SS START and SS END for direct paste into the dwell table\./g, "Paste traces, then parse. Send SS Columns transfers SS START and SS END directly into the dwell table.")
+        .replace('$("#ssCopyButton").addEventListener("click", ssCopyColumns);', '$("#ssCopyButton").addEventListener("click", ssApplyToDwellTable);');
+      return html.replace("</head>", '<meta name="excel-ss-resolver-direct-send-v1" content="enabled">\n</head>');
+    }
+
+    function withExcelResolveSsButtonOrder(html) {
+      if (!html || typeof html !== "string" || html.includes("excel-resolve-ss-button-order-v1")) return html;
+      const resolveButtonPattern = /\s*<button class="btn btn-light" id="resolveSsBtn"[^>]*>Resolve SS<\/button>/;
+      const match = html.match(resolveButtonPattern);
+      if (match) {
+        html = html.replace(resolveButtonPattern, "");
+        const movedButton = match[0]
+          .trim()
+          .replace('class="btn btn-light"', 'class="btn btn-white btn-small"');
+        html = html.replace(
+          '<button class="btn btn-danger btn-small" id="clearDwellBtn" type="button">Clear SS Inputs</button>',
+          movedButton + '\n          <button class="btn btn-danger btn-small" id="clearDwellBtn" type="button">Clear SS Inputs</button>'
+        );
+      }
+      return html.replace("</head>", '<meta name="excel-resolve-ss-button-order-v1" content="enabled">\n</head>');
+    }
+
     function withExcelCurrentRosterSnapshotParity(html) {
       if (!html || typeof html !== "string" || html.includes("excel-current-roster-snapshot-parity-v1")) return html;
       const patch = `<style id="excel-current-roster-snapshot-parity-styles-v1">
@@ -5934,7 +5996,7 @@ tfoot .lph-target-pill.below-target{background:#fecaca;color:#7f1d1d}
     ["top-action-group-yellow","Inbound tools",["toggleInboundPlanner","inboundArchiveBtn"]],
     ["top-action-group-green","Daily coordination tools",["toggleTodayRoster","toggleCompactChecklist","toggleUrgentNotes"]],
     ["top-action-group-orange","Work calculation tools",["toggleFootageCalc","toggleCurrentWork"]],
-    ["top-action-group-purple","Input and resolution tools",["resolveSsBtn","toggleLphInputMenu"]]
+    ["top-action-group-purple","Input tools",["toggleLphInputMenu"]]
   ];
   var buttons={};
   groups.forEach(function(spec){spec[2].forEach(function(id){buttons[id]=document.getElementById(id)})});
@@ -12368,6 +12430,9 @@ body #forecastExcelView .forecast-excel-block.request .forecast-excel-table td {
           pageHtml = withExcelSelectionHighlight(pageHtml);
           pageHtml = withExcelRawTrackColumnOrder(pageHtml);
           pageHtml = withExcelRawTrackFontSize(pageHtml);
+          pageHtml = withExcelSsResolverNumericMatching(pageHtml);
+          pageHtml = withExcelSsResolverDirectSend(pageHtml);
+          pageHtml = withExcelResolveSsButtonOrder(pageHtml);
           pageHtml = withExcelToolbarGroups(pageHtml);
           pageHtml = withExcelArrivalResolution(pageHtml);
           pageHtml = withExcelFutureDwellProjection(pageHtml);

@@ -3633,7 +3633,6 @@
         <button class="btn btn-light" id="toggleCurrentWork" type="button">Current Work</button>
       </div>
       <div class="top-action-group top-action-group-purple" aria-label="Input and resolution tools">
-        <button class="btn btn-light" id="resolveSsBtn" type="button" onclick="document.getElementById('ssResolverModal').hidden=false;document.getElementById('ssResolverModal').classList.add('open');document.body.classList.add('modal-open')">Resolve SS</button>
         <button class="btn btn-light" id="toggleLphInputMenu" type="button">Input Menu</button>
       </div>
     </div>
@@ -3857,6 +3856,7 @@
       <summary class="details-head">
         <div class="panel-title">Non-SS Dwell Adjustment</div>
         <div class="dwell-summary-actions">
+          <button class="btn btn-white btn-small" id="resolveSsBtn" type="button" onclick="document.getElementById('ssResolverModal').hidden=false;document.getElementById('ssResolverModal').classList.add('open');document.body.classList.add('modal-open')">Resolve SS</button>
           <button class="btn btn-danger btn-small" id="clearDwellBtn" type="button">Clear SS Inputs</button>
           <span class="chev">&#9662;</span>
         </div>
@@ -4069,7 +4069,7 @@
           <div class="ssr-label">Paste SS Traces To Dwell Table</div>
           <div class="ssr-actions">
             <button class="ssr-action ssr-apply" id="ssApplyButton" type="button">Apply To Dwell Table</button>
-            <button class="ssr-action ssr-copy" id="ssCopyButton" type="button">Copy SS Columns</button>
+            <button class="ssr-action ssr-copy" id="ssCopyButton" type="button">Send SS Columns</button>
             <button class="ssr-action ssr-clear" id="ssClearButton" type="button">Clear</button>
             <button class="ssr-action ssr-parse" id="ssParseButton" type="button">Parse</button>
           </div>
@@ -4077,7 +4077,7 @@
 
         <textarea class="ssr-textarea" id="ssTraceInput" spellcheck="false" autocomplete="off" placeholder="Paste one or more car traces here. Output identifies the car and extracts SS START and SS END."></textarea>
         <textarea class="ssr-textarea" id="ssColumnOutput" spellcheck="false" readonly aria-label="Parsed Excel columns" placeholder="SS START&#9;SS END"></textarea>
-        <div class="ssr-summary" id="ssResolverSummary" aria-live="polite">Paste traces, then parse. Copy SS Columns copies only SS START and SS END for direct paste into the dwell table.</div>
+        <div class="ssr-summary" id="ssResolverSummary" aria-live="polite">Paste traces, then parse. Send SS Columns transfers SS START and SS END directly into the dwell table.</div>
         <div class="ssr-grid" id="ssResultGrid" aria-label="Parsed SS results">
           <div class="ssr-grid-head">Car</div>
           <div class="ssr-grid-head">SS Start</div>
@@ -9017,6 +9017,11 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     return clean(value).toUpperCase().replace(/[^A-Z0-9]/g, "");
   }
 
+  function ssNumericCarId(value) {
+    const digits = ssNormalizeCarId(value).replace(/\D/g, "").replace(/^0+(?=\d)/, "");
+    return digits.length >= 3 ? digits : "";
+  }
+
   function ssParseCarHeader(line) {
     const raw = String(line == null ? "" : line);
     let match = raw.match(/\b([A-Z]{2,5})\s*[- ]?\s*(\d{1,8})\s*View\b/i);
@@ -9137,7 +9142,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     ssRenderGrid(rows);
 
     if (!ssRawClean(ssTraceInput.value)) {
-      ssResolverSummary.textContent = "Paste traces, then parse. Copy SS Columns copies only SS START and SS END for direct paste into the dwell table.";
+      ssResolverSummary.textContent = "Paste traces, then parse. Send SS Columns transfers SS START and SS END directly into the dwell table.";
     } else if (!rows.length) {
       ssResolverSummary.textContent = "No car headers found. Use trace sections with headers like WRWK 120569View.";
     } else {
@@ -9206,9 +9211,14 @@ https://github.com/nodeca/pako/blob/main/LICENSE
 
     const records = computed && Array.isArray(computed.nonSSBlocks) ? computed.nonSSBlocks : [];
     const recordMap = new Map();
+    const numericRecordMap = new Map();
     records.forEach(record => {
       const key = ssNormalizeCarId(record.exampleCar);
       if (key && !recordMap.has(key)) recordMap.set(key, record);
+      const numericKey = ssNumericCarId(record.exampleCar);
+      if (!numericKey) return;
+      if (!numericRecordMap.has(numericKey)) numericRecordMap.set(numericKey, record);
+      else numericRecordMap.set(numericKey, null);
     });
 
     state.dwellOverrides = state.dwellOverrides || {};
@@ -9218,7 +9228,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     let noUsableTimes = 0;
 
     rows.forEach(row => {
-      const record = recordMap.get(row.carKey || ssNormalizeCarId(row.car));
+      const exactKey = row.carKey || ssNormalizeCarId(row.car);
+      const record = recordMap.get(exactKey) || numericRecordMap.get(ssNumericCarId(exactKey));
       if (!record) {
         unmatched++;
         return;
@@ -9280,7 +9291,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     ssShowToast(rows.length ? `Parsed ${rows.length} car${rows.length === 1 ? "" : "s"}` : "No car trace headers found", !rows.length);
   });
   $("#ssClearButton").addEventListener("click", ssClearAll);
-  $("#ssCopyButton").addEventListener("click", ssCopyColumns);
+  $("#ssCopyButton").addEventListener("click", ssApplyToDwellTable);
   $("#ssApplyButton").addEventListener("click", ssApplyToDwellTable);
   ssTraceInput.addEventListener("input", ssParseAndRender);
   ssTraceInput.addEventListener("paste", () => setTimeout(ssParseAndRender, 0));
