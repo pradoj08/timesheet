@@ -1740,7 +1740,7 @@
     next.start=punchTime(minutes(document.getElementById("amqClockIn").value,180));
     next.end=punchTime(minutes(document.getElementById("amqClockOut").value,900));
     if (index>=0) rows[index]=next; else rows.push(next);
-    write(keys.punches,rows); localStorage.removeItem(keys.snapshot);
+    write(keys.punches,rows);
     refreshRoster();
     message.textContent=selectedName+" clock times saved for "+friendlyDate()+".";
   }
@@ -1757,7 +1757,7 @@
     var statuses=read(keys.statuses,{}); if (!statuses[day]) statuses[day]={};
     if (!status || status==="clear" || status==="vac" || status==="sic") delete statuses[day][nameKey]; else statuses[day][nameKey]=status;
     if (!Object.keys(statuses[day]).length) delete statuses[day];
-    write(keys.statuses,statuses); localStorage.removeItem(keys.snapshot);
+    write(keys.statuses,statuses);
     selectedRowWasWorking=workingStatus(status);
     refreshRoster(); syncButtons();
     var labels={here:"Here",sic:"Sick",vac:"Vacation",calledoff:"Called Off",out:"Out",ncns:"NCNS",bnsf:"BNSF",unknown:"Unknown",clear:"Unselected"};
@@ -1768,7 +1768,7 @@
     var assignments=state[day][selectedShift] && typeof state[day][selectedShift]==="object" ? Object.assign({},state[day][selectedShift]) : {};
     Object.keys(assignments).forEach(function(name){if(matchesName(name,selectedName) || ((role==="crane1"||role==="crane2") && assignments[name]===role)) delete assignments[name];});
     if (role!=="clear" && roleLabels[role]) assignments[selectedName]=role;
-    state[day][selectedShift]=assignments; write(keys.roles,state); localStorage.removeItem(keys.snapshot);
+    state[day][selectedShift]=assignments; write(keys.roles,state);
     refreshRoster(); syncButtons();
     message.textContent=selectedName+" role updated to "+(role==="clear"?"No role":roleLabels[role])+".";
   }
@@ -1838,9 +1838,15 @@
     });
   }
   function refreshRoster() {
+    function requestFreshRoster(targetWindow) {
+      try { targetWindow.postMessage({type:"conglobal-refresh-current-day-roster"},"*"); } catch (_) {}
+      try { for (var index=0; index<targetWindow.frames.length; index+=1) requestFreshRoster(targetWindow.frames[index]); } catch (_) {}
+    }
+    requestFreshRoster(window);
     document.querySelectorAll("iframe").forEach(function(frame){
       try { if (frame.contentWindow && typeof frame.contentWindow.renderAmTodayRoster==="function") frame.contentWindow.renderAmTodayRoster(); decorateDocument(frame.contentDocument); } catch (_) {}
     });
+    window.dispatchEvent(new CustomEvent("conglobal-am-roster-data-changed"));
   }
   function openQuickActions(name, shift, wasWorking) {
     if (!name || /no roster entries/i.test(name)) return;
@@ -1911,8 +1917,12 @@
       return bodyClose >= 0 ? html.slice(0, bodyClose) + patch + "\n" + html.slice(bodyClose) : html + patch;
     }
 
-    function withAmReportFloatingRoster(html) {
+    function withAmReportFloatingRoster(html, liveRosterHtml) {
       if (!html || typeof html !== "string" || html.includes("am-floating-today-roster-patch")) return html;
+      const liveRosterSource = JSON.stringify(String(liveRosterHtml || ""))
+        .replace(/</g, "\\u003c")
+        .replace(/\u2028/g, "\\u2028")
+        .replace(/\u2029/g, "\\u2029");
       const patch = `
 <style id="am-floating-today-roster-styles">
   #amFloatingTodayRoster[hidden] { display: none !important; }
@@ -1994,6 +2004,27 @@
     color: #fff;
   }
   #amFloatingTodayRoster .amfr-card { max-height: none; overflow: visible; }
+  #amFloatingTodayRoster .am-live-timesheet-roster-frame {
+    display: block;
+    width: 100%;
+    height: 430px;
+    border: 0;
+    background: transparent;
+  }
+  #amFloatingTodayRoster .am-today-roster-loading {
+    display: grid;
+    min-height: 118px;
+    place-items: center;
+    padding: 18px;
+    border: 1px solid #9fb0c7;
+    background: #f8fafc;
+    color: #334155;
+    font-size: 13px;
+    font-weight: 850;
+    line-height: 1.4;
+    text-align: center;
+  }
+  #amFloatingTodayRoster .am-today-roster-unavailable { color: #9a3412; }
   #amFloatingTodayRoster .am-today-roster-date {
     display: grid;
     grid-template-columns: 1fr auto 1fr;
@@ -2021,6 +2052,50 @@
     font-size: 10px;
     font-weight: 950;
     letter-spacing: .04em;
+  }
+  #amFloatingTodayRoster .am-today-roster-time-controls {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 5px;
+    padding: 5px 6px;
+    border-bottom: 1px solid #aab4c2;
+    background: #e8edf3;
+  }
+  #amFloatingTodayRoster .am-today-roster-time-field {
+    position: relative;
+    min-width: 0;
+  }
+  #amFloatingTodayRoster .am-today-roster-time-field::before {
+    content: attr(data-label);
+    position: absolute;
+    top: -4px;
+    left: 5px;
+    z-index: 1;
+    padding: 0 2px;
+    background: #e8edf3;
+    color: #53617a;
+    font-size: 7px;
+    font-weight: 950;
+    letter-spacing: .06em;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+  #amFloatingTodayRoster .am-today-roster-time {
+    width: 100%;
+    min-width: 0;
+    height: 27px;
+    padding: 5px 2px 1px 5px;
+    border: 1px solid #34455e;
+    border-radius: 6px;
+    outline: 0;
+    background: #101c31;
+    color: #fff;
+    color-scheme: dark;
+    font: 900 10px/1 "SFMono-Regular", Consolas, monospace;
+  }
+  #amFloatingTodayRoster .am-today-roster-time:focus {
+    border-color: #f59e0b;
+    box-shadow: 0 0 0 2px rgba(245, 158, 11, .25);
   }
   #amFloatingTodayRoster .am-today-roster-rows { min-height: 20px; }
   #amFloatingTodayRoster .am-today-roster-row {
@@ -2168,7 +2243,16 @@
   #amFloatingTodayRoster .amfr-checklist-status.missed { border-color: #efb4b7; background: #fff0f0; color: #a80f17; }
   #amFloatingTodayRoster .amfr-checklist-status.skipped { border-color: #e8cf9e; background: #fff7e7; color: #8a5a00; }
   #amFloatingTodayRoster .amfr-checklist-empty { padding: 20px 12px; color: #64748b; font-size: 10px; font-weight: 800; text-align: center; }
-  #amScwLatestHost { display: none; width: 100%; margin: 8px 0 0; }
+  #amScwLatestHost {
+    display: none;
+    position: fixed;
+    top: 8px;
+    left: 8px;
+    z-index: 9997;
+    width: calc((100vw - 16px) / 3);
+    margin: 0;
+    pointer-events: auto;
+  }
   body.am-scw-left-column #amScwLatestHost { display: block; }
   #amScwLatestHost .scw-popup[hidden] { display: none !important; }
   #amScwLatestHost .scw-popup {
@@ -2232,6 +2316,7 @@
 (function(){
   if (window.__amFloatingTodayRosterInstalled) return;
   window.__amFloatingTodayRosterInstalled = true;
+  var liveRosterHtml=${liveRosterSource};
   var root = document.getElementById("amFloatingTodayRoster");
   var card = document.getElementById("amFloatingTodayRosterCard");
   var dialog = root.querySelector(".amfr-dialog");
@@ -2241,7 +2326,7 @@
   var openTimer = 0;
   var hookFramesTimer = 0;
   var slotSyncTimer = 0;
-  var rosterWanted = true;
+  var rosterWanted = false;
   var resetArmedUntil = 0;
   var resetTimer = 0;
   var checklistContent = document.getElementById("amFloatingChecklistContent");
@@ -2502,10 +2587,20 @@
     sourceObserver.observe(sourceCard, {childList:true, subtree:true, characterData:true, attributes:true});
   }
 
-  function renderCurrentRosterSnapshot() {
+  function renderCurrentRosterSnapshot(minimumUpdatedAt) {
     var snapshot=readStored("conglobal-current-day-roster-snapshot-v1",null);
     var today=new Date();
     if (!snapshot || snapshot.date!==localDateKey(today) || !snapshot.shifts) return false;
+    if (minimumUpdatedAt && Number(snapshot.updatedAt||0)<minimumUpdatedAt) return false;
+    if (snapshot.todayHtml) {
+      card.classList.add("staff-list-view","three-day-mode","timesheet-roster-mirror");
+      card.innerHTML='<style data-timesheet-roster-mirror-styles>'+String(snapshot.todayCss||"")+'</style>'+snapshot.todayHtml;
+      applyMirrorSharedState();
+      if (sourceObserver) sourceObserver.disconnect();
+      sourceObserver=null;
+      return true;
+    }
+    card.classList.remove("staff-list-view","three-day-mode","timesheet-roster-mirror");
     function escapeHtml(value) {
       return String(value==null?"":value).replace(/[&<>"]/g,function(character){
         return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[character];
@@ -2524,8 +2619,13 @@
     }
     function shiftHtml(key,label) {
       var rows=Array.isArray(snapshot.shifts[key])?snapshot.shifts[key]:[];
+      var defaults=key==="second"?{start:"15:00",end:"03:00"}:{start:"03:00",end:"15:00"};
+      var times=snapshot.times&&snapshot.times[key]||defaults;
+      var timeControls='<div class="am-today-roster-time-controls" data-roster-shift="'+key+'">'+
+        '<label class="am-today-roster-time-field" data-label="Start"><input class="am-today-roster-time" type="time" step="600" aria-label="'+label+' scheduled clock in" title="'+label+' scheduled clock in" data-roster-time="start" value="'+escapeHtml(times.start||defaults.start)+'"></label>'+
+        '<label class="am-today-roster-time-field" data-label="End"><input class="am-today-roster-time" type="time" step="600" aria-label="'+label+' scheduled clock out" title="'+label+' scheduled clock out" data-roster-time="end" value="'+escapeHtml(times.end||defaults.end)+'"></label></div>';
       return '<section class="am-today-roster-shift"><div class="am-today-roster-shift-head">'+label+'</div>' +
-        '<div class="am-today-roster-rows">'+(rows.map(rowHtml).join("")||'<div class="am-today-roster-row is-unknown"><span class="am-today-roster-name">No roster entries</span></div>')+'</div></section>';
+        timeControls+'<div class="am-today-roster-rows">'+(rows.map(rowHtml).join("")||'<div class="am-today-roster-row is-unknown"><span class="am-today-roster-name">No roster entries</span></div>')+'</div></section>';
     }
     var totals=snapshot.totals||{};
     card.innerHTML='<div class="am-today-roster-date">' +
@@ -2539,6 +2639,47 @@
     return true;
   }
 
+  function applyMirrorSharedState() {
+    if (!card.classList.contains("timesheet-roster-mirror")) return;
+    var day=localDateKey(new Date());
+    var statuses=readStored("conglobal-time-off-day-status-v1",{});
+    var dayStatuses=statuses&&statuses[day]||{};
+    var timeOff=readStored("conglobal-time-off-calendar-v1",{});
+    var awayRows=Array.isArray(timeOff&&timeOff[day])?timeOff[day]:[];
+    function normalizeName(value){return String(value||"").toLowerCase().replace(/[^a-z0-9]+/g," ").replace(/\bbranford atton\b/g,"branford alton").trim();}
+    function statusFor(name){
+      var normalized=normalizeName(name);
+      var away=awayRows.find(function(entry){return normalizeName(entry&&entry.name)===normalized;});
+      if(away)return String(away.code||"").toLowerCase()==="sic"?"sic":"vac";
+      return String(dayStatuses[normalized]||"").toLowerCase();
+    }
+    var excluded=["vac","sic","flo","hol","other-away","bnsf","called-off","out","ncns","unknown","out-status","came-in","flip-line","bn"];
+    var statusMap={
+      sic:{classes:["sic","out-status"],flag:"(S)",label:"Sick"},vac:{classes:["vac","out-status"],flag:"(V)",label:"Vacation"},
+      calledoff:{classes:["called-off","out-status"],flag:"(CO)",label:"Called off"},out:{classes:["out","out-status"],flag:"(O)",label:"Out"},
+      ncns:{classes:["ncns","out-status"],flag:"(NC)",label:"No call no show"},bnsf:{classes:["bnsf","out-status"],flag:"(BN)",label:"BNSF"},
+      unknown:{classes:["unknown","out-status"],flag:"(??)",label:"Unknown status"},here:{classes:["came-in"],flag:"(✓)",label:"Here"},
+      camein:{classes:["came-in"],flag:"(+)",label:"Came in"},flipline:{classes:["flip-line"],flag:"(FL)",label:"Flip Line"}
+    };
+    card.querySelectorAll(".staff-pill[data-status-name]").forEach(function(pill){
+      var status=statusFor(pill.getAttribute("data-status-name"));
+      excluded.forEach(function(name){pill.classList.remove(name);});
+      var flags=pill.querySelector(".staff-pill-flags");
+      if(flags)flags.querySelectorAll(".status-flag").forEach(function(node){node.remove();});
+      var detail=statusMap[status];
+      if(detail){
+        detail.classes.forEach(function(name){pill.classList.add(name);});
+        pill.title=pill.getAttribute("data-status-name")+" - "+detail.label.toLowerCase();
+        if(flags){var flag=document.createElement("small");flag.className="status-flag";flag.setAttribute("data-am-live-status","1");flag.textContent=detail.flag;flags.appendChild(flag);}
+      }
+    });
+    card.querySelectorAll(".staff-shift").forEach(function(section,index){
+      var working=Array.from(section.querySelectorAll(".staff-pill[data-status-name]")).filter(function(pill){return !pill.matches(".out-status");}).length;
+      var total=card.querySelectorAll(".staff-day-total b")[index];
+      if(total)total.textContent=String(working);
+    });
+  }
+
   function requestCurrentRosterSnapshot(targetWindow) {
     try { targetWindow.postMessage({type:"conglobal-publish-current-day-roster"},"*"); } catch (_) {}
     try {
@@ -2548,59 +2689,59 @@
     } catch (_) {}
   }
 
-  function renderFloatingRoster() {
-    if (renderCurrentRosterSnapshot()) return true;
-    var frame = todayFrame();
-    if (!frame || !frame.contentDocument) return false;
-    try {
-      if (frame.contentWindow && typeof frame.contentWindow.renderAmTodayRoster === "function") {
-        frame.contentWindow.renderAmTodayRoster();
-      } else if (frame.contentWindow && typeof frame.contentWindow.eval === "function") {
-        frame.contentWindow.eval('if(typeof renderAmTodayRoster==="function")renderAmTodayRoster()');
-      }
-      var popup = frame.contentDocument.getElementById("amTodayRosterPopup");
-      var button = frame.contentDocument.getElementById("amTodayRosterButton");
-      var sourceCard = frame.contentDocument.getElementById("amTodayRosterCard");
-      if (sourceCard && !sourceCard.querySelector(".am-today-roster-columns") && button) {
-        frame.contentDocument.__amFloatingRosterPriming = true;
-        try { button.click(); } catch (_) {}
-        frame.contentDocument.__amFloatingRosterPriming = false;
-      }
-      if (popup) popup.hidden = true;
-      if (button) button.setAttribute("aria-expanded", "false");
-      if (!sourceCard || !sourceCard.querySelector(".am-today-roster-columns")) return false;
-      card.innerHTML = sourceCard.innerHTML;
-      observeSource(sourceCard);
-      return true;
-    } catch (_) { return false; }
+  function publishRosterTimeChange(input) {
+    var controls=input.closest("[data-roster-shift]");
+    var shift=controls&&controls.getAttribute("data-roster-shift");
+    var boundary=input.getAttribute("data-roster-time");
+    if (!shift || !boundary || !input.value) return;
+    var snapshot=readStored("conglobal-current-day-roster-snapshot-v1",null);
+    if (snapshot && snapshot.times && snapshot.times[shift]) {
+      snapshot.times[shift][boundary]=input.value;
+      snapshot.updatedAt=Date.now();
+      writeStored("conglobal-current-day-roster-snapshot-v1",snapshot);
+    }
+    var savedTimes=readStored("conglobal-scheduled-shift-times-v1",{});
+    var day=localDateKey(new Date());
+    if (!savedTimes[day] || typeof savedTimes[day]!=="object") savedTimes[day]={};
+    if (!savedTimes[day][shift] || typeof savedTimes[day][shift]!=="object") savedTimes[day][shift]={};
+    savedTimes[day][shift][boundary]=input.value;
+    writeStored("conglobal-scheduled-shift-times-v1",savedTimes);
+    function send(targetWindow) {
+      try { targetWindow.postMessage({type:"conglobal-update-current-day-roster-time",shift:shift,boundary:boundary,value:input.value},"*"); } catch (_) {}
+      try { for (var index=0; index<targetWindow.frames.length; index+=1) send(targetWindow.frames[index]); } catch (_) {}
+    }
+    send(window);
+    window.setTimeout(function(){ requestCurrentRosterSnapshot(window); },80);
+  }
+
+  function renderFloatingRoster(minimumUpdatedAt) {
+    if (renderCurrentRosterSnapshot(minimumUpdatedAt)) return true;
+    return false;
+  }
+
+  function ensureLiveRosterFrame() {
+    var liveFrame=card.querySelector(".am-live-timesheet-roster-frame");
+    if (liveFrame) return liveFrame;
+    card.classList.remove("staff-list-view","three-day-mode","timesheet-roster-mirror");
+    card.innerHTML="";
+    liveFrame=document.createElement("iframe");
+    liveFrame.className="am-live-timesheet-roster-frame";
+    liveFrame.title="Live Timesheet current day roster";
+    liveFrame.setAttribute("scrolling","no");
+    liveFrame.srcdoc=liveRosterHtml;
+    card.appendChild(liveFrame);
+    return liveFrame;
   }
 
   function openFloatingRoster() {
     rosterWanted = true;
-    if (openInProgress) return;
-    openInProgress = true;
-    var request = ++openRequest;
-    var attempts = 0;
+    openRequest += 1;
+    openInProgress = false;
     if (root.hidden) syncYesterdayWeatherSlot(false);
-    requestCurrentRosterSnapshot(window);
-    function attemptRender() {
-      if (request !== openRequest || !rosterWanted) {
-        openInProgress = false;
-        return;
-      }
-      attempts += 1;
-      if (renderFloatingRoster()) {
-        openInProgress = false;
-        root.hidden = false;
-        window.requestAnimationFrame(function(){
-          if (request === openRequest && !root.hidden) syncYesterdayWeatherSlot(true);
-        });
-        return;
-      }
-      if (attempts < 30) window.setTimeout(attemptRender, 150);
-      else openInProgress = false;
-    }
-    attemptRender();
+    root.hidden = false;
+    var liveFrame=ensureLiveRosterFrame();
+    try{liveFrame.contentWindow.postMessage({type:"conglobal-am-refresh-live-roster"},"*");}catch(_){}
+    window.requestAnimationFrame(function(){ if (rosterWanted && !root.hidden) syncYesterdayWeatherSlot(true); });
   }
 
   function scheduleOpenFloatingRoster(delay) {
@@ -2637,6 +2778,14 @@
   }
 
   function openRowQuickActions(row) {
+    if (row.matches(".staff-pill[data-status-name]")) {
+      var mirrorSection=row.closest(".staff-shift");
+      var mirrorSections=Array.from(card.querySelectorAll(".staff-shift"));
+      if (typeof window.openAmRosterQuickActions === "function") {
+        window.openAmRosterQuickActions(row.getAttribute("data-status-name"),mirrorSections.indexOf(mirrorSection)===1?"second":"first",!row.matches(".out,.vac,.sic,.called-off,.ncns,.bnsf,.unknown,.out-status"));
+      }
+      return;
+    }
     var nameNode = row.querySelector(".am-today-roster-name");
     var name = nameNode && (nameNode.getAttribute("title") || nameNode.textContent.trim());
     var section = row.closest(".am-today-roster-shift");
@@ -2757,7 +2906,19 @@
   }
 
   card.addEventListener("click", function(event){
-    var row = event.target.closest(".am-today-roster-row");
+    var mirrorAction=event.target.closest(".timesheet-roster-mirror .staff-shift h3,.timesheet-roster-mirror .staff-day-button,.timesheet-roster-mirror .staff-day-total b");
+    if (mirrorAction) {
+      var mirrorShift=mirrorAction.closest(".staff-shift");
+      var mirrorShifts=Array.from(card.querySelectorAll(".staff-shift"));
+      var action=mirrorAction.matches(".staff-day-button")?"day-editor":mirrorAction.closest(".staff-day-total")?"projection":"off-schedule";
+      var shift=mirrorShift?mirrorShifts.indexOf(mirrorShift)===1?"second":"first":Array.from(card.querySelectorAll(".staff-day-total b")).indexOf(mirrorAction)===1?"second":"first";
+      (function send(targetWindow){
+        try{targetWindow.postMessage({type:"conglobal-run-current-day-roster-action",action:action,shift:shift},"*");}catch(_){}
+        try{for(var index=0;index<targetWindow.frames.length;index+=1)send(targetWindow.frames[index]);}catch(_){}
+      })(window);
+      return;
+    }
+    var row = event.target.closest(".am-today-roster-row,.staff-pill[data-status-name]");
     if (row && !/no roster entries/i.test(row.textContent)) openRowQuickActions(row);
   });
   checklistContent.addEventListener("change",function(event){
@@ -2805,6 +2966,16 @@
     window.clearTimeout(resetTimer);
     resetTimer=window.setTimeout(disarmRosterReset,5000);
   });
+  card.addEventListener("change", function(event){
+    var input=event.target.closest&&event.target.closest(".am-today-roster-time,[data-scheduled-shift-time]");
+    if (input&&input.hasAttribute("data-scheduled-shift-time")) {
+      input.setAttribute("data-roster-time",input.getAttribute("data-scheduled-shift-time"));
+      var mirrorShift=input.closest(".staff-shift");
+      var mirrorShifts=Array.from(card.querySelectorAll(".staff-shift"));
+      if (mirrorShift) mirrorShift.setAttribute("data-roster-shift",mirrorShifts.indexOf(mirrorShift)===1?"second":"first");
+    }
+    if (input) publishRosterTimeChange(input);
+  });
   document.getElementById("amFloatingTodayRosterClose").addEventListener("click", closeFloatingRoster);
   document.addEventListener("keydown", function(event){ if (event.key === "Escape" && !root.hidden) closeFloatingRoster(); });
   window.addEventListener("message", function(event){
@@ -2822,6 +2993,14 @@
     if (rosterWanted) scheduleOpenFloatingRoster(0);
   });
   window.addEventListener("message", function(event){
+    if (!event.data || event.data.type !== "conglobal-am-live-roster-height") return;
+    var liveFrame=card.querySelector(".am-live-timesheet-roster-frame");
+    if (!liveFrame || event.source!==liveFrame.contentWindow) return;
+    var height=Math.max(160,Math.min(720,Number(event.data.height)||430));
+    liveFrame.style.height=height+"px";
+    if (rosterWanted && !root.hidden) syncYesterdayWeatherSlot(true);
+  });
+  window.addEventListener("message", function(event){
     if (!event.data || event.data.type !== "conglobal-am-third-column-mode") return;
     document.body.classList.toggle("am-scw-left-column", Boolean(event.data.weather));
     scheduleHookFrames();
@@ -2829,6 +3008,12 @@
   window.addEventListener("storage", function(event){
     if (!event || [checklistKeys.state,checklistKeys.roles,checklistKeys.role].indexOf(event.key)>=0) renderChecklist();
     if (rosterWanted) scheduleOpenFloatingRoster(0);
+  });
+  window.addEventListener("conglobal-am-roster-data-changed", function(){
+    if (!rosterWanted) return;
+    var liveFrame=ensureLiveRosterFrame();
+    try{liveFrame.contentWindow.postMessage({type:"conglobal-am-refresh-live-roster"},"*");}catch(_){}
+    window.setTimeout(function(){syncYesterdayWeatherSlot(true);},80);
   });
 
   var handle = document.getElementById("amFloatingTodayRosterHandle");
@@ -2838,7 +3023,6 @@
   renderChecklist();
   hookFrames();
   window.setTimeout(scheduleHookFrames, 250);
-  scheduleOpenFloatingRoster(80);
 })();
 </scr${""}ipt>`;
       const bodyClose = html.toLowerCase().lastIndexOf("</body>");
@@ -3138,6 +3322,51 @@
         .replaceAll('shell.classList.toggle("two-week-list-mode", twoWeekActive);', 'shell.classList.toggle("two-week-list-mode", !calendarActive && !threeDayActive);');
     }
 
+    function withTimeOffAmLiveMirror(html) {
+      if (!html || typeof html !== "string" || html.includes("am-live-timesheet-roster-source")) return html;
+      const patch = `
+<style id="am-live-timesheet-roster-source-styles">
+  html,body{margin:0!important;min-height:0!important;overflow:hidden!important;background:transparent!important}
+  body{padding:0!important}
+  .calendar-shell{min-height:0!important;margin:0!important;padding:0!important;border:0!important;box-shadow:none!important;background:transparent!important}
+  .calendar-toolbar,#calendarView,#yardCrewPanel{display:none!important}
+  #listView{display:block!important;margin:0!important;padding:0!important;border:0!important;background:transparent!important}
+  #listView .staff-week{display:contents!important}
+  #listView .staff-week-grid{display:block!important;margin:0!important;padding:0!important;border:0!important}
+  #listView .staff-day{display:none!important}
+  #listView .staff-day.today{display:block!important;width:100%!important;max-width:none!important;margin:0!important}
+  .employee-bank-dialog[hidden],.day-editor[hidden]{display:none!important}
+</style>
+<scr${""}ipt id="am-live-timesheet-roster-source">
+(function(){
+  function publishHeight(){
+    var card=document.querySelector("#listView .staff-day.today");
+    var height=card?Math.ceil(card.getBoundingClientRect().height):0;
+    try{window.parent.postMessage({type:"conglobal-am-live-roster-height",height:height},"*");}catch(_){}
+  }
+  function showToday(){
+    try{
+      viewDate=new Date(today.getFullYear(),today.getMonth(),1);
+      viewMode="list";
+      listRange="three-day";
+      renderCalendar();
+    }catch(_){try{renderCalendar();}catch(__){}}
+    window.requestAnimationFrame(publishHeight);
+  }
+  window.addEventListener("message",function(event){
+    if(!event.data)return;
+    if(event.data.type==="conglobal-am-refresh-live-roster")showToday();
+  });
+  var timer=0;
+  new MutationObserver(function(){window.clearTimeout(timer);timer=window.setTimeout(publishHeight,20);}).observe(document.body,{childList:true,subtree:true,attributes:true,characterData:true});
+  showToday();
+  window.addEventListener("load",showToday);
+})();
+</scr${""}ipt>`;
+      const bodyClose = html.toLowerCase().lastIndexOf("</body>");
+      return bodyClose >= 0 ? html.slice(0, bodyClose) + patch + "\n" + html.slice(bodyClose) : html + patch;
+    }
+
     function withTimeOffCurrentRosterSnapshot(html) {
       if (!html || typeof html !== "string" || html.includes("current-day-roster-snapshot-publisher")) return html;
       const patch = `
@@ -3167,6 +3396,29 @@
       title:String(pill.getAttribute("title")||"")
     };
   }
+  function collectCurrentRosterCss(){
+    var output=[];
+    function collectRules(rules){
+      Array.from(rules||[]).forEach(function(rule){
+        if(rule.cssRules){
+          var inner=[];
+          var previous=output;
+          output=inner;
+          collectRules(rule.cssRules);
+          output=previous;
+          if(inner.length){
+            var header=String(rule.cssText||"").split("{")[0].trim();
+            output.push(header+"{"+inner.join("\n")+"}");
+          }
+          return;
+        }
+        var text=String(rule.cssText||"");
+        if(/(?:staff-|three-day-mode)/.test(text))output.push(text);
+      });
+    }
+    Array.from(document.styleSheets||[]).forEach(function(sheet){try{collectRules(sheet.cssRules);}catch(_){}});
+    return output.join("\n");
+  }
   function publishCurrentRosterSnapshot(){
     var todayCard=document.querySelector(".staff-day.today");
     if(!todayCard)return;
@@ -3193,6 +3445,8 @@
         first:String(totals[0]&&totals[0].textContent||"0").trim(),
         second:String(totals[1]&&totals[1].textContent||"0").trim()
       },
+      todayHtml:todayCard.outerHTML,
+      todayCss:collectCurrentRosterCss(),
       source:"timesheet-three-day-today",
       updatedAt:Date.now()
     };
@@ -3208,7 +3462,35 @@
   publishCurrentRosterSnapshot();
   window.addEventListener("focus",function(){window.setTimeout(publishCurrentRosterSnapshot,0)});
   window.addEventListener("message",function(event){
-    if(event.data&&event.data.type==="conglobal-publish-current-day-roster")publishCurrentRosterSnapshot();
+    if(!event.data)return;
+    if(event.data.type==="conglobal-publish-current-day-roster")publishCurrentRosterSnapshot();
+    if(event.data.type==="conglobal-refresh-current-day-roster"){
+      if(typeof renderCalendar==="function")renderCalendar();
+      window.setTimeout(publishCurrentRosterSnapshot,0);
+    }
+    if(event.data.type==="conglobal-update-current-day-roster-time"){
+      var shiftIndex=event.data.shift==="second"?1:0;
+      var boundary=event.data.boundary==="end"?"end":"start";
+      var value=String(event.data.value||"");
+      var todayCard=document.querySelector(".staff-day.today");
+      var shiftSection=todayCard&&todayCard.querySelectorAll(".staff-shift")[shiftIndex];
+      var input=shiftSection&&shiftSection.querySelector('[data-scheduled-shift-time="'+boundary+'"]');
+      if(input&&/^\\d{2}:\\d{2}$/.test(value)){
+        input.value=value;
+        input.dispatchEvent(new Event("input",{bubbles:true}));
+        input.dispatchEvent(new Event("change",{bubbles:true}));
+        window.setTimeout(publishCurrentRosterSnapshot,0);
+      }
+    }
+    if(event.data.type==="conglobal-run-current-day-roster-action"){
+      var actionTodayCard=document.querySelector(".staff-day.today");
+      var actionShiftIndex=event.data.shift==="second"?1:0;
+      var actionTarget=null;
+      if(event.data.action==="day-editor")actionTarget=actionTodayCard&&actionTodayCard.querySelector(".staff-day-button");
+      else if(event.data.action==="projection")actionTarget=actionTodayCard&&actionTodayCard.querySelectorAll(".staff-day-total b")[actionShiftIndex];
+      else if(event.data.action==="off-schedule")actionTarget=actionTodayCard&&actionTodayCard.querySelectorAll(".staff-shift h3")[actionShiftIndex];
+      if(actionTarget)actionTarget.click();
+    }
   });
   document.addEventListener("change",function(event){
     if(event.target.closest&&event.target.closest(".staff-day.today"))window.setTimeout(publishCurrentRosterSnapshot,0);
@@ -5403,6 +5685,36 @@ tfoot .lph-target-pill.below-target{background:#fecaca;color:#7f1d1d}
   box-shadow: 0 0 0 1px #107c41;
   pointer-events: none;
 }
+.raw-track-table tr.raw-row-selected {
+  background: linear-gradient(90deg, rgba(126,34,206,.76), rgba(88,28,135,.56)) !important;
+}
+.raw-track-table tr.raw-row-selected td {
+  background: transparent !important;
+}
+</style>`;
+      const headClose = html.toLowerCase().lastIndexOf("</head>");
+      return headClose >= 0 ? html.slice(0, headClose) + style + "\n" + html.slice(headClose) : style + html;
+    }
+
+    function withExcelRawTrackColumnOrder(html) {
+      if (!html || typeof html !== "string" || html.includes("excel-raw-track-column-order-v1")) return html;
+      html = html.replace(
+        '<th></th><th>Seq</th><th>YD</th><th>Track</th><th>Equip ID</th><th>Tons</th><th>LN</th><th>BK1</th><th>BK2</th><th>Time in Hold</th><th>Arrival to SS</th><th>Train</th><th>Hold Start</th><th>Arrival</th><th>YD Block</th>',
+        '<th></th><th>Seq</th><th>YD</th><th>Track</th><th>Equip ID</th><th>Tons</th><th>LN</th><th>BK1</th><th>BK2</th><th>Time in Hold</th><th>Train</th><th>Arrival</th><th>Hold Start</th><th>Arrival to SS</th><th>YD Block</th>'
+      );
+      html = html.replace(
+        /<td class="raw-alert">\$\{rawArrivalToSs\(row\)\}<\/td>\s*<td><span class="raw-train-pill">\$\{escapeHtml\(train\)\}<\/span><\/td>\s*<td class="raw-arrival">\$\{escapeHtml\(rawDateLabel\(row\[7\]\)\)\}<\/td>\s*<td class="raw-arrival">\$\{escapeHtml\(rawDateLabel\(row\[11\]\)\)\}<\/td>/,
+        '<td><span class="raw-train-pill">${escapeHtml(train)}</span></td>\n      <td class="raw-arrival">${escapeHtml(rawDateLabel(row[11]))}</td>\n      <td class="raw-arrival">${escapeHtml(rawDateLabel(row[7]))}</td>\n      <td class="raw-alert">${rawArrivalToSs(row)}</td>'
+      );
+      return html.replace("</head>", '<meta name="excel-raw-track-column-order-v1" content="enabled">\n</head>');
+    }
+
+    function withExcelRawTrackFontSize(html) {
+      if (!html || typeof html !== "string" || html.includes("excel-raw-track-font-size-v1")) return html;
+      const style = `<style id="excel-raw-track-font-size-v1">
+.raw-track-table { font-size: 13px !important; }
+.raw-track-table .raw-equip { font-size: 14px !important; }
+.raw-track-table .raw-train-pill { font-size: 12px !important; }
 </style>`;
       const headClose = html.toLowerCase().lastIndexOf("</head>");
       return headClose >= 0 ? html.slice(0, headClose) + style + "\n" + html.slice(headClose) : style + html;
@@ -8660,9 +8972,9 @@ document.addEventListener('click',function(event){
     }
 
     function withChassisSoftDeficitPills(html) {
-      if (!html || typeof html !== "string" || html.includes("chassis-soft-deficit-pills-v7")) return html;
+      if (!html || typeof html !== "string" || html.includes("chassis-soft-deficit-pills-v8")) return html;
       const patch = `
-<style id="chassis-soft-deficit-pills-v7">
+<style id="chassis-soft-deficit-pills-v8">
 #forecastConcernGroupsCard .forecast-deficit-count{
   display:inline-flex!important;align-items:center!important;justify-content:center!important;
   min-width:61px!important;height:24px!important;padding:0 10px!important;
@@ -8674,21 +8986,22 @@ document.addEventListener('click',function(event){
 #forecastExcelView .forecast-excel-table th.forecast-excel-net-cell:is(.request-net-red,.request-net-yellow) :is(.request-net-value,.calculator-net-value),
 #forecastExcelView .forecast-excel-table :is(.request-net-flag,.calculator-net-flag):is(.request-net-red,.request-net-yellow){
   display:inline-flex!important;align-items:center!important;justify-content:center!important;
-  min-width:var(--forecast-excel-net-pill-width,54px)!important;
-  width:var(--forecast-excel-net-pill-width,54px)!important;height:24px!important;
+  min-width:var(--forecast-excel-net-pill-width,62px)!important;
+  width:var(--forecast-excel-net-pill-width,62px)!important;height:26px!important;
   padding:0 var(--forecast-excel-net-padding,10px)!important;
-  border:0!important;border-radius:8px!important;
-  font-size:var(--forecast-excel-net-font-size,8.3px)!important;
-  font-weight:900!important;line-height:24px!important;transform:none!important;box-shadow:none!important
+  border:1px solid currentColor!important;border-radius:9px!important;
+  font-size:var(--forecast-excel-net-font-size,10px)!important;
+  font-weight:1000!important;line-height:24px!important;transform:none!important;
+  box-shadow:0 1px 3px rgba(15,23,42,.22)!important
 }
 #forecastExcelView .forecast-excel-table th.forecast-excel-net-cell.request-net-red :is(.request-net-value,.calculator-net-value),
 #forecastExcelView .forecast-excel-table :is(.request-net-flag,.calculator-net-flag).request-net-red{
-  background:#fee2e2!important;color:#991b1b!important
+  background:#fecaca!important;border-color:#ef4444!important;color:#7f1d1d!important
 }
 #forecastExcelView .forecast-excel-table th.forecast-excel-net-cell.request-net-yellow :is(.request-net-value,.calculator-net-value),
 #forecastExcelView .forecast-excel-table :is(.request-net-flag,.calculator-net-flag).request-net-yellow,
 .forecast-excel-block.request .forecast-excel-table .request-net-flag.request-net-yellow{
-  background:#fde68a!important;color:#854d0e!important
+  background:#fde047!important;border-color:#ca8a04!important;color:#713f12!important
 }
 #forecastExcelView .forecast-excel-table :is(.request-net-flag,.calculator-net-flag):is(.request-net-red,.request-net-yellow) :is(.request-net-value,.calculator-net-value){
   font:inherit!important;padding:0!important;transform:none!important
@@ -8954,16 +9267,31 @@ document.addEventListener('click',function(event){
       try {
         if (primaryFrame.dataset.page !== "amReport") return false;
         const reportDocument = primaryFrame.contentDocument;
-        const rosterCard = reportDocument && reportDocument.getElementById("amFloatingTodayRosterCard");
-        if (!rosterCard || !rosterCard.parentNode) return false;
+        const rosterRoot = reportDocument && reportDocument.getElementById("amFloatingTodayRoster");
+        const rosterDialog = rosterRoot && rosterRoot.querySelector(".amfr-dialog");
+        if (!rosterRoot || !rosterDialog || !reportDocument.body) return false;
         let host = reportDocument.getElementById("amScwLatestHost");
         if (!host) {
           host = reportDocument.createElement("div");
           host.id = "amScwLatestHost";
-          rosterCard.insertAdjacentElement("afterend", host);
-        } else if (host.previousElementSibling !== rosterCard) {
-          rosterCard.insertAdjacentElement("afterend", host);
+          reportDocument.body.appendChild(host);
+        } else if (host.parentNode !== reportDocument.body) {
+          reportDocument.body.appendChild(host);
         }
+        const positionHost = () => {
+          const rosterVisible = !rosterRoot.hidden;
+          const top = rosterVisible ? Math.ceil(rosterDialog.getBoundingClientRect().bottom + 8) : 8;
+          host.style.setProperty("top", Math.max(8, top) + "px");
+        };
+        if (!host.__rosterPositionObserver) {
+          host.__rosterPositionObserver = new MutationObserver(positionHost);
+          host.__rosterPositionObserver.observe(rosterRoot, { attributes: true, attributeFilter: ["hidden"] });
+          if (typeof reportDocument.defaultView.ResizeObserver === "function") {
+            host.__rosterResizeObserver = new reportDocument.defaultView.ResizeObserver(positionHost);
+            host.__rosterResizeObserver.observe(rosterDialog);
+          }
+        }
+        positionHost();
         host.appendChild(scwLatestPopup);
         ["top", "right", "bottom", "left", "width", "height"].forEach((property) => scwLatestPopup.style.removeProperty(property));
         return true;
@@ -8985,9 +9313,6 @@ document.addEventListener('click',function(event){
       if (primaryFrame.contentWindow && primaryFrame.dataset.page === "amReport") {
         primaryFrame.contentWindow.postMessage({ type: "conglobal-am-third-column-mode", weather: useWeather }, "*");
         primaryFrame.contentWindow.postMessage({ type: "conglobal-am-third-day-visibility", visible: true }, "*");
-        if (activePage === "amReport") {
-          primaryFrame.contentWindow.postMessage({ type: "conglobal-open-todays-roster" }, "*");
-        }
       }
       if (shouldShow && loadPost) {
         const cached = readScwCache();
@@ -9540,6 +9865,13 @@ document.addEventListener('click',function(event){
     pointer-events: none;
     white-space: nowrap;
   }
+
+  #forecastExcelView .forecast-supply-shortage-mark[data-digits="3"] {
+    left: calc(50% + 1.45em);
+  }
+  #forecastExcelView .forecast-supply-shortage-mark[data-digits="4"] {
+    left: calc(50% + 1.85em);
+  }
   #forecastExcelView .forecast-supply-shortage .forecast-excel-cell-content {
     gap: 0;
   }
@@ -9588,6 +9920,7 @@ document.addEventListener('click',function(event){
             const mark = document.createElement("span");
             mark.className = "forecast-supply-shortage-mark";
             mark.textContent = "\u2715";
+            mark.dataset.digits = String(Math.abs(Math.trunc(value))).length;
             mark.title = pool + " " + size + " demand exceeds current inventory (" + demand + " needed / " + available + " available)";
             mark.setAttribute("aria-label", mark.title);
             content.appendChild(mark);
@@ -11446,6 +11779,32 @@ const script = `<style id="billing-unified-duplicate-review-v1">
       return html.replace("</head>", style + "\n</head>");
     }
 
+    function withChassisScrollablePreviewSections(html) {
+      if (!html || typeof html !== "string" || html.includes('id="chassis-scrollable-preview-sections-v1"')) return html;
+      const style = `<style id="chassis-scrollable-preview-sections-v1">
+.forecast-mismatch-preview-section table{
+  max-height:clamp(120px,20vh,250px)!important;
+  overflow-y:auto!important;
+  overscroll-behavior:contain!important;
+  scrollbar-gutter:stable!important;
+}
+.forecast-mismatch-preview-section table thead{
+  position:sticky!important;
+  top:0!important;
+  z-index:4!important;
+}
+</style>`;
+      return html.replace("</head>", style + "\n</head>");
+    }
+
+    function withChassisLowStockWarningRules(html) {
+      if (!html || typeof html !== "string" || html.includes("chassis-low-stock-warning-rules-v1")) return html;
+      const marker = "<!-- chassis-low-stock-warning-rules-v1 -->";
+      html = html.replace('["FGCP","20",15,"FLEXI"]', '["FGCP","20",10,"FLEXI"]');
+      html = html.replace('["DCLI","40",15,"DCLI/DCLP"]', '["DCLI","40",15,"DCLP"]');
+      return html.replace("</head>", marker + "\n</head>");
+    }
+
     function withBillingExportDropdownV1(html) {
       if (!html || typeof html !== "string" || html.includes("billing-export-dropdown-v1")) return html;
       const injection = `<meta id="billing-export-dropdown-v1"><scr${""}ipt>
@@ -11944,7 +12303,10 @@ const script = `<style id="billing-unified-duplicate-review-v1">
           pageHtml = withAmReportImportantHeatWarnings(pageHtml);
           pageHtml = withAmReportNwsDetailedForecast(pageHtml);
           pageHtml = withAmReportTodayRosterActions(pageHtml);
-          pageHtml = withAmReportFloatingRoster(pageHtml);
+          pageHtml = withAmReportFloatingRoster(
+            pageHtml,
+            withTimeOffAmLiveMirror(withTimeOffCameInActions(withTimeOffMonthlyWeeklyStyle(pages.timeOff.html)))
+          );
           pageHtml = withAmReportInboundConcernReadout(pageHtml);
           pageHtml = withAmReportDataImport(pageHtml);
         }
@@ -11988,6 +12350,8 @@ const script = `<style id="billing-unified-duplicate-review-v1">
           pageHtml = withExcelTableDensityControl(pageHtml);
           pageHtml = withExcelCurrentRosterSnapshotParity(pageHtml);
           pageHtml = withExcelSelectionHighlight(pageHtml);
+          pageHtml = withExcelRawTrackColumnOrder(pageHtml);
+          pageHtml = withExcelRawTrackFontSize(pageHtml);
           pageHtml = withExcelToolbarGroups(pageHtml);
           pageHtml = withExcelArrivalResolution(pageHtml);
           pageHtml = withExcelFutureDwellProjection(pageHtml);
@@ -12008,6 +12372,8 @@ const script = `<style id="billing-unified-duplicate-review-v1">
         if (id === "chassisStatus") {
           pageHtml = withChassisGreenExcelHero(pageHtml);
           pageHtml = withChassisNetTextOnePixelLower(pageHtml);
+          pageHtml = withChassisScrollablePreviewSections(pageHtml);
+          pageHtml = withChassisLowStockWarningRules(pageHtml);
           pageHtml = withChassisForecastPersistence(pageHtml);
           pageHtml = withChassisInventoryRequestBoardRefresh(pageHtml);
           pageHtml = withChassisDifferenceToggleRemoved(pageHtml);

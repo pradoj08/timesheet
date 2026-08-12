@@ -2411,7 +2411,7 @@
     border: 1px solid rgba(255,255,255,.22);
     color: #d9f99d;
     background: rgba(77,124,15,.42);
-    font-size: 11px;
+    font-size: 13px;
     font-weight: 950;
   }
   .raw-track-table tr.raw-train-0 td { background: rgba(59, 130, 246, .12); }
@@ -2422,8 +2422,11 @@
   .raw-track-table tr.raw-train-5 td { background: rgba(20, 184, 166, .13); }
   .raw-track-table tr.raw-train-6 td { background: rgba(236, 72, 153, .13); }
   .raw-track-table tr.raw-train-7 td { background: rgba(148, 163, 184, .13); }
-  .raw-track-table tr.raw-row-selected td {
+  .raw-track-table tr.raw-row-selected {
     background: linear-gradient(90deg, rgba(126,34,206,.76), rgba(88,28,135,.56)) !important;
+  }
+  .raw-track-table tr.raw-row-selected td {
+    background: transparent !important;
     color: #f5f3ff;
 }
   .raw-track-table tr.raw-row-selected .raw-equip { color: #ffffff; }
@@ -2548,7 +2551,7 @@
   .raw-track-table .raw-equip {
     color: #f8fafc;
     font-family: Consolas, "Cascadia Mono", monospace;
-    font-size: 12px;
+    font-size: 14px;
     font-weight: 900;
     letter-spacing: 0;
   }
@@ -2569,11 +2572,14 @@
     border-color: rgba(190, 242, 100, .3);
     background: rgba(77, 124, 15, .34);
     color: #d9f99d;
-    font-size: 10px;
+    font-size: 12px;
     font-weight: 900;
   }
-  .raw-track-table tr.raw-row-selected td {
+  .raw-track-table tr.raw-row-selected {
     background: linear-gradient(90deg, rgba(109, 40, 217, .72), rgba(88, 28, 135, .5)) !important;
+  }
+  .raw-track-table tr.raw-row-selected td {
+    background: transparent !important;
     color: #faf5ff;
   }
   .raw-track-table tr.raw-row-selected td:first-child {
@@ -7525,10 +7531,10 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       <td class="raw-status">${escapeHtml(statuses[0] || "--")}</td>
       <td class="raw-status">${escapeHtml(statuses[1] || "--")}</td>
       <td class="raw-alert">${escapeHtml(rawHoldHours(row))}</td>
-      <td class="raw-alert">${rawArrivalToSs(row)}</td>
       <td><span class="raw-train-pill">${escapeHtml(train)}</span></td>
-      <td class="raw-arrival">${escapeHtml(rawDateLabel(row[7]))}</td>
       <td class="raw-arrival">${escapeHtml(rawDateLabel(row[11]))}</td>
+      <td class="raw-arrival">${escapeHtml(rawDateLabel(row[7]))}</td>
+      <td class="raw-alert">${rawArrivalToSs(row)}</td>
       <td class="raw-left">${escapeHtml(row[12] || "--")}</td>
     </tr>`;
   }
@@ -7550,7 +7556,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     if (!title || !body || !modal) return;
     title.innerHTML = `<strong>TRACK ${escapeHtml(primary.track)}</strong><span>${fmtInt(totalFootage)} ft</span><span>${fmtInt(entries.length)} cars</span><span>${fmtInt(ssCount)} SS</span><span class="raw-selected-count">${fmtInt(selectedCount)} selected</span>`;
     body.innerHTML = entries.length ? `<table class="raw-track-table"><thead><tr>
-      <th></th><th>Seq</th><th>YD</th><th>Track</th><th>Equip ID</th><th>Tons</th><th>LN</th><th>BK1</th><th>BK2</th><th>Time in Hold</th><th>Arrival to SS</th><th>Train</th><th>Hold Start</th><th>Arrival</th><th>YD Block</th>
+      <th></th><th>Seq</th><th>YD</th><th>Track</th><th>Equip ID</th><th>Tons</th><th>LN</th><th>BK1</th><th>BK2</th><th>Time in Hold</th><th>Train</th><th>Arrival</th><th>Hold Start</th><th>Arrival to SS</th><th>YD Block</th>
     </tr></thead><tbody>${entries.map(entry => rawTrackRow(entry, selectedIndexes)).join("")}</tbody></table>`
       : `<div class="raw-track-empty">No imported car rows found for Track ${escapeHtml(primary.track)}.</div>`;
     hideBlockContextMenu();

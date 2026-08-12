@@ -10278,9 +10278,9 @@ function buildForecastExcelShortageNotes(rows){
   });
   const checks=[
     ["TGRP","45",3,"TRAC"],["TGRP","40",15,"TRAC"],
-    ["FGCP","45",3,"FLEXI"],["FGCP","40",15,"FLEXI"],["FGCP","20",15,"FLEXI"],
+    ["FGCP","45",3,"FLEXI"],["FGCP","40",15,"FLEXI"],["FGCP","20",10,"FLEXI"],
     ["SNCZ","53",15,"SNCZ"],["SNBZ","40",5,"SNBZ"],
-    ["DCLI","53",15,"DCLI"],["DCLI","40",15,"DCLI/DCLP"],["DCLI","20",15,"DCLI/DCLP"]
+    ["DCLI","53",15,"DCLI"],["DCLI","40",15,"DCLP"],["DCLI","20",15,"DCLI/DCLP"]
   ];
   return checks.flatMap(([pool,size,limit,label])=>{
     const row=byKey.get(`${pool}|${size}`);
@@ -17537,7 +17537,7 @@ window.addEventListener("DOMContentLoaded",()=>{
   border-collapse:collapse;
   table-layout:fixed;
   display:block;
-  max-height:250px;
+  max-height:clamp(120px,20vh,250px);
   overflow-y:auto;
   overflow-x:hidden;
   scrollbar-width:thin;
@@ -17563,7 +17563,7 @@ window.addEventListener("DOMContentLoaded",()=>{
 .forecast-mismatch-preview-section.preview-mismatch table,
 .forecast-mismatch-excluded-section table{
   display:block!important;
-  max-height:250px!important;
+  max-height:clamp(120px,20vh,250px)!important;
   overflow-y:auto!important;
   overflow-x:hidden!important;
   scrollbar-width:thin;
@@ -23710,6 +23710,28 @@ body.forecast-excel-view-open{
   border-radius:0!important;
   background:transparent!important;
   box-shadow:none!important;
+}
+#forecastExcelView .forecast-excel-table :is(.request-net-flag,.calculator-net-flag):is(.request-net-red,.request-net-yellow){
+  min-width:62px!important;
+  width:62px!important;
+  height:26px!important;
+  padding:0 10px!important;
+  border:1px solid currentColor!important;
+  border-radius:9px!important;
+  font-size:10px!important;
+  font-weight:1000!important;
+  line-height:24px!important;
+  box-shadow:0 1px 3px rgba(15,23,42,.22)!important;
+}
+#forecastExcelView .forecast-excel-table :is(.request-net-flag,.calculator-net-flag).request-net-red{
+  background:#fecaca!important;
+  border-color:#ef4444!important;
+  color:#7f1d1d!important;
+}
+#forecastExcelView .forecast-excel-table :is(.request-net-flag,.calculator-net-flag).request-net-yellow{
+  background:#fde047!important;
+  border-color:#ca8a04!important;
+  color:#713f12!important;
 }
 .forecast-unplanned-modal{
   position:fixed;
