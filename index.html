@@ -11860,8 +11860,8 @@ const script = `<style id="billing-unified-duplicate-review-v1">
     }
 
     function withChassisRequestTableBorders(html) {
-      if (!html || typeof html !== "string" || html.includes("chassis-request-table-borders-v1")) return html;
-      const style = `<style id="chassis-request-table-borders-v1">
+      if (!html || typeof html !== "string" || html.includes("chassis-request-table-borders-v2")) return html;
+      const style = `<style id="chassis-request-table-borders-v2">
 body #forecastExcelView .forecast-excel-block.request .forecast-excel-table {
   border-collapse: collapse !important;
   border: 1px solid #334155 !important;
@@ -11869,6 +11869,9 @@ body #forecastExcelView .forecast-excel-block.request .forecast-excel-table {
 body #forecastExcelView .forecast-excel-block.request .forecast-excel-table th,
 body #forecastExcelView .forecast-excel-block.request .forecast-excel-table td {
   border: 1px solid #334155 !important;
+}
+body #forecastExcelView .forecast-excel-block.request .forecast-excel-table tbody tr:last-child > * {
+  border-bottom: 1px solid #334155 !important;
 }
 </style>`;
       const headClose = html.toLowerCase().lastIndexOf("</head>");
