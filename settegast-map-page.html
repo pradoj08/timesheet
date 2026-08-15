@@ -27,19 +27,27 @@
     .map-header {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      gap: 18px;
+      justify-content: flex-start;
+      gap: 14px;
       margin-bottom: 14px;
-      padding: 14px 18px;
+      padding: 9px 12px;
+      overflow-x:auto;
+      overflow-y:hidden;
       border: 1px solid var(--line);
       border-radius: 12px;
       background: var(--panel);
       box-shadow: 0 12px 32px rgba(0, 0, 0, .28);
     }
-    h1 { margin: 0; font-size: clamp(20px, 2vw, 30px); letter-spacing: .04em; }
-    .subtitle { margin: 3px 0 0; color: var(--muted); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
-    .layer-key { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
-    .map-actions { display: flex; align-items: center; gap: 6px; }
+    .map-title { flex:0 0 auto;display:flex;align-items:center;gap:10px;white-space:nowrap; }
+    h1 { margin: 0; font-size: clamp(18px, 1.5vw, 26px); letter-spacing: .04em; }
+    .subtitle { margin:0;color:var(--muted);font-size:10px;letter-spacing:.07em;text-transform:uppercase; }
+    .map-toolbar { flex:1 0 auto;display:flex;align-items:center;justify-content:flex-end;gap:7px;min-width:max-content; }
+    .map-view-modes { flex:0 0 auto;display:flex;align-items:center;gap:5px;margin-left:10px;padding-left:14px;border-left:1px solid #405674;white-space:nowrap; }
+    .map-view-modes button { height:36px;padding:0 12px;border:1px solid #5a6f8d;border-radius:8px;color:#f8fafc;background:#20314a;font:900 13px system-ui,sans-serif;cursor:pointer; }
+    .map-view-modes button:hover,.map-view-modes button:focus-visible { border-color:var(--accent);outline:2px solid rgba(255,204,40,.32); }
+    .map-view-modes button.active { color:#172033;background:#22d3ee;border-color:#a5f3fc; }
+    .layer-key { display:flex;flex-wrap:nowrap;justify-content:flex-end;gap:6px;white-space:nowrap; }
+    .map-actions { display:flex;align-items:center;gap:5px;white-space:nowrap; }
     .map-actions button {
       min-width: 38px;
       height: 36px;
@@ -59,7 +67,7 @@
     .section-focus-control input { width:82px;accent-color:#22d3ee;cursor:pointer; }
     .section-focus-control output { min-width:28px;color:#a5f3fc;text-align:right; }
     .section-focus-control.disabled { opacity:.48; }
-    .focus-settings { display:flex;align-items:center;justify-content:flex-end;gap:6px;margin-top:7px;padding:6px;border:1px solid #405674;border-radius:8px;background:#0d1a2b;box-shadow:0 8px 20px rgba(0,0,0,.22); }
+    .focus-settings { display:flex;align-items:center;justify-content:flex-end;gap:5px;margin:0;padding:4px;border:1px solid #405674;border-radius:8px;background:#0d1a2b;box-shadow:0 8px 20px rgba(0,0,0,.22);white-space:nowrap; }
     .focus-settings[hidden] { display:none; }
     .focus-setting { display:grid;grid-template-columns:auto 70px 34px;align-items:center;gap:5px;padding:3px 6px;border-right:1px solid #31425a;color:#bcd0e8;font:850 9px system-ui,sans-serif;white-space:nowrap; }
     .focus-setting input { width:70px;accent-color:#22d3ee;cursor:pointer; }
@@ -113,10 +121,16 @@
     #parkingSlotsLayer .slot-b polygon { fill: rgba(222,43,139,.56); }
     #parkingSlotsLayer .slot-c polygon { fill: rgba(244,112,48,.56); }
     #parkingSlotsLayer .slot-d polygon { fill: rgba(246,207,54,.54); }
-    #parkingFenceLayer, #parkingLabelsLayer { display: none; }
-    .zone-panel { position:absolute;z-index:7;left:142px;right:12px;bottom:12px;display:flex;align-items:stretch;gap:7px;padding:8px;overflow-x:auto;overflow-y:hidden;border:1px solid #536884;border-radius:10px;background:rgba(8,17,29,.92);backdrop-filter:blur(7px);scrollbar-width:thin; }
+    #parkingFenceLayer, #parkingLabelsLayer { display:none; }
+    body.section-names-visible #parkingLabelsLayer { display:block;pointer-events:none; }
+    body.section-names-visible.section-name-editing #parkingLabelsLayer { pointer-events:auto; }
+    body.section-name-editing #parkingLabelsLayer text { cursor:move;pointer-events:auto; }
+    body.map-sections-hidden #parkingAreasLayer,body.map-sections-hidden #parkingEditLayer { display:none!important; }
+    body.map-sections-hidden #parkingSlotsLayer polygon:not(.map-slot-activity),body.map-sections-hidden #parkingSlotsLayer .slot-number { display:none!important; }
+    #parkingLabelsLayer text { fill:rgba(255,255,255,.9);stroke:rgba(4,12,24,.7);stroke-width:3px;paint-order:stroke fill;vector-effect:non-scaling-stroke;font:750 38px/1 system-ui,sans-serif;letter-spacing:.025em;text-transform:uppercase;text-anchor:middle;dominant-baseline:middle;filter:drop-shadow(0 1px 2px rgba(0,0,0,.65)); }
+    .zone-panel { position:absolute;z-index:7;left:12px;right:532px;bottom:12px;display:flex;align-items:stretch;gap:7px;padding:8px;overflow-x:auto;overflow-y:hidden;border:1px solid #536884;border-radius:10px;background:rgba(8,17,29,.92);backdrop-filter:blur(7px);scrollbar-width:thin; }
     .zone-panel.hidden { display:none; }
-    .zone-panel-toggle { position:absolute;z-index:8;left:12px;bottom:12px;width:122px;min-height:62px;padding:8px;border:1px solid #536884;border-radius:10px;background:#17283d;color:#eef6ff;font:900 11px system-ui,sans-serif;cursor:pointer;box-shadow:0 8px 22px rgba(0,0,0,.28); }
+    .zone-panel-toggle { position:absolute;z-index:9;left:auto;right:142px;bottom:12px;width:122px;min-height:62px;padding:8px;border:1px solid #536884;border-radius:10px;background:#17283d;color:#eef6ff;font:900 11px system-ui,sans-serif;cursor:pointer;box-shadow:0 8px 22px rgba(0,0,0,.28); }
     .zone-panel-toggle.active { color:#172033;background:var(--accent);border-color:#ffe786; }
     .zone-button { flex:1 0 82px;min-width:82px;padding:8px 10px;border:2px solid transparent;border-radius:8px;color:#0b1522;font:900 12px/1.1 system-ui,sans-serif;cursor:pointer; }
     .zone-button span { display: block; margin-top: 3px; font-size: 10px; }
@@ -124,15 +138,19 @@
     .zone-button.selected { border-color: #fff; box-shadow: 0 0 0 2px #172337, 0 0 14px rgba(255,255,255,.75); }
     .map-edge-toggle { position:absolute;z-index:9;min-height:50px;padding:7px 9px;border:1px solid #536884;border-radius:10px;background:#17283d;color:#eef6ff;font:900 10px system-ui,sans-serif;cursor:pointer;box-shadow:0 8px 22px rgba(0,0,0,.28); }
     .map-edge-toggle.active { color:#172033;background:var(--accent);border-color:#ffe786; }
-    .map-activity-toggle { top:12px;left:12px;width:122px; }
-    .map-editor-toggle { top:12px;right:12px;width:122px; }
-    .map-activity-panel { position:absolute;z-index:6;left:142px;right:auto;top:12px;display:flex;width:max-content;max-width:calc(100% - 398px);align-items:center;gap:8px;padding:8px 9px;overflow-x:auto;overflow-y:hidden;border:1px solid #526985;border-radius:12px;background:linear-gradient(145deg,rgba(12,27,45,.98),rgba(6,15,27,.97));box-shadow:0 12px 30px rgba(0,0,0,.40),inset 0 1px 0 rgba(255,255,255,.05);backdrop-filter:blur(10px);scrollbar-width:thin; }
+    .map-editor-toggle { top:auto;right:12px;bottom:12px;width:122px;min-height:62px; }
+    .map-activity-toggle { top:auto;right:272px;bottom:12px;width:122px;min-height:62px; }
+    .map-name-edit-toggle { top:auto;right:402px;bottom:12px;width:122px;min-height:62px; }
+    .map-activity-panel { position:absolute;z-index:6;left:12px;right:auto;top:12px;display:flex;width:max-content;max-width:calc(100% - 24px);align-items:center;gap:8px;padding:8px 9px;overflow-x:auto;overflow-y:hidden;border:1px solid #526985;border-radius:12px;background:linear-gradient(145deg,rgba(12,27,45,.98),rgba(6,15,27,.97));box-shadow:0 12px 30px rgba(0,0,0,.40),inset 0 1px 0 rgba(255,255,255,.05);backdrop-filter:blur(10px);scrollbar-width:thin; }
     .map-activity-panel.hidden { display:none; }
     .map-activity-head { flex:0 0 auto;display:flex;align-items:center;gap:7px;color:#eef6ff;font:950 10px system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap; }
     .map-highlight-unified { display:flex;align-items:center;gap:6px;padding:4px 7px;border:1px solid #405674;border-radius:7px;background:#0a1727;font:850 9px system-ui,sans-serif;letter-spacing:0;text-transform:none;white-space:nowrap;cursor:pointer; }
     .map-highlight-unified:has(input:checked) { border-color:#22d3ee;background:rgba(8,145,178,.16);box-shadow:inset 0 0 0 1px rgba(34,211,238,.16); }
     .map-highlight-unified input[type="checkbox"] { width:14px;height:14px;margin:0;accent-color:#22d3ee; }
     .map-highlight-color { flex:0 0 auto;width:20px;height:20px;padding:1px;border:1px solid #71829a;border-radius:6px;background:#07111f;cursor:pointer; }
+    .map-highlight-brightness { display:flex;align-items:center;gap:5px;padding:4px 7px;border:1px solid #405674;border-radius:7px;background:#0a1727;color:#eef6ff;font:850 9px system-ui,sans-serif;white-space:nowrap; }
+    .map-highlight-brightness input { width:68px;accent-color:#22d3ee;cursor:pointer; }
+    .map-highlight-brightness output { min-width:31px;color:#a5f3fc;text-align:right; }
     .map-activity-status { padding:3px 7px;border-radius:999px;background:rgba(96,165,250,.12);color:#9fc8f2;font:800 8px system-ui,sans-serif;text-align:left;letter-spacing:0;text-transform:none; }
     .map-activity-options { flex:0 0 auto;display:flex;align-items:stretch;gap:6px; }
     .map-activity-options.show-all-active { opacity:.42;filter:saturate(.45);pointer-events:none; }
@@ -140,6 +158,14 @@
     .map-activity-option:hover { transform:translateY(-1px);border-color:#7890ae;background:linear-gradient(180deg,#142a43,#0b1b2d); }
     .map-activity-option:has(input[type="checkbox"]:checked) { border-color:var(--status-color);background:color-mix(in srgb,var(--status-color) 14%,#0a1727);box-shadow:inset 3px 0 0 var(--status-color),0 0 12px color-mix(in srgb,var(--status-color) 18%,transparent); }
     .map-activity-option input { width:15px;height:15px;margin:0;accent-color:var(--status-color); }
+    #parkingSlotsLayer polygon.map-slot-activity {
+      vector-effect:non-scaling-stroke;
+      paint-order:stroke fill;
+      stroke:var(--slot-highlight-outline,#fff)!important;
+      stroke-width:3px!important;
+      stroke-linejoin:round;
+      filter:brightness(var(--slot-highlight-brightness,1.3)) drop-shadow(0 0 2px var(--slot-highlight-outline,#fff)) drop-shadow(0 0 7px var(--slot-highlight-color)) drop-shadow(0 0 15px var(--slot-highlight-color))!important;
+    }
     .map-activity-option span { min-width:0; }
     .map-activity-dot { flex:0 0 auto;width:9px;height:9px;border-radius:999px;background:var(--status-color);box-shadow:0 0 8px color-mix(in srgb,var(--status-color) 75%,transparent); }
     .map-slot-activity { vector-effect:non-scaling-stroke;paint-order:stroke fill; }
@@ -169,6 +195,7 @@
     .parking-shape-handle { pointer-events:auto;fill:#ffffff;stroke:#7c3aed;stroke-width:2.5;vector-effect:non-scaling-stroke;cursor:move; }
     .parking-add-point { pointer-events:auto;fill:#facc15;stroke:#172033;stroke-width:2;vector-effect:non-scaling-stroke;cursor:copy; }
     body.map-editing .parking-zone { cursor:move; }.slot-number { fill:#101927;stroke:rgba(255,255,255,.88);stroke-width:2;paint-order:stroke fill;font:900 9px/1 system-ui,sans-serif;pointer-events:none;text-anchor:middle;dominant-baseline:middle; }
+    .map-highlight-slot-number { display:block!important;fill:#06111f!important;stroke:rgba(255,255,255,.96)!important;stroke-width:2.6px!important;paint-order:stroke fill;font-family:system-ui,sans-serif!important;font-size:var(--highlight-number-size,13px)!important;font-weight:950!important;opacity:1!important;pointer-events:none;text-anchor:middle;dominant-baseline:middle;filter:drop-shadow(0 1px 2px rgba(0,0,0,.7)); }
     .map-note {
       margin: 12px 0 0;
       padding: 11px 14px;
@@ -180,8 +207,8 @@
     }
     @media (max-width: 760px) {
       body { padding: 8px; }
-      .map-header { align-items: flex-start; flex-direction: column; }
-      .layer-key { justify-content: flex-start; }
+      .map-header { align-items:center;flex-direction:row; }
+      .layer-key { justify-content:flex-end; }
       .map-stage { border-radius: 8px; }
     }
   </style>
@@ -189,18 +216,25 @@
 <body>
   <main class="map-page">
     <header class="map-header">
-      <div>
+      <div class="map-title">
         <h1>SETTEGAST MAP</h1>
-        <p class="subtitle">Parking-area and slot planning canvas</p>
       </div>
-      <div>
+      <div class="map-view-modes" aria-label="Map display modes">
+        <button id="mapFocus" type="button" title="Crop to the active yard strip" aria-pressed="false">FOCUS</button>
+        <button id="mapSectionNames" type="button" title="Show each parking-section name in the middle of its shape" aria-pressed="false">NAMES</button>
+        <button id="mapSectionFocus" type="button" title="Dim the aerial image and emphasize parking sections" aria-pressed="false">SECTIONS</button>
+        <button id="mapSectionsVisibilityToggle" type="button" aria-pressed="true">HIDE SECTIONS</button>
+        <button id="mapShowAllUnitsButton" type="button" aria-pressed="false">SHOW ALL UNITS</button>
+        <button id="mapHighlightedSlotNumbers" type="button" aria-pressed="false">SHOW SLOT NUMBERS</button>
+      </div>
+      <div class="map-toolbar">
         <div class="map-actions" aria-label="Map navigation controls">
            <button id="mapZoomOut" type="button" title="Zoom out" aria-label="Zoom out">−</button>
            <button id="mapZoomIn" type="button" title="Zoom in" aria-label="Zoom in">+</button>
-           <button id="mapFocus" type="button" title="Crop to the active yard strip" aria-pressed="false">FOCUS</button>
-           <button id="mapSectionFocus" type="button" title="Dim the aerial image and emphasize parking sections" aria-pressed="false">SECTIONS</button>
            <label id="mapSectionDimControl" class="section-focus-control disabled" title="Background dim strength">DIM <input id="mapSectionDim" type="range" min="10" max="95" step="5" value="70"><output id="mapSectionDimValue">70%</output></label>
            <button id="mapFit" class="fit-button" type="button" title="Fit the entire map">FIT</button>
+           <button id="mapLayoutSave" type="button" title="Save the current map camera and display layout">SAVE LAYOUT</button>
+           <button id="mapLayoutRestore" type="button" title="Return to the last saved full layout">RESTORE LAYOUT</button>
         </div>
         <div id="mapFocusSettings" class="focus-settings" aria-label="Focus view settings" hidden>
           <label class="focus-setting" title="Choose which point across the yard stays centered">Yard position <input id="mapFocusX" type="range" min="0" max="100" step="1" value="50"><output id="mapFocusXValue">50%</output></label>
@@ -208,7 +242,7 @@
           <label class="focus-setting">Zoom <input id="mapFocusZoom" type="range" min="100" max="400" step="5" value="175"><output id="mapFocusZoomValue">175%</output></label>
           <label class="focus-setting" title="Compress or widen the map without changing the selected yard position">Map width <input id="mapFocusWidth" type="range" min="40" max="140" step="5" value="100"><output id="mapFocusWidthValue">100%</output></label>
           <button id="mapFocusSave" class="focus-reset" type="button">SAVE VIEW</button>
-          <button id="mapFocusReset" class="focus-reset" type="button">RESET</button>
+          <button id="mapFocusReset" class="focus-reset" type="button" title="Return to the last view saved with Save View">RESTORE SAVED</button>
         </div>
         <div class="layer-key" aria-label="Future map overlay layers">
           <span class="key-item"><span class="swatch"></span>Parking areas</span>
@@ -218,9 +252,10 @@
     </header>
 
     <section id="mapStage" class="map-stage" aria-label="Settegast aerial parking map" tabindex="0">
-      <button id="mapActivityPanelToggle" class="map-edge-toggle map-activity-toggle active" type="button" aria-expanded="true" aria-controls="mapActivityPanel">Hide Highlights</button>
       <button id="mapEditorPanelToggle" class="map-edge-toggle map-editor-toggle active" type="button" aria-expanded="true" aria-controls="mapEditorPanel">Hide Editor</button>
       <button id="mapZonePanelToggle" class="zone-panel-toggle active" type="button" aria-expanded="true" aria-controls="mapZonePanel">Hide Areas</button>
+      <button id="mapActivityPanelToggle" class="map-edge-toggle map-activity-toggle active" type="button" aria-expanded="true" aria-controls="mapActivityPanel">Hide Highlights</button>
+      <button id="mapEditSectionNames" class="map-edge-toggle map-name-edit-toggle" type="button" title="Drag section names to reposition them" aria-pressed="false">Edit Names</button>
       <div id="mapZonePanel" class="zone-panel" aria-label="Parking rows">
         <button class="zone-button" data-zone="A" type="button">A ROW<span>28 spots</span></button>
         <button class="zone-button" data-zone="B" type="button">B ROW<span>38 spots</span></button>
@@ -228,7 +263,7 @@
         <button class="zone-button" data-zone="D" type="button">D ROW<span>103 spots</span></button>
       </div>
       <aside id="mapActivityPanel" class="map-activity-panel" aria-label="Highlight parking spots from reconciliation activity">
-        <div class="map-activity-head"><span>Highlight parking spots</span><span id="mapActivityStatus" class="map-activity-status">No reconciliation data</span><label class="map-highlight-unified"><input id="mapShowAllUnitsToggle" type="checkbox">Show all units</label><label class="map-highlight-unified"><input id="mapUnifiedHighlightToggle" type="checkbox">One color <input id="mapUnifiedHighlightColor" class="map-highlight-color" type="color" value="#22c55e" title="Color for every highlight"></label></div>
+        <div class="map-activity-head"><span>Highlight parking spots</span><span id="mapActivityStatus" class="map-activity-status">No reconciliation data</span><label class="map-highlight-unified"><input id="mapShowAllUnitsToggle" type="checkbox">Show all units</label><label class="map-highlight-unified"><input id="mapUnifiedHighlightToggle" type="checkbox">One color <input id="mapUnifiedHighlightColor" class="map-highlight-color" type="color" value="#22c55e" title="Color for every highlight"></label><label class="map-highlight-brightness">Brightness <input id="mapHighlightBrightness" type="range" min="75" max="200" step="5" value="130"><output id="mapHighlightBrightnessValue">130%</output></label><label class="map-highlight-brightness">Number size <input id="mapHighlightNumberSize" type="range" min="8" max="48" step="1" value="13"><output id="mapHighlightNumberSizeValue">13px</output></label><label class="map-highlight-unified">Outline <input id="mapHighlightOutlineColor" class="map-highlight-color" type="color" value="#ffffff" title="Highlighted-slot outline color"></label></div>
         <div class="map-activity-options">
           <label class="map-activity-option" style="--status-color:#22c55e"><input data-map-yard-highlight="yardCheckedToday" type="checkbox"><i class="map-activity-dot"></i><span>Yard checked today</span><input class="map-highlight-color" data-map-highlight-color="yardCheckedToday" type="color" value="#22c55e" title="Change highlight color"></label>
           <label class="map-activity-option" style="--status-color:#84cc16"><input data-map-yard-highlight="yardChecked9Days" type="checkbox"><i class="map-activity-dot"></i><span>Yard checked within last 9 days</span><input class="map-highlight-color" data-map-highlight-color="yardChecked9Days" type="color" value="#84cc16" title="Change highlight color"></label>
@@ -278,20 +313,15 @@
             <polygon class="parking-zone zone-c" data-zone="C" points="1035,238 1330,225 1620,218 1625,292 1330,295 1045,297"></polygon>
             <polygon class="parking-zone zone-d" data-zone="D" points="880,100 1200,95 1600,88 1950,78 2290,55 2295,160 1950,190 1600,200 1200,198 890,195"></polygon>
           </g>
-          <g id="parkingSlotsLayer"></g>
-          <g id="parkingEditLayer"></g>
           <g id="parkingFenceLayer">
             <polyline points="880,100 1200,95 1600,88 1950,78 2290,55"></polyline>
             <polyline points="890,195 1200,198 1600,200 1950,190 2295,160"></polyline>
             <polyline points="1035,238 1330,225 1620,218"></polyline>
             <polyline points="1210,500 1400,499 1628,497"></polyline>
           </g>
-          <g id="parkingLabelsLayer">
-            <text x="1410" y="468" text-anchor="middle">A · 28</text>
-            <text x="1360" y="335" text-anchor="middle">B · 38</text>
-            <text x="1330" y="268" text-anchor="middle">C · 42</text>
-            <text x="1600" y="145" text-anchor="middle">D · 103</text>
-          </g>
+          <g id="parkingLabelsLayer"></g>
+          <g id="parkingSlotsLayer"></g>
+          <g id="parkingEditLayer"></g>
         </svg>
       </div>
     </section>
@@ -340,22 +370,35 @@
       const focusWidthValue = document.getElementById('mapFocusWidthValue');
       const focusSaveButton = document.getElementById('mapFocusSave');
       const focusResetButton = document.getElementById('mapFocusReset');
+      const layoutSaveButton = document.getElementById('mapLayoutSave');
+      const layoutRestoreButton = document.getElementById('mapLayoutRestore');
       const focusSettingsKey = 'conglobal-settegast-map-focus-settings-v1';
+      const layoutSettingsKey = 'conglobal-settegast-map-layout-v1';
       const defaultFocusSettings = Object.freeze({x:50,centerY:25,zoom:175,width:100,height:100});
       let focusSettings={...defaultFocusSettings};
       try { focusSettings=Object.assign({},defaultFocusSettings,JSON.parse(localStorage.getItem(focusSettingsKey)||'null')||{}); } catch(_) {}
+      let savedLayout=null;
+      try { savedLayout=JSON.parse(localStorage.getItem(layoutSettingsKey)||'null'); } catch(_) {}
+      let layoutCheckpointActive=false;
       const sectionFocusButton = document.getElementById('mapSectionFocus');
+      const sectionNamesButton = document.getElementById('mapSectionNames');
+      const editSectionNamesButton = document.getElementById('mapEditSectionNames');
+      const sectionsVisibilityButton = document.getElementById('mapSectionsVisibilityToggle');
       const sectionDimControl = document.getElementById('mapSectionDimControl');
       const sectionDimInput = document.getElementById('mapSectionDim');
       const sectionDimValue = document.getElementById('mapSectionDimValue');
       const mapBaseImage = document.getElementById('mapBaseImage');
       const sectionFocusKey = 'conglobal-settegast-map-section-focus-v1';
       const sectionDimKey = 'conglobal-settegast-map-section-dim-v1';
+      const sectionNamesKey = 'conglobal-settegast-map-section-names-v1';
+      const sectionsVisibilityKey = 'conglobal-settegast-map-sections-visible-v1';
       let scale = 1;
       let x = 0;
       let y = 0;
       let focusMode = false;
       let sectionFocusMode = localStorage.getItem(sectionFocusKey) === '1';
+      let sectionNamesVisible = localStorage.getItem(sectionNamesKey) === '1';
+      let sectionsVisible = localStorage.getItem(sectionsVisibilityKey) !== '0';
       let sectionDim = Math.min(95,Math.max(10,Number(localStorage.getItem(sectionDimKey)) || 70));
       let drag = null;
       const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
@@ -364,6 +407,7 @@
       focusSettings.zoom=clamp(Number(focusSettings.zoom)||defaultFocusSettings.zoom,100,400);
       focusSettings.width=clamp(Number(focusSettings.width)||defaultFocusSettings.width,40,140);
       focusSettings.height=clamp(Number(focusSettings.height)||defaultFocusSettings.height,40,140);
+      let savedFocusSettings={...focusSettings};
       const setZonePanelHidden = hidden => {
         zonePanel.classList.toggle('hidden',hidden);
         document.body.classList.toggle('zone-panel-hidden',hidden);
@@ -402,6 +446,7 @@
       };
       const persistFocusSettings = () => {
         localStorage.setItem(focusSettingsKey,JSON.stringify(focusSettings));
+        savedFocusSettings={...focusSettings};
         focusSaveButton.textContent='SAVED';
         clearTimeout(focusSaveButton._savedTimer);
         focusSaveButton._savedTimer=setTimeout(()=>{focusSaveButton.textContent='SAVE VIEW';},1200);
@@ -428,9 +473,19 @@
         localStorage.setItem(sectionDimKey,String(sectionDim));
       };
       sectionFocusButton.addEventListener('click',()=>{sectionFocusMode=!sectionFocusMode;applySectionFocus();});
+      const applySectionNamesVisibility = () => { document.body.classList.toggle('section-names-visible',sectionNamesVisible);sectionNamesButton.classList.toggle('active',sectionNamesVisible);sectionNamesButton.textContent=sectionNamesVisible?'NAMES ON':'NAMES';sectionNamesButton.setAttribute('aria-pressed',String(sectionNamesVisible));localStorage.setItem(sectionNamesKey,sectionNamesVisible?'1':'0'); };
+      sectionNamesButton.addEventListener('click',()=>{sectionNamesVisible=!sectionNamesVisible;applySectionNamesVisibility();});
+      let sectionNameEditing=false,sectionNameDrag=null;
+      const applySectionNameEditing = () => {document.body.classList.toggle('section-name-editing',sectionNameEditing);editSectionNamesButton.classList.toggle('active',sectionNameEditing);editSectionNamesButton.textContent=sectionNameEditing?'EDIT NAMES ON':'EDIT NAMES';editSectionNamesButton.setAttribute('aria-pressed',String(sectionNameEditing));};
+      editSectionNamesButton.addEventListener('click',()=>{sectionNameEditing=!sectionNameEditing;if(sectionNameEditing&&!sectionNamesVisible){sectionNamesVisible=true;applySectionNamesVisibility();}applySectionNameEditing();});
+      const applySectionsVisibility = () => { document.body.classList.toggle('map-sections-hidden',!sectionsVisible);sectionsVisibilityButton.classList.toggle('active',sectionsVisible);sectionsVisibilityButton.textContent=sectionsVisible?'HIDE SECTIONS':'SHOW SECTIONS';sectionsVisibilityButton.setAttribute('aria-pressed',String(sectionsVisible));localStorage.setItem(sectionsVisibilityKey,sectionsVisible?'1':'0'); };
+      sectionsVisibilityButton.addEventListener('click',()=>{sectionsVisible=!sectionsVisible;applySectionsVisibility();});
       sectionDimInput.addEventListener('input',()=>{sectionDim=clamp(Number(sectionDimInput.value)||70,10,95);applySectionFocus();});
       applySectionFocus();
+      applySectionNamesVisibility();
+      applySectionsVisibility();
       const fit = () => {
+        layoutCheckpointActive=false;
         if(focusMode)captureFocusView();
         focusMode = false;
         focusButton.classList.remove('active');
@@ -443,6 +498,7 @@
         render();
       };
       const applyFocusView = () => {
+        layoutCheckpointActive=false;
         focusMode = true;
         focusButton.classList.add('active');
         focusButton.textContent = 'EXIT FOCUS';
@@ -453,7 +509,16 @@
         y=stage.clientHeight/2-(MAP_HEIGHT*focusSettings.centerY/100)*verticalScale();
         render();
       };
-      const toggleFocus = () => focusMode?fit():applyFocusView();
+      const toggleFocus = () => {if(focusMode){fit();return;}focusSettings={...savedFocusSettings};syncFocusSettings();applyFocusView();};
+      const captureLayout = () => ({focusMode,width:focusMode?focusSettings.width:100,height:focusMode?focusSettings.height:100,centerX:clamp(((stage.clientWidth/2-x)/horizontalScale())/MAP_WIDTH*100,0,100),centerY:clamp(((stage.clientHeight/2-y)/verticalScale())/MAP_HEIGHT*100,0,100),zoom:clamp(scale/fitScale()*100,100,800)});
+      const restoreLayout = layout => {
+        if(!layout||typeof layout!=='object'){fit();return;}
+        const numeric=(value,fallback)=>Number.isFinite(Number(value))?Number(value):fallback;
+        focusMode=Boolean(layout.focusMode);focusSettings.width=clamp(numeric(layout.width,100),40,140);focusSettings.height=clamp(numeric(layout.height,100),40,140);focusSettings.x=clamp(numeric(layout.centerX,50),0,100);focusSettings.centerY=clamp(numeric(layout.centerY,25),0,100);focusSettings.zoom=clamp(numeric(layout.zoom,100),100,focusMode?400:800);
+        focusButton.classList.toggle('active',focusMode);focusButton.textContent=focusMode?'EXIT FOCUS':'FOCUS';focusButton.setAttribute('aria-pressed',String(focusMode));focusSettingsPanel.hidden=!focusMode;syncFocusSettings();
+        scale=clamp(fitScale()*(focusSettings.zoom/100),fitScale(),Math.max(1,fitScale()*(focusMode?4:8)));x=stage.clientWidth/2-(MAP_WIDTH*focusSettings.x/100)*horizontalScale();y=stage.clientHeight/2-(MAP_HEIGHT*focusSettings.centerY/100)*verticalScale();render();layoutCheckpointActive=true;
+      };
+      const saveCurrentLayout = () => { if(focusMode)captureFocusView();savedLayout=captureLayout();localStorage.setItem(layoutSettingsKey,JSON.stringify(savedLayout));layoutCheckpointActive=true;layoutSaveButton.textContent='LAYOUT SAVED';clearTimeout(layoutSaveButton._savedTimer);layoutSaveButton._savedTimer=setTimeout(()=>{layoutSaveButton.textContent='SAVE LAYOUT';},1200); };
       const zoomAt = (nextScale, clientX, clientY) => {
         const minimum = fitScale();
         nextScale = clamp(nextScale, minimum, Math.max(1, minimum * (focusMode?4:8)));
@@ -465,6 +530,7 @@
         x = px - mapX * horizontalScale(nextScale);
         y = py - mapY * verticalScale(nextScale);
         scale = nextScale;
+        layoutCheckpointActive=false;
         render();
         if(focusMode)captureFocusView();
       };
@@ -482,6 +548,7 @@
         y = stage.clientHeight / 2 - ((zone.y1 + zone.y2) / 2) * verticalScale();
         zoneShapes.forEach(shape => shape.classList.toggle('selected', shape.dataset.zone === name));
         zoneButtons.forEach(button => button.classList.toggle('selected', button.dataset.zone === name));
+        layoutCheckpointActive=false;
         render();
         if(focusMode)captureFocusView();
       };
@@ -543,6 +610,7 @@
         if (!drag || drag.pointerId !== event.pointerId) return;
         x = drag.x + event.clientX - drag.startX;
         y = drag.y + event.clientY - drag.startY;
+        layoutCheckpointActive=false;
         render();
       });
       const endDrag = event => {
@@ -572,12 +640,14 @@
       focusZoomInput.addEventListener('input',()=>updateFocusSetting('zoom',focusZoomInput.value));
       focusWidthInput.addEventListener('input',()=>updateFocusSetting('width',focusWidthInput.value));
       focusSaveButton.addEventListener('click',()=>{captureFocusView();persistFocusSettings();});
-      focusResetButton.addEventListener('click',()=>{focusSettings={...defaultFocusSettings};syncFocusSettings();persistFocusSettings();if(focusMode)applyFocusView();});
+      focusResetButton.addEventListener('click',()=>{focusSettings={...savedFocusSettings};syncFocusSettings();if(focusMode)applyFocusView();});
       focusButton.addEventListener('click', toggleFocus);
+      layoutSaveButton.addEventListener('click',saveCurrentLayout);
+      layoutRestoreButton.addEventListener('click',()=>restoreLayout(savedLayout));
       document.getElementById('mapFit').addEventListener('click', fit);
-      window.addEventListener('resize',()=>focusMode?applyFocusView():fit());
+      window.addEventListener('resize',()=>layoutCheckpointActive&&savedLayout?restoreLayout(savedLayout):(focusMode?applyFocusView():fit()));
       syncFocusSettings();
-      fit();
+      if(savedLayout)restoreLayout(savedLayout);else fit();
 
       const editLayer = document.getElementById('parkingEditLayer');
       const editorRow = document.getElementById('mapEditorRow');
@@ -601,35 +671,58 @@
       const deleteAreaButton = document.getElementById('mapDeleteArea');
       const reshapeToggle = document.getElementById('mapReshapeToggle');
       const editKey = 'conglobal-settegast-map-rows-v1';
+      const reshapeModeKey = 'conglobal-settegast-map-reshape-mode-v1';
       const yardHighlightKey = 'settegast-matrix-yard-activity-highlights-wide-v1';
       const reconciliationKey = 'chassisReconciliationCurrentState';
       const yardHighlightColorDefaults = Object.freeze({yardCheckedToday:'#22c55e',yardChecked9Days:'#84cc16',activityToday:'#22d3ee',noYardCheckToday:'#f59e0b',noActivity10Days:'#ef4444'});
       const defaults = { A:'#1daae8', B:'#de2b8b', C:'#f47030', D:'#f6cf36' };
       let selectedRow = null;
       let editing = false;
-      let reshapeMode = false;
+      let reshapeMode = localStorage.getItem(reshapeModeKey)==='1';
       let editDrag = null;
+      let geometrySaveTimer = 0;
       let savedEdits = {};
       try { savedEdits = JSON.parse(localStorage.getItem(editKey) || '{}') || {}; } catch (_) { savedEdits = {}; }
       let showAllUnits=Boolean(savedEdits.__showAllUnits);
+      let showHighlightedSlotNumbers=Boolean(savedEdits.__showHighlightedSlotNumbers);
+      const showAllUnitsButton=document.getElementById('mapShowAllUnitsButton');
+      const highlightedSlotNumbersButton=document.getElementById('mapHighlightedSlotNumbers');
       (Array.isArray(savedEdits.__deleted)?savedEdits.__deleted:[]).forEach(name=>{delete zones[name];document.querySelector(`.parking-zone[data-zone="${name}"]`)?.remove();document.querySelector(`.zone-button[data-zone="${name}"]`)?.remove();slotsLayer.querySelector('.slot-'+name.toLowerCase())?.remove();svg.querySelector('#zoneClip'+name)?.remove();});
       Object.keys(zones).forEach(name=>{const saved=savedEdits[name];if(Array.isArray(saved?.top)&&saved.top.length>=2&&Array.isArray(saved?.bottom)&&saved.bottom.length>=2){zones[name].top=saved.top.map(point=>point.slice());zones[name].bottom=saved.bottom.map(point=>point.slice());const all=[...zones[name].top,...zones[name].bottom],xs=all.map(point=>point[0]),ys=all.map(point=>point[1]);zones[name].x1=Math.min(...xs);zones[name].x2=Math.max(...xs);zones[name].y1=Math.min(...ys);zones[name].y2=Math.max(...ys);const points=[...zones[name].top,...zones[name].bottom.slice().reverse()].map(point=>point.join(',')).join(' ');document.querySelector(`.parking-zone[data-zone="${name}"]`)?.setAttribute('points',points);svg.querySelector('#zoneClip'+name+' polygon')?.setAttribute('points',points);}});
       zoneShapes=[...document.querySelectorAll('.parking-zone')];zoneButtons=[...document.querySelectorAll('.zone-button')];
-      let highlightStyle=Object.assign({unified:false,unifiedColor:'#22c55e',colors:{...yardHighlightColorDefaults}},savedEdits.__highlightStyle||{});
+      let highlightStyle=Object.assign({unified:false,unifiedColor:'#22c55e',brightness:130,numberSize:13,outlineColor:'#ffffff',colors:{...yardHighlightColorDefaults}},savedEdits.__highlightStyle||{});
+      highlightStyle.brightness=clamp(Number(highlightStyle.brightness)||130,75,200);highlightStyle.numberSize=clamp(Number(highlightStyle.numberSize)||13,8,48);highlightStyle.outlineColor=/^#[0-9a-f]{6}$/i.test(highlightStyle.outlineColor)?highlightStyle.outlineColor:'#ffffff';
       highlightStyle.colors=Object.assign({},yardHighlightColorDefaults,highlightStyle.colors||{});
       const yardHighlightColors=highlightStyle.colors;
-      Object.keys(zones).forEach(name=>{const savedCapacity=Number(savedEdits[name]?.capacity),savedRows=Number(savedEdits[name]?.rowCount);zones[name].rowCount=Math.round(clamp(savedRows||1,1,6));if(Number.isFinite(savedCapacity)&&savedCapacity>0){zones[name].capacity=Math.round(clamp(savedCapacity,1,300));buildSlotGroup(name,zones[name],savedEdits[name]?.slotAngle);}});
+      Object.keys(zones).forEach(name=>{const saved=savedEdits[name]||{},savedCapacity=Number(saved.capacity),savedRows=Number(saved.rowCount);zones[name].rowCount=Math.round(clamp(savedRows||1,1,6));if(Number.isFinite(savedCapacity)&&savedCapacity>0)zones[name].capacity=Math.round(clamp(savedCapacity,1,300));buildSlotGroup(name,zones[name],saved.slotAngle);});
       const stateFor = name => Object.assign({ tx:0, ty:0, sx:1, sy:1, color:defaults[name]||'#42d3ff', opacity:.35, numberDirection:'ltr', slotAngle:0, rowCount:1, label:name }, savedEdits[name] || {});
       let unifiedStyle=Object.assign({enabled:false,color:'#22d3ee',opacity:.35},savedEdits.__globalStyle||{});
       unifiedStyle.enabled=Boolean(unifiedStyle.enabled);unifiedStyle.opacity=clamp(Number(unifiedStyle.opacity),0,1);
       const effectiveStyleFor = name => unifiedStyle.enabled?{color:unifiedStyle.color,opacity:unifiedStyle.opacity}:stateFor(name);
+      const updateSectionLabel = name => {
+        const zone=zones[name],labelsLayer=document.getElementById('parkingLabelsLayer');if(!zone||!labelsLayer)return;
+        let label=labelsLayer.querySelector(`text[data-zone="${name}"]`);if(!label){label=document.createElementNS('http://www.w3.org/2000/svg','text');label.dataset.zone=name;labelsLayer.appendChild(label);}
+        const all=[...(zone.top||[]),...(zone.bottom||[])],sectionCenterX=all.reduce((sum,point)=>sum+point[0],0)/Math.max(1,all.length),sectionCenterY=all.reduce((sum,point)=>sum+point[1],0)/Math.max(1,all.length),group=slotGroupFor(name),slots=group?[...group.querySelectorAll('polygon')]:[],active=slots.filter(slot=>slot.classList.contains('map-slot-activity')),available=slots.filter(slot=>!slot.classList.contains('map-slot-activity'));
+        let baseX=sectionCenterX,baseY=sectionCenterY;
+        if(active.length&&available.length){const activeRows=new Set(active.map(slot=>slot.dataset.slotRow)),safeRows=available.filter(slot=>!activeRows.has(slot.dataset.slotRow)),candidates=safeRows.length?safeRows:available,activeCenters=active.map(slot=>{const box=slot.getBBox();return{x:box.x+box.width/2,y:box.y+box.height/2};});let best=null;candidates.forEach(slot=>{const box=slot.getBBox(),candidate={x:box.x+box.width/2,y:box.y+box.height/2},clearance=Math.min(...activeCenters.map(point=>Math.hypot(candidate.x-point.x,candidate.y-point.y))),centerDistance=Math.hypot(candidate.x-sectionCenterX,candidate.y-sectionCenterY),score=centerDistance-clearance*.22;if(!best||score<best.score)best={...candidate,score};});if(best){baseX=best.x;baseY=best.y;}}
+        const state=stateFor(name),shape=zoneShapes.find(item=>item.dataset.zone===name),box=shape?.getBBox(),originX=box?box.x+box.width/2:baseX,originY=box?box.y+box.height/2:baseY,x=state.tx+originX+(baseX-originX)*state.sx+(Number(state.labelOffsetX)||0),y=state.ty+originY+(baseY-originY)*state.sy+(Number(state.labelOffsetY)||0),raw=String(state.label||name).trim();
+        label.setAttribute('x',x);label.setAttribute('y',y);label.removeAttribute('transform');label.textContent=/^[A-Z]$/i.test(raw)?`ROW ${raw.toUpperCase()}`:raw;
+      };
+      const labelsLayer=document.getElementById('parkingLabelsLayer');
+      labelsLayer.addEventListener('pointerdown',event=>{if(!sectionNameEditing)return;const label=event.target.closest('text[data-zone]');if(!label)return;event.preventDefault();event.stopPropagation();const point=svg.createSVGPoint();point.x=event.clientX;point.y=event.clientY;const local=point.matrixTransform(svg.getScreenCTM().inverse()),name=label.dataset.zone,state=stateFor(name);sectionNameDrag={pointerId:event.pointerId,name,startX:local.x,startY:local.y,offsetX:Number(state.labelOffsetX)||0,offsetY:Number(state.labelOffsetY)||0};labelsLayer.setPointerCapture?.(event.pointerId);},true);
+      labelsLayer.addEventListener('pointermove',event=>{if(!sectionNameDrag||event.pointerId!==sectionNameDrag.pointerId)return;event.preventDefault();const point=svg.createSVGPoint();point.x=event.clientX;point.y=event.clientY;const local=point.matrixTransform(svg.getScreenCTM().inverse()),state=stateFor(sectionNameDrag.name);state.labelOffsetX=sectionNameDrag.offsetX+local.x-sectionNameDrag.startX;state.labelOffsetY=sectionNameDrag.offsetY+local.y-sectionNameDrag.startY;savedEdits[sectionNameDrag.name]=state;updateSectionLabel(sectionNameDrag.name);});
+      const finishSectionNameDrag=event=>{if(!sectionNameDrag||event.pointerId!==sectionNameDrag.pointerId)return;labelsLayer.releasePointerCapture?.(event.pointerId);saveEdits();sectionNameDrag=null;};
+      labelsLayer.addEventListener('pointerup',finishSectionNameDrag);labelsLayer.addEventListener('pointercancel',finishSectionNameDrag);
       const syncUnifiedStyleControls = () => { unifiedStyleToggle.classList.toggle('active',unifiedStyle.enabled);unifiedStyleToggle.textContent=`Unified Style: ${unifiedStyle.enabled?'On':'Off'}`;unifiedStyleToggle.setAttribute('aria-pressed',String(unifiedStyle.enabled));unifiedColorInput.value=unifiedStyle.color;unifiedOpacityInput.value=String(Math.round(unifiedStyle.opacity*100));unifiedOpacityValue.textContent=unifiedOpacityInput.value+'%';document.querySelectorAll('.global-style-control').forEach(label=>label.classList.toggle('disabled',!unifiedStyle.enabled)); };
       const saveEdits = () => localStorage.setItem(editKey, JSON.stringify(savedEdits));
-      const saveHighlightStyle = () => { savedEdits.__highlightStyle={unified:Boolean(highlightStyle.unified),unifiedColor:highlightStyle.unifiedColor,colors:{...yardHighlightColors}};saveEdits(); };
+      const saveHighlightStyle = () => { savedEdits.__highlightStyle={unified:Boolean(highlightStyle.unified),unifiedColor:highlightStyle.unifiedColor,brightness:highlightStyle.brightness,numberSize:highlightStyle.numberSize,outlineColor:highlightStyle.outlineColor,colors:{...yardHighlightColors}};saveEdits(); };
       const syncHighlightStyleControls = () => {
         const unifiedToggle=document.getElementById('mapUnifiedHighlightToggle'),unifiedColor=document.getElementById('mapUnifiedHighlightColor');
         unifiedToggle.checked=Boolean(highlightStyle.unified);unifiedColor.value=highlightStyle.unifiedColor;
         const showAllToggle=document.getElementById('mapShowAllUnitsToggle');showAllToggle.checked=showAllUnits;
+        showAllUnitsButton.classList.toggle('active',showAllUnits);showAllUnitsButton.textContent=showAllUnits?'ALL UNITS ON':'SHOW ALL UNITS';showAllUnitsButton.setAttribute('aria-pressed',String(showAllUnits));
+        highlightedSlotNumbersButton.classList.toggle('active',showHighlightedSlotNumbers);highlightedSlotNumbersButton.textContent=showHighlightedSlotNumbers?'SLOT NUMBERS ON':'SHOW SLOT NUMBERS';highlightedSlotNumbersButton.setAttribute('aria-pressed',String(showHighlightedSlotNumbers));
+        const brightnessInput=document.getElementById('mapHighlightBrightness'),numberSizeInput=document.getElementById('mapHighlightNumberSize'),outlineInput=document.getElementById('mapHighlightOutlineColor');brightnessInput.value=String(highlightStyle.brightness);document.getElementById('mapHighlightBrightnessValue').textContent=Math.round(highlightStyle.brightness)+'%';numberSizeInput.value=String(highlightStyle.numberSize);document.getElementById('mapHighlightNumberSizeValue').textContent=Math.round(highlightStyle.numberSize)+'px';outlineInput.value=highlightStyle.outlineColor;
         document.querySelector('.map-activity-options')?.classList.toggle('show-all-active',showAllUnits);
         document.querySelectorAll('[data-map-highlight-color]').forEach(input=>{const key=input.dataset.mapHighlightColor;input.value=yardHighlightColors[key];input.disabled=Boolean(highlightStyle.unified);const option=input.closest('.map-activity-option');if(option)option.style.setProperty('--status-color',highlightStyle.unified?highlightStyle.unifiedColor:yardHighlightColors[key]);});
       };
@@ -642,6 +735,7 @@
       const parkingSection = value => { const raw=String(value||'').trim().toUpperCase(); const match=/^(?:LOT\s*)?([A-S])(?:\s*(?:-|\/|\b))/.exec(raw); return match?match[1]:''; };
       const normalizedAreaWords = value => String(value||'').toUpperCase().replace(/\b(AREA|PARKING|LOT)\b/g,' ').replace(/[^A-Z0-9]+/g,' ').trim().split(/\s+/).filter(Boolean);
       const sectionForLocation = value => { const direct=parkingSection(value);if(direct&&zones[direct])return direct;const locationWords=new Set(normalizedAreaWords(value));if(!locationWords.size)return '';return Object.keys(zones).find(name=>{const words=normalizedAreaWords(stateFor(name).label||name);return words.length&&words.every(word=>locationWords.has(word));})||''; };
+      const showNumberForSection = section => !/\bDIRT\b/i.test(String(stateFor(section).label||section));
       const parkingSpot = value => { const raw=String(value||'').trim().toUpperCase(); if(!parkingSection(raw))return null; const numbers=raw.match(/\d{1,3}/g)||[]; const spot=Number(numbers[numbers.length-1]); return Number.isInteger(spot)&&spot>0&&spot<=300?spot:null; };
       const stableParkingSpot = (row,section) => { const explicit=parkingSpot(row?.location);if(explicit)return explicit;const zone=zones[section],total=Math.max(1,(Number(zone?.capacity)||1)*Math.round(clamp(Number(stateFor(section).rowCount)||1,1,6))),id=String(row?.chassis||row?.equipmentId||row?.unitId||row?.container||row?.id||row?.location||section);let hash=2166136261;for(let index=0;index<id.length;index+=1){hash^=id.charCodeAt(index);hash=Math.imul(hash,16777619);}return (Math.abs(hash) % total)+1; };
       const isYardCheck = row => { const event=String(row?.event||'').toLowerCase(); return event.includes('ycco')||event.includes('tcco')||event.includes('yard check'); };
@@ -649,10 +743,17 @@
       let reconciliationActivity=loadReconciliation();
       const activitySummaries = () => { const rows=reconciliationActivity.tableRows||[],explicit=activityDay(reconciliationActivity.reportDate),days=rows.map(row=>activityDay(row.eventDate)).filter(day=>day!=null),reportDay=explicit!=null?explicit:(days.length?Math.max(...days):activityDay(new Date())),summaries=new Map(); rows.forEach(row=>{const section=sectionForLocation(row.location),eventDay=activityDay(row.eventDate);if(!section||!zones[section])return;const age=eventDay==null||reportDay==null?null:Math.max(0,reportDay-eventDay);if(!summaries.has(section))summaries.set(section,{total:0,activityToday:0,yardCheckedToday:0,yardChecked9Days:0,newestAge:Infinity});const summary=summaries.get(section);summary.total++;if(age!=null)summary.newestAge=Math.min(summary.newestAge,age);if(age===0){summary.activityToday++;if(isYardCheck(row))summary.yardCheckedToday++;}if(age!=null&&age<=9&&isYardCheck(row))summary.yardChecked9Days++;});return summaries; };
       const activeHighlightKeys = (section,summaries) => { const summary=summaries.get(section);if(!summary)return [];const active={yardCheckedToday:summary.yardCheckedToday>0,yardChecked9Days:summary.yardChecked9Days>0,activityToday:summary.activityToday>0,noYardCheckToday:summary.yardCheckedToday===0,noActivity10Days:Number.isFinite(summary.newestAge)&&summary.newestAge>=10};return Object.keys(yardHighlightColors).filter(key=>yardHighlightState[key]&&active[key]); };
+      const separateHighlightedNumbers = () => {
+        const labels=[...slotsLayer.querySelectorAll(':scope > .map-highlight-slot-number')],placed=[],size=highlightStyle.numberSize,step=Math.max(10,size*.82),padding=Math.max(2,size*.08);
+        labels.forEach((label,index)=>{const baseY=Number(label.dataset.baseY)||Number(label.getAttribute('y'))||0,directions=index%2?[0,1,-1,2,-2,3,-3]:[0,-1,1,-2,2,-3,3];let chosenBox=null;for(const direction of directions){label.setAttribute('y',baseY+direction*step);const box=label.getBBox(),overlaps=placed.some(other=>box.x-padding<other.x+other.width&&box.x+box.width+padding>other.x&&box.y-padding<other.y+other.height&&box.y+box.height+padding>other.y);if(!overlaps){chosenBox=box;break;}}placed.push(chosenBox||label.getBBox());});
+      };
       const updateParkingHighlights = () => {
         const rows=reconciliationActivity.tableRows||[],summaries=activitySummaries(),highlighted=new Set(),usedBySection=new Map();
-        Object.keys(zones).forEach(name=>{const style=effectiveStyleFor(name),group=slotGroupFor(name);group?.querySelectorAll('polygon').forEach(slot=>{slot.classList.remove('map-slot-activity');slot.style.fill=style.color;slot.style.fillOpacity='1';slot.style.opacity=String(clamp(Number(style.opacity),0,1));slot.style.stroke='';slot.style.strokeWidth='';slot.style.filter='';});});
-        rows.forEach(row=>{const section=sectionForLocation(row.location),keys=showAllUnits?(section?['showAllUnits']:[]):activeHighlightKeys(section,summaries);if(!section||!keys.length)return;const total=Math.max(1,(Number(zones[section]?.capacity)||1)*Math.round(clamp(Number(stateFor(section).rowCount)||1,1,6))),used=usedBySection.get(section)||new Set();let spot=stableParkingSpot(row,section),attempts=0;while(used.has(spot)&&attempts<total){spot=spot%total+1;attempts++;}used.add(spot);usedBySection.set(section,used);const slot=slotGroupFor(section)?.querySelector(`polygon[data-slot-number="${spot}"]`);if(!slot)return;const color=highlightStyle.unified?highlightStyle.unifiedColor:(keys[0]==='showAllUnits'?'#38bdf8':yardHighlightColors[keys[0]]);slot.classList.add('map-slot-activity');slot.style.fill=color;slot.style.fillOpacity='1';slot.style.opacity='1';slot.style.stroke='#ffffff';slot.style.strokeWidth='4';slot.style.filter='none';highlighted.add(section+'-'+spot);});
+        slotsLayer.querySelectorAll(':scope > .map-highlight-slot-number').forEach(label=>label.remove());
+        Object.keys(zones).forEach(name=>{const style=effectiveStyleFor(name),group=slotGroupFor(name);group?.querySelectorAll('polygon').forEach(slot=>{slot.classList.remove('map-slot-activity');slot.style.removeProperty('--slot-highlight-color');slot.style.removeProperty('--slot-highlight-outline');slot.style.removeProperty('--slot-highlight-brightness');slot.style.fill=style.color;slot.style.fillOpacity='1';slot.style.opacity=String(clamp(Number(style.opacity),0,1));slot.style.stroke='';slot.style.strokeWidth='';slot.style.filter='';});});
+        rows.forEach(row=>{const section=sectionForLocation(row.location),keys=showAllUnits?(section?['showAllUnits']:[]):activeHighlightKeys(section,summaries);if(!section||!keys.length)return;const total=Math.max(1,(Number(zones[section]?.capacity)||1)*Math.round(clamp(Number(stateFor(section).rowCount)||1,1,6))),used=usedBySection.get(section)||new Set();let spot=stableParkingSpot(row,section),attempts=0;while(used.has(spot)&&attempts<total){spot=spot%total+1;attempts++;}used.add(spot);usedBySection.set(section,used);const group=slotGroupFor(section),slot=group?.querySelector(`polygon[data-slot-number="${spot}"]`);if(!slot)return;const color=highlightStyle.unified?highlightStyle.unifiedColor:(keys[0]==='showAllUnits'?'#38bdf8':yardHighlightColors[keys[0]]);slot.classList.add('map-slot-activity');slot.style.setProperty('--slot-highlight-color',color);slot.style.setProperty('--slot-highlight-outline',highlightStyle.outlineColor);slot.style.setProperty('--slot-highlight-brightness',String(highlightStyle.brightness/100));slot.style.fill=color;slot.style.fillOpacity='1';slot.style.opacity='1';if(showHighlightedSlotNumbers&&showNumberForSection(section)){const box=slot.getBBox(),center=svg.createSVGPoint(),slotMatrix=slot.getCTM(),rootMatrix=slotsLayer.getCTM();center.x=box.x+box.width/2;center.y=box.y+box.height/2;const relativeMatrix=rootMatrix&&slotMatrix?rootMatrix.inverse().multiply(slotMatrix):slotMatrix,mapped=relativeMatrix?center.matrixTransform(relativeMatrix):center,label=document.createElementNS('http://www.w3.org/2000/svg','text');label.setAttribute('class','map-highlight-slot-number');label.setAttribute('x',mapped.x);label.setAttribute('y',mapped.y);label.dataset.baseY=String(mapped.y);label.style.setProperty('--highlight-number-size',highlightStyle.numberSize+'px');label.textContent=String(spot);slotsLayer.appendChild(label);}highlighted.add(section+'-'+spot);});
+        if(showHighlightedSlotNumbers)separateHighlightedNumbers();
+        Object.keys(zones).forEach(updateSectionLabel);
         document.querySelectorAll('[data-map-yard-highlight]').forEach(input=>input.checked=Boolean(yardHighlightState[input.dataset.mapYardHighlight]));
         const status=document.getElementById('mapActivityStatus');if(status)status.textContent=rows.length?`${showAllUnits?'All units · ':''}${highlighted.size} spot${highlighted.size===1?'':'s'} highlighted`:'No reconciliation data';
       };
@@ -697,6 +798,7 @@
         const all=[...zone.top,...zone.bottom],xs=all.map(point=>point[0]),ys=all.map(point=>point[1]);zone.x1=Math.min(...xs);zone.x2=Math.max(...xs);zone.y1=Math.min(...ys);zone.y2=Math.max(...ys);
         const points=[...zone.top,...zone.bottom.slice().reverse()].map(point=>point.join(',')).join(' '),shape=zoneShapes.find(item=>item.dataset.zone===name);
         shape?.setAttribute('points',points);svg.querySelector('#zoneClip'+name+' polygon')?.setAttribute('points',points);state.top=zone.top.map(point=>point.slice());state.bottom=zone.bottom.map(point=>point.slice());savedEdits[name]=state;
+        clearTimeout(geometrySaveTimer);geometrySaveTimer=setTimeout(saveEdits,120);
         setSlotGeometry(name,zone,state.slotAngle);numberSlots(name);applyRow(name);updateParkingHighlights();
       };
       const drawEditBox = () => {
@@ -716,7 +818,7 @@
       const applyRow = name => {
         const state = stateFor(name), style=effectiveStyleFor(name), transform = transformFor(name,state), shape = zoneShapes.find(item => item.dataset.zone === name), group = slotGroupFor(name);
         if(!shape)return;
-        shape.setAttribute('transform',transform);shape.style.fill=style.color;shape.style.fillOpacity='1';shape.style.opacity=String(clamp(Number(style.opacity),0,1));if(group){group.setAttribute('transform',transform);group.style.opacity='1';group.querySelectorAll('polygon').forEach(slot=>{if(!slot.classList.contains('map-slot-activity')){slot.style.fill=style.color;slot.style.opacity=String(clamp(Number(style.opacity),0,1));}});group.querySelectorAll('.slot-number').forEach(label=>label.style.opacity=String(clamp(Number(style.opacity),0,1)));}const button=zoneButtons.find(item=>item.dataset.zone===name);if(button){button.style.background=style.color;const label=state.label||name,perRow=zones[name]?.capacity||0,rows=Math.round(clamp(Number(state.rowCount)||1,1,6));button.innerHTML=`${label} AREA<span>${perRow*rows} spots · ${rows} row${rows===1?'':'s'}</span>`;}
+        shape.setAttribute('transform',transform);shape.style.fill=style.color;shape.style.fillOpacity='1';shape.style.opacity=String(clamp(Number(style.opacity),0,1));if(group){group.setAttribute('transform',transform);group.style.opacity='1';group.querySelectorAll('polygon').forEach(slot=>{if(!slot.classList.contains('map-slot-activity')){slot.style.fill=style.color;slot.style.opacity=String(clamp(Number(style.opacity),0,1));}});group.querySelectorAll('.slot-number').forEach(label=>label.style.opacity=String(clamp(Number(style.opacity),0,1)));}updateSectionLabel(name);const button=zoneButtons.find(item=>item.dataset.zone===name);if(button){button.style.background=style.color;const label=state.label||name,perRow=zones[name]?.capacity||0,rows=Math.round(clamp(Number(state.rowCount)||1,1,6));button.innerHTML=`${label} AREA<span>${perRow*rows} spots · ${rows} row${rows===1?'':'s'}</span>`;}
         drawEditBox();
       };
       const numberSlots = name => {
@@ -726,7 +828,7 @@
         const state=stateFor(name);
         const slots=[...group.querySelectorAll('polygon')],reverse=state.numberDirection==='rtl';
         const labelOpacity=String(clamp(Number(effectiveStyleFor(name).opacity),0,1));
-        slots.forEach((slot,index)=>{ const box=slot.getBBox(),label=document.createElementNS('http://www.w3.org/2000/svg','text'),row=Number(slot.dataset.slotRow)||0,column=Number(slot.dataset.slotIndex)||0; label.setAttribute('class','slot-number'); label.setAttribute('x',box.x+box.width/2); label.setAttribute('y',box.y+box.height/2);label.style.opacity=labelOpacity;label.textContent=String(row*zones[name].capacity+(reverse?zones[name].capacity-column:column+1)); labels.appendChild(label); });
+        slots.forEach((slot,index)=>{ const box=slot.getBBox(),label=document.createElementNS('http://www.w3.org/2000/svg','text'),row=Number(slot.dataset.slotRow)||0,column=Number(slot.dataset.slotIndex)||0,number=row*zones[name].capacity+(reverse?zones[name].capacity-column:column+1); label.setAttribute('class','slot-number');label.dataset.slotNumber=String(number); label.setAttribute('x',box.x+box.width/2); label.setAttribute('y',box.y+box.height/2);label.style.opacity=labelOpacity;label.textContent=String(number); labels.appendChild(label); });
         group.appendChild(labels);
       };
       const chooseRow = name => { selectedRow=name; const state=stateFor(name); editorRow.textContent=(state.label||name)+' AREA';sectionNameInput.value=state.label||name; colorInput.value=state.color; slotCountInput.value=String(zones[name]?.capacity||1);rowCountInput.value=String(Math.round(clamp(Number(state.rowCount)||1,1,6))); numberDirectionInput.value=state.numberDirection==='rtl'?'rtl':'ltr';slotAngleInput.value=String(clamp(Number(state.slotAngle)||0,-45,45));slotAngleValue.textContent=slotAngleInput.value+'°'; opacityInput.value=String(Math.round(clamp(Number(state.opacity),0,1)*100)); opacityValue.textContent=opacityInput.value+'%'; editorStatus.textContent=editing?(reshapeMode?'Drag white points; select a yellow midpoint to add another point.':'Drag the area to move it or drag a corner to resize.'):'Enable editing to move or resize '+(state.label||name)+'.'; numberSlots(name); drawEditBox(); };
@@ -735,12 +837,13 @@
       areasLayer.addEventListener('click',event=>{ if(editing&&event.target.closest('.parking-zone')){ event.preventDefault(); event.stopImmediatePropagation(); } },true);
       editLayer.addEventListener('pointerdown',event=>{ if(!selectedRow)return;const add=event.target.closest('.parking-add-point');if(add){event.preventDefault();event.stopPropagation();const path=add.dataset.path,index=Number(add.dataset.index),points=zones[selectedRow][path],before=points[index-1],after=points[index];points.splice(index,0,[(before[0]+after[0])/2,(before[1]+after[1])/2]);syncZoneGeometry(selectedRow);drawEditBox();saveEdits();return;}const shapeHandle=event.target.closest('.parking-shape-handle'),handle=event.target.closest('.parking-resize-handle');if(!shapeHandle&&!handle)return;event.preventDefault();event.stopPropagation();const point=svg.createSVGPoint();point.x=event.clientX;point.y=event.clientY;const local=point.matrixTransform(svg.getScreenCTM().inverse());if(shapeHandle){const path=shapeHandle.dataset.path,index=Number(shapeHandle.dataset.index);editDrag={mode:'reshape',path,index,start:local,basePoint:zones[selectedRow][path][index].slice(),base:{...stateFor(selectedRow)}};}else{editDrag={mode:'resize',corner:handle.dataset.corner,start:local,base:{...stateFor(selectedRow)},box:transformedBox(selectedRow,stateFor(selectedRow))};} });
       window.addEventListener('pointermove',event=>{ if(!editDrag||!selectedRow)return;const point=svg.createSVGPoint();point.x=event.clientX;point.y=event.clientY;const local=point.matrixTransform(svg.getScreenCTM().inverse()),dx=local.x-editDrag.start.x,dy=local.y-editDrag.start.y,state=stateFor(selectedRow);if(editDrag.mode==='reshape'){zones[selectedRow][editDrag.path][editDrag.index]=[editDrag.basePoint[0]+dx/editDrag.base.sx,editDrag.basePoint[1]+dy/editDrag.base.sy];syncZoneGeometry(selectedRow);drawEditBox();return;}if(editDrag.mode==='move'){state.tx=editDrag.base.tx+dx;state.ty=editDrag.base.ty+dy;}else{const xSign=editDrag.corner.includes('e')?1:-1,ySign=editDrag.corner.includes('s')?1:-1;state.sx=Math.max(.25,editDrag.base.sx+(dx*xSign)/(editDrag.box.width/editDrag.base.sx));state.sy=Math.max(.25,editDrag.base.sy+(dy*ySign)/(editDrag.box.height/editDrag.base.sy));state.tx=editDrag.base.tx+dx/2;state.ty=editDrag.base.ty+dy/2;}savedEdits[selectedRow]=state;applyRow(selectedRow); });
-      window.addEventListener('pointerup',()=>{ if(editDrag){saveEdits();editDrag=null;} });
-      editToggle.addEventListener('click',()=>{editing=!editing;if(!editing){reshapeMode=false;reshapeToggle.classList.remove('active');reshapeToggle.textContent='Reshape: Off';reshapeToggle.setAttribute('aria-pressed','false');}document.body.classList.toggle('map-editing',editing);editToggle.classList.toggle('active',editing);editToggle.textContent=editing?'Editing On':'Enable Editing';editorStatus.textContent=editing?(selectedRow?'Drag the row to move it or drag a corner to resize.':'Select a parking row to edit.'):'Map navigation mode.';drawEditBox();});
-      reshapeToggle.addEventListener('click',()=>{if(!selectedRow){editorStatus.textContent='Select a parking section first.';return;}if(!editing){editing=true;document.body.classList.add('map-editing');editToggle.classList.add('active');editToggle.textContent='Editing On';}reshapeMode=!reshapeMode;reshapeToggle.classList.toggle('active',reshapeMode);reshapeToggle.textContent=`Reshape: ${reshapeMode?'On':'Off'}`;reshapeToggle.setAttribute('aria-pressed',String(reshapeMode));editorStatus.textContent=reshapeMode?'Drag white points. Select a yellow midpoint to add another reshape point.':'Corner resizing restored.';drawEditBox();});
+      const finishEditDrag = () => { if(editDrag){clearTimeout(geometrySaveTimer);saveEdits();editDrag=null;} };
+      window.addEventListener('pointerup',finishEditDrag);window.addEventListener('pointercancel',finishEditDrag);window.addEventListener('blur',finishEditDrag);
+      editToggle.addEventListener('click',()=>{editing=!editing;document.body.classList.toggle('map-editing',editing);editToggle.classList.toggle('active',editing);editToggle.textContent=editing?'Editing On':'Enable Editing';reshapeToggle.classList.toggle('active',reshapeMode);reshapeToggle.textContent=`Reshape: ${reshapeMode?'On':'Off'}`;reshapeToggle.setAttribute('aria-pressed',String(reshapeMode));editorStatus.textContent=editing?(selectedRow?(reshapeMode?'Drag white points; select a yellow midpoint to add another point.':'Drag the row to move it or drag a corner to resize.'):'Select a parking row to edit.'):'Map navigation mode.';drawEditBox();});
+      reshapeToggle.addEventListener('click',()=>{if(!selectedRow){editorStatus.textContent='Select a parking section first.';return;}if(!editing){editing=true;document.body.classList.add('map-editing');editToggle.classList.add('active');editToggle.textContent='Editing On';}reshapeMode=!reshapeMode;localStorage.setItem(reshapeModeKey,reshapeMode?'1':'0');reshapeToggle.classList.toggle('active',reshapeMode);reshapeToggle.textContent=`Reshape: ${reshapeMode?'On':'Off'}`;reshapeToggle.setAttribute('aria-pressed',String(reshapeMode));editorStatus.textContent=reshapeMode?'Drag white points. Select a yellow midpoint to add another reshape point.':'Corner resizing restored.';drawEditBox();});
       renameAreaButton.addEventListener('click',()=>{if(!selectedRow)return;const label=sectionNameInput.value.trim().replace(/\s+/g,' ').slice(0,24);if(!label){editorStatus.textContent='Enter a section name first.';return;}const state=stateFor(selectedRow);state.label=label;savedEdits[selectedRow]=state;applyRow(selectedRow);editorRow.textContent=label+' AREA';saveEdits();editorStatus.textContent='Section renamed to '+label+'.';});
       let deleteArmedUntil=0;
-      deleteAreaButton.addEventListener('click',()=>{if(!selectedRow)return;const now=Date.now();if(now>deleteArmedUntil){deleteArmedUntil=now+3500;deleteAreaButton.textContent='Confirm Delete';deleteAreaButton.classList.add('active');setTimeout(()=>{if(Date.now()>deleteArmedUntil){deleteAreaButton.textContent='Delete';deleteAreaButton.classList.remove('active');}},3600);return;}const name=selectedRow,label=stateFor(name).label||name;zoneShapes.find(item=>item.dataset.zone===name)?.remove();zoneButtons.find(item=>item.dataset.zone===name)?.remove();slotGroupFor(name)?.remove();svg.querySelector('#zoneClip'+name)?.remove();delete zones[name];delete defaults[name];delete defaultCapacities[name];delete savedEdits[name];if(!Array.isArray(savedEdits.__deleted))savedEdits.__deleted=[];if(!savedEdits.__deleted.includes(name))savedEdits.__deleted.push(name);if(Array.isArray(savedEdits.__areas))savedEdits.__areas=savedEdits.__areas.filter(area=>area.name!==name);zoneShapes=[...document.querySelectorAll('.parking-zone')];zoneButtons=[...document.querySelectorAll('.zone-button')];selectedRow=null;reshapeMode=false;editLayer.replaceChildren();editorRow.textContent='None';sectionNameInput.value='';deleteAreaButton.textContent='Delete';deleteAreaButton.classList.remove('active');saveEdits();updateParkingHighlights();editorStatus.textContent=label+' deleted.';});
+      deleteAreaButton.addEventListener('click',()=>{if(!selectedRow)return;const now=Date.now();if(now>deleteArmedUntil){deleteArmedUntil=now+3500;deleteAreaButton.textContent='Confirm Delete';deleteAreaButton.classList.add('active');setTimeout(()=>{if(Date.now()>deleteArmedUntil){deleteAreaButton.textContent='Delete';deleteAreaButton.classList.remove('active');}},3600);return;}const name=selectedRow,label=stateFor(name).label||name;zoneShapes.find(item=>item.dataset.zone===name)?.remove();zoneButtons.find(item=>item.dataset.zone===name)?.remove();slotGroupFor(name)?.remove();document.querySelector(`#parkingLabelsLayer text[data-zone="${name}"]`)?.remove();svg.querySelector('#zoneClip'+name)?.remove();delete zones[name];delete defaults[name];delete defaultCapacities[name];delete savedEdits[name];if(!Array.isArray(savedEdits.__deleted))savedEdits.__deleted=[];if(!savedEdits.__deleted.includes(name))savedEdits.__deleted.push(name);if(Array.isArray(savedEdits.__areas))savedEdits.__areas=savedEdits.__areas.filter(area=>area.name!==name);zoneShapes=[...document.querySelectorAll('.parking-zone')];zoneButtons=[...document.querySelectorAll('.zone-button')];selectedRow=null;editLayer.replaceChildren();editorRow.textContent='None';sectionNameInput.value='';deleteAreaButton.textContent='Delete';deleteAreaButton.classList.remove('active');saveEdits();updateParkingHighlights();editorStatus.textContent=label+' deleted.';});
       unifiedStyleToggle.addEventListener('click',()=>{unifiedStyle.enabled=!unifiedStyle.enabled;savedEdits.__globalStyle={...unifiedStyle};syncUnifiedStyleControls();Object.keys(zones).forEach(applyRow);updateParkingHighlights();saveEdits();});
       unifiedColorInput.addEventListener('input',()=>{unifiedStyle.color=unifiedColorInput.value;savedEdits.__globalStyle={...unifiedStyle};Object.keys(zones).forEach(applyRow);updateParkingHighlights();saveEdits();});
       unifiedOpacityInput.addEventListener('input',()=>{unifiedStyle.opacity=Number(unifiedOpacityInput.value)/100;unifiedOpacityValue.textContent=unifiedOpacityInput.value+'%';savedEdits.__globalStyle={...unifiedStyle};Object.keys(zones).forEach(applyRow);updateParkingHighlights();saveEdits();});
@@ -756,9 +859,15 @@
         input.addEventListener('input',event=>{event.stopPropagation();yardHighlightColors[input.dataset.mapHighlightColor]=input.value;saveHighlightStyle();syncHighlightStyleControls();updateParkingHighlights();});
       });
       document.getElementById('mapUnifiedHighlightToggle').addEventListener('change',event=>{highlightStyle.unified=event.target.checked;saveHighlightStyle();syncHighlightStyleControls();updateParkingHighlights();});
-      document.getElementById('mapShowAllUnitsToggle').addEventListener('change',event=>{showAllUnits=Boolean(event.currentTarget.checked);savedEdits.__showAllUnits=showAllUnits;saveEdits();syncHighlightStyleControls();updateParkingHighlights();});
+      const setShowAllUnits = enabled => {showAllUnits=Boolean(enabled);savedEdits.__showAllUnits=showAllUnits;saveEdits();syncHighlightStyleControls();updateParkingHighlights();};
+      document.getElementById('mapShowAllUnitsToggle').addEventListener('change',event=>setShowAllUnits(event.currentTarget.checked));
+      showAllUnitsButton.addEventListener('click',()=>setShowAllUnits(!showAllUnits));
+      highlightedSlotNumbersButton.addEventListener('click',()=>{showHighlightedSlotNumbers=!showHighlightedSlotNumbers;savedEdits.__showHighlightedSlotNumbers=showHighlightedSlotNumbers;saveEdits();syncHighlightStyleControls();updateParkingHighlights();});
       document.getElementById('mapUnifiedHighlightColor').addEventListener('click',event=>event.stopPropagation());
       document.getElementById('mapUnifiedHighlightColor').addEventListener('input',event=>{event.stopPropagation();highlightStyle.unifiedColor=event.target.value;saveHighlightStyle();syncHighlightStyleControls();updateParkingHighlights();});
+      document.getElementById('mapHighlightBrightness').addEventListener('input',event=>{highlightStyle.brightness=clamp(Number(event.target.value)||130,75,200);document.getElementById('mapHighlightBrightnessValue').textContent=Math.round(highlightStyle.brightness)+'%';saveHighlightStyle();updateParkingHighlights();});
+      document.getElementById('mapHighlightNumberSize').addEventListener('input',event=>{highlightStyle.numberSize=clamp(Number(event.target.value)||13,8,48);document.getElementById('mapHighlightNumberSizeValue').textContent=Math.round(highlightStyle.numberSize)+'px';saveHighlightStyle();updateParkingHighlights();});
+      document.getElementById('mapHighlightOutlineColor').addEventListener('input',event=>{highlightStyle.outlineColor=event.target.value;saveHighlightStyle();updateParkingHighlights();});
       const refreshReconciliationHighlights = () => { reconciliationActivity=loadReconciliation();yardHighlightState=loadYardHighlights();updateParkingHighlights(); };
       window.addEventListener('storage',event=>{if(event.key===reconciliationKey||event.key==='chassisReconciliationLastArchive'||event.key===yardHighlightKey)refreshReconciliationHighlights();});
       window.addEventListener('focus',refreshReconciliationHighlights);
@@ -774,6 +883,7 @@
       document.getElementById('mapResetRow').addEventListener('click',()=>{if(!selectedRow)return;delete savedEdits[selectedRow];zones[selectedRow].capacity=defaultCapacities[selectedRow]||zones[selectedRow].capacity;zones[selectedRow].rowCount=1;buildSlotGroup(selectedRow,zones[selectedRow]);applyRow(selectedRow);numberDirectionInput.value='ltr';rowCountInput.value='1';slotAngleInput.value='0';slotAngleValue.textContent='0°';opacityInput.value='35';opacityValue.textContent='35%';numberSlots(selectedRow);updateParkingHighlights();colorInput.value=defaults[selectedRow];slotCountInput.value=String(zones[selectedRow].capacity);saveEdits();});
       document.getElementById('mapResetAll').addEventListener('click',()=>{const areas=Array.isArray(savedEdits.__areas)?savedEdits.__areas:[];savedEdits={__areas:areas};unifiedStyle={enabled:false,color:'#22d3ee',opacity:.35};syncUnifiedStyleControls();Object.keys(zones).forEach(name=>{zones[name].capacity=defaultCapacities[name]||zones[name].capacity;zones[name].rowCount=1;buildSlotGroup(name,zones[name]);applyRow(name);});if(selectedRow)numberSlots(selectedRow);updateParkingHighlights();if(selectedRow){colorInput.value=defaults[selectedRow];slotCountInput.value=String(zones[selectedRow].capacity);rowCountInput.value='1';numberDirectionInput.value='ltr';slotAngleInput.value='0';slotAngleValue.textContent='0°';opacityInput.value='35';opacityValue.textContent='35%';}saveEdits();});
       syncUnifiedStyleControls();
+      reshapeToggle.classList.toggle('active',reshapeMode);reshapeToggle.textContent=`Reshape: ${reshapeMode?'On':'Off'}`;reshapeToggle.setAttribute('aria-pressed',String(reshapeMode));
       Object.keys(zones).forEach(applyRow);
       syncHighlightStyleControls();
       updateParkingHighlights();
