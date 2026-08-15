@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <base href="./">
+  <title>Settegast Map</title>
+  <style>
+    * { box-sizing: border-box; }
+    :root {
+      --ink: #f8fafc;
+      --muted: #9fb0c3;
+      --panel: #111b2a;
+      --panel-soft: #172337;
+      --line: #31425a;
+      --accent: #ffcc28;
+    }
+    html, body { width: 100%; min-height: 100%; margin: 0; }
+    body {
+      min-height: 100vh;
+      padding: 18px;
+      color: var(--ink);
+      background: #08111d;
+      font: 700 14px/1.35 system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+    .map-page { width: min(1500px, 100%); margin: 0 auto; }
+    .map-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 14px;
+      padding: 14px 18px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--panel);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, .28);
+    }
+    h1 { margin: 0; font-size: clamp(20px, 2vw, 30px); letter-spacing: .04em; }
+    .subtitle { margin: 3px 0 0; color: var(--muted); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+    .layer-key { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+    .map-actions { display: flex; align-items: center; gap: 6px; }
+    .map-actions button {
+      min-width: 38px;
+      height: 36px;
+      padding: 0 12px;
+      border: 1px solid #5a6f8d;
+      border-radius: 8px;
+      color: #f8fafc;
+      background: #20314a;
+      font: 900 15px system-ui, sans-serif;
+      cursor: pointer;
+    }
+    .map-actions button:hover,
+    .map-actions button:focus-visible { border-color: var(--accent); outline: 2px solid rgba(255, 204, 40, .32); }
+    .map-actions .fit-button { min-width: 70px; color: #172033; background: var(--accent); }
+    .key-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 7px 10px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: #dbe7f4;
+      background: var(--panel-soft);
+      font-size: 11px;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+    }
+    .swatch { width: 11px; height: 11px; border-radius: 3px; background: var(--accent); box-shadow: 0 0 10px rgba(255, 204, 40, .55); }
+    .swatch.slot { border: 2px solid #42d3ff; background: transparent; box-shadow: 0 0 8px rgba(66, 211, 255, .55); }
+    .map-stage {
+      position: relative;
+      width: 100%;
+      height: clamp(420px, calc(100vh - 190px), 780px);
+      overflow: hidden;
+      border: 2px solid #42546d;
+      border-radius: 12px;
+      background: #d7dde2;
+      box-shadow: 0 18px 44px rgba(0, 0, 0, .36);
+      cursor: grab;
+      touch-action: none;
+    }
+    .map-stage.dragging { cursor: grabbing; }
+    .map-canvas { position: absolute; top: 0; left: 0; width: 100%; aspect-ratio: 10170 / 1147; transform-origin: 0 0; will-change: transform; }
+    .map-stage img,
+    .map-overlay { position: absolute; inset: 0; width: 100%; height: 100%; }
+    .map-stage img { display: block; object-fit: fill; user-select: none; }
+    .map-overlay { z-index: 2; pointer-events: none; }
+    #parkingAreasLayer { pointer-events: auto; }
+    .parking-zone { cursor: pointer; stroke: rgba(255,255,255,.72); stroke-width: 5; transition: filter .16s ease, opacity .16s ease; }
+    .parking-zone:hover,
+    .parking-zone.selected { filter: brightness(1.2) drop-shadow(0 0 18px rgba(255,255,255,.85)); opacity: .92; }
+    .zone-a { fill: rgba(29, 170, 232, .10); }
+    .zone-b { fill: rgba(222, 43, 139, .10); }
+    .zone-c { fill: rgba(244, 112, 48, .10); }
+    .zone-d { fill: rgba(246, 207, 54, .10); }
+    #parkingSlotsLayer polygon { stroke: rgba(255,255,255,.94); stroke-width: 2; vector-effect: non-scaling-stroke; }
+    #parkingSlotsLayer .slot-a polygon { fill: rgba(29,170,232,.58); }
+    #parkingSlotsLayer .slot-b polygon { fill: rgba(222,43,139,.56); }
+    #parkingSlotsLayer .slot-c polygon { fill: rgba(244,112,48,.56); }
+    #parkingSlotsLayer .slot-d polygon { fill: rgba(246,207,54,.54); }
+    #parkingFenceLayer, #parkingLabelsLayer { display: none; }
+    .zone-panel { position: absolute; z-index: 4; top: 12px; left: 12px; display: grid; grid-template-columns: repeat(4, minmax(78px, 1fr)); gap: 7px; padding: 8px; border: 1px solid #536884; border-radius: 10px; background: rgba(8,17,29,.88); backdrop-filter: blur(7px); }
+    .zone-button { padding: 8px 10px; border: 2px solid transparent; border-radius: 8px; color: #0b1522; font: 900 12px/1.1 system-ui,sans-serif; cursor: pointer; }
+    .zone-button span { display: block; margin-top: 3px; font-size: 10px; }
+    .zone-button[data-zone="A"] { background: #39b9ed; }.zone-button[data-zone="B"] { background: #ed55aa; }.zone-button[data-zone="C"] { background: #f58049; }.zone-button[data-zone="D"] { background: #f5d54d; }
+    .zone-button.selected { border-color: #fff; box-shadow: 0 0 0 2px #172337, 0 0 14px rgba(255,255,255,.75); }
+    .map-editor { position:absolute;z-index:6;top:12px;right:12px;width:210px;padding:10px;border:1px solid #60738d;border-radius:10px;background:rgba(8,17,29,.94);box-shadow:0 10px 28px rgba(0,0,0,.34);backdrop-filter:blur(8px); }
+    .map-editor-title { display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;font-size:12px;letter-spacing:.08em; }
+    .map-editor-grid { display:grid;grid-template-columns:1fr 1fr;gap:7px; }
+    .map-editor button,.map-editor label { min-height:34px;border:1px solid #526985;border-radius:7px;color:#eef6ff;background:#17283d;font:800 11px system-ui,sans-serif; }
+    .map-editor button { cursor:pointer; }.map-editor button.active { color:#172033;background:var(--accent);border-color:#ffe786; }
+    .map-editor label { display:flex;align-items:center;justify-content:space-between;gap:7px;padding:4px 8px;grid-column:1/-1; }
+    .map-editor input[type="color"] { width:56px;height:25px;padding:0;border:0;border-radius:5px;background:transparent;cursor:pointer; }
+    .map-editor .wide { grid-column:1/-1; }.map-editor-status { margin-top:7px;color:#9fb0c3;font-size:10px;line-height:1.25; }
+    #parkingEditLayer { pointer-events:none; }.parking-edit-box { fill:none;stroke:#fff;stroke-width:3;stroke-dasharray:12 8;vector-effect:non-scaling-stroke; }
+    .parking-resize-handle { pointer-events:auto;fill:#ffcc28;stroke:#172033;stroke-width:2;vector-effect:non-scaling-stroke;cursor:nwse-resize; }
+    body.map-editing .parking-zone { cursor:move; }.slot-number { fill:#101927;stroke:rgba(255,255,255,.88);stroke-width:2;paint-order:stroke fill;font:900 9px/1 system-ui,sans-serif;pointer-events:none;text-anchor:middle;dominant-baseline:middle; }
+    .map-note {
+      margin: 12px 0 0;
+      padding: 11px 14px;
+      border-left: 4px solid var(--accent);
+      border-radius: 8px;
+      color: #c7d4e3;
+      background: var(--panel);
+      font-size: 12px;
+    }
+    @media (max-width: 760px) {
+      body { padding: 8px; }
+      .map-header { align-items: flex-start; flex-direction: column; }
+      .layer-key { justify-content: flex-start; }
+      .map-stage { border-radius: 8px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="map-page">
+    <header class="map-header">
+      <div>
+        <h1>SETTEGAST MAP</h1>
+        <p class="subtitle">Parking-area and slot planning canvas</p>
+      </div>
+      <div>
+        <div class="map-actions" aria-label="Map navigation controls">
+          <button id="mapZoomOut" type="button" title="Zoom out" aria-label="Zoom out">−</button>
+          <button id="mapZoomIn" type="button" title="Zoom in" aria-label="Zoom in">+</button>
+          <button id="mapFit" class="fit-button" type="button" title="Fit the entire map">FIT</button>
+        </div>
+        <div class="layer-key" aria-label="Future map overlay layers">
+          <span class="key-item"><span class="swatch"></span>Parking areas</span>
+          <span class="key-item"><span class="swatch slot"></span>Parking slots</span>
+        </div>
+      </div>
+    </header>
+
+    <section id="mapStage" class="map-stage" aria-label="Settegast aerial parking map" tabindex="0">
+      <div class="zone-panel" aria-label="Parking rows">
+        <button class="zone-button" data-zone="A" type="button">A ROW<span>28 spots</span></button>
+        <button class="zone-button" data-zone="B" type="button">B ROW<span>38 spots</span></button>
+        <button class="zone-button" data-zone="C" type="button">C ROW<span>42 spots</span></button>
+        <button class="zone-button" data-zone="D" type="button">D ROW<span>103 spots</span></button>
+      </div>
+      <aside class="map-editor" aria-label="Parking row editor">
+        <div class="map-editor-title"><span>EDIT PARKING ROWS</span><strong id="mapEditorRow">None</strong></div>
+        <div class="map-editor-grid">
+          <button id="mapEditToggle" class="wide" type="button">Enable Editing</button>
+          <label>Slot color <input id="mapRowColor" type="color" value="#1daae8"></label>
+          <button id="mapResetRow" type="button">Reset Row</button>
+          <button id="mapResetAll" type="button">Reset All</button>
+        </div>
+        <div id="mapEditorStatus" class="map-editor-status">Select A, B, C, or D, then enable editing.</div>
+      </aside>
+      <div id="mapCanvas" class="map-canvas">
+        <img src="assets/settegast-map-base.jpg" alt="Full east-to-west aerial and pavement map of Settegast Yard" draggable="false">
+        <svg class="map-overlay" viewBox="0 0 10170 1147" preserveAspectRatio="none" aria-hidden="true">
+          <defs>
+            <clipPath id="zoneClipA"><polygon points="1190,425 1400,421 1625,420 1628,497 1400,499 1210,500"></polygon></clipPath>
+            <clipPath id="zoneClipB"><polygon points="1090,287 1360,285 1630,282 1632,364 1365,365 1110,368"></polygon></clipPath>
+            <clipPath id="zoneClipC"><polygon points="1035,238 1330,225 1620,218 1625,292 1330,295 1045,297"></polygon></clipPath>
+            <clipPath id="zoneClipD"><polygon points="880,100 1200,95 1600,88 1950,78 2290,55 2295,160 1950,190 1600,200 1200,198 890,195"></polygon></clipPath>
+          </defs>
+          <g id="parkingAreasLayer">
+            <polygon class="parking-zone zone-a" data-zone="A" points="1190,425 1400,421 1625,420 1628,497 1400,499 1210,500"></polygon>
+            <polygon class="parking-zone zone-b" data-zone="B" points="1090,287 1360,285 1630,282 1632,364 1365,365 1110,368"></polygon>
+            <polygon class="parking-zone zone-c" data-zone="C" points="1035,238 1330,225 1620,218 1625,292 1330,295 1045,297"></polygon>
+            <polygon class="parking-zone zone-d" data-zone="D" points="880,100 1200,95 1600,88 1950,78 2290,55 2295,160 1950,190 1600,200 1200,198 890,195"></polygon>
+          </g>
+          <g id="parkingSlotsLayer"></g>
+          <g id="parkingEditLayer"></g>
+          <g id="parkingFenceLayer">
+            <polyline points="880,100 1200,95 1600,88 1950,78 2290,55"></polyline>
+            <polyline points="890,195 1200,198 1600,200 1950,190 2295,160"></polyline>
+            <polyline points="1035,238 1330,225 1620,218"></polyline>
+            <polyline points="1210,500 1400,499 1628,497"></polyline>
+          </g>
+          <g id="parkingLabelsLayer">
+            <text x="1410" y="468" text-anchor="middle">A · 28</text>
+            <text x="1360" y="335" text-anchor="middle">B · 38</text>
+            <text x="1330" y="268" text-anchor="middle">C · 42</text>
+            <text x="1600" y="145" text-anchor="middle">D · 103</text>
+          </g>
+        </svg>
+      </div>
+    </section>
+
+    <p class="map-note"><strong>Navigate:</strong> drag the map to pan, use the mouse wheel or +/− buttons to zoom, and select FIT to return to the full map.</p>
+  </main>
+  <script>
+    (() => {
+      const stage = document.getElementById('mapStage');
+      const canvas = document.getElementById('mapCanvas');
+      const svg = canvas.querySelector('svg');
+      const slotsLayer = document.getElementById('parkingSlotsLayer');
+      const zoneShapes = [...document.querySelectorAll('.parking-zone')];
+      const zoneButtons = [...document.querySelectorAll('.zone-button')];
+      const zones = {
+        A: { capacity: 28, x1: 1190, y1: 420, x2: 1628, y2: 500, top: [[1190,425],[1400,421],[1625,420]], bottom: [[1210,500],[1400,499],[1628,497]] },
+        B: { capacity: 38, x1: 1090, y1: 282, x2: 1632, y2: 368, top: [[1090,287],[1360,285],[1630,282]], bottom: [[1110,368],[1365,365],[1632,364]] },
+        C: { capacity: 42, x1: 1035, y1: 218, x2: 1625, y2: 297, top: [[1035,238],[1330,225],[1620,218]], bottom: [[1045,297],[1330,295],[1625,292]] },
+        D: { capacity: 103, x1: 880, y1: 55, x2: 2295, y2: 200, top: [[880,100],[1200,95],[1600,88],[1950,78],[2290,55]], bottom: [[890,195],[1200,198],[1600,200],[1950,190],[2295,160]] }
+      };
+      let scale = 1;
+      let x = 0;
+      let y = 0;
+      let drag = null;
+      const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+      const render = () => { canvas.style.transform = `translate(${x}px, ${y}px) scale(${scale})`; };
+      const fit = () => { scale = 1; x = 0; y = Math.max(0, (stage.clientHeight - canvas.clientHeight) / 2); render(); };
+      const zoomAt = (nextScale, clientX, clientY) => {
+        nextScale = clamp(nextScale, 1, 6);
+        const rect = stage.getBoundingClientRect();
+        const px = clientX - rect.left;
+        const py = clientY - rect.top;
+        const mapX = (px - x) / scale;
+        const mapY = (py - y) / scale;
+        x = px - mapX * nextScale;
+        y = py - mapY * nextScale;
+        scale = nextScale;
+        render();
+      };
+      const zoomCenter = factor => {
+        const rect = stage.getBoundingClientRect();
+        zoomAt(scale * factor, rect.left + rect.width / 2, rect.top + rect.height / 2);
+      };
+      const selectZone = name => {
+        const zone = zones[name];
+        if (!zone) return;
+        const logicalPixel = stage.clientWidth / 10170;
+        const zoneWidth = (zone.x2 - zone.x1) * logicalPixel;
+        const zoneHeight = (zone.y2 - zone.y1) * logicalPixel;
+        scale = clamp(Math.min(stage.clientWidth * .78 / zoneWidth, stage.clientHeight * .62 / zoneHeight), 1, 6);
+        x = stage.clientWidth / 2 - ((zone.x1 + zone.x2) / 2) * logicalPixel * scale;
+        y = stage.clientHeight / 2 - ((zone.y1 + zone.y2) / 2) * logicalPixel * scale;
+        zoneShapes.forEach(shape => shape.classList.toggle('selected', shape.dataset.zone === name));
+        zoneButtons.forEach(button => button.classList.toggle('selected', button.dataset.zone === name));
+        render();
+      };
+      const pointOnPath = (points, progress) => {
+        const lengths = points.slice(1).map((point, index) => Math.hypot(point[0] - points[index][0], point[1] - points[index][1]));
+        const total = lengths.reduce((sum, length) => sum + length, 0);
+        let distance = total * progress;
+        for (let index = 0; index < lengths.length; index += 1) {
+          if (distance <= lengths[index] || index === lengths.length - 1) {
+            const ratio = lengths[index] ? distance / lengths[index] : 0;
+            return [points[index][0] + (points[index + 1][0] - points[index][0]) * ratio, points[index][1] + (points[index + 1][1] - points[index][1]) * ratio];
+          }
+          distance -= lengths[index];
+        }
+        return points[points.length - 1];
+      };
+      Object.entries(zones).forEach(([name, zone]) => {
+        const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        group.setAttribute('class', `slot-${name.toLowerCase()}`);
+        group.setAttribute('clip-path', `url(#zoneClip${name})`);
+        for (let index = 0; index < zone.capacity; index += 1) {
+          const inset = .13;
+          const start = (index + inset) / zone.capacity;
+          const end = (index + 1 - inset) / zone.capacity;
+          const topStart = pointOnPath(zone.top, start);
+          const topEnd = pointOnPath(zone.top, end);
+          const bottomEnd = pointOnPath(zone.bottom, end);
+          const bottomStart = pointOnPath(zone.bottom, start);
+          const slot = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+          slot.setAttribute('points', [topStart, topEnd, bottomEnd, bottomStart].map(point => point.join(',')).join(' '));
+          group.appendChild(slot);
+        }
+        slotsLayer.appendChild(group);
+      });
+      zoneShapes.forEach(shape => shape.addEventListener('click', event => { event.stopPropagation(); selectZone(shape.dataset.zone); }));
+      zoneButtons.forEach(button => button.addEventListener('click', event => { event.stopPropagation(); selectZone(button.dataset.zone); }));
+      stage.addEventListener('wheel', event => {
+        event.preventDefault();
+        zoomAt(scale * (event.deltaY < 0 ? 1.18 : 1 / 1.18), event.clientX, event.clientY);
+      }, { passive: false });
+      stage.addEventListener('pointerdown', event => {
+        if (event.target.closest?.('button, input, label, .map-editor, .zone-panel, .parking-resize-handle')) return;
+        drag = { pointerId: event.pointerId, startX: event.clientX, startY: event.clientY, x, y };
+        stage.setPointerCapture(event.pointerId);
+        stage.classList.add('dragging');
+      });
+      stage.addEventListener('pointermove', event => {
+        if (!drag || drag.pointerId !== event.pointerId) return;
+        x = drag.x + event.clientX - drag.startX;
+        y = drag.y + event.clientY - drag.startY;
+        render();
+      });
+      const endDrag = event => {
+        if (!drag || drag.pointerId !== event.pointerId) return;
+        drag = null;
+        stage.classList.remove('dragging');
+      };
+      stage.addEventListener('pointerup', endDrag);
+      stage.addEventListener('pointercancel', endDrag);
+      stage.addEventListener('dblclick', fit);
+      stage.addEventListener('keydown', event => {
+        if (event.key === '+' || event.key === '=') zoomCenter(1.2);
+        if (event.key === '-') zoomCenter(1 / 1.2);
+        if (event.key === '0') fit();
+      });
+      document.getElementById('mapZoomIn').addEventListener('click', () => zoomCenter(1.2));
+      document.getElementById('mapZoomOut').addEventListener('click', () => zoomCenter(1 / 1.2));
+      document.getElementById('mapFit').addEventListener('click', fit);
+      window.addEventListener('resize', fit);
+      fit();
+
+      const editLayer = document.getElementById('parkingEditLayer');
+      const editorRow = document.getElementById('mapEditorRow');
+      const editorStatus = document.getElementById('mapEditorStatus');
+      const editToggle = document.getElementById('mapEditToggle');
+      const colorInput = document.getElementById('mapRowColor');
+      const editKey = 'conglobal-settegast-map-rows-v1';
+      const defaults = { A:'#1daae8', B:'#de2b8b', C:'#f47030', D:'#f6cf36' };
+      let selectedRow = null;
+      let editing = false;
+      let editDrag = null;
+      let savedEdits = {};
+      try { savedEdits = JSON.parse(localStorage.getItem(editKey) || '{}') || {}; } catch (_) { savedEdits = {}; }
+      const stateFor = name => Object.assign({ tx:0, ty:0, sx:1, sy:1, color:defaults[name] }, savedEdits[name] || {});
+      const saveEdits = () => localStorage.setItem(editKey, JSON.stringify(savedEdits));
+      const slotGroupFor = name => slotsLayer.querySelector('.slot-' + name.toLowerCase());
+      const transformFor = (name, state) => {
+        const shape = zoneShapes.find(item => item.dataset.zone === name);
+        const box = shape.getBBox();
+        const cx = box.x + box.width / 2, cy = box.y + box.height / 2;
+        return `translate(${state.tx} ${state.ty}) translate(${cx} ${cy}) scale(${state.sx} ${state.sy}) translate(${-cx} ${-cy})`;
+      };
+      const transformedBox = (name, state) => {
+        const shape = zoneShapes.find(item => item.dataset.zone === name), box = shape.getBBox();
+        const cx = box.x + box.width / 2, cy = box.y + box.height / 2;
+        return { x:cx + (box.x-cx)*state.sx + state.tx, y:cy + (box.y-cy)*state.sy + state.ty, width:box.width*state.sx, height:box.height*state.sy };
+      };
+      const drawEditBox = () => {
+        editLayer.replaceChildren();
+        if (!editing || !selectedRow) return;
+        const box = transformedBox(selectedRow, stateFor(selectedRow));
+        const rect = document.createElementNS('http://www.w3.org/2000/svg','rect');
+        rect.setAttribute('class','parking-edit-box'); rect.setAttribute('x',box.x); rect.setAttribute('y',box.y); rect.setAttribute('width',box.width); rect.setAttribute('height',box.height); editLayer.appendChild(rect);
+        [['nw',box.x,box.y],['ne',box.x+box.width,box.y],['sw',box.x,box.y+box.height],['se',box.x+box.width,box.y+box.height]].forEach(([corner,hx,hy])=>{ const handle=document.createElementNS('http://www.w3.org/2000/svg','rect'); handle.setAttribute('class','parking-resize-handle'); handle.dataset.corner=corner; handle.setAttribute('x',hx-8); handle.setAttribute('y',hy-8); handle.setAttribute('width',16); handle.setAttribute('height',16); editLayer.appendChild(handle); });
+      };
+      const applyRow = name => {
+        const state = stateFor(name), transform = transformFor(name,state), shape = zoneShapes.find(item => item.dataset.zone === name), group = slotGroupFor(name);
+        shape.setAttribute('transform',transform); if (group) { group.setAttribute('transform',transform); group.querySelectorAll('polygon').forEach(slot=>slot.style.fill=state.color); }
+        drawEditBox();
+      };
+      const numberSlots = () => Object.keys(zones).forEach(name => {
+        const group=slotGroupFor(name); if(!group || group.querySelector('.slot-number')) return;
+        [...group.querySelectorAll('polygon')].forEach((slot,index)=>{ const box=slot.getBBox(),label=document.createElementNS('http://www.w3.org/2000/svg','text'); label.setAttribute('class','slot-number'); label.setAttribute('x',box.x+box.width/2); label.setAttribute('y',box.y+box.height/2); label.textContent=String(index+1); group.appendChild(label); });
+      });
+      const chooseRow = name => { selectedRow=name; editorRow.textContent=name+' ROW'; colorInput.value=stateFor(name).color; editorStatus.textContent=editing?'Drag the row to move it or drag a corner to resize.':'Enable editing to move or resize '+name+' Row.'; drawEditBox(); };
+      zoneButtons.forEach(button=>button.addEventListener('click',()=>chooseRow(button.dataset.zone)));
+      zoneShapes.forEach(shape=>shape.addEventListener('pointerdown',event=>{ if(!editing) return; event.preventDefault(); event.stopImmediatePropagation(); chooseRow(shape.dataset.zone); const point=svg.createSVGPoint(); point.x=event.clientX; point.y=event.clientY; const local=point.matrixTransform(svg.getScreenCTM().inverse()),state=stateFor(selectedRow); editDrag={mode:'move',start:local,base:{...state}}; },true));
+      zoneShapes.forEach(shape=>shape.addEventListener('click',event=>{ if(editing){ event.preventDefault(); event.stopImmediatePropagation(); } },true));
+      editLayer.addEventListener('pointerdown',event=>{ const handle=event.target.closest('.parking-resize-handle'); if(!handle||!selectedRow)return; event.preventDefault();event.stopPropagation();const point=svg.createSVGPoint();point.x=event.clientX;point.y=event.clientY;const local=point.matrixTransform(svg.getScreenCTM().inverse());editDrag={mode:'resize',corner:handle.dataset.corner,start:local,base:{...stateFor(selectedRow)},box:transformedBox(selectedRow,stateFor(selectedRow))}; });
+      window.addEventListener('pointermove',event=>{ if(!editDrag||!selectedRow)return;const point=svg.createSVGPoint();point.x=event.clientX;point.y=event.clientY;const local=point.matrixTransform(svg.getScreenCTM().inverse()),dx=local.x-editDrag.start.x,dy=local.y-editDrag.start.y,state=stateFor(selectedRow);if(editDrag.mode==='move'){state.tx=editDrag.base.tx+dx;state.ty=editDrag.base.ty+dy;}else{const xSign=editDrag.corner.includes('e')?1:-1,ySign=editDrag.corner.includes('s')?1:-1;state.sx=Math.max(.25,editDrag.base.sx+(dx*xSign)/(editDrag.box.width/editDrag.base.sx));state.sy=Math.max(.25,editDrag.base.sy+(dy*ySign)/(editDrag.box.height/editDrag.base.sy));state.tx=editDrag.base.tx+dx/2;state.ty=editDrag.base.ty+dy/2;}savedEdits[selectedRow]=state;applyRow(selectedRow); });
+      window.addEventListener('pointerup',()=>{ if(editDrag){saveEdits();editDrag=null;} });
+      editToggle.addEventListener('click',()=>{editing=!editing;document.body.classList.toggle('map-editing',editing);editToggle.classList.toggle('active',editing);editToggle.textContent=editing?'Editing On':'Enable Editing';editorStatus.textContent=editing?(selectedRow?'Drag the row to move it or drag a corner to resize.':'Select a parking row to edit.'):'Map navigation mode.';drawEditBox();});
+      colorInput.addEventListener('input',()=>{if(!selectedRow)return;const state=stateFor(selectedRow);state.color=colorInput.value;savedEdits[selectedRow]=state;applyRow(selectedRow);saveEdits();});
+      document.getElementById('mapResetRow').addEventListener('click',()=>{if(!selectedRow)return;delete savedEdits[selectedRow];applyRow(selectedRow);colorInput.value=defaults[selectedRow];saveEdits();});
+      document.getElementById('mapResetAll').addEventListener('click',()=>{savedEdits={};Object.keys(zones).forEach(applyRow);if(selectedRow)colorInput.value=defaults[selectedRow];saveEdits();});
+      numberSlots(); Object.keys(zones).forEach(applyRow);
+    })();
+  </script>
+</body>
+</html>

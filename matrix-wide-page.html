@@ -2728,6 +2728,11 @@
               <i class="yard-activity-highlight-dot" aria-hidden="true"></i>
               <span>Yard checked today</span>
             </label>
+            <label class="yard-activity-highlight-option" style="--status-color:#84cc16">
+              <input id="yardHighlightChecked9Days" data-yard-highlight="yardChecked9Days" type="checkbox">
+              <i class="yard-activity-highlight-dot" aria-hidden="true"></i>
+              <span>Yard checked within last 9 days</span>
+            </label>
             <label class="yard-activity-highlight-option" style="--status-color:#22d3ee">
               <input id="yardHighlightActivityToday" data-yard-highlight="activityToday" type="checkbox">
               <i class="yard-activity-highlight-dot" aria-hidden="true"></i>
@@ -2988,6 +2993,7 @@ const MATRIX_YARD_ACTIVITY_HIGHLIGHT_KEY = "settegast-matrix-yard-activity-highl
 const CHASSIS_RECONCILIATION_LIVE_KEY = "chassisReconciliationCurrentState";
 const YARD_ACTIVITY_HIGHLIGHT_COLORS = Object.freeze({
   yardCheckedToday: "#22c55e",
+  yardChecked9Days: "#84cc16",
   activityToday: "#22d3ee",
   noYardCheckToday: "#f59e0b",
   noActivity10Days: "#ef4444",
@@ -5083,7 +5089,7 @@ const storedParkingStyle = localStorage.getItem(MATRIX_PARKING_STYLE_KEY)
   || localStorage.getItem("settegast-matrix-parking-style-v1");
 let matrixParkingStyle = storedParkingStyle === "realistic" ? "realistic" : "highlighted";
 function loadYardActivityHighlightState() {
-  const defaults = { yardCheckedToday: false, activityToday: false, noYardCheckToday: false, noActivity10Days: false };
+  const defaults = { yardCheckedToday: false, yardChecked9Days: false, activityToday: false, noYardCheckToday: false, noActivity10Days: false };
   try {
     const saved = JSON.parse(localStorage.getItem(MATRIX_YARD_ACTIVITY_HIGHLIGHT_KEY) || "null");
     if (!saved || typeof saved !== "object") return defaults;
@@ -5132,7 +5138,8 @@ function reconciliationReportDayNumber() {
 }
 function reconciliationParkingSection(value) {
   const raw = String(value || "").trim().toUpperCase();
-  if (!raw || /^(?:0680[1-9]|6-80[1-9]|TRACK\s*80[1-9]|SHOP|HUMP|HU|KIRK|DIRT|DRTCY|CY|BOWL)(?:\b|\s*-)/.test(raw)) return "";
+  if (/^(?:DIRT(?:\s*(?:LOT|700))?|DRTCY|CHASSIS(?:\s*LOT)?)(?:\b|\s*-)/.test(raw)) return "CHASSIS_LOT";
+  if (!raw || /^(?:0680[1-9]|6-80[1-9]|TRACK\s*80[1-9]|SHOP|HUMP|HU|KIRK|CY|BOWL)(?:\b|\s*-)/.test(raw)) return "";
   const match = /^(?:LOT\s*)?([A-S])(?:\s*(?:-|\/|\b))/.exec(raw);
   return match ? match[1] : "";
 }
@@ -5145,10 +5152,10 @@ function yardActivitySummaryBySection() {
   const summaries = new Map();
   for (const row of chassisReconciliationActivity.tableRows || []) {
     const section = reconciliationParkingSection(row.location);
-    if (!section || !ZONE_DEFS.some(zone => zone.name === section && !zone.hidden)) continue;
+    if (!section || (section !== "CHASSIS_LOT" && !ZONE_DEFS.some(zone => zone.name === section && !zone.hidden))) continue;
     const eventDay = reconciliationActivityDayNumber(row.eventDate);
     const age = eventDay == null || reportDay == null ? null : Math.max(0, reportDay - eventDay);
-    if (!summaries.has(section)) summaries.set(section, { total: 0, activityToday: 0, yardCheckedToday: 0, newestAge: Infinity });
+    if (!summaries.has(section)) summaries.set(section, { total: 0, activityToday: 0, yardCheckedToday: 0, yardChecked9Days: 0, newestAge: Infinity });
     const summary = summaries.get(section);
     summary.total += 1;
     if (age != null) summary.newestAge = Math.min(summary.newestAge, age);
@@ -5156,6 +5163,7 @@ function yardActivitySummaryBySection() {
       summary.activityToday += 1;
       if (isReconciliationYardCheck(row)) summary.yardCheckedToday += 1;
     }
+    if (age != null && age <= 9 && isReconciliationYardCheck(row)) summary.yardChecked9Days += 1;
   }
   return summaries;
 }
@@ -5164,6 +5172,7 @@ function yardActivityMatchesForZone(zoneName, summaries = yardActivitySummaryByS
   if (!summary) return [];
   const candidates = [
     { key: "yardCheckedToday", active: summary.yardCheckedToday > 0, count: summary.yardCheckedToday, short: "YC" },
+    { key: "yardChecked9Days", active: summary.yardChecked9Days > 0, count: summary.yardChecked9Days, short: "YC 9D" },
     { key: "activityToday", active: summary.activityToday > 0, count: summary.activityToday, short: "ACT" },
     { key: "noYardCheckToday", active: summary.yardCheckedToday === 0, count: summary.total, short: "NO YC" },
     { key: "noActivity10Days", active: Number.isFinite(summary.newestAge) && summary.newestAge >= 10, count: summary.total, short: "10D" },
@@ -14754,7 +14763,11 @@ function drawHighlightedParkingBed(zone, width, height, emphasized) {
 function drawYardActivityHighlights() {
   if (!Object.values(yardActivityHighlightState).some(Boolean)) return;
   const summaries = yardActivitySummaryBySection();
-  for (const zone of ZONE_DEFS) {
+  const highlightTargets = [
+    ...ZONE_DEFS,
+    { name: "CHASSIS_LOT", x: CHASSIS_LOT.x, y: CHASSIS_LOT.y, w: CHASSIS_LOT.w, h: CHASSIS_LOT.h, hidden: CHASSIS_LOT.hidden }
+  ];
+  for (const zone of highlightTargets) {
     if (zone.hidden) continue;
     const matches = yardActivityMatchesForZone(zone.name, summaries);
     if (!matches.length) continue;

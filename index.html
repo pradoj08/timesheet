@@ -493,7 +493,7 @@
   <nav class="workbook-tabs" aria-label="Workbook pages"></nav>
   <nav class="am-report-actions" id="amReportActions" aria-label="AM Report tools" hidden>
     <span class="am-report-actions-group am-report-actions-left">
-      <button type="button" class="mass-export" id="amHeaderMassExport">Mass Export</button>
+      <button type="button" class="weather-post" id="amHeaderThirdColumn">Show Weather</button>
       <button type="button" class="report-tool" id="amHeaderImportReport" aria-haspopup="dialog">Import Report</button>
       <button type="button" class="today-roster" id="amHeaderTodayRoster" aria-haspopup="dialog">Today's Roster</button>
     </span>
@@ -501,9 +501,7 @@
       <button type="button" class="report-tool" id="amHeaderAudits" aria-haspopup="dialog">Audits</button>
       <button type="button" class="report-tool" id="amHeaderChecklist" aria-haspopup="dialog">Checklist</button>
     </span>
-    <span class="am-report-actions-group am-report-actions-right">
-      <button type="button" class="report-tool" id="amHeaderThirdColumn">Show 3rd Day</button>
-    </span>
+    <span class="am-report-actions-group am-report-actions-right"></span>
   </nav>
   <section class="scw-popup" id="scwLatestPopup" role="dialog" aria-modal="false" aria-labelledby="scwLatestHeading" hidden>
     <header class="scw-popup-head" id="scwLatestHandle">
@@ -2523,6 +2521,11 @@
       if (!weather) return;
       if (showRoster) {
         var height = Math.max(120, Math.ceil(dialog.getBoundingClientRect().height));
+        var weatherHost = document.getElementById("amScwLatestHost");
+        var weatherPanel = weatherHost && weatherHost.querySelector(".scw-popup:not([hidden])");
+        if (document.body.classList.contains("am-scw-left-column") && weatherPanel) {
+          height += 8 + Math.max(0, Math.ceil(weatherPanel.getBoundingClientRect().height));
+        }
         weather.style.setProperty("visibility", "hidden", "important");
         weather.style.setProperty("height", height + "px", "important");
         weather.style.setProperty("min-height", height + "px", "important");
@@ -3003,6 +3006,7 @@
   window.addEventListener("message", function(event){
     if (!event.data || event.data.type !== "conglobal-am-third-column-mode") return;
     document.body.classList.toggle("am-scw-left-column", Boolean(event.data.weather));
+    if (rosterWanted && !root.hidden) window.requestAnimationFrame(function(){ syncYesterdayWeatherSlot(true); });
     scheduleHookFrames();
   });
   window.addEventListener("storage", function(event){
@@ -9190,6 +9194,14 @@ document.addEventListener('click',function(event){
           "const MAX_RAIL_CARS_PER_TRACK = 16;"
         )
         .replace(
+          "const RAIL_DISPLAY_SCALE = 1;",
+          "const RAIL_DISPLAY_REFERENCE_FT = 2750;\nconst RAIL_DISPLAY_REFERENCE_CARS = 16;\nconst RAIL_DISPLAY_SCALE = RAIL_DISPLAY_REFERENCE_CARS / (RAIL_DISPLAY_REFERENCE_FT / RAIL_CAR_REAL_FT);"
+        )
+        .replace(
+          /    const cars = exactRailcars\.map\(railcar => \{([\s\S]*?)\r?\n    \}\);\r?\n    return \{\r?\n      carCount: cars\.length,\r?\n      capacity: cars\.length \* 2,\r?\n      loadedCount: cars\.length \* 2,/,
+          "    const fullCars = exactRailcars.map(railcar => {$1\n    });\n    /* standard-matrix-exact-consist-scale-v1 */\n    const representedCars = fullCars.reduce((sum, car) => sum + Math.max(1, Number(car.lengthFt) || RAIL_CAR_REAL_FT), 0) / RAIL_CAR_REAL_FT;\n    const scaledCount = Math.max(1, Math.min(MAX_RAIL_CARS_PER_TRACK, Math.floor(representedCars * RAIL_DISPLAY_SCALE)));\n    const cars = scaledCount >= fullCars.length ? fullCars : Array.from({ length: scaledCount }, (_, index) => fullCars[Math.min(fullCars.length - 1, Math.floor(index * fullCars.length / scaledCount))]);\n    return {\n      carCount: cars.length,\n      capacity: cars.length * 2,\n      loadedCount: cars.length * 2,"
+        )
+        .replace(
           "if (isLegacyCompactWideLayout(saved)) {",
           "if (false && isLegacyCompactWideLayout(saved)) {"
         )
@@ -9197,6 +9209,19 @@ document.addEventListener('click',function(event){
 
       const standardMarker = `<style id="standard-matrix-restored-v1">
   html { --matrix-layout-mode: standard; }
+  /* Fill wide browser panes instead of leaving a dead band beside the standard yard. */
+  #mapCrop {
+    flex: 1 1 100% !important;
+    width: 100% !important;
+    max-width: none !important;
+    aspect-ratio: auto !important;
+  }
+  #mapPane canvas {
+    width: 100% !important;
+    height: 100% !important;
+    aspect-ratio: auto !important;
+  }
+  #matrixTimeline { width: calc(100% - 8px) !important; }
 </style>`;
       const headClose = restored.toLowerCase().lastIndexOf("</head>");
       if (headClose >= 0) {
@@ -9205,12 +9230,120 @@ document.addEventListener('click',function(event){
       return restored;
     }
 
+    function withMatrixYardCheckedNineDays(html) {
+      if (!html || typeof html !== "string" || html.includes("yardHighlightChecked9Days")) return html;
+      return html
+        .replace(
+          '<span>Yard checked today</span>\n            </label>',
+          '<span>Yard checked today</span>\n            </label>\n            <label class="yard-activity-highlight-option" style="--status-color:#84cc16">\n              <input id="yardHighlightChecked9Days" data-yard-highlight="yardChecked9Days" type="checkbox">\n              <i class="yard-activity-highlight-dot" aria-hidden="true"></i>\n              <span>Yard checked within last 9 days</span>\n            </label>'
+        )
+        .replace('yardCheckedToday: "#22c55e",', 'yardCheckedToday: "#22c55e",\n  yardChecked9Days: "#84cc16",')
+        .replace(
+          'const defaults = { yardCheckedToday: false, activityToday: false, noYardCheckToday: false, noActivity10Days: false };',
+          'const defaults = { yardCheckedToday: false, yardChecked9Days: false, activityToday: false, noYardCheckToday: false, noActivity10Days: false };'
+        )
+        .replace(
+          '{ total: 0, activityToday: 0, yardCheckedToday: 0, newestAge: Infinity }',
+          '{ total: 0, activityToday: 0, yardCheckedToday: 0, yardChecked9Days: 0, newestAge: Infinity }'
+        )
+        .replace(
+          '    }\n  }\n  return summaries;\n}\nfunction yardActivityMatchesForZone',
+          '    }\n    if (age != null && age <= 9 && isReconciliationYardCheck(row)) summary.yardChecked9Days += 1;\n  }\n  return summaries;\n}\nfunction yardActivityMatchesForZone'
+        )
+        .replace(
+          '{ key: "yardCheckedToday", active: summary.yardCheckedToday > 0, count: summary.yardCheckedToday, short: "YC" },',
+          '{ key: "yardCheckedToday", active: summary.yardCheckedToday > 0, count: summary.yardCheckedToday, short: "YC" },\n    { key: "yardChecked9Days", active: summary.yardChecked9Days > 0, count: summary.yardChecked9Days, short: "YC 9D" },'
+        );
+    }
+
+    function withMatrixDirtLotAsChassisLot(html) {
+      if (!html || typeof html !== "string" || html.includes("matrix-dirt-lot-chassis-v1")) return html;
+      return html
+        .replace(
+          'function reconciliationParkingSection(value) {',
+          '/* matrix-dirt-lot-chassis-v1 */\nfunction reconciliationParkingSection(value) {'
+        )
+        .replace(
+          '  if (!raw || /^(?:0680[1-9]|6-80[1-9]|TRACK\\s*80[1-9]|SHOP|HUMP|HU|KIRK|DIRT|DRTCY|CY|BOWL)(?:\\b|\\s*-)/.test(raw)) return "";',
+          '  if (/^(?:DIRT(?:\\s*(?:LOT|700))?|DRTCY|CHASSIS(?:\\s*LOT)?)(?:\\b|\\s*-)/.test(raw)) return "CHASSIS_LOT";\n  if (!raw || /^(?:0680[1-9]|6-80[1-9]|TRACK\\s*80[1-9]|SHOP|HUMP|HU|KIRK|CY|BOWL)(?:\\b|\\s*-)/.test(raw)) return "";'
+        )
+        .replace(
+          '    if (!section || !ZONE_DEFS.some(zone => zone.name === section && !zone.hidden)) continue;',
+          '    if (!section || (section !== "CHASSIS_LOT" && !ZONE_DEFS.some(zone => zone.name === section && !zone.hidden))) continue;'
+        )
+        .replace(
+          '  for (const zone of ZONE_DEFS) {\n    if (zone.hidden) continue;\n    const matches = yardActivityMatchesForZone(zone.name, summaries);',
+          '  const highlightTargets = [...ZONE_DEFS, { name: "CHASSIS_LOT", x: CHASSIS_LOT.x, y: CHASSIS_LOT.y, w: CHASSIS_LOT.w, h: CHASSIS_LOT.h, hidden: CHASSIS_LOT.hidden }];\n  for (const zone of highlightTargets) {\n    if (zone.hidden) continue;\n    const matches = yardActivityMatchesForZone(zone.name, summaries);'
+        );
+    }
+
+    function settegastMapPageHtml() {
+      return `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Settegast Map</title><style>html,body,iframe{width:100%;height:100%;margin:0;border:0;overflow:hidden;background:#08111d}iframe{display:block}</style></head><body><iframe src="settegast-map-page.html" title="Settegast Map editor"></iframe></body></html>`;
+      /* The legacy inline map below is retained as a fallback reference. The active runtime uses the maintained page source above. */
+      return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <base href="./">
+  <title>Settegast Map</title>
+  <style>
+    *{box-sizing:border-box} :root{--ink:#f8fafc;--muted:#9fb0c3;--panel:#111b2a;--panel-soft:#172337;--line:#31425a;--accent:#ffcc28}
+    html,body{width:100%;min-height:100%;margin:0} body{min-height:100vh;padding:18px;color:var(--ink);background:#08111d;font:700 14px/1.35 system-ui,-apple-system,"Segoe UI",sans-serif}
+    .map-page{width:min(1500px,100%);margin:0 auto}.map-header{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:14px;padding:14px 18px;border:1px solid var(--line);border-radius:12px;background:var(--panel);box-shadow:0 12px 32px rgba(0,0,0,.28)}
+    h1{margin:0;font-size:clamp(20px,2vw,30px);letter-spacing:.04em}.subtitle{margin:3px 0 0;color:var(--muted);font-size:12px;letter-spacing:.08em;text-transform:uppercase}.layer-key{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px}.map-actions{display:flex;align-items:center;justify-content:flex-end;gap:6px;margin-bottom:8px}.map-actions button{min-width:38px;height:36px;padding:0 12px;border:1px solid #5a6f8d;border-radius:8px;color:#f8fafc;background:#20314a;font:900 15px system-ui,sans-serif;cursor:pointer}.map-actions button:hover,.map-actions button:focus-visible{border-color:var(--accent);outline:2px solid rgba(255,204,40,.32)}.map-actions .fit-button{min-width:70px;color:#172033;background:var(--accent)}
+    .key-item{display:inline-flex;align-items:center;gap:7px;padding:7px 10px;border:1px solid var(--line);border-radius:999px;color:#dbe7f4;background:var(--panel-soft);font-size:11px;letter-spacing:.05em;text-transform:uppercase}.swatch{width:11px;height:11px;border-radius:3px;background:var(--accent);box-shadow:0 0 10px rgba(255,204,40,.55)}.swatch.slot{border:2px solid #42d3ff;background:transparent;box-shadow:0 0 8px rgba(66,211,255,.55)}
+    .map-stage{position:relative;width:100%;height:clamp(420px,calc(100vh - 190px),780px);overflow:hidden;border:2px solid #42546d;border-radius:12px;background:#d7dde2;box-shadow:0 18px 44px rgba(0,0,0,.36);cursor:grab;touch-action:none}.map-stage.dragging{cursor:grabbing}.map-canvas{position:absolute;top:0;left:0;width:100%;aspect-ratio:10170/1147;transform-origin:0 0;will-change:transform}.map-stage img,.map-overlay{position:absolute;inset:0;width:100%;height:100%}.map-stage img{display:block;object-fit:fill;user-select:none}.map-overlay{z-index:2;pointer-events:none}
+    #parkingAreasLayer{pointer-events:auto}.parking-zone{cursor:pointer;stroke:rgba(255,255,255,.72);stroke-width:5;transition:filter .16s ease,opacity .16s ease}.parking-zone:hover,.parking-zone.selected{filter:brightness(1.2) drop-shadow(0 0 18px rgba(255,255,255,.85));opacity:.92}.zone-a{fill:rgba(29,170,232,.10)}.zone-b{fill:rgba(222,43,139,.10)}.zone-c{fill:rgba(244,112,48,.10)}.zone-d{fill:rgba(246,207,54,.10)}#parkingSlotsLayer polygon{stroke:rgba(255,255,255,.94);stroke-width:2;vector-effect:non-scaling-stroke}#parkingSlotsLayer .slot-a polygon{fill:rgba(29,170,232,.58)}#parkingSlotsLayer .slot-b polygon{fill:rgba(222,43,139,.56)}#parkingSlotsLayer .slot-c polygon{fill:rgba(244,112,48,.56)}#parkingSlotsLayer .slot-d polygon{fill:rgba(246,207,54,.54)}#parkingFenceLayer,#parkingLabelsLayer{display:none}.zone-panel{position:absolute;z-index:4;top:12px;left:12px;display:grid;grid-template-columns:repeat(4,minmax(78px,1fr));gap:7px;padding:8px;border:1px solid #536884;border-radius:10px;background:rgba(8,17,29,.88);backdrop-filter:blur(7px)}.zone-button{padding:8px 10px;border:2px solid transparent;border-radius:8px;color:#0b1522;font:900 12px/1.1 system-ui,sans-serif;cursor:pointer}.zone-button span{display:block;margin-top:3px;font-size:10px}.zone-button[data-zone="A"]{background:#39b9ed}.zone-button[data-zone="B"]{background:#ed55aa}.zone-button[data-zone="C"]{background:#f58049}.zone-button[data-zone="D"]{background:#f5d54d}.zone-button.selected{border-color:#fff;box-shadow:0 0 0 2px #172337,0 0 14px rgba(255,255,255,.75)}
+    .map-note{margin:12px 0 0;padding:11px 14px;border-left:4px solid var(--accent);border-radius:8px;color:#c7d4e3;background:var(--panel);font-size:12px}@media(max-width:760px){body{padding:8px}.map-header{align-items:flex-start;flex-direction:column}.layer-key{justify-content:flex-start}.map-stage{border-radius:8px}}
+  </style>
+</head>
+<body>
+  <main class="map-page">
+    <header class="map-header"><div><h1>SETTEGAST MAP</h1><p class="subtitle">Parking-area and slot planning canvas</p></div><div><div class="map-actions" aria-label="Map navigation controls"><button id="mapZoomOut" type="button" title="Zoom out" aria-label="Zoom out">−</button><button id="mapZoomIn" type="button" title="Zoom in" aria-label="Zoom in">+</button><button id="mapFit" class="fit-button" type="button" title="Fit the entire map">FIT</button></div><div class="layer-key" aria-label="Future map overlay layers"><span class="key-item"><span class="swatch"></span>Parking areas</span><span class="key-item"><span class="swatch slot"></span>Parking slots</span></div></div></header>
+    <section id="mapStage" class="map-stage" aria-label="Settegast aerial parking map" tabindex="0"><div class="zone-panel" aria-label="Parking rows"><button class="zone-button" data-zone="A" type="button">A ROW<span>28 spots</span></button><button class="zone-button" data-zone="B" type="button">B ROW<span>38 spots</span></button><button class="zone-button" data-zone="C" type="button">C ROW<span>42 spots</span></button><button class="zone-button" data-zone="D" type="button">D ROW<span>103 spots</span></button></div><div id="mapCanvas" class="map-canvas"><img src="assets/settegast-map-base.jpg" alt="Full east-to-west aerial and pavement map of Settegast Yard" draggable="false"><svg class="map-overlay" viewBox="0 0 10170 1147" preserveAspectRatio="none" aria-hidden="true"><defs><clipPath id="zoneClipA"><polygon points="880,438 1780,428 1780,548 880,550"></polygon></clipPath><clipPath id="zoneClipB"><polygon points="755,278 1780,274 1780,368 755,362"></polygon></clipPath><clipPath id="zoneClipC"><polygon points="735,184 1780,176 1780,278 735,282"></polygon></clipPath><clipPath id="zoneClipD"><polygon points="570,104 2555,42 2585,165 1740,214 620,194"></polygon></clipPath></defs><g id="parkingAreasLayer"><polygon class="parking-zone zone-a" data-zone="A" points="880,438 1780,428 1780,548 880,550"></polygon><polygon class="parking-zone zone-b" data-zone="B" points="755,278 1780,274 1780,368 755,362"></polygon><polygon class="parking-zone zone-c" data-zone="C" points="735,184 1780,176 1780,278 735,282"></polygon><polygon class="parking-zone zone-d" data-zone="D" points="570,104 2555,42 2585,165 1740,214 620,194"></polygon></g><g id="parkingSlotsLayer"></g><g id="parkingLabelsLayer"><text x="1330" y="510" text-anchor="middle">A · 28</text><text x="1265" y="340" text-anchor="middle">B · 38</text><text x="1255" y="247" text-anchor="middle">C · 42</text><text x="1600" y="145" text-anchor="middle">D · 103</text></g></svg></div></section>
+    <p class="map-note"><strong>Navigate:</strong> drag the map to pan, use the mouse wheel or +/− buttons to zoom, and select FIT to return to the full map.</p>
+  </main>
+  <script>
+    (()=>{
+      const stage=document.getElementById("mapStage"),canvas=document.getElementById("mapCanvas"),slotsLayer=document.getElementById("parkingSlotsLayer");
+      const zoneShapes=[...document.querySelectorAll(".parking-zone")],zoneButtons=[...document.querySelectorAll(".zone-button")];
+      const zones={A:{capacity:28,x1:1190,y1:420,x2:1628,y2:500,polygon:"1190,425 1400,421 1625,420 1628,497 1400,499 1210,500",top:[[1190,425],[1400,421],[1625,420]],bottom:[[1210,500],[1400,499],[1628,497]]},B:{capacity:38,x1:1090,y1:282,x2:1632,y2:368,polygon:"1090,287 1360,285 1630,282 1632,364 1365,365 1110,368",top:[[1090,287],[1360,285],[1630,282]],bottom:[[1110,368],[1365,365],[1632,364]]},C:{capacity:42,x1:1035,y1:218,x2:1625,y2:297,polygon:"1035,238 1330,225 1620,218 1625,292 1330,295 1045,297",top:[[1035,238],[1330,225],[1620,218]],bottom:[[1045,297],[1330,295],[1625,292]]},D:{capacity:103,x1:880,y1:55,x2:2295,y2:200,polygon:"880,100 1200,95 1600,88 1950,78 2290,55 2295,160 1950,190 1600,200 1200,198 890,195",top:[[880,100],[1200,95],[1600,88],[1950,78],[2290,55]],bottom:[[890,195],[1200,198],[1600,200],[1950,190],[2295,160]]}};
+      Object.entries(zones).forEach(([name,zone])=>{const shape=document.querySelector('.parking-zone[data-zone="'+name+'"]'),clip=document.querySelector('#zoneClip'+name+' polygon');if(shape)shape.setAttribute('points',zone.polygon);if(clip)clip.setAttribute('points',zone.polygon)});
+      const fenceLayer=document.createElementNS("http://www.w3.org/2000/svg","g");fenceLayer.id="parkingFenceLayer";[zones.D.top,zones.D.bottom,zones.C.top,zones.A.bottom].forEach(points=>{const fence=document.createElementNS("http://www.w3.org/2000/svg","polyline");fence.setAttribute("points",points.map(point=>point.join(",")).join(" "));fenceLayer.appendChild(fence)});const labelsLayer=document.getElementById("parkingLabelsLayer"),labelPositions=[[1410,468],[1360,335],[1330,268],[1600,145]];[...labelsLayer.querySelectorAll("text")].forEach((label,index)=>{label.setAttribute("x",labelPositions[index][0]);label.setAttribute("y",labelPositions[index][1])});labelsLayer.parentNode.insertBefore(fenceLayer,labelsLayer);
+      let scale=1,x=0,y=0,drag=null;
+      const clamp=(value,min,max)=>Math.min(max,Math.max(min,value));
+      const render=()=>{canvas.style.transform="translate("+x+"px, "+y+"px) scale("+scale+")"};
+      const fit=()=>{scale=1;x=0;y=Math.max(0,(stage.clientHeight-canvas.clientHeight)/2);zoneShapes.forEach(shape=>shape.classList.remove("selected"));zoneButtons.forEach(button=>button.classList.remove("selected"));render()};
+      const zoomAt=(nextScale,clientX,clientY)=>{nextScale=clamp(nextScale,1,6);const rect=stage.getBoundingClientRect(),px=clientX-rect.left,py=clientY-rect.top,mapX=(px-x)/scale,mapY=(py-y)/scale;x=px-mapX*nextScale;y=py-mapY*nextScale;scale=nextScale;render()};
+      const zoomCenter=factor=>{const rect=stage.getBoundingClientRect();zoomAt(scale*factor,rect.left+rect.width/2,rect.top+rect.height/2)};
+      const selectZone=name=>{const zone=zones[name];if(!zone)return;const logicalPixel=stage.clientWidth/10170,zoneWidth=(zone.x2-zone.x1)*logicalPixel,zoneHeight=(zone.y2-zone.y1)*logicalPixel;scale=clamp(Math.min(stage.clientWidth*.78/zoneWidth,stage.clientHeight*.62/zoneHeight),1,6);x=stage.clientWidth/2-((zone.x1+zone.x2)/2)*logicalPixel*scale;y=stage.clientHeight/2-((zone.y1+zone.y2)/2)*logicalPixel*scale;zoneShapes.forEach(shape=>shape.classList.toggle("selected",shape.dataset.zone===name));zoneButtons.forEach(button=>button.classList.toggle("selected",button.dataset.zone===name));render()};
+      const pointOnPath=(points,progress)=>{const lengths=points.slice(1).map((point,index)=>Math.hypot(point[0]-points[index][0],point[1]-points[index][1]));const total=lengths.reduce((sum,length)=>sum+length,0);let distance=total*progress;for(let index=0;index<lengths.length;index+=1){if(distance<=lengths[index]||index===lengths.length-1){const ratio=lengths[index]?distance/lengths[index]:0;return[points[index][0]+(points[index+1][0]-points[index][0])*ratio,points[index][1]+(points[index+1][1]-points[index][1])*ratio]}distance-=lengths[index]}return points[points.length-1]};
+      Object.entries(zones).forEach(([name,zone])=>{const group=document.createElementNS("http://www.w3.org/2000/svg","g");group.setAttribute("class","slot-"+name.toLowerCase());group.setAttribute("clip-path","url(#zoneClip"+name+")");for(let index=0;index<zone.capacity;index+=1){const inset=.13,start=(index+inset)/zone.capacity,end=(index+1-inset)/zone.capacity,topStart=pointOnPath(zone.top,start),topEnd=pointOnPath(zone.top,end),bottomEnd=pointOnPath(zone.bottom,end),bottomStart=pointOnPath(zone.bottom,start),slot=document.createElementNS("http://www.w3.org/2000/svg","polygon");slot.setAttribute("points",[topStart,topEnd,bottomEnd,bottomStart].map(point=>point.join(",")).join(" "));group.appendChild(slot)}slotsLayer.appendChild(group)});
+      zoneShapes.forEach(shape=>shape.addEventListener("click",event=>{event.stopPropagation();selectZone(shape.dataset.zone)}));zoneButtons.forEach(button=>button.addEventListener("click",event=>{event.stopPropagation();selectZone(button.dataset.zone)}));
+      stage.addEventListener("wheel",event=>{event.preventDefault();zoomAt(scale*(event.deltaY<0?1.18:1/1.18),event.clientX,event.clientY)},{passive:false});
+      stage.addEventListener("pointerdown",event=>{drag={pointerId:event.pointerId,startX:event.clientX,startY:event.clientY,x,y};stage.setPointerCapture(event.pointerId);stage.classList.add("dragging")});
+      stage.addEventListener("pointermove",event=>{if(!drag||drag.pointerId!==event.pointerId)return;x=drag.x+event.clientX-drag.startX;y=drag.y+event.clientY-drag.startY;render()});
+      const endDrag=event=>{if(!drag||drag.pointerId!==event.pointerId)return;drag=null;stage.classList.remove("dragging")};
+      stage.addEventListener("pointerup",endDrag);stage.addEventListener("pointercancel",endDrag);stage.addEventListener("dblclick",fit);
+      stage.addEventListener("keydown",event=>{if(event.key==="+"||event.key==="=")zoomCenter(1.2);if(event.key==="-")zoomCenter(1/1.2);if(event.key==="0")fit()});
+      document.getElementById("mapZoomIn").addEventListener("click",()=>zoomCenter(1.2));document.getElementById("mapZoomOut").addEventListener("click",()=>zoomCenter(1/1.2));document.getElementById("mapFit").addEventListener("click",fit);window.addEventListener("resize",fit);fit();
+    })();
+  </scr${""}ipt>
+</body>
+</html>`;
+    }
+
     if (!pages.matrix && pages.matrixWide) {
       pages.matrix = {
         label: "Matrix",
         html: withStandardMatrixPage(pages.matrixWide.html)
       };
     }
+    pages.settegastMap = {
+      label: "SETTEGAST MAP",
+      html: settegastMapPageHtml()
+    };
     pages.idTracker = {
       label: "ID Tracker",
       html: `<!DOCTYPE html>
@@ -12377,6 +12510,7 @@ body #forecastExcelView .forecast-excel-block.request .forecast-excel-table tbod
     function bridgedHtmlForPage(id) {
       if (!bridgedPageHtml.has(id)) {
         let pageHtml = pages[id].html;
+        if (id === "matrix" || id === "matrixWide") pageHtml = withMatrixDirtLotAsChassisLot(withMatrixYardCheckedNineDays(pageHtml));
         if (id === "amReport") {
           pageHtml = withAmReportPerformance(pageHtml);
           pageHtml = withAmReportWebsterWeatherSource(pageHtml);
@@ -12973,7 +13107,7 @@ body #forecastExcelView .forecast-excel-block.request .forecast-excel-table tbod
         const menu = document.createElement("div");
         menu.className = "matrix-nav-menu";
         menu.setAttribute("role", "menu");
-        [["matrix", "Matrix"], ["matrixWide", "Matrix Reloaded"]].forEach(([pageId, label]) => {
+                  [["matrix", "Matrix"], ["matrixWide", "Matrix Reloaded"], ["settegastMap", "SETTEGAST MAP"]].forEach(([pageId, label]) => {
           if (!pages[pageId]) return;
           const option = document.createElement("button");
           option.type = "button";
@@ -13045,7 +13179,6 @@ body #forecastExcelView .forecast-excel-block.request .forecast-excel-table tbod
       });
     });
 
-    document.getElementById("amHeaderMassExport").addEventListener("click", openMassExportModal);
     document.getElementById("amHeaderTodayRoster").addEventListener("click", () => {
       if (activePage === "amReport" && frame.contentWindow) {
         frame.contentWindow.postMessage({ type: "conglobal-toggle-todays-roster" }, "*");
