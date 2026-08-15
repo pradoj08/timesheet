@@ -3577,6 +3577,9 @@ select {
 body.reconciliation-view #forecastModal {
   display: none !important;
 }
+body.reconciliation-view #openForecastExcelViewBtn {
+  display: none !important;
+}
 body.forecast-view #banner,
 body.forecast-view #scaledArea {
   display: none !important;
@@ -10409,9 +10412,9 @@ function renderForecastExcelView(){
     pool:index===0?group.pool:"",rowspan:index===0?group.sizes.length:0,size,
     poolCode:group.pool,
     baseTotal:(calc72Rows.find(row=>row.poolCode===group.pool&&String(row.size)===String(size).replace(/'+$/,""))?.total)||0,
-    drayIn:Number(getForecastChassisRequestValue(group.pool,size,"drayIn"))||0,
-    drayOut:Number(getForecastChassisRequestValue(group.pool,size,"drayOut"))||0,
-    get net(){return this.baseTotal+this.drayIn-this.drayOut}
+    drayIn:getForecastChassisRequestValue(group.pool,size,"drayIn"),
+    drayOut:getForecastChassisRequestValue(group.pool,size,"drayOut"),
+    get net(){return this.baseTotal+(Number(this.drayIn)||0)-(Number(this.drayOut)||0)}
   })));
   const requestTable=`<section class="forecast-excel-block request"><h3>${requestIcon}<span>Chassis Request to Cover 72H</span></h3>${renderForecastExcelTable(
     ["Pool","Size","Dray In","Dray Out","Net"],requestRows,
@@ -14225,11 +14228,17 @@ function getForecastChassisRequestValue(pool,size,field){
   const value=row[field];
   return value===0 || value ? String(value) : "";
 }
+function normalizeForecastChassisRequestValue(value){
+  const raw=String(value??"").trim().toUpperCase();
+  if(/^\d+$/.test(raw))return raw;
+  if("OPEN".startsWith(raw))return raw;
+  return raw.replace(/[^0-9]/g,"");
+}
 function setForecastChassisRequestValue(pool,size,field,value){
   const key=getForecastChassisRequestKey(pool,size);
   if(!forecastChassisRequests || typeof forecastChassisRequests!=="object")forecastChassisRequests={};
   if(!forecastChassisRequests[key])forecastChassisRequests[key]={pool:String(pool||"").trim().toUpperCase(),size:String(size||"").trim(),drayIn:"",drayOut:""};
-  const clean=String(value??"").replace(/[^0-9]/g,"");
+  const clean=normalizeForecastChassisRequestValue(value);
   forecastChassisRequests[key][field]=clean;
   if(!forecastChassisRequests[key].drayIn && !forecastChassisRequests[key].drayOut)delete forecastChassisRequests[key];
   renderForecastChassisRequestSummary();
@@ -14875,10 +14884,10 @@ const net=difference+(Number(drayInValue)||0)-(Number(drayOutValue)||0);
         <td class="forecast-request-count expected ${tone} forecast-request-segment-start">${expected}</td>
         <td class="forecast-request-count onhand ${tone}">${onHand} <small class="forecast-onhand-difference ${difference>=0?"positive":"negative"}">${difference>0?"+":""}${difference}</small></td>
         <td class="${tone}">
-          <input class="${drayInValue ? "forecast-request-has-value" : ""}" type="number" inputmode="numeric" min="0" step="1" placeholder="" value="${escapeHtml(drayInValue)}" data-forecast-request-pool="${escapeHtml(group.pool)}" data-forecast-request-size="${escapeHtml(size)}" data-forecast-request-field="drayIn">
+          <input class="${drayInValue ? "forecast-request-has-value" : ""}" type="text" inputmode="text" placeholder="" value="${escapeHtml(drayInValue)}" data-forecast-request-pool="${escapeHtml(group.pool)}" data-forecast-request-size="${escapeHtml(size)}" data-forecast-request-field="drayIn">
         </td>
         <td class="${tone}">
-          <input class="${drayOutValue ? "forecast-request-has-value" : ""}" type="number" inputmode="numeric" min="0" step="1" placeholder="" value="${escapeHtml(drayOutValue)}" data-forecast-request-pool="${escapeHtml(group.pool)}" data-forecast-request-size="${escapeHtml(size)}" data-forecast-request-field="drayOut">
+          <input class="${drayOutValue ? "forecast-request-has-value" : ""}" type="text" inputmode="text" placeholder="" value="${escapeHtml(drayOutValue)}" data-forecast-request-pool="${escapeHtml(group.pool)}" data-forecast-request-size="${escapeHtml(size)}" data-forecast-request-field="drayOut">
         </td>
         <td class="forecast-request-count forecast-request-net ${netClass} ${net<0?"forecast-request-net-negative":"forecast-request-net-nonnegative"} ${tone}" data-forecast-request-net-pool="${escapeHtml(group.pool)}" data-forecast-request-net-size="${escapeHtml(size)}">${net}</td>`;
     }).join("")}
@@ -14909,7 +14918,9 @@ const net=getForecastRequestOnHandCount(pool,size)+drayIn-drayOut-getForecastReq
   };
   box.querySelectorAll("[data-forecast-request-field]").forEach(input=>{
     input.addEventListener("input",()=>{
-      input.classList.toggle("forecast-request-has-value",Number(input.value)>0);
+      const clean=normalizeForecastChassisRequestValue(input.value);
+      if(input.value!==clean)input.value=clean;
+      input.classList.toggle("forecast-request-has-value",clean==="OPEN"||Number(clean)>0);
       setForecastChassisRequestValue(input.dataset.forecastRequestPool,input.dataset.forecastRequestSize,input.dataset.forecastRequestField,input.value);
       updateNet(input.dataset.forecastRequestPool,input.dataset.forecastRequestSize);
       updateForecastDayStatusPills();
@@ -15092,6 +15103,7 @@ async function init(){
   const forecastMismatchClearBtn=$("forecastMismatchClearBtn"); setupForecastClearConfirmation(forecastMismatchClearBtn,clearForecastMismatchUnits);
   const forecastMismatchPreviewCloseBtn=$("forecastMismatchPreviewCloseBtn"); if(forecastMismatchPreviewCloseBtn)forecastMismatchPreviewCloseBtn.onclick=closeForecastMismatchPreview;
   const forecastMismatchPreviewCancelBtn=$("forecastMismatchPreviewCancelBtn"); if(forecastMismatchPreviewCancelBtn)forecastMismatchPreviewCancelBtn.onclick=closeForecastMismatchPreview;
+  const forecastMismatchPreviewClearBtn=$("forecastMismatchPreviewClearBtn"); if(forecastMismatchPreviewClearBtn)forecastMismatchPreviewClearBtn.onclick=clearForecastMismatchPreviewData;
   const forecastMismatchPreviewConfirmBtn=$("forecastMismatchPreviewConfirmBtn"); if(forecastMismatchPreviewConfirmBtn)forecastMismatchPreviewConfirmBtn.onclick=confirmForecastMismatchImport;
   const forecastMismatchPreviewModal=$("forecastMismatchPreviewModal"); if(forecastMismatchPreviewModal)forecastMismatchPreviewModal.addEventListener("click",e=>{if(e.target===forecastMismatchPreviewModal)closeForecastMismatchPreview()});
   const forecastMismatchDetailsCloseBtn=$("forecastMismatchDetailsCloseBtn"); if(forecastMismatchDetailsCloseBtn)forecastMismatchDetailsCloseBtn.onclick=closeForecastMismatchDetails;

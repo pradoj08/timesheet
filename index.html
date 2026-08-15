@@ -68,6 +68,13 @@
       min-width: 164px;
       text-align: left;
     }
+    .report-nav-menu,
+    .workbook-tabs .report-nav-menu button {
+      min-width: 202px;
+    }
+    .workbook-tabs .report-nav-menu button {
+      white-space: nowrap;
+    }
     .am-report-actions[hidden] { display: none !important; }
     .am-report-actions {
       width: 100%;
@@ -5760,6 +5767,23 @@ tfoot .lph-target-pill.below-target{background:#fecaca;color:#7f1d1d}
       return html.replace("</head>", '<meta name="excel-ss-resolver-numeric-matching-v1" content="enabled">\n</head>');
     }
 
+    function withExcelInboundSummaryShiftParser(html) {
+      if (!html || typeof html !== "string" || html.includes("excel-inbound-summary-shift-parser-v1")) return html;
+      html = html.replace(
+        /  function inboundSummaryShift\(plan\) \{[\s\S]*?\n  \}/,
+        `  function inboundSummaryShift(plan) {
+    const text = String(plan && plan.eta || "");
+    const match = text.match(/\\b(\\d{1,2}):(\\d{2})\\b/);
+    if (!match) return "";
+    const hour = Number(match[1]);
+    if (hour >= 19 || hour < 5) return "NIGHT SHIFT";
+    if (hour >= 12) return "LATE ARRIVAL";
+    return "DAY SHIFT";
+  }`
+      );
+      return html.replace("</head>", '<meta name="excel-inbound-summary-shift-parser-v1" content="enabled">\n</head>');
+    }
+
     function withExcelSsResolverDirectSend(html) {
       if (!html || typeof html !== "string" || html.includes("excel-ss-resolver-direct-send-v1")) return html;
       html = html
@@ -9341,7 +9365,7 @@ document.addEventListener('click',function(event){
       };
     }
     pages.settegastMap = {
-      label: "SETTEGAST MAP",
+      label: "Settegast Map",
       html: settegastMapPageHtml()
     };
     pages.idTracker = {
@@ -11992,6 +12016,16 @@ const script = `<style id="billing-unified-duplicate-review-v1">
       return html.replace("</head>", style + "\n</head>");
     }
 
+    function withChassisReconciliationPresentation(html) {
+      if (!html || typeof html !== "string" || html.includes('id="chassis-reconciliation-presentation-v1"')) return html;
+      const style = `<style id="chassis-reconciliation-presentation-v1">
+body.reconciliation-view #openForecastExcelViewBtn{
+  display:none!important;
+}
+</style>`;
+      return html.replace("</head>", style + "\n</head>");
+    }
+
     function withChassisRequestTableBorders(html) {
       if (!html || typeof html !== "string" || html.includes("chassis-request-table-borders-v2")) return html;
       const style = `<style id="chassis-request-table-borders-v2">
@@ -12009,6 +12043,32 @@ body #forecastExcelView .forecast-excel-block.request .forecast-excel-table tbod
 </style>`;
       const headClose = html.toLowerCase().lastIndexOf("</head>");
       return headClose >= 0 ? html.slice(0, headClose) + style + "\n" + html.slice(headClose) : style + html;
+    }
+
+    function withChassisMismatchPreviewClearHandler(html) {
+      if (!html || typeof html !== "string" || html.includes("chassis-mismatch-preview-clear-handler-v1")) return html;
+      const marker = "<!-- chassis-mismatch-preview-clear-handler-v1 -->";
+      const anchor = '  const forecastMismatchPreviewCancelBtn=$("forecastMismatchPreviewCancelBtn"); if(forecastMismatchPreviewCancelBtn)forecastMismatchPreviewCancelBtn.onclick=closeForecastMismatchPreview;';
+      const handler = '\n  const forecastMismatchPreviewClearBtn=$("forecastMismatchPreviewClearBtn"); if(forecastMismatchPreviewClearBtn)forecastMismatchPreviewClearBtn.onclick=clearForecastMismatchPreviewData;';
+      if (!html.includes(anchor)) return html;
+      html = html.replace(anchor, anchor + handler);
+      return html.replace("</head>", marker + "\n</head>");
+    }
+
+    function withChassisOpenDrayRequests(html) {
+      if (!html || typeof html !== "string" || html.includes("chassis-open-dray-requests-v1")) return html;
+      const marker = "<!-- chassis-open-dray-requests-v1 -->";
+      const getterEnd = `  return value===0 || value ? String(value) : "";\n}`;
+      const normalizer = `\nfunction normalizeForecastChassisRequestValue(value){\n  const raw=String(value??"").trim().toUpperCase();\n  if(/^\\d+$/.test(raw))return raw;\n  if("OPEN".startsWith(raw))return raw;\n  return raw.replace(/[^0-9]/g,"");\n}`;
+      if (!html.includes(getterEnd)) return html;
+      html = html.replace(getterEnd, getterEnd + normalizer);
+      html = html.replace('const clean=String(value??"").replace(/[^0-9]/g,"");', 'const clean=normalizeForecastChassisRequestValue(value);');
+      html = html.replaceAll('type="number" inputmode="numeric" min="0" step="1" placeholder="" value="${escapeHtml(drayInValue)}"', 'type="text" inputmode="text" placeholder="" value="${escapeHtml(drayInValue)}"');
+      html = html.replaceAll('type="number" inputmode="numeric" min="0" step="1" placeholder="" value="${escapeHtml(drayOutValue)}"', 'type="text" inputmode="text" placeholder="" value="${escapeHtml(drayOutValue)}"');
+      html = html.replaceAll('type="number" inputmode="numeric" min="0" step="1" placeholder="" value="${escapeHtml(getForecastChassisRequestValue(group.pool,size,"drayIn"))}"', 'type="text" inputmode="text" placeholder="" value="${escapeHtml(getForecastChassisRequestValue(group.pool,size,"drayIn"))}"');
+      html = html.replaceAll('type="number" inputmode="numeric" min="0" step="1" placeholder="" value="${escapeHtml(getForecastChassisRequestValue(group.pool,size,"drayOut"))}"', 'type="text" inputmode="text" placeholder="" value="${escapeHtml(getForecastChassisRequestValue(group.pool,size,"drayOut"))}"');
+      html = html.replace('input.classList.toggle("forecast-request-has-value",Number(input.value)>0);', 'const clean=normalizeForecastChassisRequestValue(input.value);\n      if(input.value!==clean)input.value=clean;\n      input.classList.toggle("forecast-request-has-value",clean==="OPEN"||Number(clean)>0);');
+      return html.replace("</head>", marker + "\n</head>");
     }
 
     function withChassisLowStockWarningRules(html) {
@@ -12567,6 +12627,7 @@ body #forecastExcelView .forecast-excel-block.request .forecast-excel-table tbod
           pageHtml = withExcelSelectionHighlight(pageHtml);
           pageHtml = withExcelRawTrackColumnOrder(pageHtml);
           pageHtml = withExcelRawTrackFontSize(pageHtml);
+          pageHtml = withExcelInboundSummaryShiftParser(pageHtml);
           pageHtml = withExcelSsResolverNumericMatching(pageHtml);
           pageHtml = withExcelSsResolverDirectSend(pageHtml);
           pageHtml = withExcelResolveSsButtonOrder(pageHtml);
@@ -12589,9 +12650,11 @@ body #forecastExcelView .forecast-excel-block.request .forecast-excel-table tbod
         }
         if (id === "chassisStatus") {
           pageHtml = withChassisGreenExcelHero(pageHtml);
+          pageHtml = withChassisReconciliationPresentation(pageHtml);
           pageHtml = withChassisNetTextOnePixelLower(pageHtml);
           pageHtml = withChassisScrollablePreviewSections(pageHtml);
           pageHtml = withChassisRequestTableBorders(pageHtml);
+          pageHtml = withChassisMismatchPreviewClearHandler(pageHtml);
           pageHtml = withChassisLowStockWarningRules(pageHtml);
           pageHtml = withChassisForecastPersistence(pageHtml);
           pageHtml = withChassisInventoryRequestBoardRefresh(pageHtml);
@@ -12604,6 +12667,7 @@ body #forecastExcelView .forecast-excel-block.request .forecast-excel-table tbod
           pageHtml = withChassisCompactInboundForecast(pageHtml);
           pageHtml = withChassisCompactRequestBoard(pageHtml);
           pageHtml = withChassisUnifiedRequestBoard(pageHtml);
+          pageHtml = withChassisOpenDrayRequests(pageHtml);
           pageHtml = withChassisSoftDeficitPills(pageHtml);
         }
         bridgedPageHtml.set(id, withWorkbookSyncBridge(pageHtml));
@@ -12739,6 +12803,27 @@ body #forecastExcelView .forecast-excel-block.request .forecast-excel-table tbod
           frame.contentWindow.postMessage({ type: "archive-bot-import-talking-points", ...payload }, "*");
         }
       }
+    }
+
+    function openChassisReconciliation() {
+      selectPage("chassisStatus");
+      let attempts = 0;
+      const openReconciliationView = () => {
+        attempts += 1;
+        if (activePage === "chassisStatus") {
+          try {
+            const chassisWindow = chassisFrame.contentWindow;
+            if (chassisWindow && typeof chassisWindow.setAppPage === "function") {
+              chassisWindow.setAppPage("reconciliation");
+              return;
+            }
+          } catch (error) {
+            console.warn("Unable to open Chassis Reconciliation yet", error);
+          }
+        }
+        if (attempts < 120) window.setTimeout(openReconciliationView, 50);
+      };
+      openReconciliationView();
     }
 
     let containedPopup = null;
@@ -13003,7 +13088,7 @@ body #forecastExcelView .forecast-excel-block.request .forecast-excel-table tbod
         const menu = document.createElement("div");
         menu.className = "matrix-nav-menu report-nav-menu";
         menu.setAttribute("role", "menu");
-        [["amReport", "AM Report"], ["chassisStatus", "Chassis Status"]].forEach(([pageId, label]) => {
+        [["amReport", "AM Report"], ["chassisStatus", "Chassis Status"], ["chassisReconciliation", "Chassis Reconciliation"]].forEach(([pageId, label]) => {
           const option = document.createElement("button");
           option.type = "button";
           option.dataset.page = pageId;
@@ -13013,7 +13098,8 @@ body #forecastExcelView .forecast-excel-block.request .forecast-excel-table tbod
             group.classList.remove("open");
             reportMenuButton.setAttribute("aria-expanded", "false");
             option.blur();
-            selectPage(pageId);
+            if (pageId === "chassisReconciliation") openChassisReconciliation();
+            else selectPage(pageId);
           });
           menu.appendChild(option);
         });
@@ -13107,7 +13193,7 @@ body #forecastExcelView .forecast-excel-block.request .forecast-excel-table tbod
         const menu = document.createElement("div");
         menu.className = "matrix-nav-menu";
         menu.setAttribute("role", "menu");
-                  [["matrix", "Matrix"], ["matrixWide", "Matrix Reloaded"], ["settegastMap", "SETTEGAST MAP"]].forEach(([pageId, label]) => {
+                  [["matrix", "Matrix"], ["matrixWide", "Matrix Reloaded"], ["settegastMap", "Settegast Map"]].forEach(([pageId, label]) => {
           if (!pages[pageId]) return;
           const option = document.createElement("button");
           option.type = "button";

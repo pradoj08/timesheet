@@ -6151,7 +6151,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
 
   function inboundSummaryShift(plan) {
     const text = String(plan && plan.eta || "");
-    const match = text.match(/(d{1,2}):(d{2})/);
+    const match = text.match(/\b(\d{1,2}):(\d{2})\b/);
     if (!match) return "";
     const hour = Number(match[1]);
     if (hour >= 19 || hour < 5) return "NIGHT SHIFT";
