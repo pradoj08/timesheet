@@ -46,7 +46,54 @@
     .map-view-modes button { height:36px;padding:0 12px;border:1px solid #5a6f8d;border-radius:8px;color:#f8fafc;background:#20314a;font:900 13px system-ui,sans-serif;cursor:pointer; }
     .map-view-modes button:hover,.map-view-modes button:focus-visible { border-color:var(--accent);outline:2px solid rgba(255,204,40,.32); }
     .map-view-modes button.active { color:#172033;background:#22d3ee;border-color:#a5f3fc; }
-    .layer-key { display:flex;flex-wrap:nowrap;justify-content:flex-end;gap:6px;white-space:nowrap; }
+    .map-view-divider { align-self:stretch;width:1px;min-height:32px;margin:0 8px;background:#526985;box-shadow:1px 0 0 rgba(255,255,255,.05); }
+    .map-view-modes .map-data-control { color:#241700;background:#facc15;border-color:#ffe785;box-shadow:inset 0 1px 0 rgba(255,255,255,.45),0 3px 8px rgba(0,0,0,.18); }
+    .map-view-modes .map-data-control:hover,.map-view-modes .map-data-control:focus-visible { color:#171008;background:#fde047;border-color:#fff2a8; }
+    .map-source-toggle { height:34px;display:flex;align-items:center;gap:6px;padding:0 10px;border:1px solid #5a6f8d;border-radius:8px;color:#f8fafc;background:#20314a;font:850 11px system-ui,sans-serif;cursor:pointer;white-space:nowrap; }
+    .map-source-toggle.map-data-control { color:#241700;background:#facc15;border-color:#ffe785;box-shadow:inset 0 1px 0 rgba(255,255,255,.45),0 3px 8px rgba(0,0,0,.18); }
+    .map-source-toggle.map-data-control:has(input:checked) { color:#201300;background:#fde047;border-color:#fff7bd;box-shadow:inset 0 0 0 2px #a16207,0 0 10px rgba(250,204,21,.35); }
+    .map-source-toggle input { width:15px;height:15px;margin:0;accent-color:#0891b2; }
+    .map-import-file { display:none; }
+    .map-paste-panel { position:absolute;z-index:12;top:72px;left:50%;width:min(760px,calc(100% - 32px));transform:translateX(-50%);padding:12px;border:1px solid #64748b;border-radius:12px;background:#0b1728;box-shadow:0 18px 46px rgba(0,0,0,.55); }
+    .map-paste-panel[hidden] { display:none; }
+    .map-paste-panel h2 { margin:0 0 8px;color:#f8fafc;font:900 14px system-ui,sans-serif;text-transform:uppercase;letter-spacing:.05em; }
+    .map-paste-panel textarea { width:100%;height:210px;resize:vertical;padding:10px;border:1px solid #526985;border-radius:8px;background:#07111f;color:#e2e8f0;font:600 12px/1.35 ui-monospace,Consolas,monospace; }
+    .map-paste-actions { display:flex;justify-content:flex-end;gap:8px;margin-top:8px; }
+    .map-paste-actions button { min-height:34px;padding:0 14px;border:1px solid #64748b;border-radius:8px;background:#20314a;color:#f8fafc;font:850 11px system-ui,sans-serif;cursor:pointer; }
+    .map-paste-actions button.primary { background:#0891b2;border-color:#67e8f9; }
+    .map-unit-panel { position:absolute;z-index:15;top:50%;left:50%;width:min(720px,calc(100% - 32px));max-height:min(620px,calc(100% - 32px));transform:translate(-50%,-50%);display:flex;flex-direction:column;overflow:hidden;border:1px solid #64748b;border-radius:14px;background:#0b1728;box-shadow:0 24px 70px rgba(0,0,0,.68); }
+    .map-unit-panel[hidden] { display:none; }
+    .map-unit-head { display:flex;align-items:center;justify-content:space-between;gap:14px;padding:13px 15px;border-bottom:1px solid #334861;background:linear-gradient(135deg,#17283d,#0d1a2b); }
+    .map-unit-title { min-width:0; }
+    .map-unit-title h2 { margin:0;color:#f8fafc;font:950 17px system-ui,sans-serif;letter-spacing:.035em;text-transform:uppercase; }
+    .map-unit-title p { margin:3px 0 0;color:#9fb0c3;font:750 11px system-ui,sans-serif; }
+    .map-unit-close { flex:0 0 auto;width:36px;height:36px;border:1px solid #64748b;border-radius:9px;background:#20314a;color:#f8fafc;font:900 20px system-ui,sans-serif;cursor:pointer; }
+    .map-unit-table-wrap { min-height:90px;overflow:auto;scrollbar-width:thin; }
+    .map-unit-table { width:100%;border-collapse:collapse;color:#e7eef7;font:750 12px system-ui,sans-serif; }
+    .map-unit-table th { position:sticky;top:0;z-index:1;padding:9px 12px;border-bottom:1px solid #526985;background:#14243a;color:#a5c5e8;font-size:10px;letter-spacing:.07em;text-align:left;text-transform:uppercase; }
+    .map-unit-table td { padding:9px 12px;border-bottom:1px solid #22344b;vertical-align:middle; }
+    .map-unit-table tbody tr:nth-child(even) { background:rgba(255,255,255,.025); }
+    .map-unit-table .slot-cell { width:72px;color:#67e8f9;font-weight:950;text-align:center; }
+    .map-unit-table .unit-cell { color:#fff;font-family:ui-monospace,Consolas,monospace;font-weight:900; }
+    .map-unit-empty { padding:28px 16px!important;color:#9fb0c3;text-align:center; }
+    .map-all-units-toggle { top:auto;right:532px;bottom:12px;width:122px;min-height:62px; }
+    .map-all-units-drawer { position:absolute;z-index:18;left:10px;right:10px;bottom:10px;height:min(31%,250px);min-height:170px;display:flex;flex-direction:column;overflow:hidden;border:1px solid #526985;border-radius:14px;background:linear-gradient(145deg,rgba(11,25,43,.98),rgba(7,17,31,.98));box-shadow:0 16px 40px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.04);cursor:default; }
+    .map-all-units-drawer[hidden] { display:none; }
+    .map-all-units-head { flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 13px;border-bottom:1px solid #334861;background:linear-gradient(90deg,#17283d,#101f32); }
+    .map-all-units-head strong { color:#f8fafc;font:950 15px system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase; }
+    .map-all-units-head span { display:inline-block;margin-left:7px;padding:3px 8px;border-radius:999px;background:#203751;color:#b9d5f2;font:800 10px system-ui,sans-serif; }
+    .map-all-units-close { width:34px;height:34px;border:1px solid #64748b;border-radius:8px;background:#20314a;color:#fff;font:900 19px system-ui,sans-serif;cursor:pointer; }
+    .map-all-units-close:hover { border-color:#f87171;background:#3a2230; }
+    .map-all-units-groups { flex:1 1 auto;display:flex;align-items:stretch;gap:7px;min-height:0;padding:8px;overflow:hidden; }
+    .map-unit-group { --group-color:#22d3ee;flex:1 1 180px;min-width:0;overflow:hidden;border:1px solid #334861;border-radius:10px;background:linear-gradient(180deg,#0e1d30,#0a1626);box-shadow:0 5px 14px rgba(0,0,0,.2); }
+    .map-unit-group-head { display:flex;align-items:center;gap:7px;padding:7px 8px;border-bottom:1px solid #334861;border-left:4px solid var(--group-color);background:linear-gradient(90deg,color-mix(in srgb,var(--group-color) 14%,#17283d),#17283d);color:#fff;font:950 10px system-ui,sans-serif;text-transform:uppercase;white-space:nowrap; }
+    .map-unit-group-list { display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));overflow:hidden; }
+    .map-unit-choice { display:grid;grid-template-columns:auto 30px minmax(0,1fr);align-items:center;gap:5px;min-width:0;padding:3px 6px;border-right:1px solid #1e3046;border-bottom:1px solid #1e3046;color:#dce7f4;font:800 9px system-ui,sans-serif;cursor:pointer; }
+    .map-unit-choice:last-child { border-bottom:0; }
+    .map-unit-choice:hover { background:#14243a; }
+    .map-unit-choice input,.map-unit-group-head input { width:14px;height:14px;margin:0;accent-color:var(--group-color); }
+    .map-unit-choice b { min-width:26px;padding:1px 4px;border:1px solid color-mix(in srgb,var(--group-color) 55%,#334861);border-radius:999px;background:color-mix(in srgb,var(--group-color) 14%,#081421);color:#d9f9ff;text-align:center;font-size:9px; }
+    .map-unit-choice span { overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:ui-monospace,Consolas,monospace; }
     .map-actions { display:flex;align-items:center;gap:5px;white-space:nowrap; }
     .map-actions button {
       min-width: 38px;
@@ -73,21 +120,6 @@
     .focus-setting input { width:70px;accent-color:#22d3ee;cursor:pointer; }
     .focus-setting output { color:#a5f3fc;text-align:right; }
     .focus-reset { min-width:72px!important;height:29px!important;padding:0 9px!important;font-size:10px!important; }
-    .key-item {
-      display: inline-flex;
-      align-items: center;
-      gap: 7px;
-      padding: 7px 10px;
-      border: 1px solid var(--line);
-      border-radius: 999px;
-      color: #dbe7f4;
-      background: var(--panel-soft);
-      font-size: 11px;
-      letter-spacing: .05em;
-      text-transform: uppercase;
-    }
-    .swatch { width: 11px; height: 11px; border-radius: 3px; background: var(--accent); box-shadow: 0 0 10px rgba(255, 204, 40, .55); }
-    .swatch.slot { border: 2px solid #42d3ff; background: transparent; box-shadow: 0 0 8px rgba(66, 211, 255, .55); }
     .map-stage {
       position: relative;
       width: 100%;
@@ -108,7 +140,7 @@
     .map-stage.section-focus-active .parking-zone { stroke:rgba(255,255,255,.96);filter:drop-shadow(0 0 9px rgba(255,255,255,.48)); }
     .map-stage.section-focus-active #parkingSlotsLayer polygon { stroke-width:3; }
     .map-overlay { z-index: 2; pointer-events: none; }
-    #parkingAreasLayer { pointer-events: auto; }
+    #parkingAreasLayer,#parkingSlotsLayer { pointer-events: auto; }
     .parking-zone { cursor: pointer; stroke: rgba(255,255,255,.72); stroke-width: 5; transition: filter .16s ease, opacity .16s ease; }
     .parking-zone:hover,
     .parking-zone.selected { filter: brightness(1.2) drop-shadow(0 0 18px rgba(255,255,255,.85)); opacity: .92; }
@@ -164,7 +196,7 @@
       stroke:var(--slot-highlight-outline,#fff)!important;
       stroke-width:3px!important;
       stroke-linejoin:round;
-      filter:brightness(var(--slot-highlight-brightness,1.3)) drop-shadow(0 0 2px var(--slot-highlight-outline,#fff)) drop-shadow(0 0 7px var(--slot-highlight-color)) drop-shadow(0 0 15px var(--slot-highlight-color))!important;
+      filter:brightness(var(--slot-highlight-brightness,1.3)) drop-shadow(0 0 1px var(--slot-highlight-outline,#fff)) drop-shadow(0 0 3px var(--slot-highlight-color))!important;
     }
     .map-activity-option span { min-width:0; }
     .map-activity-dot { flex:0 0 auto;width:9px;height:9px;border-radius:999px;background:var(--status-color);box-shadow:0 0 8px color-mix(in srgb,var(--status-color) 75%,transparent); }
@@ -195,7 +227,7 @@
     .parking-shape-handle { pointer-events:auto;fill:#ffffff;stroke:#7c3aed;stroke-width:2.5;vector-effect:non-scaling-stroke;cursor:move; }
     .parking-add-point { pointer-events:auto;fill:#facc15;stroke:#172033;stroke-width:2;vector-effect:non-scaling-stroke;cursor:copy; }
     body.map-editing .parking-zone { cursor:move; }.slot-number { fill:#101927;stroke:rgba(255,255,255,.88);stroke-width:2;paint-order:stroke fill;font:900 9px/1 system-ui,sans-serif;pointer-events:none;text-anchor:middle;dominant-baseline:middle; }
-    .map-highlight-slot-number { display:block!important;fill:#06111f!important;stroke:rgba(255,255,255,.96)!important;stroke-width:2.6px!important;paint-order:stroke fill;font-family:system-ui,sans-serif!important;font-size:var(--highlight-number-size,13px)!important;font-weight:950!important;opacity:1!important;pointer-events:none;text-anchor:middle;dominant-baseline:middle;filter:drop-shadow(0 1px 2px rgba(0,0,0,.7)); }
+    .map-highlight-slot-number { display:block!important;fill:#f8fafc!important;stroke:rgba(5,13,24,.96)!important;stroke-width:3px!important;paint-order:stroke fill;font-family:ui-monospace,Consolas,monospace!important;font-size:var(--highlight-number-size,13px)!important;font-weight:950!important;letter-spacing:-.04em;opacity:1!important;pointer-events:none;text-anchor:middle;dominant-baseline:middle;filter:drop-shadow(0 1px 1px rgba(0,0,0,.72)); }
     .map-note {
       margin: 12px 0 0;
       padding: 11px 14px;
@@ -208,7 +240,6 @@
     @media (max-width: 760px) {
       body { padding: 8px; }
       .map-header { align-items:center;flex-direction:row; }
-      .layer-key { justify-content:flex-end; }
       .map-stage { border-radius: 8px; }
     }
   </style>
@@ -221,11 +252,17 @@
       </div>
       <div class="map-view-modes" aria-label="Map display modes">
         <button id="mapFocus" type="button" title="Crop to the active yard strip" aria-pressed="false">FOCUS</button>
-        <button id="mapSectionNames" type="button" title="Show each parking-section name in the middle of its shape" aria-pressed="false">NAMES</button>
-        <button id="mapSectionFocus" type="button" title="Dim the aerial image and emphasize parking sections" aria-pressed="false">SECTIONS</button>
-        <button id="mapSectionsVisibilityToggle" type="button" aria-pressed="true">HIDE SECTIONS</button>
+        <button id="mapSectionNames" type="button" title="Show each parking-section ID in the middle of its shape" aria-pressed="false">ROW ID</button>
+        <button id="mapSectionFocus" type="button" title="Dim the aerial image and emphasize parking sections" aria-pressed="false">DIM BACKGROUND</button>
+        <button id="mapSectionsVisibilityToggle" type="button" title="Show or hide parking sections" aria-pressed="true">SECTIONS</button>
         <button id="mapShowAllUnitsButton" type="button" aria-pressed="false">SHOW ALL UNITS</button>
         <button id="mapHighlightedSlotNumbers" type="button" aria-pressed="false">SHOW SLOT NUMBERS</button>
+        <span class="map-view-divider" aria-hidden="true"></span>
+        <button id="mapImportChassis" class="map-data-control" type="button">IMPORT CHASSIS</button>
+        <label class="map-source-toggle map-data-control" title="Checked: imported chassis CSV. Unchecked: Chassis Reconciliation data"><input id="mapUseImportedChassis" type="checkbox">IMPORTED DATA</label>
+        <button id="mapPasteChassis" class="map-data-control" type="button">PASTE CHASSIS</button>
+        <label class="map-source-toggle map-data-control" title="Checked: pasted chassis data. Unchecked: another selected source"><input id="mapUsePastedChassis" type="checkbox">PASTED DATA</label>
+        <input id="mapImportChassisFile" class="map-import-file" type="file" accept=".csv,text/csv">
       </div>
       <div class="map-toolbar">
         <div class="map-actions" aria-label="Map navigation controls">
@@ -244,10 +281,6 @@
           <button id="mapFocusSave" class="focus-reset" type="button">SAVE VIEW</button>
           <button id="mapFocusReset" class="focus-reset" type="button" title="Return to the last view saved with Save View">RESTORE SAVED</button>
         </div>
-        <div class="layer-key" aria-label="Future map overlay layers">
-          <span class="key-item"><span class="swatch"></span>Parking areas</span>
-          <span class="key-item"><span class="swatch slot"></span>Parking slots</span>
-        </div>
       </div>
     </header>
 
@@ -256,6 +289,16 @@
       <button id="mapZonePanelToggle" class="zone-panel-toggle active" type="button" aria-expanded="true" aria-controls="mapZonePanel">Hide Areas</button>
       <button id="mapActivityPanelToggle" class="map-edge-toggle map-activity-toggle active" type="button" aria-expanded="true" aria-controls="mapActivityPanel">Hide Highlights</button>
       <button id="mapEditSectionNames" class="map-edge-toggle map-name-edit-toggle" type="button" title="Drag section names to reposition them" aria-pressed="false">Edit Names</button>
+      <button id="mapAllUnitsPanelToggle" class="map-edge-toggle map-all-units-toggle" type="button" aria-expanded="false" aria-controls="mapAllUnitsDrawer">Unit List</button>
+      <aside id="mapPastePanel" class="map-paste-panel" hidden>
+        <h2>Paste chassis locations</h2>
+        <textarea id="mapPastedChassisText" spellcheck="false" placeholder="Paste tab-separated rows here, including values such as DDRZ 999637 and D D 6 or BOWL BOWL."></textarea>
+        <div class="map-paste-actions"><button id="mapCancelPastedChassis" type="button">Cancel</button><button id="mapApplyPastedChassis" class="primary" type="button">Use Pasted Data</button></div>
+      </aside>
+      <aside id="mapSectionUnitPanel" class="map-unit-panel" role="dialog" aria-modal="true" aria-labelledby="mapSectionUnitTitle" hidden>
+        <div class="map-unit-head"><div class="map-unit-title"><h2 id="mapSectionUnitTitle">Section units</h2><p id="mapSectionUnitSummary">0 units</p></div><button id="mapSectionUnitClose" class="map-unit-close" type="button" aria-label="Close section unit list">×</button></div>
+        <div class="map-unit-table-wrap"><table class="map-unit-table"><thead><tr><th>Slot</th><th>Unit / Chassis</th><th>Location</th><th>Source</th></tr></thead><tbody id="mapSectionUnitRows"></tbody></table></div>
+      </aside>
       <div id="mapZonePanel" class="zone-panel" aria-label="Parking rows">
         <button class="zone-button" data-zone="A" type="button">A ROW<span>28 spots</span></button>
         <button class="zone-button" data-zone="B" type="button">B ROW<span>38 spots</span></button>
@@ -324,6 +367,10 @@
           <g id="parkingEditLayer"></g>
         </svg>
       </div>
+      <aside id="mapAllUnitsDrawer" class="map-all-units-drawer" aria-label="All units grouped by parking section" hidden>
+        <div class="map-all-units-head"><div><strong>Units by section</strong> <span id="mapAllUnitsSummary"></span></div><button id="mapAllUnitsClose" class="map-all-units-close" type="button" aria-label="Close unit list">×</button></div>
+        <div id="mapAllUnitsGroups" class="map-all-units-groups"></div>
+      </aside>
     </section>
 
     <p class="map-note"><strong>Navigate:</strong> drag the map to pan, use the mouse wheel or +/− buttons to zoom, and select FIT to return to the full map.</p>
@@ -428,8 +475,22 @@
       setEdgePanelHidden(activityPanel,activityPanelToggle,activityPanelHiddenKey,localStorage.getItem(activityPanelHiddenKey)==='1','Show Highlights','Hide Highlights');
       setEdgePanelHidden(editorPanel,editorPanelToggle,editorPanelHiddenKey,localStorage.getItem(editorPanelHiddenKey)==='1','Show Editor','Hide Editor');
       try { const savedPosition=JSON.parse(localStorage.getItem(editorPositionKey)||'null');if(savedPosition&&Number.isFinite(savedPosition.left)&&Number.isFinite(savedPosition.top)){editorPanel.style.left=savedPosition.left+'px';editorPanel.style.top=savedPosition.top+'px';editorPanel.style.right='auto';} } catch(_){}
+      const clampEditorPanelToStage = (persist=true) => {
+        if(editorPanel.classList.contains('hidden'))return;
+        const stageRect=stage.getBoundingClientRect(),panelRect=editorPanel.getBoundingClientRect();
+        const currentLeft=Number.isFinite(parseFloat(editorPanel.style.left))?parseFloat(editorPanel.style.left):panelRect.left-stageRect.left;
+        const currentTop=Number.isFinite(parseFloat(editorPanel.style.top))?parseFloat(editorPanel.style.top):panelRect.top-stageRect.top;
+        const left=clamp(currentLeft,0,Math.max(0,stage.clientWidth-editorPanel.offsetWidth));
+        const top=clamp(currentTop,0,Math.max(0,stage.clientHeight-editorPanel.offsetHeight));
+        editorPanel.style.left=left+'px';
+        editorPanel.style.top=top+'px';
+        editorPanel.style.right='auto';
+        if(persist)localStorage.setItem(editorPositionKey,JSON.stringify({left,top}));
+      };
+      requestAnimationFrame(()=>clampEditorPanelToStage());
       activityPanelToggle.addEventListener('click',event=>{event.stopPropagation();setEdgePanelHidden(activityPanel,activityPanelToggle,activityPanelHiddenKey,!activityPanel.classList.contains('hidden'),'Show Highlights','Hide Highlights');});
-      editorPanelToggle.addEventListener('click',event=>{event.stopPropagation();setEdgePanelHidden(editorPanel,editorPanelToggle,editorPanelHiddenKey,!editorPanel.classList.contains('hidden'),'Show Editor','Hide Editor');});
+      editorPanelToggle.addEventListener('click',event=>{event.stopPropagation();const opening=editorPanel.classList.contains('hidden');setEdgePanelHidden(editorPanel,editorPanelToggle,editorPanelHiddenKey,!opening,'Show Editor','Hide Editor');if(opening)requestAnimationFrame(()=>clampEditorPanelToStage());});
+      window.addEventListener('resize',()=>requestAnimationFrame(()=>clampEditorPanelToStage()));
       editorDragHandle.addEventListener('pointerdown',event=>{if(event.button!==0)return;event.preventDefault();event.stopPropagation();const stageRect=stage.getBoundingClientRect(),panelRect=editorPanel.getBoundingClientRect();editorPanelDrag={pointerId:event.pointerId,startX:event.clientX,startY:event.clientY,left:panelRect.left-stageRect.left,top:panelRect.top-stageRect.top};editorDragHandle.setPointerCapture(event.pointerId);});
       editorDragHandle.addEventListener('pointermove',event=>{if(!editorPanelDrag||event.pointerId!==editorPanelDrag.pointerId)return;const maxLeft=Math.max(0,stage.clientWidth-editorPanel.offsetWidth),maxTop=Math.max(0,stage.clientHeight-60),left=clamp(editorPanelDrag.left+event.clientX-editorPanelDrag.startX,0,maxLeft),top=clamp(editorPanelDrag.top+event.clientY-editorPanelDrag.startY,0,maxTop);editorPanel.style.left=left+'px';editorPanel.style.top=top+'px';editorPanel.style.right='auto';});
       const finishEditorDrag=event=>{if(!editorPanelDrag||event.pointerId!==editorPanelDrag.pointerId)return;const left=parseFloat(editorPanel.style.left)||0,top=parseFloat(editorPanel.style.top)||0;localStorage.setItem(editorPositionKey,JSON.stringify({left,top}));editorPanelDrag=null;};
@@ -463,7 +524,7 @@
         const brightness=Math.max(.05,1-sectionDim/100);
         stage.classList.toggle('section-focus-active',sectionFocusMode);
         sectionFocusButton.classList.toggle('active',sectionFocusMode);
-        sectionFocusButton.textContent=sectionFocusMode?'SECTIONS ON':'SECTIONS';
+        sectionFocusButton.textContent=sectionFocusMode?'DIM BACKGROUND ON':'DIM BACKGROUND';
         sectionFocusButton.setAttribute('aria-pressed',String(sectionFocusMode));
         sectionDimControl.classList.toggle('disabled',!sectionFocusMode);
         sectionDimInput.value=String(sectionDim);
@@ -473,12 +534,12 @@
         localStorage.setItem(sectionDimKey,String(sectionDim));
       };
       sectionFocusButton.addEventListener('click',()=>{sectionFocusMode=!sectionFocusMode;applySectionFocus();});
-      const applySectionNamesVisibility = () => { document.body.classList.toggle('section-names-visible',sectionNamesVisible);sectionNamesButton.classList.toggle('active',sectionNamesVisible);sectionNamesButton.textContent=sectionNamesVisible?'NAMES ON':'NAMES';sectionNamesButton.setAttribute('aria-pressed',String(sectionNamesVisible));localStorage.setItem(sectionNamesKey,sectionNamesVisible?'1':'0'); };
+      const applySectionNamesVisibility = () => { document.body.classList.toggle('section-names-visible',sectionNamesVisible);sectionNamesButton.classList.toggle('active',sectionNamesVisible);sectionNamesButton.textContent=sectionNamesVisible?'ROW ID ON':'ROW ID';sectionNamesButton.setAttribute('aria-pressed',String(sectionNamesVisible));localStorage.setItem(sectionNamesKey,sectionNamesVisible?'1':'0'); };
       sectionNamesButton.addEventListener('click',()=>{sectionNamesVisible=!sectionNamesVisible;applySectionNamesVisibility();});
       let sectionNameEditing=false,sectionNameDrag=null;
       const applySectionNameEditing = () => {document.body.classList.toggle('section-name-editing',sectionNameEditing);editSectionNamesButton.classList.toggle('active',sectionNameEditing);editSectionNamesButton.textContent=sectionNameEditing?'EDIT NAMES ON':'EDIT NAMES';editSectionNamesButton.setAttribute('aria-pressed',String(sectionNameEditing));};
       editSectionNamesButton.addEventListener('click',()=>{sectionNameEditing=!sectionNameEditing;if(sectionNameEditing&&!sectionNamesVisible){sectionNamesVisible=true;applySectionNamesVisibility();}applySectionNameEditing();});
-      const applySectionsVisibility = () => { document.body.classList.toggle('map-sections-hidden',!sectionsVisible);sectionsVisibilityButton.classList.toggle('active',sectionsVisible);sectionsVisibilityButton.textContent=sectionsVisible?'HIDE SECTIONS':'SHOW SECTIONS';sectionsVisibilityButton.setAttribute('aria-pressed',String(sectionsVisible));localStorage.setItem(sectionsVisibilityKey,sectionsVisible?'1':'0'); };
+      const applySectionsVisibility = () => { document.body.classList.toggle('map-sections-hidden',!sectionsVisible);sectionsVisibilityButton.classList.toggle('active',sectionsVisible);sectionsVisibilityButton.textContent='SECTIONS';sectionsVisibilityButton.title=sectionsVisible?'Hide parking sections':'Show parking sections';sectionsVisibilityButton.setAttribute('aria-pressed',String(sectionsVisible));localStorage.setItem(sectionsVisibilityKey,sectionsVisible?'1':'0'); };
       sectionsVisibilityButton.addEventListener('click',()=>{sectionsVisible=!sectionsVisible;applySectionsVisibility();});
       sectionDimInput.addEventListener('input',()=>{sectionDim=clamp(Number(sectionDimInput.value)||70,10,95);applySectionFocus();});
       applySectionFocus();
@@ -570,7 +631,7 @@
         const rowCount=Math.round(clamp(Number(zone.rowCount)||1,1,6)),width=Math.max(1,zone.x2-zone.x1),height=Math.max(1,zone.y2-zone.y1),offset=clamp(Math.tan(clamp(Number(angle)||0,-45,45)*Math.PI/180)*(height/rowCount)*.88/width,-.22,.22);
         const blend=(from,to,amount)=>[from[0]+(to[0]-from[0])*amount,from[1]+(to[1]-from[1])*amount];
         [...group.querySelectorAll('polygon')].forEach((slot,index)=>{
-          const row=Math.floor(index/zone.capacity),column=index%zone.capacity,inset=.08,start=(column+inset)/zone.capacity,end=(column+1-inset)/zone.capacity,rowTop=row/rowCount,rowBottom=(row+1)/rowCount;
+          const row=Math.floor(index/zone.capacity),column=index%zone.capacity,inset=.08,edgeGuard=Math.min(.24,Math.abs(offset)*.54+.002),usableSpan=1-edgeGuard*2,start=edgeGuard+usableSpan*(column+inset)/zone.capacity,end=edgeGuard+usableSpan*(column+1-inset)/zone.capacity,rowTop=row/rowCount,rowBottom=(row+1)/rowCount;
           const pointAt=(progress,depth)=>blend(pointOnPath(zone.top,clamp(progress+offset*(.5-depth),0,1)),pointOnPath(zone.bottom,clamp(progress+offset*(.5-depth),0,1)),depth);
           const rawTopStart=pointAt(start,rowTop),rawTopEnd=pointAt(end,rowTop),rawBottomEnd=pointAt(end,rowBottom),rawBottomStart=pointAt(start,rowBottom);
           const edgeClearance=.06,topStart=blend(rawTopStart,rawBottomStart,edgeClearance),topEnd=blend(rawTopEnd,rawBottomEnd,edgeClearance),bottomEnd=blend(rawBottomEnd,rawTopEnd,edgeClearance),bottomStart=blend(rawBottomStart,rawTopStart,edgeClearance);
@@ -582,6 +643,7 @@
         slotsLayer.querySelector('.slot-' + name.toLowerCase())?.remove();
         const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
         group.setAttribute('class', `slot-${name.toLowerCase()}`);
+        group.dataset.zone = name;
         group.setAttribute('clip-path', `url(#zoneClip${name})`);
         const rowCount=Math.round(clamp(Number(zone.rowCount)||1,1,6));
         for (let index = 0; index < zone.capacity*rowCount; index += 1) {
@@ -594,14 +656,15 @@
         return group;
       };
       Object.entries(zones).forEach(([name, zone]) => buildSlotGroup(name, zone));
-      areasLayer.addEventListener('click', event => { const shape=event.target.closest('.parking-zone'); if(!shape)return; event.stopPropagation(); selectZone(shape.dataset.zone); });
+      areasLayer.addEventListener('click', event => { const shape=event.target.closest('.parking-zone'); if(!shape)return; event.stopPropagation(); selectZone(shape.dataset.zone);if(!editing)openSectionUnitList(shape.dataset.zone); });
+      slotsLayer.addEventListener('click',event=>{const slot=event.target.closest('polygon[data-slot-number]'),group=slot?.closest('g[data-zone]'),section=group?.dataset.zone;if(!slot||!section||editing)return;event.preventDefault();event.stopPropagation();selectZone(section);openSectionUnitList(section);});
       zonePanel.addEventListener('click', event => { const button=event.target.closest('.zone-button'); if(!button)return; event.stopPropagation(); selectZone(button.dataset.zone); });
       stage.addEventListener('wheel', event => {
         event.preventDefault();
         zoomAt(scale * (event.deltaY < 0 ? 1.18 : 1 / 1.18), event.clientX, event.clientY);
       }, { passive: false });
       stage.addEventListener('pointerdown', event => {
-        if (event.target.closest?.('button, input, label, .map-editor, .zone-panel, .parking-resize-handle')) return;
+        if (event.target.closest?.('button, input, label, .map-editor, .zone-panel, .map-unit-panel, .map-all-units-drawer, .parking-resize-handle')) return;
         drag = { pointerId: event.pointerId, startX: event.clientX, startY: event.clientY, x, y };
         stage.setPointerCapture(event.pointerId);
         stage.classList.add('dragging');
@@ -674,6 +737,10 @@
       const reshapeModeKey = 'conglobal-settegast-map-reshape-mode-v1';
       const yardHighlightKey = 'settegast-matrix-yard-activity-highlights-wide-v1';
       const reconciliationKey = 'chassisReconciliationCurrentState';
+      const importedChassisKey = 'conglobal-settegast-map-imported-chassis-v1';
+      const pastedChassisKey = 'conglobal-settegast-map-pasted-chassis-v1';
+      const chassisSourceKey = 'conglobal-settegast-map-chassis-source-v1';
+      const hiddenUnitKeysStorageKey = 'conglobal-settegast-map-hidden-units-v1';
       const yardHighlightColorDefaults = Object.freeze({yardCheckedToday:'#22c55e',yardChecked9Days:'#84cc16',activityToday:'#22d3ee',noYardCheckToday:'#f59e0b',noActivity10Days:'#ef4444'});
       const defaults = { A:'#1daae8', B:'#de2b8b', C:'#f47030', D:'#f6cf36' };
       let selectedRow = null;
@@ -687,6 +754,7 @@
       let showHighlightedSlotNumbers=Boolean(savedEdits.__showHighlightedSlotNumbers);
       const showAllUnitsButton=document.getElementById('mapShowAllUnitsButton');
       const highlightedSlotNumbersButton=document.getElementById('mapHighlightedSlotNumbers');
+      const importChassisButton=document.getElementById('mapImportChassis'),importChassisFile=document.getElementById('mapImportChassisFile'),useImportedChassisToggle=document.getElementById('mapUseImportedChassis'),pasteChassisButton=document.getElementById('mapPasteChassis'),usePastedChassisToggle=document.getElementById('mapUsePastedChassis'),pastePanel=document.getElementById('mapPastePanel'),pastedChassisText=document.getElementById('mapPastedChassisText');
       (Array.isArray(savedEdits.__deleted)?savedEdits.__deleted:[]).forEach(name=>{delete zones[name];document.querySelector(`.parking-zone[data-zone="${name}"]`)?.remove();document.querySelector(`.zone-button[data-zone="${name}"]`)?.remove();slotsLayer.querySelector('.slot-'+name.toLowerCase())?.remove();svg.querySelector('#zoneClip'+name)?.remove();});
       Object.keys(zones).forEach(name=>{const saved=savedEdits[name];if(Array.isArray(saved?.top)&&saved.top.length>=2&&Array.isArray(saved?.bottom)&&saved.bottom.length>=2){zones[name].top=saved.top.map(point=>point.slice());zones[name].bottom=saved.bottom.map(point=>point.slice());const all=[...zones[name].top,...zones[name].bottom],xs=all.map(point=>point[0]),ys=all.map(point=>point[1]);zones[name].x1=Math.min(...xs);zones[name].x2=Math.max(...xs);zones[name].y1=Math.min(...ys);zones[name].y2=Math.max(...ys);const points=[...zones[name].top,...zones[name].bottom.slice().reverse()].map(point=>point.join(',')).join(' ');document.querySelector(`.parking-zone[data-zone="${name}"]`)?.setAttribute('points',points);svg.querySelector('#zoneClip'+name+' polygon')?.setAttribute('points',points);}});
       zoneShapes=[...document.querySelectorAll('.parking-zone')];zoneButtons=[...document.querySelectorAll('.zone-button')];
@@ -723,39 +791,86 @@
         showAllUnitsButton.classList.toggle('active',showAllUnits);showAllUnitsButton.textContent=showAllUnits?'ALL UNITS ON':'SHOW ALL UNITS';showAllUnitsButton.setAttribute('aria-pressed',String(showAllUnits));
         highlightedSlotNumbersButton.classList.toggle('active',showHighlightedSlotNumbers);highlightedSlotNumbersButton.textContent=showHighlightedSlotNumbers?'SLOT NUMBERS ON':'SHOW SLOT NUMBERS';highlightedSlotNumbersButton.setAttribute('aria-pressed',String(showHighlightedSlotNumbers));
         const brightnessInput=document.getElementById('mapHighlightBrightness'),numberSizeInput=document.getElementById('mapHighlightNumberSize'),outlineInput=document.getElementById('mapHighlightOutlineColor');brightnessInput.value=String(highlightStyle.brightness);document.getElementById('mapHighlightBrightnessValue').textContent=Math.round(highlightStyle.brightness)+'%';numberSizeInput.value=String(highlightStyle.numberSize);document.getElementById('mapHighlightNumberSizeValue').textContent=Math.round(highlightStyle.numberSize)+'px';outlineInput.value=highlightStyle.outlineColor;
-        document.querySelector('.map-activity-options')?.classList.toggle('show-all-active',showAllUnits);
+        useImportedChassisToggle.checked=useImportedChassis;
+        usePastedChassisToggle.checked=usePastedChassis;
+        document.querySelector('.map-activity-options')?.classList.toggle('show-all-active',showAllUnits||useImportedChassis||usePastedChassis);
         document.querySelectorAll('[data-map-highlight-color]').forEach(input=>{const key=input.dataset.mapHighlightColor;input.value=yardHighlightColors[key];input.disabled=Boolean(highlightStyle.unified);const option=input.closest('.map-activity-option');if(option)option.style.setProperty('--status-color',highlightStyle.unified?highlightStyle.unifiedColor:yardHighlightColors[key]);});
       };
       const slotGroupFor = name => slotsLayer.querySelector('.slot-' + name.toLowerCase());
       const yardHighlightDefaults = () => ({yardCheckedToday:false,yardChecked9Days:false,activityToday:false,noYardCheckToday:false,noActivity10Days:false});
       const loadYardHighlights = () => { try { const saved=JSON.parse(localStorage.getItem(yardHighlightKey)||'null'); const defaults=yardHighlightDefaults(); return saved&&typeof saved==='object'?Object.fromEntries(Object.keys(defaults).map(key=>[key,Boolean(saved[key])])):defaults; } catch(_){ return yardHighlightDefaults(); } };
       const loadReconciliation = () => { try { const live=JSON.parse(localStorage.getItem(reconciliationKey)||'null'); if(live&&Array.isArray(live.tableRows))return live; }catch(_){} try { const archived=JSON.parse(localStorage.getItem('chassisReconciliationLastArchive')||'null'); if(archived&&Array.isArray(archived.tableRows))return {reportDate:archived.reportDate||archived.savedAt||'',tableRows:archived.tableRows}; }catch(_){} return {reportDate:'',tableRows:[]}; };
+      const loadImportedChassis = () => {try{const saved=JSON.parse(localStorage.getItem(importedChassisKey)||'null');if(saved&&Array.isArray(saved.rows))return saved;}catch(_){}return {fileName:'',importedAt:'',totalRows:0,skippedBlank:0,skippedUnrecognized:0,rows:[]};};
+      const loadPastedChassis = () => {try{const saved=JSON.parse(localStorage.getItem(pastedChassisKey)||'null');if(saved&&Array.isArray(saved.rows))return saved;}catch(_){}return {importedAt:'',totalRows:0,skipped:0,rows:[]};};
+      const initialChassisSource=localStorage.getItem(chassisSourceKey)||'reconciliation';
+      let importedChassis=loadImportedChassis(),pastedChassis=loadPastedChassis(),useImportedChassis=initialChassisSource==='imported',usePastedChassis=initialChassisSource==='pasted';
+      let hiddenUnitKeys=new Set();try{const savedHidden=JSON.parse(localStorage.getItem(hiddenUnitKeysStorageKey)||'[]');if(Array.isArray(savedHidden))hiddenUnitKeys=new Set(savedHidden.map(String));}catch(_){}
+      const parseCsvText = text => {const rows=[],source=String(text||'').replace(/^\uFEFF/,'');let row=[],field='',quoted=false;for(let index=0;index<source.length;index+=1){const char=source[index];if(quoted){if(char==='"'&&source[index+1]==='"'){field+='"';index++;}else if(char==='"')quoted=false;else field+=char;}else if(char==='"')quoted=true;else if(char===','){row.push(field);field='';}else if(char==='\n'){row.push(field.replace(/\r$/,''));rows.push(row);row=[];field='';}else field+=char;}if(field||row.length){row.push(field.replace(/\r$/,''));rows.push(row);}return rows;};
+      const normalizedHeader = value => String(value||'').trim().toLowerCase().replace(/[^a-z0-9]+/g,'');
+      const normalizeImportedLocation = value => {const raw=String(value||'').trim().toUpperCase();if(!raw)return {status:'blank'};const match=/^(\d{1,4})\s*\/\s*([A-Z]+)/.exec(raw);if(!match)return {status:'unrecognized'};const spot=Number(match[1]),area=match[2]==='VALLY'?'VALLEY':match[2];if(/^[A-S]$/.test(area)&&spot>0)return {status:'ok',location:`${area} ${spot}`,area,spot};if(['DIRT','BOWL','HUMP','VALLEY','SHOP'].includes(area))return {status:'ok',location:area,area,spot:null};return {status:'unrecognized'};};
+      const parseImportedChassisCsv = (text,fileName) => {const matrix=parseCsvText(text);if(matrix.length<2)throw new Error('The CSV does not contain data rows.');const headers=matrix[0].map(normalizedHeader),equipmentIndex=headers.findIndex(header=>['equipmentid','chassis','chassisid','equipment'].includes(header)),locationIndex=headers.findIndex(header=>['padtrackarea','location','chassislocation','padtrack'].includes(header));if(equipmentIndex<0||locationIndex<0)throw new Error('Required columns not found. Expected Equipment ID and Pad/Track/Area.');const parsed=[],seen=new Set();let skippedBlank=0,skippedUnrecognized=0;matrix.slice(1).forEach(cells=>{const chassis=String(cells[equipmentIndex]||'').trim().toUpperCase(),normalized=normalizeImportedLocation(cells[locationIndex]);if(!chassis)return;if(normalized.status==='blank'){skippedBlank++;return;}if(normalized.status!=='ok'){skippedUnrecognized++;return;}const identity=chassis+'|'+normalized.location;if(seen.has(identity))return;seen.add(identity);parsed.push({chassis,location:normalized.location,originalLocation:String(cells[locationIndex]||'').trim(),source:'Imported chassis CSV'});});return {fileName,importedAt:new Date().toISOString(),totalRows:matrix.length-1,skippedBlank,skippedUnrecognized,rows:parsed};};
+      const normalizePastedLocation = value => {const raw=String(value||'').trim().toUpperCase().replace(/\s+/g,' ');let match=/^([A-S])\s+\1\s+(\d{1,3})$/.exec(raw);if(match)return {location:`${match[1]} ${Number(match[2])}`};match=/^([A-Z]+)\s+\1$/.exec(raw);if(match){const area=match[1]==='VALLY'?'VALLEY':match[1];if(['DIRT','BOWL','HUMP','VALLEY','SHOP','KIRK'].includes(area))return {location:area};}return null;};
+      const parsePastedChassis = text => {const lines=String(text||'').split(/\r?\n/).map(line=>line.trimEnd()).filter(line=>line.trim()),rows=[],seen=new Set();let skipped=0;lines.forEach(line=>{const cells=line.includes('\t')?line.split('\t'):line.trim().split(/\s{2,}/),chassis=String(cells[1]||'').trim().toUpperCase(),locationCell=cells.find(cell=>normalizePastedLocation(cell)),normalized=normalizePastedLocation(locationCell);if(!chassis||!normalized){skipped++;return;}const identity=chassis+'|'+normalized.location;if(seen.has(identity))return;seen.add(identity);rows.push({chassis,location:normalized.location,originalLocation:String(locationCell||'').trim(),source:'Pasted chassis data'});});if(!rows.length)throw new Error('No chassis locations were recognized in the pasted data.');return {importedAt:new Date().toISOString(),totalRows:lines.length,skipped,rows};};
       const parseActivityDate = value => { const raw=String(value||'').trim(),match=/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/.exec(raw); if(match){const year=Number(match[3])<100?2000+Number(match[3]):Number(match[3]),date=new Date(year,Number(match[1])-1,Number(match[2]));return Number.isFinite(date.getTime())?date:null;} const date=new Date(raw); return Number.isFinite(date.getTime())?date:null; };
       const activityDay = value => { const date=parseActivityDate(value); return date?Math.floor(Date.UTC(date.getFullYear(),date.getMonth(),date.getDate())/86400000):null; };
       const parkingSection = value => { const raw=String(value||'').trim().toUpperCase(); const match=/^(?:LOT\s*)?([A-S])(?:\s*(?:-|\/|\b))/.exec(raw); return match?match[1]:''; };
-      const normalizedAreaWords = value => String(value||'').toUpperCase().replace(/\b(AREA|PARKING|LOT)\b/g,' ').replace(/[^A-Z0-9]+/g,' ').trim().split(/\s+/).filter(Boolean);
+      const normalizedAreaWords = value => String(value||'').toUpperCase().replace(/\bVALLY\b/g,'VALLEY').replace(/\b(AREA|PARKING|LOT)\b/g,' ').replace(/[^A-Z0-9]+/g,' ').trim().split(/\s+/).filter(Boolean);
       const sectionForLocation = value => { const direct=parkingSection(value);if(direct&&zones[direct])return direct;const locationWords=new Set(normalizedAreaWords(value));if(!locationWords.size)return '';return Object.keys(zones).find(name=>{const words=normalizedAreaWords(stateFor(name).label||name);return words.length&&words.every(word=>locationWords.has(word));})||''; };
-      const showNumberForSection = section => !/\bDIRT\b/i.test(String(stateFor(section).label||section));
+      const showNumberForSection = section => !/\bDIRT\b/i.test(`${section} ${String(stateFor(section).label||'')}`);
       const parkingSpot = value => { const raw=String(value||'').trim().toUpperCase(); if(!parkingSection(raw))return null; const numbers=raw.match(/\d{1,3}/g)||[]; const spot=Number(numbers[numbers.length-1]); return Number.isInteger(spot)&&spot>0&&spot<=300?spot:null; };
       const stableParkingSpot = (row,section) => { const explicit=parkingSpot(row?.location);if(explicit)return explicit;const zone=zones[section],total=Math.max(1,(Number(zone?.capacity)||1)*Math.round(clamp(Number(stateFor(section).rowCount)||1,1,6))),id=String(row?.chassis||row?.equipmentId||row?.unitId||row?.container||row?.id||row?.location||section);let hash=2166136261;for(let index=0;index<id.length;index+=1){hash^=id.charCodeAt(index);hash=Math.imul(hash,16777619);}return (Math.abs(hash) % total)+1; };
+      const unitRowKey = row => [row?.chassis,row?.equipmentId,row?.unitId,row?.container,row?.id,row?.location,row?.eventDate,row?.event].filter(value=>value!=null&&String(value).trim()).map(value=>String(value).trim().toUpperCase()).join('|');
+      const activeChassisRows = (includeHidden=false) => {const rows=usePastedChassis?(pastedChassis.rows||[]):(useImportedChassis?(importedChassis.rows||[]):(reconciliationActivity.tableRows||[]));return includeHidden?rows:rows.filter(row=>!hiddenUnitKeys.has(unitRowKey(row)));};
+      const mappedSectionRows = section => {
+        const rows=activeChassisRows(true).filter(row=>sectionForLocation(row.location)===section),numbered=showNumberForSection(section),total=Math.max(1,(Number(zones[section]?.capacity)||1)*Math.round(clamp(Number(stateFor(section).rowCount)||1,1,6))),used=new Set();
+        return rows.map(row=>{let spot=numbered?stableParkingSpot(row,section):null,attempts=0;while(spot!=null&&used.has(spot)&&attempts<total){spot=spot%total+1;attempts++;}if(spot!=null)used.add(spot);return {row,spot,unit:String(row?.chassis||row?.equipmentId||row?.unitId||row?.container||row?.id||'Unknown unit').trim().toUpperCase()};}).sort((a,b)=>a.spot==null&&b.spot!=null?1:a.spot!=null&&b.spot==null?-1:a.spot!=null&&b.spot!=null?a.spot-b.spot:a.unit.localeCompare(b.unit,undefined,{numeric:true}));
+      };
+      const sectionUnitPanel=document.getElementById('mapSectionUnitPanel'),sectionUnitTitle=document.getElementById('mapSectionUnitTitle'),sectionUnitSummary=document.getElementById('mapSectionUnitSummary'),sectionUnitRows=document.getElementById('mapSectionUnitRows');
+      const openSectionUnitList = section => {
+        const items=mappedSectionRows(section),label=String(stateFor(section).label||section).trim();sectionUnitTitle.textContent=label+' units';sectionUnitSummary.textContent=`${items.length} unit${items.length===1?'':'s'} · ${usePastedChassis?'Pasted data':useImportedChassis?(importedChassis.fileName||'Imported data'):'Chassis Reconciliation'}`;sectionUnitRows.replaceChildren();
+        if(!items.length){const row=document.createElement('tr'),cell=document.createElement('td');cell.colSpan=4;cell.className='map-unit-empty';cell.textContent='No units are assigned to this section in the selected data source.';row.appendChild(cell);sectionUnitRows.appendChild(row);}else items.forEach(item=>{const tr=document.createElement('tr'),values=[item.spot==null?'—':String(item.spot),item.unit,String(item.row?.originalLocation||item.row?.location||'—'),String(item.row?.source||item.row?.event||item.row?.eventType||'Reconciliation')];values.forEach((value,index)=>{const cell=document.createElement('td');cell.textContent=value;if(index===0)cell.className='slot-cell';if(index===1)cell.className='unit-cell';tr.appendChild(cell);});sectionUnitRows.appendChild(tr);});
+        sectionUnitPanel.hidden=false;document.getElementById('mapSectionUnitClose').focus();
+      };
+      const closeSectionUnitList = () => {sectionUnitPanel.hidden=true;};
+      document.getElementById('mapSectionUnitClose').addEventListener('click',closeSectionUnitList);
+      sectionUnitPanel.addEventListener('pointerdown',event=>event.stopPropagation());
+      window.addEventListener('keydown',event=>{if(event.key==='Escape'&&!sectionUnitPanel.hidden)closeSectionUnitList();});
+      const allUnitsDrawer=document.getElementById('mapAllUnitsDrawer'),allUnitsGroups=document.getElementById('mapAllUnitsGroups'),allUnitsSummary=document.getElementById('mapAllUnitsSummary'),allUnitsToggle=document.getElementById('mapAllUnitsPanelToggle');
+      const persistHiddenUnits = () => localStorage.setItem(hiddenUnitKeysStorageKey,JSON.stringify([...hiddenUnitKeys]));
+      const renderAllUnitsDrawer = () => {
+        const sections=Object.keys(zones).map(section=>({section,items:mappedSectionRows(section)})).filter(group=>group.items.length),availableColumns=Math.max(1,Math.floor(((allUnitsGroups.clientWidth||window.innerWidth)-24)/215));allUnitsGroups.replaceChildren();let total=0,visible=0;
+        sections.forEach(group=>{const card=document.createElement('section'),columns=Math.min(4,availableColumns,Math.max(1,Math.ceil(group.items.length/6)));card.className='map-unit-group';card.style.flexGrow=String(Math.max(1,columns));card.style.setProperty('--group-color',effectiveStyleFor(group.section).color);const head=document.createElement('label');head.className='map-unit-group-head';const master=document.createElement('input');master.type='checkbox';master.dataset.unitSection=group.section;const keys=group.items.map(item=>unitRowKey(item.row)),checkedCount=keys.filter(key=>!hiddenUnitKeys.has(key)).length;master.checked=checkedCount===keys.length;master.indeterminate=checkedCount>0&&checkedCount<keys.length;const title=document.createElement('span');title.textContent=`${String(stateFor(group.section).label||group.section)} · ${group.items.length} unit${group.items.length===1?'':'s'}`;head.append(master,title);const list=document.createElement('div');list.className='map-unit-group-list';list.style.gridTemplateColumns=`repeat(${columns},minmax(112px,1fr))`;group.items.forEach(item=>{const key=unitRowKey(item.row),choice=document.createElement('label');choice.className='map-unit-choice';const checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.dataset.unitKey=key;checkbox.checked=!hiddenUnitKeys.has(key);const spot=document.createElement('b');spot.textContent=item.spot==null?'—':String(item.spot);const unit=document.createElement('span');unit.textContent=item.unit;unit.title=`${item.unit} · ${item.row?.originalLocation||item.row?.location||group.section}`;choice.append(checkbox,spot,unit);list.appendChild(choice);total++;if(checkbox.checked)visible++;});card.append(head,list);allUnitsGroups.appendChild(card);});
+        if(!sections.length){const empty=document.createElement('div');empty.className='map-unit-empty';empty.textContent='No mapped units are available in the selected data source.';allUnitsGroups.appendChild(empty);}allUnitsSummary.textContent=`${visible} of ${total} shown`;
+      };
+      const setAllUnitsDrawerOpen = open => {allUnitsDrawer.hidden=!open;allUnitsToggle.classList.toggle('active',open);allUnitsToggle.setAttribute('aria-expanded',String(open));allUnitsToggle.textContent=open?'Hide Unit List':'Unit List';if(open)renderAllUnitsDrawer();};
+      allUnitsToggle.addEventListener('click',()=>setAllUnitsDrawerOpen(allUnitsDrawer.hidden));
+      document.getElementById('mapAllUnitsClose').addEventListener('click',()=>setAllUnitsDrawerOpen(false));
+      allUnitsDrawer.addEventListener('pointerdown',event=>event.stopPropagation());
+      allUnitsGroups.addEventListener('change',event=>{const input=event.target.closest('input[type="checkbox"]');if(!input)return;if(input.dataset.unitKey){input.checked?hiddenUnitKeys.delete(input.dataset.unitKey):hiddenUnitKeys.add(input.dataset.unitKey);}else if(input.dataset.unitSection){mappedSectionRows(input.dataset.unitSection).forEach(item=>{const key=unitRowKey(item.row);input.checked?hiddenUnitKeys.delete(key):hiddenUnitKeys.add(key);});}persistHiddenUnits();updateParkingHighlights();});
       const isYardCheck = row => { const event=String(row?.event||'').toLowerCase(); return event.includes('ycco')||event.includes('tcco')||event.includes('yard check'); };
       let yardHighlightState=loadYardHighlights();
       let reconciliationActivity=loadReconciliation();
       const activitySummaries = () => { const rows=reconciliationActivity.tableRows||[],explicit=activityDay(reconciliationActivity.reportDate),days=rows.map(row=>activityDay(row.eventDate)).filter(day=>day!=null),reportDay=explicit!=null?explicit:(days.length?Math.max(...days):activityDay(new Date())),summaries=new Map(); rows.forEach(row=>{const section=sectionForLocation(row.location),eventDay=activityDay(row.eventDate);if(!section||!zones[section])return;const age=eventDay==null||reportDay==null?null:Math.max(0,reportDay-eventDay);if(!summaries.has(section))summaries.set(section,{total:0,activityToday:0,yardCheckedToday:0,yardChecked9Days:0,newestAge:Infinity});const summary=summaries.get(section);summary.total++;if(age!=null)summary.newestAge=Math.min(summary.newestAge,age);if(age===0){summary.activityToday++;if(isYardCheck(row))summary.yardCheckedToday++;}if(age!=null&&age<=9&&isYardCheck(row))summary.yardChecked9Days++;});return summaries; };
       const activeHighlightKeys = (section,summaries) => { const summary=summaries.get(section);if(!summary)return [];const active={yardCheckedToday:summary.yardCheckedToday>0,yardChecked9Days:summary.yardChecked9Days>0,activityToday:summary.activityToday>0,noYardCheckToday:summary.yardCheckedToday===0,noActivity10Days:Number.isFinite(summary.newestAge)&&summary.newestAge>=10};return Object.keys(yardHighlightColors).filter(key=>yardHighlightState[key]&&active[key]); };
       const separateHighlightedNumbers = () => {
-        const labels=[...slotsLayer.querySelectorAll(':scope > .map-highlight-slot-number')],placed=[],size=highlightStyle.numberSize,step=Math.max(10,size*.82),padding=Math.max(2,size*.08);
-        labels.forEach((label,index)=>{const baseY=Number(label.dataset.baseY)||Number(label.getAttribute('y'))||0,directions=index%2?[0,1,-1,2,-2,3,-3]:[0,-1,1,-2,2,-3,3];let chosenBox=null;for(const direction of directions){label.setAttribute('y',baseY+direction*step);const box=label.getBBox(),overlaps=placed.some(other=>box.x-padding<other.x+other.width&&box.x+box.width+padding>other.x&&box.y-padding<other.y+other.height&&box.y+box.height+padding>other.y);if(!overlaps){chosenBox=box;break;}}placed.push(chosenBox||label.getBBox());});
+        const entries=[...slotsLayer.querySelectorAll(':scope > .map-highlight-slot-number')].map(label=>({label,section:label.dataset.section||'',baseX:Number(label.dataset.baseX)||Number(label.getAttribute('x'))||0,baseY:Number(label.dataset.baseY)||Number(label.getAttribute('y'))||0}));
+        if(!entries.length)return;
+        const groups=new Map();entries.forEach(entry=>{if(!groups.has(entry.section))groups.set(entry.section,[]);groups.get(entry.section).push(entry);});
+        let adaptiveSize=clamp(Number(highlightStyle.numberSize)||13,8,48);
+        groups.forEach(items=>{if(items.length<2)return;items.sort((a,b)=>a.baseX-b.baseX||a.baseY-b.baseY);const width=Math.max(1,items[items.length-1].baseX-items[0].baseX),spacing=width/(items.length-1),digits=Math.max(...items.map(item=>String(item.label.dataset.spot||'').length));adaptiveSize=Math.min(adaptiveSize,spacing/Math.max(1.1,digits*.62));});
+        adaptiveSize=clamp(adaptiveSize,Math.min(28,Number(highlightStyle.numberSize)||28),48);
+        groups.forEach(items=>{items.sort((a,b)=>a.baseX-b.baseX||a.baseY-b.baseY);items.forEach((item,index)=>{const previous=items[index-1],crowded=previous&&Math.abs(item.baseX-previous.baseX)<adaptiveSize*Math.max(1.35,String(item.label.dataset.spot||'').length*.58),laneOffset=[0,-.82,.82][index%3];item.label.setAttribute('x',item.baseX);item.label.setAttribute('y',item.baseY+(crowded?laneOffset*adaptiveSize:0));item.label.style.setProperty('--highlight-number-size',adaptiveSize+'px');});});
       };
       const updateParkingHighlights = () => {
-        const rows=reconciliationActivity.tableRows||[],summaries=activitySummaries(),highlighted=new Set(),usedBySection=new Map();
+        const rows=activeChassisRows(),externalSource=useImportedChassis||usePastedChassis,summaries=externalSource?new Map():activitySummaries(),highlighted=new Set(),usedBySection=new Map();
         slotsLayer.querySelectorAll(':scope > .map-highlight-slot-number').forEach(label=>label.remove());
         Object.keys(zones).forEach(name=>{const style=effectiveStyleFor(name),group=slotGroupFor(name);group?.querySelectorAll('polygon').forEach(slot=>{slot.classList.remove('map-slot-activity');slot.style.removeProperty('--slot-highlight-color');slot.style.removeProperty('--slot-highlight-outline');slot.style.removeProperty('--slot-highlight-brightness');slot.style.fill=style.color;slot.style.fillOpacity='1';slot.style.opacity=String(clamp(Number(style.opacity),0,1));slot.style.stroke='';slot.style.strokeWidth='';slot.style.filter='';});});
-        rows.forEach(row=>{const section=sectionForLocation(row.location),keys=showAllUnits?(section?['showAllUnits']:[]):activeHighlightKeys(section,summaries);if(!section||!keys.length)return;const total=Math.max(1,(Number(zones[section]?.capacity)||1)*Math.round(clamp(Number(stateFor(section).rowCount)||1,1,6))),used=usedBySection.get(section)||new Set();let spot=stableParkingSpot(row,section),attempts=0;while(used.has(spot)&&attempts<total){spot=spot%total+1;attempts++;}used.add(spot);usedBySection.set(section,used);const group=slotGroupFor(section),slot=group?.querySelector(`polygon[data-slot-number="${spot}"]`);if(!slot)return;const color=highlightStyle.unified?highlightStyle.unifiedColor:(keys[0]==='showAllUnits'?'#38bdf8':yardHighlightColors[keys[0]]);slot.classList.add('map-slot-activity');slot.style.setProperty('--slot-highlight-color',color);slot.style.setProperty('--slot-highlight-outline',highlightStyle.outlineColor);slot.style.setProperty('--slot-highlight-brightness',String(highlightStyle.brightness/100));slot.style.fill=color;slot.style.fillOpacity='1';slot.style.opacity='1';if(showHighlightedSlotNumbers&&showNumberForSection(section)){const box=slot.getBBox(),center=svg.createSVGPoint(),slotMatrix=slot.getCTM(),rootMatrix=slotsLayer.getCTM();center.x=box.x+box.width/2;center.y=box.y+box.height/2;const relativeMatrix=rootMatrix&&slotMatrix?rootMatrix.inverse().multiply(slotMatrix):slotMatrix,mapped=relativeMatrix?center.matrixTransform(relativeMatrix):center,label=document.createElementNS('http://www.w3.org/2000/svg','text');label.setAttribute('class','map-highlight-slot-number');label.setAttribute('x',mapped.x);label.setAttribute('y',mapped.y);label.dataset.baseY=String(mapped.y);label.style.setProperty('--highlight-number-size',highlightStyle.numberSize+'px');label.textContent=String(spot);slotsLayer.appendChild(label);}highlighted.add(section+'-'+spot);});
+        rows.forEach(row=>{const section=sectionForLocation(row.location),keys=externalSource?(section?['external']:[]):(showAllUnits?(section?['showAllUnits']:[]):activeHighlightKeys(section,summaries));if(!section||!keys.length)return;const total=Math.max(1,(Number(zones[section]?.capacity)||1)*Math.round(clamp(Number(stateFor(section).rowCount)||1,1,6))),used=usedBySection.get(section)||new Set();let spot=stableParkingSpot(row,section),attempts=0;while(used.has(spot)&&attempts<total){spot=spot%total+1;attempts++;}used.add(spot);usedBySection.set(section,used);const group=slotGroupFor(section),slot=group?.querySelector(`polygon[data-slot-number="${spot}"]`);if(!slot)return;const color=highlightStyle.unified?highlightStyle.unifiedColor:(keys[0]==='showAllUnits'||keys[0]==='external'?'#38bdf8':yardHighlightColors[keys[0]]);slot.classList.add('map-slot-activity');slot.style.setProperty('--slot-highlight-color',color);slot.style.setProperty('--slot-highlight-outline',highlightStyle.outlineColor);slot.style.setProperty('--slot-highlight-brightness',String(highlightStyle.brightness/100));slot.style.fill=color;slot.style.fillOpacity='1';slot.style.opacity='1';if(showHighlightedSlotNumbers&&showNumberForSection(section)){const box=slot.getBBox(),center=svg.createSVGPoint(),slotMatrix=slot.getCTM(),rootMatrix=slotsLayer.getCTM();center.x=box.x+box.width/2;center.y=box.y+box.height/2;const relativeMatrix=rootMatrix&&slotMatrix?rootMatrix.inverse().multiply(slotMatrix):slotMatrix,mapped=relativeMatrix?center.matrixTransform(relativeMatrix):center,label=document.createElementNS('http://www.w3.org/2000/svg','text');label.setAttribute('class','map-highlight-slot-number');label.setAttribute('x',mapped.x);label.setAttribute('y',mapped.y);label.dataset.section=section;label.dataset.spot=String(spot);label.dataset.baseX=String(mapped.x);label.dataset.baseY=String(mapped.y);label.style.setProperty('--highlight-number-size',highlightStyle.numberSize+'px');label.textContent=String(spot);slotsLayer.appendChild(label);}highlighted.add(section+'-'+spot);});
         if(showHighlightedSlotNumbers)separateHighlightedNumbers();
         Object.keys(zones).forEach(updateSectionLabel);
         document.querySelectorAll('[data-map-yard-highlight]').forEach(input=>input.checked=Boolean(yardHighlightState[input.dataset.mapYardHighlight]));
-        const status=document.getElementById('mapActivityStatus');if(status)status.textContent=rows.length?`${showAllUnits?'All units · ':''}${highlighted.size} spot${highlighted.size===1?'':'s'} highlighted`:'No reconciliation data';
+        const status=document.getElementById('mapActivityStatus');if(status){if(usePastedChassis)status.textContent=pastedChassis.rows.length?`Pasted data · ${highlighted.size}/${pastedChassis.rows.length} mapped · ${pastedChassis.skipped} skipped`:'No pasted chassis data';else if(useImportedChassis)status.textContent=importedChassis.rows.length?`${importedChassis.fileName||'Imported CSV'} · ${highlighted.size}/${importedChassis.rows.length} mapped · ${importedChassis.skippedBlank+importedChassis.skippedUnrecognized} skipped`:'No imported chassis data';else status.textContent=rows.length?`${showAllUnits?'All units · ':''}${highlighted.size} spot${highlighted.size===1?'':'s'} highlighted`:'No reconciliation data';}
+        if(!allUnitsDrawer.hidden)renderAllUnitsDrawer();
       };
       const createCustomArea = (name,definition) => {
         if(zones[name])return;
@@ -823,6 +938,7 @@
       };
       const numberSlots = name => {
         slotsLayer.querySelectorAll('.slot-number').forEach(label => label.remove());
+        if(!showNumberForSection(name)) return;
         const group=slotGroupFor(name); if(!group) return;
         const labels=document.createDocumentFragment();
         const state=stateFor(name);
@@ -863,13 +979,21 @@
       document.getElementById('mapShowAllUnitsToggle').addEventListener('change',event=>setShowAllUnits(event.currentTarget.checked));
       showAllUnitsButton.addEventListener('click',()=>setShowAllUnits(!showAllUnits));
       highlightedSlotNumbersButton.addEventListener('click',()=>{showHighlightedSlotNumbers=!showHighlightedSlotNumbers;savedEdits.__showHighlightedSlotNumbers=showHighlightedSlotNumbers;saveEdits();syncHighlightStyleControls();updateParkingHighlights();});
+      const setChassisDataSource = source => {useImportedChassis=source==='imported';usePastedChassis=source==='pasted';localStorage.setItem(chassisSourceKey,useImportedChassis?'imported':(usePastedChassis?'pasted':'reconciliation'));syncHighlightStyleControls();updateParkingHighlights();};
+      useImportedChassisToggle.addEventListener('change',event=>setChassisDataSource(event.currentTarget.checked?'imported':'reconciliation'));
+      usePastedChassisToggle.addEventListener('change',event=>setChassisDataSource(event.currentTarget.checked?'pasted':'reconciliation'));
+      importChassisButton.addEventListener('click',()=>importChassisFile.click());
+      importChassisFile.addEventListener('change',async event=>{const file=event.currentTarget.files?.[0];if(!file)return;const status=document.getElementById('mapActivityStatus');try{status.textContent='Importing '+file.name+'…';importedChassis=parseImportedChassisCsv(await file.text(),file.name);localStorage.setItem(importedChassisKey,JSON.stringify(importedChassis));setChassisDataSource('imported');}catch(error){status.textContent=error?.message||'Unable to import chassis CSV.';}finally{event.currentTarget.value='';}});
+      pasteChassisButton.addEventListener('click',()=>{pastePanel.hidden=false;pastedChassisText.focus();});
+      document.getElementById('mapCancelPastedChassis').addEventListener('click',()=>{pastePanel.hidden=true;});
+      document.getElementById('mapApplyPastedChassis').addEventListener('click',()=>{const status=document.getElementById('mapActivityStatus');try{pastedChassis=parsePastedChassis(pastedChassisText.value);localStorage.setItem(pastedChassisKey,JSON.stringify(pastedChassis));pastePanel.hidden=true;setChassisDataSource('pasted');}catch(error){status.textContent=error?.message||'Unable to parse pasted chassis data.';}});
       document.getElementById('mapUnifiedHighlightColor').addEventListener('click',event=>event.stopPropagation());
       document.getElementById('mapUnifiedHighlightColor').addEventListener('input',event=>{event.stopPropagation();highlightStyle.unifiedColor=event.target.value;saveHighlightStyle();syncHighlightStyleControls();updateParkingHighlights();});
       document.getElementById('mapHighlightBrightness').addEventListener('input',event=>{highlightStyle.brightness=clamp(Number(event.target.value)||130,75,200);document.getElementById('mapHighlightBrightnessValue').textContent=Math.round(highlightStyle.brightness)+'%';saveHighlightStyle();updateParkingHighlights();});
       document.getElementById('mapHighlightNumberSize').addEventListener('input',event=>{highlightStyle.numberSize=clamp(Number(event.target.value)||13,8,48);document.getElementById('mapHighlightNumberSizeValue').textContent=Math.round(highlightStyle.numberSize)+'px';saveHighlightStyle();updateParkingHighlights();});
       document.getElementById('mapHighlightOutlineColor').addEventListener('input',event=>{highlightStyle.outlineColor=event.target.value;saveHighlightStyle();updateParkingHighlights();});
-      const refreshReconciliationHighlights = () => { reconciliationActivity=loadReconciliation();yardHighlightState=loadYardHighlights();updateParkingHighlights(); };
-      window.addEventListener('storage',event=>{if(event.key===reconciliationKey||event.key==='chassisReconciliationLastArchive'||event.key===yardHighlightKey)refreshReconciliationHighlights();});
+      const refreshReconciliationHighlights = () => { reconciliationActivity=loadReconciliation();importedChassis=loadImportedChassis();pastedChassis=loadPastedChassis();yardHighlightState=loadYardHighlights();updateParkingHighlights(); };
+      window.addEventListener('storage',event=>{if(event.key===reconciliationKey||event.key==='chassisReconciliationLastArchive'||event.key===yardHighlightKey||event.key===importedChassisKey||event.key===pastedChassisKey)refreshReconciliationHighlights();});
       window.addEventListener('focus',refreshReconciliationHighlights);
       document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshReconciliationHighlights();});
       addAreaButton.addEventListener('click',()=>{

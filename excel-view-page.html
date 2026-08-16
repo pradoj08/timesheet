@@ -2842,8 +2842,10 @@
   .inventory-panel > .details-head .panel-title { color: #7a2e18; }
   .inventory-panel > .details-head .panel-subtitle { color: #8f5a45; }
   .inventory-toolbar { display: flex; gap: 7px; flex-wrap: wrap; align-items: center; margin-bottom: 9px; }
+  .inventory-color-modes { display: inline-flex; gap: 4px; padding-left: 5px; border-left: 1px solid #dfbba2; }
+  .inventory-color-mode.active { border-color: #9a3412; background: #9a3412; color: #fff; }
   .inventory-meta { margin-left: auto; color: #7c5a4d; font-size: 10px; font-weight: 750; }
-  .inventory-panel .table-scroll { overflow: auto; max-height: 520px; border: 1px solid #dfbba2; border-radius: 8px; background: #fff; }
+  .inventory-panel .table-scroll { overflow: auto; height: clamp(560px, 72vh, 780px); max-height: none; border: 1px solid #dfbba2; border-radius: 8px; background: #fff; }
   table { border-collapse: collapse; width: 100%; }
   .data-table { min-width: 1250px; font-size: 12px; }
   .inventory-panel .data-table th {
@@ -2872,6 +2874,14 @@
   .inventory-panel .data-table tr.inventory-row--gold { color: #a66b02; }
   .inventory-panel .data-table tr.inventory-row--green { color: #2d8650; }
   .inventory-panel .data-table tr.inventory-row--purple { color: #7651ad; }
+  .inventory-panel .data-table tr.inventory-row--track-color-0 td { background:#dff5f1; border-color:#a9ddd3; }
+  .inventory-panel .data-table tr.inventory-row--track-color-1 td { background:#e5efff; border-color:#b8cff1; }
+  .inventory-panel .data-table tr.inventory-row--track-color-2 td { background:#fff0d8; border-color:#ebcf9f; }
+  .inventory-panel .data-table tr.inventory-row--track-color-3 td { background:#f2e8ff; border-color:#d8c2ee; }
+  .inventory-panel .data-table tr.inventory-row--track-color-4 td { background:#e7f5df; border-color:#bfdfae; }
+  .inventory-panel .data-table tr.inventory-row--track-color-5 td { background:#ffe7ed; border-color:#efbcc9; }
+  .inventory-panel .data-table tr.inventory-row--track-color-6 td { background:#e6f4fb; border-color:#b7d9ea; }
+  .inventory-panel .data-table tr.inventory-row--track-color-7 td { background:#f3eddf; border-color:#d9c9a7; }
   .icon-btn {
     border: 0; border-radius: 5px; background: #fff0f0; color: var(--danger);
     width: 25px; height: 25px; font-weight: 900;
@@ -3899,6 +3909,10 @@
         <div class="inventory-toolbar">
           <button class="btn btn-white btn-small" id="addRowBtn">Add Blank Row</button>
           <button class="btn btn-white btn-small" id="sortRowsBtn">Sort by Track / Sequence</button>
+          <span class="inventory-color-modes" aria-label="Inventory row color mode">
+            <button class="btn btn-white btn-small inventory-color-mode" id="inventoryColorDefault" type="button">Default</button>
+            <button class="btn btn-white btn-small inventory-color-mode" id="inventoryColorTrack" type="button">Track ID</button>
+          </span>
           <span class="inventory-meta" id="inventoryMeta"></span>
         </div>
         <div class="table-scroll">
@@ -4118,6 +4132,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   const LIVE_STORAGE_KEY = "rampBlockingLive.v1";
   const CURRENT_WORK_STORAGE_KEY = "rampBlockingCurrentWork.v1";
   const BLOCK_CLIPBOARD_STORAGE_KEY = "rampBlockingControl.blockClipboard.v1";
+  const INVENTORY_COLOR_MODE_KEY = "rampBlockingControl.inventoryColorMode.v1";
   const BLOCK_CLIPBOARD_PREFIX = "CONGLOBAL_BLOCKS_V1\n";
   const TRACKS = [801,802,803,804,805,806,807,808,809];
   const INBOUND_AVAILABLE_FOOTAGE_BASE = 18850;
@@ -4323,6 +4338,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   }
 
   let state = loadState();
+  let inventoryColorMode = localStorage.getItem(INVENTORY_COLOR_MODE_KEY) === "track" ? "track" : "default";
   let currentWork = loadCurrentWorkState();
   let computed = null;
   const selectedBlockIds = new Set();
@@ -8260,13 +8276,23 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     }
     const colorClasses = ["teal", "berry", "blue", "gold", "green", "purple"];
     const groupColors = new Map();
-    const getColorClass = row => {
+    const getDefaultColorClass = row => {
       const key = clean(row[10]) || clean(row[12]) || clean(row[5]) || "unassigned";
       if (!groupColors.has(key)) groupColors.set(key, colorClasses[groupColors.size % colorClasses.length]);
       return groupColors.get(key);
     };
+    const getTrackColorClass = row => {
+      const track = clean(row[0]) || "unassigned";
+      let hash = 0;
+      for (let index = 0; index < track.length; index += 1) hash = ((hash * 31) + track.charCodeAt(index)) >>> 0;
+      return `track-color-${hash % 8}`;
+    };
+    const defaultButton = $("#inventoryColorDefault");
+    const trackButton = $("#inventoryColorTrack");
+    if (defaultButton) defaultButton.classList.toggle("active", inventoryColorMode === "default");
+    if (trackButton) trackButton.classList.toggle("active", inventoryColorMode === "track");
     body.innerHTML = state.rows.map((row,rowIndex) => `
-      <tr class="inventory-row--${getColorClass(row)}">
+      <tr class="inventory-row--${inventoryColorMode === "track" ? getTrackColorClass(row) : getDefaultColorClass(row)}">
         ${row.slice(0, COLUMN_NAMES.length).map((value,colIndex) => `<td><input class="${[2,10,12].includes(colIndex)?"wide":""}" data-row="${rowIndex}" data-col="${colIndex}" value="${escapeAttr(value)}"></td>`).join("")}
         <td class="delete-cell"><button class="icon-btn" data-delete="${rowIndex}" title="Delete row">&times;</button></td>
       </tr>`).join("");
@@ -8954,6 +8980,18 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       .sort((a,b)=>Number(a.row[0])-Number(b.row[0]) || Number(a.row[1])-Number(b.row[1]) || a.index-b.index)
       .map(x=>x.row);
     renderAll();
+  });
+
+  $("#inventoryColorDefault").addEventListener("click", () => {
+    inventoryColorMode = "default";
+    localStorage.setItem(INVENTORY_COLOR_MODE_KEY, inventoryColorMode);
+    renderInventory();
+  });
+
+  $("#inventoryColorTrack").addEventListener("click", () => {
+    inventoryColorMode = "track";
+    localStorage.setItem(INVENTORY_COLOR_MODE_KEY, inventoryColorMode);
+    renderInventory();
   });
 
   $("#copyExampleCarsBtn").addEventListener("click",copyExampleCars);
