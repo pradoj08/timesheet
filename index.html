@@ -6041,12 +6041,16 @@ tfoot .lph-target-pill.below-target{background:#fecaca;color:#7f1d1d}
   }
   var hideTrackIdsControl=document.getElementById("hideTrackIdsToggle");
   hideTrackIdsControl=hideTrackIdsControl&&hideTrackIdsControl.closest("label");
-  var hideDwellControl=document.createElement("label");
-  hideDwellControl.className="track-id-toggle";
-  hideDwellControl.title="Hide dwell tags inside ramp block labels";
-  hideDwellControl.innerHTML='<input id="hideDwellToggle" type="checkbox"> Hide dwell';
-  var hideDwellToggle=hideDwellControl.querySelector("input");
-  try{hideDwellToggle.checked=localStorage.getItem("settegast-hide-dwell") === "true"}catch(error){}
+  var hideDwellToggle=document.getElementById("hideDwellToggle");
+  var hideDwellControl=hideDwellToggle&&hideDwellToggle.closest("label");
+  if(!hideDwellToggle){
+    hideDwellControl=document.createElement("label");
+    hideDwellControl.className="track-id-toggle";
+    hideDwellControl.title="Hide dwell tags inside ramp block labels";
+    hideDwellControl.innerHTML='<input id="hideDwellToggle" type="checkbox"> Hide dwell';
+    hideDwellToggle=hideDwellControl.querySelector("input");
+    try{hideDwellToggle.checked=localStorage.getItem("settegast-hide-dwell") === "true"}catch(error){}
+  }
   var yardGrid=document.getElementById("yardGrid");
   var dwellGridHosts=[yardGrid,document.getElementById("blankYardGrid"),document.getElementById("blankYardGridTwo")].filter(Boolean);
   function applyDwellVisibility(){

@@ -141,9 +141,8 @@
     .map-stage.section-focus-active #parkingSlotsLayer polygon { stroke-width:3; }
     .map-overlay { z-index: 2; pointer-events: none; }
     #parkingAreasLayer,#parkingSlotsLayer { pointer-events: auto; }
-    .parking-zone { cursor: pointer; stroke: rgba(255,255,255,.72); stroke-width: 5; transition: filter .16s ease, opacity .16s ease; }
-    .parking-zone:hover,
-    .parking-zone.selected { filter: brightness(1.2) drop-shadow(0 0 18px rgba(255,255,255,.85)); opacity: .92; }
+    .parking-zone { cursor:pointer;fill:transparent!important;stroke:transparent;stroke-width:0;transition:filter .16s ease,opacity .16s ease; }
+    body.map-editing .parking-zone.selected { stroke:rgba(255,255,255,.72);stroke-width:3;filter:brightness(1.12) drop-shadow(0 0 8px rgba(255,255,255,.48));opacity:.92; }
     .zone-a { fill: rgba(29, 170, 232, .10); }
     .zone-b { fill: rgba(222, 43, 139, .10); }
     .zone-c { fill: rgba(244, 112, 48, .10); }
@@ -201,7 +200,7 @@
     .map-activity-option span { min-width:0; }
     .map-activity-dot { flex:0 0 auto;width:9px;height:9px;border-radius:999px;background:var(--status-color);box-shadow:0 0 8px color-mix(in srgb,var(--status-color) 75%,transparent); }
     .map-slot-activity { vector-effect:non-scaling-stroke;paint-order:stroke fill; }
-    .map-editor { position:absolute;z-index:10;top:76px;right:18px;width:278px;max-height:calc(100% - 100px);overflow:auto;padding:0 10px 10px;border:1px solid #7186a3;border-radius:14px;background:rgba(8,17,29,.97);box-shadow:0 18px 48px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.06);backdrop-filter:blur(10px);scrollbar-width:thin;resize:both; }
+    .map-editor { position:absolute;z-index:10;top:76px;right:18px;width:500px;max-width:calc(100% - 36px);max-height:calc(100% - 100px);overflow:auto;padding:0 10px 10px;border:1px solid #7186a3;border-radius:14px;background:rgba(8,17,29,.97);box-shadow:0 18px 48px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.06);backdrop-filter:blur(10px);scrollbar-width:thin;resize:both; }
     .map-editor.hidden { display:none; }
     .map-editor-title { position:sticky;top:0;z-index:2;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:8px;margin:0 -10px 9px;padding:10px;border-bottom:1px solid #405674;border-radius:13px 13px 0 0;background:linear-gradient(135deg,#172b43,#0d192a);font-size:12px;letter-spacing:.08em;cursor:move;user-select:none; }
     .map-editor-grip { color:#67e8f9;font-size:16px;letter-spacing:-3px; }
@@ -212,9 +211,9 @@
     .map-editor button { cursor:pointer; }.map-editor button.active { color:#172033;background:var(--accent);border-color:#ffe786; }
     .map-editor label.global-style-control { border-color:#2c7e89;background:#0d3039; }
     .map-editor label.global-style-control.disabled { opacity:.48; }
-    .map-editor label { display:flex;align-items:center;justify-content:space-between;gap:7px;padding:4px 8px;grid-column:1/-1; }
+    .map-editor label { display:flex;align-items:center;justify-content:space-between;gap:7px;padding:4px 8px;min-width:0; }
     .map-editor input[type="color"] { width:56px;height:25px;padding:0;border:0;border-radius:5px;background:transparent;cursor:pointer; }
-    .map-editor input[type="range"] { width:104px;accent-color:var(--accent);cursor:pointer; }
+    .map-editor input[type="range"] { width:118px;max-width:52%;accent-color:var(--accent);cursor:pointer; }
     .map-editor input[type="number"] { width:72px;height:27px;padding:3px 7px;border:1px solid #526985;border-radius:5px;background:#0c1a2b;color:#fff;font-weight:900; }
     .map-editor input[type="text"] { width:112px;height:27px;padding:3px 7px;border:1px solid #526985;border-radius:5px;background:#0c1a2b;color:#fff;font-weight:900; }
     .map-editor select { width:118px;height:29px;padding:3px 6px;border:1px solid #526985;border-radius:5px;background:#0c1a2b;color:#fff;font:800 10px system-ui,sans-serif;cursor:pointer; }
@@ -226,7 +225,8 @@
     .parking-shape-line { fill:rgba(34,211,238,.04);stroke:#22d3ee;stroke-width:2;stroke-dasharray:6 5;vector-effect:non-scaling-stroke; }
     .parking-shape-handle { pointer-events:auto;fill:#ffffff;stroke:#7c3aed;stroke-width:2.5;vector-effect:non-scaling-stroke;cursor:move; }
     .parking-add-point { pointer-events:auto;fill:#facc15;stroke:#172033;stroke-width:2;vector-effect:non-scaling-stroke;cursor:copy; }
-    body.map-editing .parking-zone { cursor:move; }.slot-number { fill:#101927;stroke:rgba(255,255,255,.88);stroke-width:2;paint-order:stroke fill;font:900 9px/1 system-ui,sans-serif;pointer-events:none;text-anchor:middle;dominant-baseline:middle; }
+    body.map-editing #parkingSlotsLayer { pointer-events:none; }
+    body.map-editing .parking-zone { cursor:move;pointer-events:fill; }.slot-number { fill:#101927;stroke:rgba(255,255,255,.88);stroke-width:2;paint-order:stroke fill;font:900 9px/1 system-ui,sans-serif;pointer-events:none;text-anchor:middle;dominant-baseline:middle; }
     .map-highlight-slot-number { display:block!important;fill:#f8fafc!important;stroke:rgba(5,13,24,.96)!important;stroke-width:3px!important;paint-order:stroke fill;font-family:ui-monospace,Consolas,monospace!important;font-size:var(--highlight-number-size,13px)!important;font-weight:950!important;letter-spacing:-.04em;opacity:1!important;pointer-events:none;text-anchor:middle;dominant-baseline:middle;filter:drop-shadow(0 1px 1px rgba(0,0,0,.72)); }
     .map-note {
       margin: 12px 0 0;
@@ -252,8 +252,8 @@
       </div>
       <div class="map-view-modes" aria-label="Map display modes">
         <button id="mapFocus" type="button" title="Crop to the active yard strip" aria-pressed="false">FOCUS</button>
-        <button id="mapSectionNames" type="button" title="Show each parking-section ID in the middle of its shape" aria-pressed="false">ROW ID</button>
         <button id="mapSectionFocus" type="button" title="Dim the aerial image and emphasize parking sections" aria-pressed="false">DIM BACKGROUND</button>
+        <button id="mapSectionNames" type="button" title="Show each parking-section ID in the middle of its shape" aria-pressed="false">ROW ID</button>
         <button id="mapSectionsVisibilityToggle" type="button" title="Show or hide parking sections" aria-pressed="true">SECTIONS</button>
         <button id="mapShowAllUnitsButton" type="button" aria-pressed="false">SHOW ALL UNITS</button>
         <button id="mapHighlightedSlotNumbers" type="button" aria-pressed="false">SHOW SLOT NUMBERS</button>
@@ -321,7 +321,7 @@
           <div class="map-editor-group-title">Section management</div>
           <button id="mapEditToggle" class="wide" type="button">Enable Editing</button>
           <button id="mapAddArea" class="wide" type="button">+ Add Parking Area</button>
-          <label>Section name <input id="mapSectionName" type="text" maxlength="24" placeholder="Select a section"></label>
+          <label class="wide">Section name <input id="mapSectionName" type="text" maxlength="24" placeholder="Select a section"></label>
           <button id="mapRenameArea" type="button">Rename</button>
           <button id="mapDeleteArea" type="button">Delete</button>
           <button id="mapReshapeToggle" class="wide" type="button" aria-pressed="false">Reshape: Off</button>
@@ -750,6 +750,15 @@
       let geometrySaveTimer = 0;
       let savedEdits = {};
       try { savedEdits = JSON.parse(localStorage.getItem(editKey) || '{}') || {}; } catch (_) { savedEdits = {}; }
+      const sectionIdForIndex = index => { let value=Math.max(0,Math.floor(Number(index)||0)),id='';do{id=String.fromCharCode(65+(value%26))+id;value=Math.floor(value/26)-1;}while(value>=0);return id; };
+      const migrateInvalidSectionIds = () => {
+        if(!Array.isArray(savedEdits.__areas))return;
+        const used=new Set(['A','B','C','D']),reserved=new Set(savedEdits.__areas.map(area=>String(area?.name||'').toUpperCase()).filter(name=>/^[A-Z]+$/.test(name))),nextId=()=>{for(let index=4;;index+=1){const candidate=sectionIdForIndex(index);if(!used.has(candidate)&&!reserved.has(candidate))return candidate;}};
+        let changed=false;
+        savedEdits.__areas.forEach(area=>{const originalName=String(area?.name||''),oldName=originalName.toUpperCase(),valid=/^[A-Z]+$/.test(oldName)&&!used.has(oldName);if(valid){area.name=oldName;used.add(oldName);return;}const newName=nextId(),oldState=savedEdits[oldName]||savedEdits[originalName]||{};area.name=newName;savedEdits[newName]={...oldState,label:oldState.label&&oldState.label!==oldName?oldState.label:newName};if(oldName&&oldName!==newName)delete savedEdits[oldName];if(originalName&&originalName!==oldName&&originalName!==newName)delete savedEdits[originalName];reserved.add(newName);used.add(newName);changed=true;});
+        if(changed)localStorage.setItem(editKey,JSON.stringify(savedEdits));
+      };
+      migrateInvalidSectionIds();
       let showAllUnits=Boolean(savedEdits.__showAllUnits);
       let showHighlightedSlotNumbers=Boolean(savedEdits.__showHighlightedSlotNumbers);
       const showAllUnitsButton=document.getElementById('mapShowAllUnitsButton');
@@ -807,15 +816,17 @@
       let hiddenUnitKeys=new Set();try{const savedHidden=JSON.parse(localStorage.getItem(hiddenUnitKeysStorageKey)||'[]');if(Array.isArray(savedHidden))hiddenUnitKeys=new Set(savedHidden.map(String));}catch(_){}
       const parseCsvText = text => {const rows=[],source=String(text||'').replace(/^\uFEFF/,'');let row=[],field='',quoted=false;for(let index=0;index<source.length;index+=1){const char=source[index];if(quoted){if(char==='"'&&source[index+1]==='"'){field+='"';index++;}else if(char==='"')quoted=false;else field+=char;}else if(char==='"')quoted=true;else if(char===','){row.push(field);field='';}else if(char==='\n'){row.push(field.replace(/\r$/,''));rows.push(row);row=[];field='';}else field+=char;}if(field||row.length){row.push(field.replace(/\r$/,''));rows.push(row);}return rows;};
       const normalizedHeader = value => String(value||'').trim().toLowerCase().replace(/[^a-z0-9]+/g,'');
-      const normalizeImportedLocation = value => {const raw=String(value||'').trim().toUpperCase();if(!raw)return {status:'blank'};const match=/^(\d{1,4})\s*\/\s*([A-Z]+)/.exec(raw);if(!match)return {status:'unrecognized'};const spot=Number(match[1]),area=match[2]==='VALLY'?'VALLEY':match[2];if(/^[A-S]$/.test(area)&&spot>0)return {status:'ok',location:`${area} ${spot}`,area,spot};if(['DIRT','BOWL','HUMP','VALLEY','SHOP'].includes(area))return {status:'ok',location:area,area,spot:null};return {status:'unrecognized'};};
+      const randomParkingAreas = new Set(['801','802','804','808','809']);
+      const randomParkingArea = value => (String(value||'').toUpperCase().match(/\b\d{3}\b/g)||[]).find(token=>randomParkingAreas.has(token))||'';
+      const normalizeImportedLocation = value => {const raw=String(value||'').trim().toUpperCase();if(!raw)return {status:'blank'};const numericArea=randomParkingArea(raw);if(numericArea)return {status:'ok',location:numericArea,area:numericArea,spot:null};const match=/^(\d{1,4})\s*\/\s*([A-Z]+)/.exec(raw);if(!match)return {status:'unrecognized'};const spot=Number(match[1]),area=match[2]==='VALLY'?'VALLEY':match[2];if(/^[A-S]$/.test(area)&&spot>0)return {status:'ok',location:`${area} ${spot}`,area,spot};if(['DIRT','BOWL','HUMP','VALLEY','SHOP'].includes(area))return {status:'ok',location:area,area,spot:null};return {status:'unrecognized'};};
       const parseImportedChassisCsv = (text,fileName) => {const matrix=parseCsvText(text);if(matrix.length<2)throw new Error('The CSV does not contain data rows.');const headers=matrix[0].map(normalizedHeader),equipmentIndex=headers.findIndex(header=>['equipmentid','chassis','chassisid','equipment'].includes(header)),locationIndex=headers.findIndex(header=>['padtrackarea','location','chassislocation','padtrack'].includes(header));if(equipmentIndex<0||locationIndex<0)throw new Error('Required columns not found. Expected Equipment ID and Pad/Track/Area.');const parsed=[],seen=new Set();let skippedBlank=0,skippedUnrecognized=0;matrix.slice(1).forEach(cells=>{const chassis=String(cells[equipmentIndex]||'').trim().toUpperCase(),normalized=normalizeImportedLocation(cells[locationIndex]);if(!chassis)return;if(normalized.status==='blank'){skippedBlank++;return;}if(normalized.status!=='ok'){skippedUnrecognized++;return;}const identity=chassis+'|'+normalized.location;if(seen.has(identity))return;seen.add(identity);parsed.push({chassis,location:normalized.location,originalLocation:String(cells[locationIndex]||'').trim(),source:'Imported chassis CSV'});});return {fileName,importedAt:new Date().toISOString(),totalRows:matrix.length-1,skippedBlank,skippedUnrecognized,rows:parsed};};
-      const normalizePastedLocation = value => {const raw=String(value||'').trim().toUpperCase().replace(/\s+/g,' ');let match=/^([A-S])\s+\1\s+(\d{1,3})$/.exec(raw);if(match)return {location:`${match[1]} ${Number(match[2])}`};match=/^([A-Z]+)\s+\1$/.exec(raw);if(match){const area=match[1]==='VALLY'?'VALLEY':match[1];if(['DIRT','BOWL','HUMP','VALLEY','SHOP','KIRK'].includes(area))return {location:area};}return null;};
+      const normalizePastedLocation = value => {const raw=String(value||'').trim().toUpperCase().replace(/\s+/g,' '),numericArea=randomParkingArea(raw);if(numericArea)return {location:numericArea};let match=/^([A-S])\s+\1\s+(\d{1,3})$/.exec(raw);if(match)return {location:`${match[1]} ${Number(match[2])}`};match=/^([A-Z]+)\s+\1$/.exec(raw);if(match){const area=match[1]==='VALLY'?'VALLEY':match[1];if(['DIRT','BOWL','HUMP','VALLEY','SHOP','KIRK'].includes(area))return {location:area};}return null;};
       const parsePastedChassis = text => {const lines=String(text||'').split(/\r?\n/).map(line=>line.trimEnd()).filter(line=>line.trim()),rows=[],seen=new Set();let skipped=0;lines.forEach(line=>{const cells=line.includes('\t')?line.split('\t'):line.trim().split(/\s{2,}/),chassis=String(cells[1]||'').trim().toUpperCase(),locationCell=cells.find(cell=>normalizePastedLocation(cell)),normalized=normalizePastedLocation(locationCell);if(!chassis||!normalized){skipped++;return;}const identity=chassis+'|'+normalized.location;if(seen.has(identity))return;seen.add(identity);rows.push({chassis,location:normalized.location,originalLocation:String(locationCell||'').trim(),source:'Pasted chassis data'});});if(!rows.length)throw new Error('No chassis locations were recognized in the pasted data.');return {importedAt:new Date().toISOString(),totalRows:lines.length,skipped,rows};};
       const parseActivityDate = value => { const raw=String(value||'').trim(),match=/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/.exec(raw); if(match){const year=Number(match[3])<100?2000+Number(match[3]):Number(match[3]),date=new Date(year,Number(match[1])-1,Number(match[2]));return Number.isFinite(date.getTime())?date:null;} const date=new Date(raw); return Number.isFinite(date.getTime())?date:null; };
       const activityDay = value => { const date=parseActivityDate(value); return date?Math.floor(Date.UTC(date.getFullYear(),date.getMonth(),date.getDate())/86400000):null; };
       const parkingSection = value => { const raw=String(value||'').trim().toUpperCase(); const match=/^(?:LOT\s*)?([A-S])(?:\s*(?:-|\/|\b))/.exec(raw); return match?match[1]:''; };
       const normalizedAreaWords = value => String(value||'').toUpperCase().replace(/\bVALLY\b/g,'VALLEY').replace(/\b(AREA|PARKING|LOT)\b/g,' ').replace(/[^A-Z0-9]+/g,' ').trim().split(/\s+/).filter(Boolean);
-      const sectionForLocation = value => { const direct=parkingSection(value);if(direct&&zones[direct])return direct;const locationWords=new Set(normalizedAreaWords(value));if(!locationWords.size)return '';return Object.keys(zones).find(name=>{const words=normalizedAreaWords(stateFor(name).label||name);return words.length&&words.every(word=>locationWords.has(word));})||''; };
+      const sectionForLocation = value => { const direct=parkingSection(value);if(direct&&zones[direct])return direct;const numericArea=randomParkingArea(value),numericSection=numericArea&&Object.keys(zones).find(name=>String(stateFor(name).label||name).trim()===numericArea);if(numericSection)return numericSection;const locationWords=new Set(normalizedAreaWords(value));if(!locationWords.size)return '';return Object.keys(zones).find(name=>{const words=normalizedAreaWords(stateFor(name).label||name);return words.length&&words.every(word=>locationWords.has(word));})||''; };
       const showNumberForSection = section => !/\bDIRT\b/i.test(`${section} ${String(stateFor(section).label||'')}`);
       const parkingSpot = value => { const raw=String(value||'').trim().toUpperCase(); if(!parkingSection(raw))return null; const numbers=raw.match(/\d{1,3}/g)||[]; const spot=Number(numbers[numbers.length-1]); return Number.isInteger(spot)&&spot>0&&spot<=300?spot:null; };
       const stableParkingSpot = (row,section) => { const explicit=parkingSpot(row?.location);if(explicit)return explicit;const zone=zones[section],total=Math.max(1,(Number(zone?.capacity)||1)*Math.round(clamp(Number(stateFor(section).rowCount)||1,1,6))),id=String(row?.chassis||row?.equipmentId||row?.unitId||row?.container||row?.id||row?.location||section);let hash=2166136261;for(let index=0;index<id.length;index+=1){hash^=id.charCodeAt(index);hash=Math.imul(hash,16777619);}return (Math.abs(hash) % total)+1; };
@@ -955,7 +966,7 @@
       window.addEventListener('pointermove',event=>{ if(!editDrag||!selectedRow)return;const point=svg.createSVGPoint();point.x=event.clientX;point.y=event.clientY;const local=point.matrixTransform(svg.getScreenCTM().inverse()),dx=local.x-editDrag.start.x,dy=local.y-editDrag.start.y,state=stateFor(selectedRow);if(editDrag.mode==='reshape'){zones[selectedRow][editDrag.path][editDrag.index]=[editDrag.basePoint[0]+dx/editDrag.base.sx,editDrag.basePoint[1]+dy/editDrag.base.sy];syncZoneGeometry(selectedRow);drawEditBox();return;}if(editDrag.mode==='move'){state.tx=editDrag.base.tx+dx;state.ty=editDrag.base.ty+dy;}else{const xSign=editDrag.corner.includes('e')?1:-1,ySign=editDrag.corner.includes('s')?1:-1;state.sx=Math.max(.25,editDrag.base.sx+(dx*xSign)/(editDrag.box.width/editDrag.base.sx));state.sy=Math.max(.25,editDrag.base.sy+(dy*ySign)/(editDrag.box.height/editDrag.base.sy));state.tx=editDrag.base.tx+dx/2;state.ty=editDrag.base.ty+dy/2;}savedEdits[selectedRow]=state;applyRow(selectedRow); });
       const finishEditDrag = () => { if(editDrag){clearTimeout(geometrySaveTimer);saveEdits();editDrag=null;} };
       window.addEventListener('pointerup',finishEditDrag);window.addEventListener('pointercancel',finishEditDrag);window.addEventListener('blur',finishEditDrag);
-      editToggle.addEventListener('click',()=>{editing=!editing;document.body.classList.toggle('map-editing',editing);editToggle.classList.toggle('active',editing);editToggle.textContent=editing?'Editing On':'Enable Editing';reshapeToggle.classList.toggle('active',reshapeMode);reshapeToggle.textContent=`Reshape: ${reshapeMode?'On':'Off'}`;reshapeToggle.setAttribute('aria-pressed',String(reshapeMode));editorStatus.textContent=editing?(selectedRow?(reshapeMode?'Drag white points; select a yellow midpoint to add another point.':'Drag the row to move it or drag a corner to resize.'):'Select a parking row to edit.'):'Map navigation mode.';drawEditBox();});
+      editToggle.addEventListener('click',()=>{editing=!editing;if(editing){if(!sectionsVisible){sectionsVisible=true;applySectionsVisibility();}if(sectionNameEditing){sectionNameEditing=false;applySectionNameEditing();}}document.body.classList.toggle('map-editing',editing);editToggle.classList.toggle('active',editing);editToggle.textContent=editing?'Editing On':'Enable Editing';reshapeToggle.classList.toggle('active',reshapeMode);reshapeToggle.textContent=`Reshape: ${reshapeMode?'On':'Off'}`;reshapeToggle.setAttribute('aria-pressed',String(reshapeMode));editorStatus.textContent=editing?(selectedRow?(reshapeMode?'Drag white points; select a yellow midpoint to add another point.':'Drag anywhere inside the section to move it, or drag a corner to resize.'):'Select a parking row to edit.'):'Map navigation mode.';drawEditBox();});
       reshapeToggle.addEventListener('click',()=>{if(!selectedRow){editorStatus.textContent='Select a parking section first.';return;}if(!editing){editing=true;document.body.classList.add('map-editing');editToggle.classList.add('active');editToggle.textContent='Editing On';}reshapeMode=!reshapeMode;localStorage.setItem(reshapeModeKey,reshapeMode?'1':'0');reshapeToggle.classList.toggle('active',reshapeMode);reshapeToggle.textContent=`Reshape: ${reshapeMode?'On':'Off'}`;reshapeToggle.setAttribute('aria-pressed',String(reshapeMode));editorStatus.textContent=reshapeMode?'Drag white points. Select a yellow midpoint to add another reshape point.':'Corner resizing restored.';drawEditBox();});
       renameAreaButton.addEventListener('click',()=>{if(!selectedRow)return;const label=sectionNameInput.value.trim().replace(/\s+/g,' ').slice(0,24);if(!label){editorStatus.textContent='Enter a section name first.';return;}const state=stateFor(selectedRow);state.label=label;savedEdits[selectedRow]=state;applyRow(selectedRow);editorRow.textContent=label+' AREA';saveEdits();editorStatus.textContent='Section renamed to '+label+'.';});
       let deleteArmedUntil=0;
@@ -997,8 +1008,7 @@
       window.addEventListener('focus',refreshReconciliationHighlights);
       document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshReconciliationHighlights();});
       addAreaButton.addEventListener('click',()=>{
-        const used=new Set(Object.keys(zones));let code=69;while(used.has(String.fromCharCode(code)))code++;
-        const name=String.fromCharCode(code);
+        const used=new Set(Object.keys(zones));let sectionIndex=4,name=sectionIdForIndex(sectionIndex);while(used.has(name)){sectionIndex+=1;name=sectionIdForIndex(sectionIndex);}
         const centerX=(stage.clientWidth/2-x)/scale,centerY=(stage.clientHeight/2-y)/scale;
         const definition={name,capacity:20,x1:clamp(centerX-300,0,9570),x2:clamp(centerX+300,600,10170),y1:clamp(centerY-55,0,1037),y2:clamp(centerY+55,110,1147),color:'#42d3ff'};
         if(!Array.isArray(savedEdits.__areas))savedEdits.__areas=[];
