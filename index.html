@@ -9421,6 +9421,24 @@ document.addEventListener('click',function(event){
       label: "Settegast Map",
       html: settegastMapPageHtml()
     };
+    pages.stackingGrid = {
+      label: "Stacking Grid",
+      html: `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Stacking Grid</title>
+  <style>
+    html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#e9edef}
+    iframe{display:block;width:100%;height:100%;border:0;background:#e9edef}
+  </style>
+</head>
+<body>
+  <iframe src="stacking-grid-page.html" title="Stacking Grid"></iframe>
+</body>
+</html>`
+    };
     pages.idTracker = {
       label: "ID Tracker",
       html: `<!DOCTYPE html>
@@ -12826,7 +12844,7 @@ body #forecastExcelView .forecast-excel-block.request .forecast-excel-table tbod
       document.querySelectorAll(".workbook-tabs button").forEach((button) => {
         button.classList.toggle("active", button.dataset.page === activePage);
       });
-      if (reportMenuButton) reportMenuButton.classList.toggle("active", ["amReport", "chassisStatus", "settegastMap"].includes(activePage));
+      if (reportMenuButton) reportMenuButton.classList.toggle("active", ["amReport", "chassisStatus", "settegastMap", "stackingGrid"].includes(activePage));
       if (excelLphMenuButton) excelLphMenuButton.classList.toggle("active", ["excelView", "lphTracker"].includes(activePage));
       if (timesheetMenuButton) timesheetMenuButton.classList.toggle("active", ["timeMd", "idTracker"].includes(activePage));
       if (matrixMenuButton) matrixMenuButton.classList.toggle("active", ["matrix", "matrixWide"].includes(activePage));
@@ -13142,7 +13160,7 @@ body #forecastExcelView .forecast-excel-block.request .forecast-excel-table tbod
         const menu = document.createElement("div");
         menu.className = "matrix-nav-menu report-nav-menu";
         menu.setAttribute("role", "menu");
-        [["amReport", "AM Report"], ["chassisStatus", "Chassis Forecast"], ["chassisReconciliation", "Chassis Reconciliation"], ["settegastMap", "Settegast Map"]].forEach(([pageId, label]) => {
+        [["amReport", "AM Report"], ["chassisStatus", "Chassis Forecast"], ["chassisReconciliation", "Chassis Reconciliation"], ["settegastMap", "Settegast Map"], ["stackingGrid", "Stacking Grid"]].forEach(([pageId, label]) => {
           const option = document.createElement("button");
           option.type = "button";
           option.dataset.page = pageId;
