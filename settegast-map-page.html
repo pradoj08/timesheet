@@ -273,6 +273,9 @@
            <button id="mapFit" class="fit-button" type="button" title="Fit the entire map">FIT</button>
            <button id="mapLayoutSave" type="button" title="Save the current map camera and display layout">SAVE LAYOUT</button>
            <button id="mapLayoutRestore" type="button" title="Return to the last saved full layout">RESTORE LAYOUT</button>
+           <button id="mapUniversalExport" type="button" title="Download the complete parking layout for another device">EXPORT UNIVERSAL</button>
+           <button id="mapUniversalImport" type="button" title="Load a universal Settegast Map layout file">IMPORT UNIVERSAL</button>
+           <input id="mapUniversalImportFile" type="file" accept="application/json,.json" hidden>
         </div>
         <div id="mapFocusSettings" class="focus-settings" aria-label="Focus view settings" hidden>
           <label class="focus-setting" title="Choose which point across the yard stays centered">Yard position <input id="mapFocusX" type="range" min="0" max="100" step="1" value="50"><output id="mapFocusXValue">50%</output></label>
@@ -376,8 +379,10 @@
 
     <p class="map-note"><strong>Navigate:</strong> drag the map to pan, use the mouse wheel or +/− buttons to zoom, and select FIT to return to the full map.</p>
   </main>
+  <script src="settegast-universal-layout.js"></script>
   <script>
     (() => {
+      const universalLayout = window.__CONGLOBAL_SETTEGAST_UNIVERSAL_LAYOUT__ || null;
       const stage = document.getElementById('mapStage');
       const canvas = document.getElementById('mapCanvas');
       const svg = canvas.querySelector('svg');
@@ -420,13 +425,16 @@
       const focusResetButton = document.getElementById('mapFocusReset');
       const layoutSaveButton = document.getElementById('mapLayoutSave');
       const layoutRestoreButton = document.getElementById('mapLayoutRestore');
+      const universalExportButton = document.getElementById('mapUniversalExport');
+      const universalImportButton = document.getElementById('mapUniversalImport');
+      const universalImportFile = document.getElementById('mapUniversalImportFile');
       const focusSettingsKey = 'conglobal-settegast-map-focus-settings-v1';
       const layoutSettingsKey = 'conglobal-settegast-map-layout-v1';
       const defaultFocusSettings = Object.freeze({x:50,centerY:25,zoom:175,width:100,height:100});
       let focusSettings={...defaultFocusSettings};
-      try { focusSettings=Object.assign({},defaultFocusSettings,JSON.parse(localStorage.getItem(focusSettingsKey)||'null')||{}); } catch(_) {}
+      try { focusSettings=Object.assign({},defaultFocusSettings,JSON.parse(localStorage.getItem(focusSettingsKey)||'null')||universalLayout?.focus||{}); } catch(_) {}
       let savedLayout=null;
-      try { savedLayout=JSON.parse(localStorage.getItem(layoutSettingsKey)||'null'); } catch(_) {}
+      try { savedLayout=JSON.parse(localStorage.getItem(layoutSettingsKey)||'null')||universalLayout?.camera||null; } catch(_) {}
       let layoutCheckpointActive=false;
       const sectionFocusButton = document.getElementById('mapSectionFocus');
       const sectionNamesButton = document.getElementById('mapSectionNames');
@@ -444,10 +452,11 @@
       let x = 0;
       let y = 0;
       let focusMode = false;
-      let sectionFocusMode = localStorage.getItem(sectionFocusKey) === '1';
-      let sectionNamesVisible = localStorage.getItem(sectionNamesKey) === '1';
-      let sectionsVisible = localStorage.getItem(sectionsVisibilityKey) !== '0';
-      let sectionDim = Math.min(95,Math.max(10,Number(localStorage.getItem(sectionDimKey)) || 70));
+      const universalDisplay=universalLayout?.display||{};
+      let sectionFocusMode = localStorage.getItem(sectionFocusKey)===null?Boolean(universalDisplay.sectionFocusMode):localStorage.getItem(sectionFocusKey)==='1';
+      let sectionNamesVisible = localStorage.getItem(sectionNamesKey)===null?Boolean(universalDisplay.sectionNamesVisible):localStorage.getItem(sectionNamesKey)==='1';
+      let sectionsVisible = localStorage.getItem(sectionsVisibilityKey)===null?(universalDisplay.sectionsVisible!==false):localStorage.getItem(sectionsVisibilityKey)!=='0';
+      let sectionDim = Math.min(95,Math.max(10,Number(localStorage.getItem(sectionDimKey)) || Number(universalDisplay.sectionDim) || 70));
       let drag = null;
       const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
       focusSettings.x=clamp(Number(focusSettings.x)||defaultFocusSettings.x,0,100);
@@ -464,7 +473,7 @@
         zonePanelToggle.setAttribute('aria-expanded',String(!hidden));
         localStorage.setItem(zonePanelHiddenKey,hidden?'1':'0');
       };
-      setZonePanelHidden(localStorage.getItem(zonePanelHiddenKey)==='1');
+      setZonePanelHidden(localStorage.getItem(zonePanelHiddenKey)===null?Boolean(universalLayout?.panels?.areasHidden):localStorage.getItem(zonePanelHiddenKey)==='1');
       zonePanelToggle.addEventListener('click',event=>{event.stopPropagation();setZonePanelHidden(!zonePanel.classList.contains('hidden'));});
       const setEdgePanelHidden = (panel,toggle,key,hidden,showText,hideText) => {
         panel.classList.toggle('hidden',hidden);
@@ -473,9 +482,9 @@
         toggle.setAttribute('aria-expanded',String(!hidden));
         localStorage.setItem(key,hidden?'1':'0');
       };
-      setEdgePanelHidden(activityPanel,activityPanelToggle,activityPanelHiddenKey,localStorage.getItem(activityPanelHiddenKey)==='1','Show Highlights','Hide Highlights');
-      setEdgePanelHidden(editorPanel,editorPanelToggle,editorPanelHiddenKey,localStorage.getItem(editorPanelHiddenKey)==='1','Show Editor','Hide Editor');
-      try { const savedPosition=JSON.parse(localStorage.getItem(editorPositionKey)||'null');if(savedPosition&&Number.isFinite(savedPosition.left)&&Number.isFinite(savedPosition.top)){editorPanel.style.left=savedPosition.left+'px';editorPanel.style.top=savedPosition.top+'px';editorPanel.style.right='auto';} } catch(_){}
+      setEdgePanelHidden(activityPanel,activityPanelToggle,activityPanelHiddenKey,localStorage.getItem(activityPanelHiddenKey)===null?Boolean(universalLayout?.panels?.highlightsHidden):localStorage.getItem(activityPanelHiddenKey)==='1','Show Highlights','Hide Highlights');
+      setEdgePanelHidden(editorPanel,editorPanelToggle,editorPanelHiddenKey,localStorage.getItem(editorPanelHiddenKey)===null?Boolean(universalLayout?.panels?.editorHidden):localStorage.getItem(editorPanelHiddenKey)==='1','Show Editor','Hide Editor');
+      try { const savedPosition=JSON.parse(localStorage.getItem(editorPositionKey)||'null')||universalLayout?.panels?.editorPosition||null;if(savedPosition&&Number.isFinite(savedPosition.left)&&Number.isFinite(savedPosition.top)){editorPanel.style.left=savedPosition.left+'px';editorPanel.style.top=savedPosition.top+'px';editorPanel.style.right='auto';} } catch(_){}
       const clampEditorPanelToStage = (persist=true) => {
         if(editorPanel.classList.contains('hidden'))return;
         const stageRect=stage.getBoundingClientRect(),panelRect=editorPanel.getBoundingClientRect();
@@ -750,7 +759,7 @@
       let editDrag = null;
       let geometrySaveTimer = 0;
       let savedEdits = {};
-      try { savedEdits = JSON.parse(localStorage.getItem(editKey) || '{}') || {}; } catch (_) { savedEdits = {}; }
+      try { savedEdits = JSON.parse(localStorage.getItem(editKey) || 'null') || JSON.parse(JSON.stringify(universalLayout?.parkingRows||{})); } catch (_) { savedEdits = {}; }
       const sectionIdForIndex = index => { let value=Math.max(0,Math.floor(Number(index)||0)),id='';do{id=String.fromCharCode(65+(value%26))+id;value=Math.floor(value/26)-1;}while(value>=0);return id; };
       const migrateInvalidSectionIds = () => {
         if(!Array.isArray(savedEdits.__areas))return;
@@ -793,6 +802,53 @@
       labelsLayer.addEventListener('pointerup',finishSectionNameDrag);labelsLayer.addEventListener('pointercancel',finishSectionNameDrag);
       const syncUnifiedStyleControls = () => { unifiedStyleToggle.classList.toggle('active',unifiedStyle.enabled);unifiedStyleToggle.textContent=`Unified Style: ${unifiedStyle.enabled?'On':'Off'}`;unifiedStyleToggle.setAttribute('aria-pressed',String(unifiedStyle.enabled));unifiedColorInput.value=unifiedStyle.color;unifiedOpacityInput.value=String(Math.round(unifiedStyle.opacity*100));unifiedOpacityValue.textContent=unifiedOpacityInput.value+'%';document.querySelectorAll('.global-style-control').forEach(label=>label.classList.toggle('disabled',!unifiedStyle.enabled)); };
       const saveEdits = () => localStorage.setItem(editKey, JSON.stringify(savedEdits));
+      const universalLayoutPayload = () => {
+        if(focusMode)captureFocusView();
+        return {
+          format:'conglobal-settegast-universal-layout',
+          version:1,
+          exportedAt:new Date().toISOString(),
+          parkingRows:JSON.parse(JSON.stringify(savedEdits)),
+          camera:captureLayout(),
+          focus:{...focusSettings},
+          display:{sectionFocusMode,sectionDim,sectionNamesVisible,sectionsVisible},
+          panels:{
+            areasHidden:zonePanel.classList.contains('hidden'),
+            highlightsHidden:activityPanel.classList.contains('hidden'),
+            editorHidden:editorPanel.classList.contains('hidden'),
+            editorPosition:(()=>{const left=parseFloat(editorPanel.style.left),top=parseFloat(editorPanel.style.top);return Number.isFinite(left)&&Number.isFinite(top)?{left,top}:null;})()
+          }
+        };
+      };
+      const downloadUniversalLayout = () => {
+        const payload=universalLayoutPayload(),blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),link=document.createElement('a');
+        link.href=url;link.download='settegast-universal-layout.json';document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+        universalExportButton.textContent='EXPORTED';clearTimeout(universalExportButton._timer);universalExportButton._timer=setTimeout(()=>{universalExportButton.textContent='EXPORT UNIVERSAL';},1400);
+      };
+      const validUniversalLayout = payload => payload&&payload.format==='conglobal-settegast-universal-layout'&&Number(payload.version)===1&&payload.parkingRows&&typeof payload.parkingRows==='object'&&!Array.isArray(payload.parkingRows);
+      const applyUniversalLayout = payload => {
+        localStorage.setItem(editKey,JSON.stringify(payload.parkingRows));
+        if(payload.camera&&typeof payload.camera==='object')localStorage.setItem(layoutSettingsKey,JSON.stringify(payload.camera));
+        if(payload.focus&&typeof payload.focus==='object')localStorage.setItem(focusSettingsKey,JSON.stringify(payload.focus));
+        const display=payload.display||{};
+        if(typeof display.sectionFocusMode==='boolean')localStorage.setItem(sectionFocusKey,display.sectionFocusMode?'1':'0');
+        if(Number.isFinite(Number(display.sectionDim)))localStorage.setItem(sectionDimKey,String(clamp(Number(display.sectionDim),10,95)));
+        if(typeof display.sectionNamesVisible==='boolean')localStorage.setItem(sectionNamesKey,display.sectionNamesVisible?'1':'0');
+        if(typeof display.sectionsVisible==='boolean')localStorage.setItem(sectionsVisibilityKey,display.sectionsVisible?'1':'0');
+        const panels=payload.panels||{};
+        if(typeof panels.areasHidden==='boolean')localStorage.setItem(zonePanelHiddenKey,panels.areasHidden?'1':'0');
+        if(typeof panels.highlightsHidden==='boolean')localStorage.setItem(activityPanelHiddenKey,panels.highlightsHidden?'1':'0');
+        if(typeof panels.editorHidden==='boolean')localStorage.setItem(editorPanelHiddenKey,panels.editorHidden?'1':'0');
+        if(panels.editorPosition&&Number.isFinite(Number(panels.editorPosition.left))&&Number.isFinite(Number(panels.editorPosition.top)))localStorage.setItem(editorPositionKey,JSON.stringify({left:Number(panels.editorPosition.left),top:Number(panels.editorPosition.top)}));
+        location.reload();
+      };
+      let pendingUniversalLayout=null;
+      universalExportButton.addEventListener('click',downloadUniversalLayout);
+      universalImportButton.addEventListener('click',()=>{if(pendingUniversalLayout){applyUniversalLayout(pendingUniversalLayout);return;}universalImportFile.click();});
+      universalImportFile.addEventListener('change',async event=>{
+        const file=event.currentTarget.files?.[0];event.currentTarget.value='';if(!file)return;
+        try{const payload=JSON.parse(await file.text());if(!validUniversalLayout(payload))throw new Error('Invalid universal layout');pendingUniversalLayout=payload;universalImportButton.textContent='APPLY UNIVERSAL';universalImportButton.classList.add('active');universalImportButton.title='Click again to replace this device layout with '+file.name;clearTimeout(universalImportButton._timer);universalImportButton._timer=setTimeout(()=>{pendingUniversalLayout=null;universalImportButton.textContent='IMPORT UNIVERSAL';universalImportButton.classList.remove('active');universalImportButton.title='Load a universal Settegast Map layout file';},8000);}catch(_){pendingUniversalLayout=null;universalImportButton.textContent='INVALID FILE';clearTimeout(universalImportButton._timer);universalImportButton._timer=setTimeout(()=>{universalImportButton.textContent='IMPORT UNIVERSAL';},1600);}
+      });
       const saveHighlightStyle = () => { savedEdits.__highlightStyle={unified:Boolean(highlightStyle.unified),unifiedColor:highlightStyle.unifiedColor,brightness:highlightStyle.brightness,numberSize:highlightStyle.numberSize,outlineColor:highlightStyle.outlineColor,colors:{...yardHighlightColors}};saveEdits(); };
       const syncHighlightStyleControls = () => {
         const unifiedToggle=document.getElementById('mapUnifiedHighlightToggle'),unifiedColor=document.getElementById('mapUnifiedHighlightColor');
