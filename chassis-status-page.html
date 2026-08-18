@@ -6403,8 +6403,13 @@ body.forecast-view .forecast-bottom-controls {
           <strong id="forecastExcelSecondaryHeaderSizeValue">100%</strong>
         </label>
         <input id="forecastExcelSecondaryHeaderSizeSlider" type="range" min="60" max="180" step="5" value="100">
+        <label for="forecastExcelTableHeaderSizeSlider">
+          <span>Table Headers</span>
+          <strong id="forecastExcelTableHeaderSizeValue">100%</strong>
+        </label>
+        <input id="forecastExcelTableHeaderSizeSlider" type="range" min="60" max="180" step="5" value="100">
         <label for="forecastExcelTableTextSizeSlider">
-          <span>Table Text</span>
+          <span>Table Values</span>
           <strong id="forecastExcelTableTextSizeValue">100%</strong>
         </label>
         <input id="forecastExcelTableTextSizeSlider" type="range" min="60" max="180" step="5" value="100">
@@ -6438,6 +6443,11 @@ body.forecast-view .forecast-bottom-controls {
           <strong id="forecastExcelUnplannedFlagSizeValue">11px</strong>
         </label>
         <input id="forecastExcelUnplannedFlagSizeSlider" type="range" min="6" max="18" step="0.5" value="11">
+        <label for="forecastExcelUnplannedColumnSizeSlider">
+          <span>Unplanned Column</span>
+          <strong id="forecastExcelUnplannedColumnSizeValue">9px</strong>
+        </label>
+        <input id="forecastExcelUnplannedColumnSizeSlider" type="range" min="6" max="14" step="0.5" value="9">
         <label for="forecastExcelNotesTrainSizeSlider">
           <span>Train Totals Text</span>
           <strong id="forecastExcelNotesTrainSizeValue">16px</strong>
@@ -6468,6 +6478,7 @@ body.forecast-view .forecast-bottom-controls {
         <button id="forecastExcelTestCopyToggle" class="forecast-excel-empty-toggle" type="button" aria-pressed="false">Open Test Copy</button>
         <button id="forecastExcelTrainTotalsToggle" class="forecast-excel-empty-toggle" type="button" aria-pressed="false">Show Train Totals</button>
         <button id="forecastExcelPreviousSubmissionToggle" class="forecast-excel-empty-toggle" type="button" aria-pressed="false">Show Previous Submission</button>
+        <button id="forecastExcelUnplannedColumnToggle" class="forecast-excel-empty-toggle" type="button" aria-pressed="false">Show Unplanned</button>
         <button id="forecastExcelResetRequestsBtn" class="forecast-excel-empty-toggle forecast-excel-reset-requests" type="button">Reset Requests to 0</button>
         <div id="forecastExcelFontControls" class="forecast-excel-font-controls" hidden>
           <label for="forecastExcelTableFont"><span>Table Font</span></label>
@@ -10350,6 +10361,29 @@ let forecastExcelHideEmptyInbounds=localStorage.getItem("forecastExcelHideEmptyI
 let forecastExcelTestCopy=localStorage.getItem("forecastExcelTestCopy")==="true";
 let forecastExcelShowTrainTotals=localStorage.getItem("forecastExcelShowTrainTotals")==="true";
 let forecastExcelShowPreviousSubmission=false;
+const FORECAST_EXCEL_UNPLANNED_COLUMN_KEY="conglobal-forecast-excel-unplanned-column-v1";
+let forecastExcelShowUnplannedColumn=localStorage.getItem(FORECAST_EXCEL_UNPLANNED_COLUMN_KEY)==="true";
+function getForecastRequestUnplannedUnits(pool,size){
+  const target=getForecastRequestBoardPair(pool,size);
+  const seen=new Set();
+  return (Array.isArray(forecastUnplannedRecords)?forecastUnplannedRecords:[])
+    .filter(record=>{
+      const pair=getForecastRequestBoardPair(record?.pool,record?.size);
+      return pair.pool===target.pool&&String(pair.size)===String(target.size);
+    })
+    .map(record=>String(record?.equipmentId||record?.unitId||record?.containerId||"").trim())
+    .filter(unit=>unit&&!seen.has(unit)&&(seen.add(unit),true))
+    .sort((a,b)=>a.localeCompare(b,undefined,{numeric:true,sensitivity:"base"}));
+}
+function renderForecastRequestUnplannedCell(pool,size){
+  const units=getForecastRequestUnplannedUnits(pool,size);
+  return `<span class="forecast-request-unplanned-cell"><strong class="forecast-request-unplanned-count">${units.length}</strong></span>`;
+}
+function renderForecastRequestNetCell(pool,size,value){
+  const cell=renderForecastExcelNetCell(pool,size,value,"request-net-flag");
+  if(!forecastExcelShowUnplannedColumn)return cell;
+  return cell.replace(/<\/(th|td)>$/,`${renderForecastRequestUnplannedCell(pool,size)}</$1>`);
+}
 function getForecastPreviousSubmissionValues(){
   const latest=getForecastRequestHistory()[0];
   const values=new Map();
@@ -10418,7 +10452,7 @@ function renderForecastExcelView(){
   })));
   const requestTable=`<section class="forecast-excel-block request"><h3>${requestIcon}<span>Chassis Request to Cover 72H</span></h3>${renderForecastExcelTable(
     ["Pool","Size","Dray In","Dray Out","Net"],requestRows,
-    r=>{const size=String(r.size).replace(/'+$/,"");const previous=previousSubmission.values.get(`${r.poolCode}|${size}`)||{drayIn:0,drayOut:0};const drayIn=forecastExcelShowPreviousSubmission?previous.drayIn:r.drayIn;const drayOut=forecastExcelShowPreviousSubmission?previous.drayOut:r.drayOut;const net=forecastExcelShowPreviousSubmission?r.baseTotal+drayIn-drayOut:r.net;const locked=forecastExcelShowPreviousSubmission?" readonly aria-readonly=\"true\"":"";return `<tr class="request-pool-${r.poolCode.toLowerCase()}${forecastExcelShowPreviousSubmission?" previous-submission-row":""}" data-request-pool="${r.poolCode}" data-request-size="${size}'" data-request-base="${r.baseTotal}">${r.rowspan?`<th rowspan="${r.rowspan}">${r.pool}</th>`:""}<th>${size}'</th><td><input class="forecast-excel-request-input" type="number" min="0" step="1" inputmode="numeric" data-request-field="drayIn" value="${drayIn||""}" placeholder="0"${locked} aria-label="${r.poolCode} ${size} foot Dray In"></td><td><input class="forecast-excel-request-input" type="number" min="0" step="1" inputmode="numeric" data-request-field="drayOut" value="${drayOut||""}" placeholder="0"${locked} aria-label="${r.poolCode} ${size} foot Dray Out"></td>${renderForecastExcelNetCell(r.poolCode,r.size,net,"request-net-flag")}</tr>`}
+    r=>{const size=String(r.size).replace(/'+$/,"");const previous=previousSubmission.values.get(`${r.poolCode}|${size}`)||{drayIn:0,drayOut:0};const drayIn=forecastExcelShowPreviousSubmission?previous.drayIn:r.drayIn;const drayOut=forecastExcelShowPreviousSubmission?previous.drayOut:r.drayOut;const net=forecastExcelShowPreviousSubmission?r.baseTotal+drayIn-drayOut:r.net;const locked=forecastExcelShowPreviousSubmission?" readonly aria-readonly=\"true\"":"";return `<tr class="request-pool-${r.poolCode.toLowerCase()}${forecastExcelShowPreviousSubmission?" previous-submission-row":""}" data-request-pool="${r.poolCode}" data-request-size="${size}'" data-request-base="${r.baseTotal}">${r.rowspan?`<th rowspan="${r.rowspan}">${r.pool}</th>`:""}<th>${size}'</th><td><input class="forecast-excel-request-input" type="number" min="0" step="1" inputmode="numeric" data-request-field="drayIn" value="${drayIn||""}" placeholder="0"${locked} aria-label="${r.poolCode} ${size} foot Dray In"></td><td><input class="forecast-excel-request-input" type="number" min="0" step="1" inputmode="numeric" data-request-field="drayOut" value="${drayOut||""}" placeholder="0"${locked} aria-label="${r.poolCode} ${size} foot Dray Out"></td>${renderForecastRequestNetCell(r.poolCode,size,net)}</tr>`}
   )}</section>`;
   const todayNotes=buildForecastExcelShortageNotes(calc24Rows);
   const futureNotes=buildForecastExcelShortageNotes(calc72Rows);
@@ -10467,6 +10501,17 @@ function renderForecastExcelView(){
   const forecastTitleIcon=`<svg class="forecast-excel-main-title-icon" viewBox="0 0 48 24" aria-hidden="true"><path d="M3 4h28v15H3z"/><path d="M7 6v11M11 6v11M15 6v11M19 6v11M23 6v11M27 6v11"/><path d="M31 11h8l5 5v3H31z"/><path d="M36 12v4h6"/><circle cx="9" cy="21" r="2"/><circle cx="27" cy="21" r="2"/><circle cx="39" cy="21" r="2"/></svg>`;
   const inlineNotes=forecastExcelHideEmptyInbounds?notes:"";
   content.innerHTML=`<div class="forecast-excel-columns${forecastExcelHideEmptyInbounds?" hide-empty-inbounds":""}"><div class="forecast-excel-left"><h1>${forecastTitleIcon}<span>Chassis Forecast (72H)</span></h1>${trainTable}${inlineNotes}</div><div class="forecast-excel-right">${calcTable("Chassis Calculator (24H)",calc24Rows,"hours24")}${calcTable("Chassis Calculator (72H)",calc72Rows,"hours48")}${requestTable}</div></div>${forecastExcelHideEmptyInbounds?"":notes}`;
+  const unplannedColumnToggle=$("forecastExcelUnplannedColumnToggle");
+  if(unplannedColumnToggle){
+    unplannedColumnToggle.setAttribute("aria-pressed",String(forecastExcelShowUnplannedColumn));
+    unplannedColumnToggle.textContent=forecastExcelShowUnplannedColumn?"Hide Unplanned":"Show Unplanned";
+    unplannedColumnToggle.classList.toggle("is-active",forecastExcelShowUnplannedColumn);
+    unplannedColumnToggle.onclick=()=>{
+    forecastExcelShowUnplannedColumn=!forecastExcelShowUnplannedColumn;
+    localStorage.setItem(FORECAST_EXCEL_UNPLANNED_COLUMN_KEY,String(forecastExcelShowUnplannedColumn));
+    renderForecastExcelView();
+    };
+  }
   content.querySelectorAll(".forecast-excel-table th, .forecast-excel-table td").forEach(cell=>{
     if(cell.querySelector(".request-net-flag, .calculator-net-flag"))return;
     const wrapper=document.createElement("span");
@@ -10559,6 +10604,7 @@ function applyForecastExcelViewSettings(){
   const content=$("forecastExcelContent");
   const mainHeaderSlider=$("forecastExcelMainHeaderSizeSlider");
   const secondaryHeaderSlider=$("forecastExcelSecondaryHeaderSizeSlider");
+  const tableHeaderSlider=$("forecastExcelTableHeaderSizeSlider");
   const tableTextSlider=$("forecastExcelTableTextSizeSlider");
   const arrivalFlagSlider=$("forecastExcelArrivalFlagSizeSlider");
   const netTextSlider=$("forecastExcelNetTextSizeSlider");
@@ -10566,14 +10612,16 @@ function applyForecastExcelViewSettings(){
   const notesLabelSlider=$("forecastExcelNotesLabelSizeSlider");
   const notesTextSlider=$("forecastExcelNotesTextSizeSlider");
   const unplannedFlagSlider=$("forecastExcelUnplannedFlagSizeSlider");
+  const unplannedColumnSlider=$("forecastExcelUnplannedColumnSizeSlider");
   const notesTrainSlider=$("forecastExcelNotesTrainSizeSlider");
   const notesHeightSlider=$("forecastExcelNotesHeightSlider");
   const widthSlider=$("forecastExcelWidthSlider");
   const heightSlider=$("forecastExcelHeightSlider");
   const headerOpacitySlider=$("forecastExcelHeaderOpacitySlider");
-  if(!page||!content||!mainHeaderSlider||!secondaryHeaderSlider||!tableTextSlider||!arrivalFlagSlider||!netTextSlider||!netPaddingSlider||!notesLabelSlider||!notesTextSlider||!unplannedFlagSlider||!notesTrainSlider||!notesHeightSlider||!widthSlider||!heightSlider||!headerOpacitySlider)return;
+  if(!page||!content||!mainHeaderSlider||!secondaryHeaderSlider||!tableHeaderSlider||!tableTextSlider||!arrivalFlagSlider||!netTextSlider||!netPaddingSlider||!notesLabelSlider||!notesTextSlider||!unplannedFlagSlider||!unplannedColumnSlider||!notesTrainSlider||!notesHeightSlider||!widthSlider||!heightSlider||!headerOpacitySlider)return;
   const mainHeader=Math.max(60,Math.min(180,Number(mainHeaderSlider.value)||100));
   const secondaryHeader=Math.max(60,Math.min(180,Number(secondaryHeaderSlider.value)||100));
+  const tableHeader=Math.max(60,Math.min(180,Number(tableHeaderSlider.value)||100));
   const tableText=Math.max(60,Math.min(180,Number(tableTextSlider.value)||100));
   const arrivalFlag=Math.max(5,Math.min(14,Number(arrivalFlagSlider.value)||8));
   const netText=Math.max(5,Math.min(16,Number(netTextSlider.value)||8.3));
@@ -10581,6 +10629,7 @@ function applyForecastExcelViewSettings(){
   const notesLabel=Math.max(6,Math.min(18,Number(notesLabelSlider.value)||10));
   const notesText=Math.max(7,Math.min(22,Number(notesTextSlider.value)||14));
   const unplannedFlagText=Math.max(6,Math.min(18,Number(unplannedFlagSlider.value)||11));
+  const unplannedColumnText=Math.max(6,Math.min(14,Number(unplannedColumnSlider.value)||9));
   const notesTrain=Math.max(8,Math.min(24,Number(notesTrainSlider.value)||16));
   const notesHeight=Math.max(54,Math.min(240,Number(notesHeightSlider.value)||90));
   const width=Math.max(30,Math.min(140,Number(widthSlider.value)||100));
@@ -10588,6 +10637,7 @@ function applyForecastExcelViewSettings(){
   const headerOpacity=Math.max(0,Math.min(100,Number(headerOpacitySlider.value)||100));
   page.style.setProperty("--forecast-excel-main-header-scale",String(mainHeader/100));
   page.style.setProperty("--forecast-excel-secondary-header-scale",String(secondaryHeader/100));
+  page.style.setProperty("--forecast-excel-table-header-scale",String(tableHeader/100));
   page.style.setProperty("--forecast-excel-table-text-scale",String(tableText/100));
   page.style.setProperty("--forecast-excel-arrival-flag-scale",String(arrivalFlag/8));
   page.style.setProperty("--forecast-excel-net-text-scale",String(netText/8.3));
@@ -10597,9 +10647,10 @@ function applyForecastExcelViewSettings(){
   page.style.setProperty("--forecast-excel-notes-label-scale",String(notesLabel/10));
   page.style.setProperty("--forecast-excel-notes-text-scale",String(notesText/14));
   page.style.setProperty("--forecast-excel-unplanned-flag-size",`${unplannedFlagText}px`);
+  page.style.setProperty("--forecast-excel-unplanned-column-size",`${unplannedColumnText}px`);
   page.style.setProperty("--forecast-excel-notes-train-scale",String(notesTrain/16));
   page.style.setProperty("--forecast-excel-notes-height",`${notesHeight}px`);
-  const visualWidth=width*.7;
+  const visualWidth=width;
   page.style.setProperty("--forecast-excel-width-scale",`${visualWidth}%`);
   page.style.setProperty("--forecast-excel-height-scale",String(height/100));
   page.style.setProperty("--forecast-excel-calc-header-opacity",String(headerOpacity/100));
@@ -10607,6 +10658,7 @@ function applyForecastExcelViewSettings(){
   content.style.width="100%";
   if($("forecastExcelMainHeaderSizeValue"))$("forecastExcelMainHeaderSizeValue").textContent=`${mainHeader}%`;
   if($("forecastExcelSecondaryHeaderSizeValue"))$("forecastExcelSecondaryHeaderSizeValue").textContent=`${secondaryHeader}%`;
+  if($("forecastExcelTableHeaderSizeValue"))$("forecastExcelTableHeaderSizeValue").textContent=`${tableHeader}%`;
   if($("forecastExcelTableTextSizeValue"))$("forecastExcelTableTextSizeValue").textContent=`${tableText}%`;
   if($("forecastExcelArrivalFlagSizeValue"))$("forecastExcelArrivalFlagSizeValue").textContent=`${arrivalFlag.toFixed(1).replace(".0","")}px`;
   if($("forecastExcelNetTextSizeValue"))$("forecastExcelNetTextSizeValue").textContent=`${netText.toFixed(1)}px`;
@@ -10614,6 +10666,7 @@ function applyForecastExcelViewSettings(){
   if($("forecastExcelNotesLabelSizeValue"))$("forecastExcelNotesLabelSizeValue").textContent=`${notesLabel.toFixed(1).replace(".0","")}px`;
   if($("forecastExcelNotesTextSizeValue"))$("forecastExcelNotesTextSizeValue").textContent=`${notesText.toFixed(1).replace(".0","")}px`;
   if($("forecastExcelUnplannedFlagSizeValue"))$("forecastExcelUnplannedFlagSizeValue").textContent=`${unplannedFlagText.toFixed(1).replace(".0","")}px`;
+  if($("forecastExcelUnplannedColumnSizeValue"))$("forecastExcelUnplannedColumnSizeValue").textContent=`${unplannedColumnText.toFixed(1).replace(".0","")}px`;
   if($("forecastExcelNotesTrainSizeValue"))$("forecastExcelNotesTrainSizeValue").textContent=`${notesTrain.toFixed(1).replace(".0","")}px`;
   if($("forecastExcelNotesHeightValue"))$("forecastExcelNotesHeightValue").textContent=`${notesHeight}px`;
   if($("forecastExcelWidthValue"))$("forecastExcelWidthValue").textContent=`${width}%`;
@@ -10621,6 +10674,7 @@ function applyForecastExcelViewSettings(){
   if($("forecastExcelHeaderOpacityValue"))$("forecastExcelHeaderOpacityValue").textContent=`${headerOpacity}%`;
   localStorage.setItem("forecastExcelMainHeaderSize",String(mainHeader));
   localStorage.setItem("forecastExcelSecondaryHeaderSize",String(secondaryHeader));
+  localStorage.setItem("forecastExcelTableHeaderSize",String(tableHeader));
   localStorage.setItem("forecastExcelTableTextSize",String(tableText));
   localStorage.setItem("forecastExcelArrivalFlagSize",String(arrivalFlag));
   localStorage.setItem("forecastExcelNetTextSize",String(netText));
@@ -10628,6 +10682,7 @@ function applyForecastExcelViewSettings(){
   localStorage.setItem("forecastExcelNotesLabelSize",String(notesLabel));
   localStorage.setItem("forecastExcelNotesTextSize",String(notesText));
   localStorage.setItem("forecastExcelUnplannedFlagSize",String(unplannedFlagText));
+  localStorage.setItem("forecastExcelUnplannedColumnSize",String(unplannedColumnText));
   localStorage.setItem("forecastExcelNotesTrainSize",String(notesTrain));
   localStorage.setItem("forecastExcelNotesHeight",String(notesHeight));
   localStorage.setItem("forecastExcelWidth",String(width));
@@ -10637,6 +10692,7 @@ function applyForecastExcelViewSettings(){
 function setupForecastExcelViewSettings(){
   const mainHeaderSlider=$("forecastExcelMainHeaderSizeSlider");
   const secondaryHeaderSlider=$("forecastExcelSecondaryHeaderSizeSlider");
+  const tableHeaderSlider=$("forecastExcelTableHeaderSizeSlider");
   const tableTextSlider=$("forecastExcelTableTextSizeSlider");
   const arrivalFlagSlider=$("forecastExcelArrivalFlagSizeSlider");
   const netTextSlider=$("forecastExcelNetTextSizeSlider");
@@ -10644,15 +10700,17 @@ function setupForecastExcelViewSettings(){
   const notesLabelSlider=$("forecastExcelNotesLabelSizeSlider");
   const notesTextSlider=$("forecastExcelNotesTextSizeSlider");
   const unplannedFlagSlider=$("forecastExcelUnplannedFlagSizeSlider");
+  const unplannedColumnSlider=$("forecastExcelUnplannedColumnSizeSlider");
   const notesTrainSlider=$("forecastExcelNotesTrainSizeSlider");
   const notesHeightSlider=$("forecastExcelNotesHeightSlider");
   const widthSlider=$("forecastExcelWidthSlider");
   const heightSlider=$("forecastExcelHeightSlider");
   const headerOpacitySlider=$("forecastExcelHeaderOpacitySlider");
-  if(!mainHeaderSlider||!secondaryHeaderSlider||!tableTextSlider||!arrivalFlagSlider||!netTextSlider||!netPaddingSlider||!notesLabelSlider||!notesTextSlider||!unplannedFlagSlider||!notesTrainSlider||!notesHeightSlider||!widthSlider||!heightSlider||!headerOpacitySlider)return;
+  if(!mainHeaderSlider||!secondaryHeaderSlider||!tableHeaderSlider||!tableTextSlider||!arrivalFlagSlider||!netTextSlider||!netPaddingSlider||!notesLabelSlider||!notesTextSlider||!unplannedFlagSlider||!unplannedColumnSlider||!notesTrainSlider||!notesHeightSlider||!widthSlider||!heightSlider||!headerOpacitySlider)return;
   const legacyText=localStorage.getItem("forecastExcelTextSize")||"100";
   mainHeaderSlider.value=localStorage.getItem("forecastExcelMainHeaderSize")||legacyText;
   secondaryHeaderSlider.value=localStorage.getItem("forecastExcelSecondaryHeaderSize")||legacyText;
+  tableHeaderSlider.value=localStorage.getItem("forecastExcelTableHeaderSize")||localStorage.getItem("forecastExcelTableTextSize")||legacyText;
   tableTextSlider.value=localStorage.getItem("forecastExcelTableTextSize")||legacyText;
   arrivalFlagSlider.value=localStorage.getItem("forecastExcelArrivalFlagSize")||"8";
   netTextSlider.value=localStorage.getItem("forecastExcelNetTextSize")||"8.3";
@@ -10660,6 +10718,7 @@ function setupForecastExcelViewSettings(){
   notesLabelSlider.value=localStorage.getItem("forecastExcelNotesLabelSize")||"10";
   notesTextSlider.value=localStorage.getItem("forecastExcelNotesTextSize")||"14";
   unplannedFlagSlider.value=localStorage.getItem("forecastExcelUnplannedFlagSize")||"11";
+  unplannedColumnSlider.value=localStorage.getItem("forecastExcelUnplannedColumnSize")||"9";
   notesTrainSlider.value=localStorage.getItem("forecastExcelNotesTrainSize")||"16";
   notesHeightSlider.value=localStorage.getItem("forecastExcelNotesHeight")||"90";
   const savedWidth=Number(localStorage.getItem("forecastExcelWidth"));
@@ -10668,6 +10727,7 @@ function setupForecastExcelViewSettings(){
   headerOpacitySlider.value=localStorage.getItem("forecastExcelHeaderOpacity")||"100";
   mainHeaderSlider.oninput=applyForecastExcelViewSettings;
   secondaryHeaderSlider.oninput=applyForecastExcelViewSettings;
+  tableHeaderSlider.oninput=applyForecastExcelViewSettings;
   tableTextSlider.oninput=applyForecastExcelViewSettings;
   arrivalFlagSlider.oninput=applyForecastExcelViewSettings;
   netTextSlider.oninput=applyForecastExcelViewSettings;
@@ -10675,6 +10735,7 @@ function setupForecastExcelViewSettings(){
   notesLabelSlider.oninput=applyForecastExcelViewSettings;
   notesTextSlider.oninput=applyForecastExcelViewSettings;
   unplannedFlagSlider.oninput=applyForecastExcelViewSettings;
+  unplannedColumnSlider.oninput=applyForecastExcelViewSettings;
   notesTrainSlider.oninput=applyForecastExcelViewSettings;
   notesHeightSlider.oninput=applyForecastExcelViewSettings;
   widthSlider.oninput=applyForecastExcelViewSettings;
@@ -11043,6 +11104,9 @@ function forecastPoolStatus(consignee,pool){
 function inferForecastSizeFromCarType(carType){
   const s=String(carType||"").trim().toUpperCase();
 
+  if(s==="Q70")return "53'";
+  if(s==="Q40")return "40'";
+  if(s==="Q10")return "20'";
   if(s.includes("K7"))return "53'";
   if(s.includes("K5"))return "45'";
   if(s.includes("K4"))return "40'";
@@ -14378,12 +14442,18 @@ function getForecastUnplannedDay(train){
   const label=offset===0?"Today":offset===1?"Tomorrow":`${offset} Days Out`;
   return {offset,label};
 }
+function getForecastUnplannedDayLabel(offset){
+  if(offset===-1)return "On Hand";
+  if(offset===0)return "Today";
+  if(offset===1)return "Tomorrow";
+  return `${offset} Days Out`;
+}
 function populateForecastUnplannedDayFilter(records){
   const select=$("forecastUnplannedDayFilter");
   if(!select)return;
   const offsets=[...new Set(records.map(record=>record.dayOffset))].sort((a,b)=>a-b);
   select.innerHTML=`<option value="all">All Days</option><option value="grouped">Grouped</option>${offsets.map(offset=>{
-    const label=offset===0?"Today":offset===1?"Tomorrow":`${offset} Days Out`;
+    const label=getForecastUnplannedDayLabel(offset);
     return `<option value="${offset}">${label}</option>`;
   }).join("")}`;
   select.disabled=!offsets.length;
@@ -14405,13 +14475,13 @@ function groupForecastUnplannedRecords(records){
 function renderForecastUnplannedOutput(records,stats,selectedDay="all"){
   const output=$("forecastUnplannedOutput");
   const summary=$("forecastUnplannedSummary");
-  const safeStats=stats||{files:0,qualifying:0,nonTarget:0,invalidSize:0,unmapped:0};
+  const safeStats=stats||{files:0,qualifying:0,inventory:0,nonTarget:0,invalidSize:0,unmapped:0};
   const visibleRecords=selectedDay==="all"||selectedDay==="grouped"
     ? records
     : records.filter(record=>record.dayOffset===Number(selectedDay));
   if(summary){
     const ignored=safeStats.nonTarget+safeStats.invalidSize+safeStats.unmapped;
-    summary.textContent=`${visibleRecords.length} shown of ${safeStats.qualifying} qualifying unit${safeStats.qualifying===1?"":"s"} · ${forecastUnplannedEmptyContainers} potential DCLI 53' from empty containers · ${ignored} ignored · ${safeStats.files} file${safeStats.files===1?"":"s"}`;
+    summary.textContent=`${visibleRecords.length} shown of ${safeStats.qualifying} qualifying unit${safeStats.qualifying===1?"":"s"} · ${safeStats.inventory||0} inventory row${safeStats.inventory===1?"":"s"} by chassis pool · ${forecastUnplannedEmptyContainers} potential DCLI 53' from empty containers · ${ignored} ignored · ${safeStats.files} file${safeStats.files===1?"":"s"}`;
   }
   if(!output)return;
   const onHandPotential=forecastUnplannedEmptyContainers>0
@@ -14429,7 +14499,7 @@ function renderForecastUnplannedOutput(records,stats,selectedDay="all"){
       </section>`
     : "";
   if(!visibleRecords.length&&!onHandPotential){
-    output.innerHTML=`<div class="forecast-unplanned-empty">No qualifying IHOSA or YHO37R units were found.</div>`;
+    output.innerHTML=`<div class="forecast-unplanned-empty">No qualifying train or on-hand inventory units were found.</div>`;
     return;
   }
   if(selectedDay==="grouped"){
@@ -14452,7 +14522,7 @@ function renderForecastUnplannedOutput(records,stats,selectedDay="all"){
   const days=[...new Set(visibleRecords.map(record=>record.dayOffset))].sort((a,b)=>a-b);
   output.innerHTML=onHandPotential+days.map(offset=>{
     const dayRecords=visibleRecords.filter(record=>record.dayOffset===offset);
-    const label=offset===0?"Today":offset===1?"Tomorrow":`${offset} Days Out`;
+    const label=getForecastUnplannedDayLabel(offset);
     const trains=[...new Set(dayRecords.map(record=>record.train))].sort().join(" · ");
     const groups=groupForecastUnplannedRecords(dayRecords);
     return `<section class="forecast-unplanned-day">
@@ -14472,7 +14542,7 @@ function renderForecastUnplannedOutput(records,stats,selectedDay="all"){
 }
 async function importForecastUnplannedUnits(files){
   const records=[];
-  const stats={files:0,qualifying:0,nonTarget:0,invalidSize:0,unmapped:0};
+  const stats={files:0,qualifying:0,inventory:0,nonTarget:0,invalidSize:0,unmapped:0};
   for(const file of Array.from(files||[])){
     stats.files+=1;
     const data=await file.arrayBuffer();
@@ -14481,33 +14551,41 @@ async function importForecastUnplannedUnits(files){
       const rows=XLSX.utils.sheet_to_json(workbook.Sheets[sheetName],{defval:""});
       rows.forEach(row=>{
         const train=String(getForecastCell(row,["Train","Train ID","Scheduled Objective"])).trim();
-        const day=getForecastUnplannedDay(train);
+        const equipmentId=String(getForecastCell(row,["Equipment Initial Number","Equipment ID","Container ID","Van/Container ID","Van Container ID","Unit ID","Van/Container"])).trim();
+        const chassisId=String(getForecastCell(row,["Chassis Initial Number","Chassis ID"])).trim();
+        const chassisPool=String(getForecastCell(row,["Chas Pool ID","Chassis Pool ID"])).trim();
+        const carKind=String(getForecastCell(row,["Car Knd","Car Kind","Car Type","Chas Car Kind","Chassis Car Kind"])).trim();
+        const isInventoryReport=Boolean(equipmentId&&carKind&&(chassisId||chassisPool));
+        const day=isInventoryReport?{offset:-1,label:"On Hand"}:getForecastUnplannedDay(train);
         if(!day){
           stats.nonTarget+=1;
           return;
         }
         const shipper=String(getForecastCell(row,["Shipper","Consignee"])).trim();
-        const carKind=String(getForecastCell(row,["Car Knd","Car Kind","Car Type"])).trim();
         const fallbackPool=String(getForecastCell(row,["Pool","Eqmt Pool ID","Equipment Pool ID"])).trim();
         const size=inferForecastSizeFromCarType(carKind).replace("'","");
         if(!["20","40","45","53"].includes(size)){
           stats.invalidSize+=1;
           return;
         }
-        const rawPool=getForecastUnplannedPool(shipper,fallbackPool);
+        const rawPool=isInventoryReport?(chassisPool||fallbackPool):getForecastUnplannedPool(shipper,fallbackPool);
         const pair=normalizeInventoryPoolSizePair(rawPool,size);
         if(!pair.pool||pair.pool==="UNKNOWN"){
           stats.unmapped+=1;
           return;
         }
         records.push({
-          train,
+          train:isInventoryReport?"Inventory On Hand":train,
           dayOffset:day.offset,
           dayLabel:day.label,
           pool:pair.pool,
-          size:pair.size
+          size:pair.size,
+          equipmentId,
+          chassisId,
+          sourceType:isInventoryReport?"inventory":"train"
         });
         stats.qualifying+=1;
+        if(isInventoryReport)stats.inventory+=1;
       });
     });
   }
@@ -22014,6 +22092,7 @@ body.forecast-excel-view-open .forecast-excel-view{
 body.forecast-excel-view-open{
   background:#fff!important;
   min-height:0!important;
+  padding-right:320px!important;
 }
 .forecast-excel-page{
   width:818px;
@@ -22037,7 +22116,11 @@ body.forecast-excel-view-open{
   z-index:50;
   display:grid;
   gap:8px;
-  width:230px;
+  width:300px;
+  max-height:none;
+  padding-bottom:0;
+  overflow-y:visible;
+  overflow-x:hidden;
 }
 .forecast-excel-toolbar h2{display:none}
 .forecast-excel-toolbar button,.forecast-excel-open-btn{
@@ -22113,7 +22196,7 @@ body.forecast-excel-view-open{
   font-size:14px!important;
 }
 #forecastExcelView .forecast-excel-page{
-  width:var(--forecast-excel-width-scale,100%);
+  width:100%;
   max-width:none!important;
   margin-left:auto!important;
   margin-right:auto!important;
@@ -22147,6 +22230,9 @@ body.forecast-excel-view-open{
   justify-content:center;
   transform:scale(var(--forecast-excel-table-text-scale,1));
   transform-origin:center;
+}
+#forecastExcelView .forecast-excel-table th > .forecast-excel-cell-content{
+  transform:scale(var(--forecast-excel-table-header-scale,1));
 }
 #forecastExcelView .forecast-excel-main-table .excel-train-name > .forecast-excel-cell-content{
   flex-direction:column;
@@ -22192,8 +22278,11 @@ body.forecast-excel-view-open{
 }
 .forecast-excel-view-controls{
   display:grid;
-  gap:5px;
-  padding:10px;
+  grid-template-columns:minmax(112px,1fr) minmax(112px,1fr);
+  align-items:center;
+  column-gap:9px;
+  row-gap:3px;
+  padding:8px;
   border:1px solid #cbd5e1;
   border-radius:8px;
   background:rgba(255,255,255,.96);
@@ -22212,6 +22301,10 @@ body.forecast-excel-view-open{
 .forecast-excel-view-controls input[type="range"]{
   width:100%;
   accent-color:#2563eb;
+}
+.forecast-excel-view-controls > button,
+.forecast-excel-view-controls > .forecast-excel-font-controls{
+  grid-column:1/-1;
 }
 .forecast-excel-empty-toggle{
   width:100%;
@@ -23035,6 +23128,58 @@ body.forecast-excel-view-open{
   color:#000!important;
 }
 .forecast-excel-block.request h3{background:linear-gradient(100deg,rgba(255,210,31,var(--forecast-excel-calc-header-opacity,1)),rgba(255,230,106,var(--forecast-excel-calc-header-opacity,1)) 62%,rgba(255,216,61,var(--forecast-excel-calc-header-opacity,1)))}
+#forecastExcelView .forecast-excel-columns,
+#forecastExcelView .forecast-excel-left,
+#forecastExcelView .forecast-excel-right{
+  min-width:0;
+}
+.forecast-excel-block.request .forecast-request-unplanned-cell{
+  position:absolute;
+  inset:0 auto 0 calc(100% + 8px);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:76px;
+  min-width:76px;
+  max-width:76px;
+  padding:2px 4px!important;
+  white-space:nowrap!important;
+  background:#fff!important;
+  color:#000!important;
+  border-left:1px solid #cbd5e1!important;
+}
+.forecast-excel-block.request .forecast-excel-table tbody tr:nth-child(even) .forecast-request-unplanned-cell{
+  background:#f2f2f2!important;
+}
+.forecast-excel-block.request .forecast-excel-table:has(.forecast-request-unplanned-cell) thead th:last-child::after{
+  content:"Unplanned";
+  position:absolute;
+  inset:0 auto 0 calc(100% + 8px);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:76px!important;
+  min-width:76px;
+  max-width:76px;
+}
+.forecast-excel-columns:has(.forecast-request-unplanned-cell){grid-template-columns:minmax(0,calc(56% - 140px)) minmax(0,44%)}
+.forecast-excel-block.request .forecast-excel-table:has(.forecast-request-unplanned-cell){width:100%!important;overflow:visible!important}
+.forecast-excel-block.request .forecast-excel-table:has(.forecast-request-unplanned-cell) tr > :last-child{position:relative;overflow:visible!important}
+.forecast-excel-page.modern-table-view .forecast-excel-block.request:has(.forecast-request-unplanned-cell){overflow:visible!important}
+.forecast-excel-block.request .forecast-excel-table:has(.forecast-request-unplanned-cell) thead th:last-child::after,
+.forecast-excel-block.request .forecast-request-unplanned-count{
+  font-size:var(--forecast-excel-unplanned-column-size,9px)!important;
+  letter-spacing:-.035em!important;
+  transform:none!important;
+}
+.forecast-excel-block.request .forecast-request-unplanned-count{
+  display:inline-block;
+  min-width:1.5em;
+  color:inherit;
+  font:inherit;
+  font-weight:1000;
+  text-align:center;
+}
 .forecast-excel-block.request tbody tr.request-pool-tgrp{background:#f4d1f0}
 .forecast-excel-block.request tbody tr.request-pool-fgcp{background:#ffe5d4}
 .forecast-excel-block.request tbody tr.request-pool-sncz{background:#d9f2cf}
@@ -25619,12 +25764,15 @@ body:not(.forecast-view) .app > .hero.clean-hero > .hero-actions{
 })();</script>
 <style id="chassis-compact-inbound-forecast-v2">
 #forecastStatusCards.forecast-status-cards{
-  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  grid-template-columns:repeat(3,minmax(340px,372px))!important;
+  justify-content:start!important;
   align-items:start!important;
-  gap:16px!important;
+  gap:12px!important;
 }
 #forecastStatusCards .forecast-day-section{
   display:block!important;
+  width:100%!important;
+  max-width:372px!important;
   min-width:0!important;
   max-height:none!important;
   overflow:visible!important;
@@ -25961,10 +26109,11 @@ body:not(.forecast-view) .app > .hero.clean-hero > .hero-actions{
 }
 #forecastStatusCards .forecast-train-card-actions{display:none!important}
 @media(max-width:1100px){
-  #forecastStatusCards.forecast-status-cards{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  #forecastStatusCards.forecast-status-cards{grid-template-columns:repeat(2,minmax(340px,372px))!important}
 }
 @media(max-width:720px){
   #forecastStatusCards.forecast-status-cards{grid-template-columns:1fr!important}
+  #forecastStatusCards .forecast-day-section{max-width:372px!important}
 }
 </style>
 <style id="chassis-compact-request-board-v1">

@@ -7,7 +7,7 @@
 <title>Track 809/808 Dual View</title>
 <style>
 *{box-sizing:border-box}
-html,body{margin:0;background:#e9edef;font-family:-apple-system,BlinkMacSystemFont,Arial;color:#101820}
+html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#e9edef;font-family:-apple-system,BlinkMacSystemFont,Arial;color:#101820}
 header{position:sticky;top:0;z-index:100;background:#172029;color:#fff;padding:8px;box-shadow:0 2px 8px #0004}
 .viewbar,.controls{display:flex;gap:6px;overflow-x:auto;margin-bottom:6px}
 button,.mode{border:0;border-radius:8px;padding:10px 12px;font-weight:900;font-size:14px;white-space:nowrap}
@@ -15,7 +15,7 @@ button,.mode{border:0;border-radius:8px;padding:10px 12px;font-weight:900;font-s
 .viewbtn.active{background:#f0b400;color:#111}
 .mode{background:#35424d;display:flex;align-items:center;gap:4px}
 .status{font-size:12px;font-weight:800;color:#9cf0a8;margin-bottom:6px}
-.viewport{overflow:auto;-webkit-overflow-scrolling:touch;padding:8px}
+.viewport{width:100%;overflow:hidden;padding:0}
 .sheet{width:max-content;min-width:1490px;background:#111820;border:4px solid #111820;display:grid;grid-template-columns:86px auto 88px 92px;grid-template-rows:45px auto 45px}
 .track,.back,.front,.crane{background:#111820;color:#fff;font-weight:900;display:flex;align-items:center;justify-content:center;text-align:center}
 .track{grid-column:1;grid-row:1/4} .back{grid-column:2/4;grid-row:1} .front{grid-column:2/4;grid-row:3} .crane{grid-column:4;grid-row:1/4;border-left:7px solid #ddd}
@@ -30,7 +30,8 @@ button,.mode{border:0;border-radius:8px;padding:10px 12px;font-weight:900;font-s
 .unit.target{outline:4px solid #2979ff;z-index:4}
 .ghost{position:fixed;z-index:9999;pointer-events:none;background:white;border:3px solid #2979ff;border-radius:8px;padding:10px 14px;font-weight:900;box-shadow:0 4px 14px #0006}
 
-#yardView{display:none;background:#0b1014;min-height:100vh;padding:10px;overflow:auto;-webkit-overflow-scrolling:touch}
+#gridView,#yardView{width:100%;overflow:hidden}
+#yardView{display:none;background:#0b1014;height:100%;padding:0;overflow:hidden}
 .yard-shell{min-width:1490px;background:#10161a;border:4px solid #0a0d0f;color:white;display:grid;grid-template-columns:86px auto 96px;grid-template-rows:48px auto 48px}
 .y-track,.y-back,.y-front{background:#0b0f12;font-weight:900;display:flex;align-items:center;justify-content:center;text-align:center}
 .y-track{grid-column:1;grid-row:1/4} .y-back{grid-column:2/4;grid-row:1} .y-front{grid-column:2/4;grid-row:3}
@@ -1126,7 +1127,34 @@ function save(){localStorage.setItem(KEY,JSON.stringify(state));}
 function load(){try{const s=JSON.parse(localStorage.getItem(KEY));if(Array.isArray(s))state=s;}catch(e){}}
 function rowsCount(){return Math.ceil(state.length/14)}
 function blankRow(){return Array.from({length:14},()=>({text:'',green:false}))}
-function renderAll(){renderGrid();renderYard();}
+let stackingFitFrame=0;
+function fitStackingView(){
+  cancelAnimationFrame(stackingFitFrame);
+  stackingFitFrame=requestAnimationFrame(()=>{
+    const header=document.querySelector('header');
+    const headerHeight=header&&getComputedStyle(header).display!=='none'?header.getBoundingClientRect().height:0;
+    const availableHeight=Math.max(1,window.innerHeight-headerHeight);
+    const gridView=document.getElementById('gridView');
+    const yardView=document.getElementById('yardView');
+    const gridVisible=getComputedStyle(gridView).display!=='none';
+    const host=gridVisible?gridView:yardView;
+    const canvas=gridVisible?host.querySelector('.sheet'):host.querySelector('.yard-shell');
+    if(!host||!canvas)return;
+    host.style.height=availableHeight+'px';
+    const viewport=gridVisible?host.querySelector('.viewport'):host;
+    if(viewport)viewport.style.height=availableHeight+'px';
+    canvas.style.zoom='1';
+    canvas.style.margin='0';
+    const naturalWidth=Math.max(canvas.scrollWidth,canvas.offsetWidth,1);
+    const naturalHeight=Math.max(canvas.scrollHeight,canvas.offsetHeight,1);
+    const availableWidth=Math.max(1,(viewport||host).clientWidth);
+    const scale=Math.min(1,availableWidth/naturalWidth,availableHeight/naturalHeight);
+    canvas.style.zoom=String(scale);
+    canvas.style.marginLeft=Math.max(0,(availableWidth-(naturalWidth*scale))/2)+'px';
+  });
+}
+function renderAll(){renderGrid();renderYard();fitStackingView();}
+window.addEventListener('resize',fitStackingView,{passive:true});
 
 function renderGrid(){
   const grid=document.getElementById('grid');
@@ -1434,12 +1462,12 @@ document.getElementById('removeBottom').onclick=()=>{if(rowsCount()>1){state=sta
 document.getElementById('gridBtn').onclick=()=>{
   document.getElementById('gridView').style.display='block';
   document.getElementById('yardView').style.display='none';
-  gridBtn.classList.add('active');yardBtn.classList.remove('active');
+  gridBtn.classList.add('active');yardBtn.classList.remove('active');fitStackingView();
 }
 document.getElementById('yardBtn').onclick=()=>{
   document.getElementById('gridView').style.display='none';
   document.getElementById('yardView').style.display='block';
-  yardBtn.classList.add('active');gridBtn.classList.remove('active');
+  yardBtn.classList.add('active');gridBtn.classList.remove('active');fitStackingView();
 }
 
 load();renderAll();updateGlowButton();

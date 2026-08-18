@@ -10373,8 +10373,8 @@ document.addEventListener("input", event => {
     function withChassisCompactInboundForecast(html) {
       if (!html || typeof html !== "string" || html.includes("chassis-compact-inbound-forecast-v2")) return html;
       const style = `<style id="chassis-compact-inbound-forecast-v2">
-#forecastStatusCards.forecast-status-cards{grid-template-columns:repeat(3,minmax(0,1fr))!important;align-items:start!important;gap:16px!important}
-#forecastStatusCards .forecast-day-section{display:block!important;min-width:0!important;max-height:none!important;overflow:visible!important;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important}
+#forecastStatusCards.forecast-status-cards{grid-template-columns:repeat(3,minmax(340px,372px))!important;justify-content:start!important;align-items:start!important;gap:12px!important}
+#forecastStatusCards .forecast-day-section{display:block!important;width:100%!important;max-width:372px!important;min-width:0!important;max-height:none!important;overflow:visible!important;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important}
 #forecastStatusCards .forecast-day-divider{min-height:48px!important;padding:4px 0 8px!important;border:0!important;border-bottom:1px solid rgba(148,163,184,.28)!important;border-radius:0!important;background:transparent!important;box-shadow:none!important}
 #forecastStatusCards .forecast-day-divider>div:first-child strong{color:#f8fafc!important;font-size:18px!important;line-height:1!important}
 #forecastStatusCards .forecast-day-unit-total span{display:block!important;color:#93a4c2!important;font-size:7px!important;letter-spacing:.12em!important}
@@ -10430,8 +10430,8 @@ document.addEventListener("input", event => {
 #forecastStatusCards .forecast-count-bubble.deficit-bubble{border-color:rgba(251,71,97,.52)!important;background:rgba(76,5,25,.34)!important}
 #forecastStatusCards .forecast-quadrant-empty{min-height:23px!important;padding:2px 4px!important;border:1px dashed rgba(255,255,255,.14)!important;border-radius:4px!important;background:rgba(2,6,23,.13)!important}
 #forecastStatusCards .forecast-train-card-actions{display:none!important}
-@media(max-width:1100px){#forecastStatusCards.forecast-status-cards{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
-@media(max-width:720px){#forecastStatusCards.forecast-status-cards{grid-template-columns:1fr!important}}
+@media(max-width:1100px){#forecastStatusCards.forecast-status-cards{grid-template-columns:repeat(2,minmax(340px,372px))!important}}
+@media(max-width:720px){#forecastStatusCards.forecast-status-cards{grid-template-columns:1fr!important}#forecastStatusCards .forecast-day-section{max-width:372px!important}}
 </style>`;
       const bodyClose = html.toLowerCase().lastIndexOf("</body>");
       return bodyClose >= 0 ? html.slice(0, bodyClose) + style + "\n" + html.slice(bodyClose) : html + style;
@@ -12150,6 +12150,287 @@ body #forecastExcelView .forecast-excel-block.request .forecast-excel-table tbod
       return html.replace("</head>", marker + "\n</head>");
     }
 
+    function withChassisInventoryReportUnplannedImport(html) {
+      if (!html || typeof html !== "string" || html.includes("chassis-inventory-report-unplanned-v1")) return html;
+      const marker = "<!-- chassis-inventory-report-unplanned-v1 -->";
+      const oldImporter = `async function importForecastUnplannedUnits(files){
+  const records=[];
+  const stats={files:0,qualifying:0,nonTarget:0,invalidSize:0,unmapped:0};
+  for(const file of Array.from(files||[])){
+    stats.files+=1;
+    const data=await file.arrayBuffer();
+    const workbook=XLSX.read(data,{type:"array"});
+    workbook.SheetNames.forEach(sheetName=>{
+      const rows=XLSX.utils.sheet_to_json(workbook.Sheets[sheetName],{defval:""});
+      rows.forEach(row=>{
+        const train=String(getForecastCell(row,["Train","Train ID","Scheduled Objective"])).trim();
+        const day=getForecastUnplannedDay(train);
+        if(!day){
+          stats.nonTarget+=1;
+          return;
+        }
+        const shipper=String(getForecastCell(row,["Shipper","Consignee"])).trim();
+        const carKind=String(getForecastCell(row,["Car Knd","Car Kind","Car Type"])).trim();
+        const fallbackPool=String(getForecastCell(row,["Pool","Eqmt Pool ID","Equipment Pool ID"])).trim();
+        const size=inferForecastSizeFromCarType(carKind).replace("'","");
+        if(!["20","40","45","53"].includes(size)){
+          stats.invalidSize+=1;
+          return;
+        }
+        const rawPool=getForecastUnplannedPool(shipper,fallbackPool);
+        const pair=normalizeInventoryPoolSizePair(rawPool,size);
+        if(!pair.pool||pair.pool==="UNKNOWN"){
+          stats.unmapped+=1;
+          return;
+        }
+        records.push({
+          train,
+          dayOffset:day.offset,
+          dayLabel:day.label,
+          pool:pair.pool,
+          size:pair.size
+        });
+        stats.qualifying+=1;
+      });
+    });
+  }
+  forecastUnplannedRecords=records;
+  forecastUnplannedStats=stats;
+  populateForecastUnplannedDayFilter(records);
+  renderForecastUnplannedOutput(records,stats);
+  if(document.body.classList.contains("forecast-excel-view-open"))renderForecastExcelView();
+}`;
+      const newImporter = `async function importForecastUnplannedUnits(files){
+    const records=[];
+    const stats={files:0,qualifying:0,inventory:0,nonTarget:0,invalidSize:0,unmapped:0};
+    for(const file of Array.from(files||[])){
+      stats.files+=1;
+      const data=await file.arrayBuffer();
+      const workbook=XLSX.read(data,{type:"array"});
+      workbook.SheetNames.forEach(sheetName=>{
+        const rows=XLSX.utils.sheet_to_json(workbook.Sheets[sheetName],{defval:""});
+        rows.forEach(row=>{
+          const train=String(getForecastCell(row,["Train","Train ID","Scheduled Objective"])).trim();
+          const equipmentId=String(getForecastCell(row,["Equipment Initial Number","Equipment ID","Container ID","Van/Container ID","Van Container ID","Unit ID","Van/Container"])).trim();
+          const chassisId=String(getForecastCell(row,["Chassis Initial Number","Chassis ID"])).trim();
+          const chassisPool=String(getForecastCell(row,["Chas Pool ID","Chassis Pool ID"])).trim();
+          const carKind=String(getForecastCell(row,["Car Knd","Car Kind","Car Type","Chas Car Kind","Chassis Car Kind"])).trim();
+          const isInventoryReport=Boolean(equipmentId&&carKind&&(chassisId||chassisPool));
+          const day=isInventoryReport?{offset:0,label:"On Hand"}:getForecastUnplannedDay(train);
+          if(!day){stats.nonTarget+=1;return;}
+          const shipper=String(getForecastCell(row,["Shipper","Consignee"])).trim();
+          const fallbackPool=String(getForecastCell(row,["Pool","Eqmt Pool ID","Equipment Pool ID"])).trim();
+          const kind=carKind.toUpperCase();
+          const inventorySize=kind==="Q70"?"53":kind==="Q40"?"40":kind==="Q10"?"20":"";
+          const size=(inventorySize||inferForecastSizeFromCarType(carKind).replace("'","")).trim();
+          if(!["20","40","45","53"].includes(size)){stats.invalidSize+=1;return;}
+          const rawPool=isInventoryReport?(chassisPool||fallbackPool):getForecastUnplannedPool(shipper,fallbackPool);
+          const pair=normalizeInventoryPoolSizePair(rawPool,size);
+          if(!pair.pool||pair.pool==="UNKNOWN"){stats.unmapped+=1;return;}
+          records.push({
+            train:isInventoryReport?"Inventory On Hand":train,
+            dayOffset:day.offset,
+            dayLabel:day.label,
+            pool:pair.pool,
+            size:pair.size,
+            equipmentId,
+            chassisId,
+            sourceType:isInventoryReport?"inventory":"train"
+          });
+          stats.qualifying+=1;
+          if(isInventoryReport)stats.inventory+=1;
+        });
+      });
+    }
+    forecastUnplannedRecords=records;
+    forecastUnplannedStats=stats;
+    populateForecastUnplannedDayFilter(records);
+    renderForecastUnplannedOutput(records,stats);
+    if(document.body.classList.contains("forecast-excel-view-open"))renderForecastExcelView();
+  }`;
+      if (!html.includes(oldImporter)) return html;
+      html = html.replace(oldImporter, newImporter);
+      return html.replace("</head>", marker + "\n</head>");
+    }
+
+    function withChassisUnplannedRequestColumn(html) {
+      if (!html || typeof html !== "string" || html.includes("chassis-unplanned-request-column-v1")) return html;
+      const stateAnchor = 'let forecastExcelShowPreviousSubmission=false;\nfunction getForecastPreviousSubmissionValues(){';
+      const stateInjection = `let forecastExcelShowPreviousSubmission=false;
+const FORECAST_EXCEL_UNPLANNED_COLUMN_KEY="conglobal-forecast-excel-unplanned-column-v1";
+let forecastExcelShowUnplannedColumn=localStorage.getItem(FORECAST_EXCEL_UNPLANNED_COLUMN_KEY)==="true";
+function getForecastRequestUnplannedUnits(pool,size){
+  const target=getForecastRequestBoardPair(pool,size);
+  const seen=new Set();
+  return (Array.isArray(forecastUnplannedRecords)?forecastUnplannedRecords:[])
+    .filter(record=>{const pair=getForecastRequestBoardPair(record?.pool,record?.size);return pair.pool===target.pool&&String(pair.size)===String(target.size);})
+    .map(record=>String(record?.equipmentId||record?.unitId||record?.containerId||"").trim())
+    .filter(unit=>unit&&!seen.has(unit)&&(seen.add(unit),true))
+    .sort((a,b)=>a.localeCompare(b,undefined,{numeric:true,sensitivity:"base"}));
+}
+function renderForecastRequestUnplannedCell(pool,size){
+  const units=getForecastRequestUnplannedUnits(pool,size);
+  return \`<span class="forecast-request-unplanned-cell"><strong class="forecast-request-unplanned-count">\${units.length}</strong></span>\`;
+}
+function renderForecastRequestNetCell(pool,size,value){
+  const cell=renderForecastExcelNetCell(pool,size,value,"request-net-flag");
+  if(!forecastExcelShowUnplannedColumn)return cell;
+  return cell.replace(/<\\/(th|td)>$/,\`\${renderForecastRequestUnplannedCell(pool,size)}</$1>\`);
+}
+function getForecastPreviousSubmissionValues(){`;
+      if (!html.includes(stateAnchor)) return html;
+      html = html.replace(stateAnchor, stateInjection);
+      html = html.replace(
+        '<button id="forecastExcelPreviousSubmissionToggle" class="forecast-excel-empty-toggle" type="button" aria-pressed="false">Show Previous Submission</button>',
+        '<button id="forecastExcelPreviousSubmissionToggle" class="forecast-excel-empty-toggle" type="button" aria-pressed="false">Show Previous Submission</button><button id="forecastExcelUnplannedColumnToggle" class="forecast-excel-empty-toggle" type="button" aria-pressed="false">Show Unplanned</button>'
+      );
+      html = html.replace(
+        '${renderForecastExcelNetCell(r.poolCode,r.size,net,"request-net-flag")}</tr>`}',
+        '${renderForecastRequestNetCell(r.poolCode,size,net)}</tr>`}'
+      );
+      html = html.replace('const visualWidth=width*.7;', 'const visualWidth=width;');
+      html = html.replace('width:var(--forecast-excel-width-scale,100%);', 'width:100%;');
+      const contentAnchor = 'content.innerHTML=`<div class="forecast-excel-columns${forecastExcelHideEmptyInbounds?" hide-empty-inbounds":""}"><div class="forecast-excel-left"><h1>${forecastTitleIcon}<span>Chassis Forecast (72H)</span></h1>${trainTable}${inlineNotes}</div><div class="forecast-excel-right">${calcTable("Chassis Calculator (24H)",calc24Rows,"hours24")}${calcTable("Chassis Calculator (72H)",calc72Rows,"hours48")}${requestTable}</div></div>${forecastExcelHideEmptyInbounds?"":notes}`;';
+      if (!html.includes(contentAnchor)) return html;
+      html = html.replace(contentAnchor, contentAnchor + `
+  const unplannedColumnToggle=$("forecastExcelUnplannedColumnToggle");
+  if(unplannedColumnToggle){
+    unplannedColumnToggle.setAttribute("aria-pressed",String(forecastExcelShowUnplannedColumn));
+    unplannedColumnToggle.textContent=forecastExcelShowUnplannedColumn?"Hide Unplanned":"Show Unplanned";
+    unplannedColumnToggle.classList.toggle("is-active",forecastExcelShowUnplannedColumn);
+    unplannedColumnToggle.onclick=()=>{
+    forecastExcelShowUnplannedColumn=!forecastExcelShowUnplannedColumn;
+    localStorage.setItem(FORECAST_EXCEL_UNPLANNED_COLUMN_KEY,String(forecastExcelShowUnplannedColumn));
+    renderForecastExcelView();
+    };
+  }`);
+      const styles = `<style id="chassis-unplanned-request-column-v1">
+.forecast-excel-columns,.forecast-excel-left,.forecast-excel-right{min-width:0}
+.forecast-excel-block.request .forecast-request-unplanned-cell{position:absolute;inset:0 auto 0 calc(100% + 8px);display:flex;align-items:center;justify-content:center;width:76px;min-width:76px;max-width:76px;padding:2px 4px!important;white-space:nowrap!important;background:#fff!important;color:#000!important;border-left:1px solid #cbd5e1!important}
+.forecast-excel-block.request .forecast-excel-table tbody tr:nth-child(even) .forecast-request-unplanned-cell{background:#f2f2f2!important}
+.forecast-excel-block.request .forecast-request-unplanned-count{display:inline-block;min-width:1.5em;color:inherit;font:inherit;font-weight:1000;text-align:center}
+</style>`;
+      return html.replace("</head>", styles + "\n</head>");
+    }
+
+    function withChassisSplitTableTextSliders(html) {
+      if (!html || typeof html !== "string" || html.includes("chassis-split-table-text-sliders-v1")) return html;
+      const oldControl = `<label for="forecastExcelTableTextSizeSlider">
+          <span>Table Text</span>`;
+      const newControl = `<label for="forecastExcelTableHeaderSizeSlider">
+          <span>Table Headers</span>
+          <strong id="forecastExcelTableHeaderSizeValue">100%</strong>
+        </label>
+        <input id="forecastExcelTableHeaderSizeSlider" type="range" min="60" max="180" step="5" value="100">
+        <label for="forecastExcelTableTextSizeSlider">
+          <span>Table Values</span>`;
+      if (!html.includes(oldControl)) return html;
+      html = html.replace(oldControl, newControl);
+      html = html.replaceAll(
+        'const secondaryHeaderSlider=$("forecastExcelSecondaryHeaderSizeSlider");\n  const tableTextSlider=$("forecastExcelTableTextSizeSlider");',
+        'const secondaryHeaderSlider=$("forecastExcelSecondaryHeaderSizeSlider");\n  const tableHeaderSlider=$("forecastExcelTableHeaderSizeSlider");\n  const tableTextSlider=$("forecastExcelTableTextSizeSlider");'
+      );
+      html = html.replaceAll('||!secondaryHeaderSlider||!tableTextSlider||', '||!secondaryHeaderSlider||!tableHeaderSlider||!tableTextSlider||');
+      html = html.replace(
+        'const secondaryHeader=Math.max(60,Math.min(180,Number(secondaryHeaderSlider.value)||100));\n  const tableText=',
+        'const secondaryHeader=Math.max(60,Math.min(180,Number(secondaryHeaderSlider.value)||100));\n  const tableHeader=Math.max(60,Math.min(180,Number(tableHeaderSlider.value)||100));\n  const tableText='
+      );
+      html = html.replace(
+        'page.style.setProperty("--forecast-excel-secondary-header-scale",String(secondaryHeader/100));\n  page.style.setProperty("--forecast-excel-table-text-scale"',
+        'page.style.setProperty("--forecast-excel-secondary-header-scale",String(secondaryHeader/100));\n  page.style.setProperty("--forecast-excel-table-header-scale",String(tableHeader/100));\n  page.style.setProperty("--forecast-excel-table-text-scale"'
+      );
+      html = html.replace(
+        'if($("forecastExcelSecondaryHeaderSizeValue"))$("forecastExcelSecondaryHeaderSizeValue").textContent=`${secondaryHeader}%`;\n  if($("forecastExcelTableTextSizeValue"))',
+        'if($("forecastExcelSecondaryHeaderSizeValue"))$("forecastExcelSecondaryHeaderSizeValue").textContent=`${secondaryHeader}%`;\n  if($("forecastExcelTableHeaderSizeValue"))$("forecastExcelTableHeaderSizeValue").textContent=`${tableHeader}%`;\n  if($("forecastExcelTableTextSizeValue"))'
+      );
+      html = html.replace(
+        'localStorage.setItem("forecastExcelSecondaryHeaderSize",String(secondaryHeader));\n  localStorage.setItem("forecastExcelTableTextSize"',
+        'localStorage.setItem("forecastExcelSecondaryHeaderSize",String(secondaryHeader));\n  localStorage.setItem("forecastExcelTableHeaderSize",String(tableHeader));\n  localStorage.setItem("forecastExcelTableTextSize"'
+      );
+      html = html.replace(
+        'secondaryHeaderSlider.value=localStorage.getItem("forecastExcelSecondaryHeaderSize")||legacyText;\n  tableTextSlider.value=',
+        'secondaryHeaderSlider.value=localStorage.getItem("forecastExcelSecondaryHeaderSize")||legacyText;\n  tableHeaderSlider.value=localStorage.getItem("forecastExcelTableHeaderSize")||localStorage.getItem("forecastExcelTableTextSize")||legacyText;\n  tableTextSlider.value='
+      );
+      html = html.replace(
+        'secondaryHeaderSlider.oninput=applyForecastExcelViewSettings;\n  tableTextSlider.oninput=',
+        'secondaryHeaderSlider.oninput=applyForecastExcelViewSettings;\n  tableHeaderSlider.oninput=applyForecastExcelViewSettings;\n  tableTextSlider.oninput='
+      );
+      const styles = `<style id="chassis-split-table-text-sliders-v1">
+#forecastExcelView .forecast-excel-table th > .forecast-excel-cell-content{transform:scale(var(--forecast-excel-table-header-scale,1))}
+</style>`;
+      return html.replace("</head>", styles + "\n</head>");
+    }
+
+    function withChassisUnplannedColumnTypography(html) {
+      if (!html || typeof html !== "string" || html.includes("chassis-unplanned-column-typography-v1")) return html;
+      const controlAnchor = '<input id="forecastExcelUnplannedFlagSizeSlider" type="range" min="6" max="18" step="0.5" value="11">';
+      if (!html.includes(controlAnchor)) return html;
+      html = html.replace(controlAnchor, `${controlAnchor}
+        <label for="forecastExcelUnplannedColumnSizeSlider">
+          <span>Unplanned Column</span>
+          <strong id="forecastExcelUnplannedColumnSizeValue">9px</strong>
+        </label>
+        <input id="forecastExcelUnplannedColumnSizeSlider" type="range" min="6" max="14" step="0.5" value="9">`);
+      const styles = `<style id="chassis-unplanned-column-typography-v1">
+.forecast-excel-block.request .forecast-excel-table:has(.forecast-request-unplanned-cell) thead th:last-child::after{content:"Unplanned";position:absolute;inset:0 auto 0 calc(100% + 8px);display:flex;align-items:center;justify-content:center;width:76px!important;min-width:76px;max-width:76px}
+.forecast-excel-columns:has(.forecast-request-unplanned-cell){grid-template-columns:minmax(0,calc(56% - 140px)) minmax(0,44%)}
+.forecast-excel-block.request .forecast-excel-table:has(.forecast-request-unplanned-cell){width:100%!important;overflow:visible!important}
+.forecast-excel-block.request .forecast-excel-table:has(.forecast-request-unplanned-cell) tr > :last-child{position:relative;overflow:visible!important}
+.forecast-excel-page.modern-table-view .forecast-excel-block.request:has(.forecast-request-unplanned-cell){overflow:visible!important}
+.forecast-excel-block.request .forecast-excel-table:has(.forecast-request-unplanned-cell) thead th:last-child::after,
+.forecast-excel-block.request .forecast-request-unplanned-count{font-size:var(--forecast-excel-unplanned-column-size,9px)!important;letter-spacing:-.035em!important;transform:none!important}
+</style>`;
+      const script = `<script id="chassis-unplanned-column-typography-script-v1">(()=>{
+  const slider=document.getElementById("forecastExcelUnplannedColumnSizeSlider");
+  const value=document.getElementById("forecastExcelUnplannedColumnSizeValue");
+  const page=document.querySelector("#forecastExcelView .forecast-excel-page");
+  if(!slider||!value||!page)return;
+  slider.value=localStorage.getItem("forecastExcelUnplannedColumnSize")||"9";
+  const apply=()=>{
+    const size=Math.max(6,Math.min(14,Number(slider.value)||9));
+    page.style.setProperty("--forecast-excel-unplanned-column-size",size+"px");
+    value.textContent=size.toFixed(1).replace(".0","")+"px";
+    localStorage.setItem("forecastExcelUnplannedColumnSize",String(size));
+  };
+  slider.addEventListener("input",apply);
+  apply();
+})();<\/script>`;
+      html = html.replace("</head>", styles + "\n</head>");
+      const bodyCloseIndex = html.lastIndexOf("</body>");
+      if (bodyCloseIndex < 0) return html;
+      return html.slice(0, bodyCloseIndex) + script + "\n" + html.slice(bodyCloseIndex);
+    }
+
+    function withChassisExcelControlsViewport(html) {
+      const marker = "chassis-excel-controls-viewport-v1";
+      if (!html || html.includes(marker)) return html;
+      const style = `<style id="${marker}">
+.forecast-excel-toolbar{
+  width:300px!important;
+  max-height:none!important;
+  padding-bottom:0!important;
+  overflow-y:visible!important;
+  overflow-x:hidden!important;
+}
+.forecast-excel-view-controls{
+  grid-template-columns:minmax(112px,1fr) minmax(112px,1fr)!important;
+  align-items:center!important;
+  column-gap:9px!important;
+  row-gap:3px!important;
+  padding:8px!important;
+}
+.forecast-excel-view-controls>button,
+.forecast-excel-view-controls>.forecast-excel-font-controls{grid-column:1/-1!important;}
+body.forecast-excel-view-open{padding-right:320px!important;}
+#forecastExcelView .forecast-excel-page{
+  max-width:none!important;
+  margin-left:auto!important;
+  margin-right:auto!important;
+}
+</style>`;
+      return html.replace("</head>", `${style}</head>`);
+    }
+
     function withBillingExportDropdownV1(html) {
       if (!html || typeof html !== "string" || html.includes("billing-export-dropdown-v1")) return html;
       const injection = `<meta id="billing-export-dropdown-v1"><scr${""}ipt>
@@ -12741,6 +13022,11 @@ body #forecastExcelView .forecast-excel-block.request .forecast-excel-table tbod
           pageHtml = withChassisUnifiedRequestBoard(pageHtml);
           pageHtml = withChassisOpenDrayRequests(pageHtml);
           pageHtml = withChassisSoftDeficitPills(pageHtml);
+          pageHtml = withChassisInventoryReportUnplannedImport(pageHtml);
+          pageHtml = withChassisUnplannedRequestColumn(pageHtml);
+          pageHtml = withChassisSplitTableTextSliders(pageHtml);
+          pageHtml = withChassisUnplannedColumnTypography(pageHtml);
+          pageHtml = withChassisExcelControlsViewport(pageHtml);
         }
         bridgedPageHtml.set(id, withWorkbookSyncBridge(pageHtml));
       }
