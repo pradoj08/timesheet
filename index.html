@@ -12098,17 +12098,20 @@ body.reconciliation-view #openForecastExcelViewBtn{
     }
 
     function withChassisRequestTableBorders(html) {
-      if (!html || typeof html !== "string" || html.includes("chassis-request-table-borders-v2")) return html;
-      const style = `<style id="chassis-request-table-borders-v2">
-body #forecastExcelView .forecast-excel-block.request .forecast-excel-table {
+      if (!html || typeof html !== "string" || html.includes("chassis-request-table-borders-v3")) return html;
+      const style = `<style id="chassis-request-table-borders-v3">
+body #forecastExcelView .forecast-excel-block .forecast-excel-table {
   border-collapse: collapse !important;
   border: 1px solid #334155 !important;
 }
-body #forecastExcelView .forecast-excel-block.request .forecast-excel-table th,
-body #forecastExcelView .forecast-excel-block.request .forecast-excel-table td {
+body #forecastExcelView .forecast-excel-block .forecast-excel-table th,
+body #forecastExcelView .forecast-excel-block .forecast-excel-table td {
   border: 1px solid #334155 !important;
 }
-body #forecastExcelView .forecast-excel-block.request .forecast-excel-table tbody tr:last-child > * {
+body #forecastExcelView .forecast-excel-block .forecast-excel-table tbody th[rowspan] {
+  box-shadow: inset 0 0 0 1px #334155 !important;
+}
+body #forecastExcelView .forecast-excel-block .forecast-excel-table tbody tr:last-child > * {
   border-bottom: 1px solid #334155 !important;
 }
 </style>`;
