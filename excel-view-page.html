@@ -1802,6 +1802,12 @@
   }
   .inbound-summary-table .projected-free-footage.is-positive { color: #08783e; }
   .inbound-summary-table .projected-free-footage.is-negative { color: #c1121f; }
+  .inbound-summary-train-toggle {
+    display:inline-flex; align-items:center; gap:5px; border:0; padding:0;
+    background:transparent; color:inherit; font:inherit; font-weight:inherit; cursor:pointer;
+  }
+  .inbound-summary-train-toggle:focus-visible { outline:2px solid #d7a900; outline-offset:2px; border-radius:3px; }
+  .inbound-summary-train-check { color:#078149; font-weight:900; }
   .inbound-summary-table .summary-muted { color: #dce7ee; }
   .inbound-summary-train {
     display: inline-flex;
@@ -4383,7 +4389,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     const normalizedDay = ["TODAY", "TOMORROW", "DAY AFTER", "OTHER"].includes(String(day || "").toUpperCase())
       ? String(day).toUpperCase()
       : "TODAY";
-    return { day:normalizedDay, color:inboundColorForDay(normalizedDay), tag:"", train:"TRAIN", eta:"", status:"", totalFt:"0", archivedAt:"", archiveId:"", rows:[blankInboundRow()] };
+    return { day:normalizedDay, color:inboundColorForDay(normalizedDay), tag:"", train:"TRAIN", eta:"", status:"", totalFt:"0", onHandChecked:false, archivedAt:"", archiveId:"", rows:[blankInboundRow()] };
   }
 
   function blankInboundRow() {
@@ -4402,6 +4408,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       eta: String(plan && plan.eta || ""),
       status: String(plan && plan.status || ""),
       totalFt: String(plan && plan.totalFt || ""),
+      onHandChecked: plan && plan.onHandChecked === true,
       archivedAt: String(plan && plan.archivedAt || ""),
       archiveId: String(plan && plan.archiveId || ""),
       rows: (Array.isArray(plan && plan.rows) && plan.rows.length ? plan.rows : [blankInboundRow()]).map(row => ({
@@ -6267,7 +6274,9 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   }
 
   function inboundSummaryTrainHtml(plan, groupDay) {
-    return '<span class="inbound-summary-train"><span>' + escapeHtml(plan.train || "") + '</span>' + inboundSummaryUpsPill(plan, groupDay) + '</span>';
+    const planIndex = state.inboundPlans.indexOf(plan);
+    const checked = plan && plan.onHandChecked === true;
+    return '<span class="inbound-summary-train"><button class="inbound-summary-train-toggle" data-inbound-on-hand-index="' + planIndex + '" type="button" aria-pressed="' + (checked ? 'true' : 'false') + '" title="' + (checked ? 'Already factored into current inventory; exclude from projection' : 'Mark this inbound as already factored into current inventory') + '"><span>' + escapeHtml(plan.train || "") + '</span>' + (checked ? '<span class="inbound-summary-train-check" aria-label="Already factored into current inventory">&#10003;</span>' : '') + '</button>' + inboundSummaryUpsPill(plan, groupDay) + '</span>';
   }
 
   function renderInboundSummary() {
@@ -6298,12 +6307,16 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       const totalLabel = totalFt >= 10500 ? "HEAVY" : totalFt >= 9000 ? "AVERAGE" : "LIGHT";
       const dayClass = inboundSummaryDayClass(group.day);
       const stock = inboundSummaryStock(group.day);
-      const projectedOnHand = stock.onHandValue - totalFt;
+      const checkedFt = group.plans.reduce((sum, plan) => sum + (plan.onHandChecked === true ? parseInboundFt(plan.totalFt) : 0), 0);
+      const pendingFt = Math.max(0, totalFt - checkedFt);
+      const currentOnHand = stock.onHandValue;
+      const projectedOnHand = currentOnHand - pendingFt;
       const projectedClass = projectedOnHand > 0 ? "is-positive" : projectedOnHand < 0 ? "is-negative" : "";
-      const onHandDisplayHtml = escapeHtml(stock.onHand) + ' <span class="projected-free-footage ' + projectedClass + '">(' + escapeHtml(fmtInt(projectedOnHand)) + ')</span>';
-      const projectedWith803 = stock.with803Value - totalFt;
+      const onHandDisplayHtml = escapeHtml(fmtInt(currentOnHand)) + ' <span class="projected-free-footage ' + projectedClass + '">(' + escapeHtml(fmtInt(projectedOnHand)) + ')</span>';
+      const currentWith803 = stock.with803Value;
+      const projectedWith803 = currentWith803 - pendingFt;
       const projectedWith803Class = projectedWith803 > 0 ? "is-positive" : projectedWith803 < 0 ? "is-negative" : "";
-      const with803DisplayHtml = escapeHtml(stock.with803) + ' <span class="projected-free-footage ' + projectedWith803Class + '">(' + escapeHtml(fmtInt(projectedWith803)) + ')</span>';
+      const with803DisplayHtml = escapeHtml(fmtInt(currentWith803)) + ' <span class="projected-free-footage ' + projectedWith803Class + '">(' + escapeHtml(fmtInt(projectedWith803)) + ')</span>';
       group.plans.forEach((plan, index) => {
         body += '<tr class="' + dayClass + (index === group.plans.length - 1 ? ' inbound-summary-group-end' : '') + '">';
         if (index === 0) body += '<td class="inbound-summary-day ' + dayClass + '" rowspan="' + group.plans.length + '">' + escapeHtml(inboundSummaryDayLabel(group.day)) + '</td>';
@@ -8796,6 +8809,15 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     if (e.target.closest("#toggleInboundPlanner")) {
       state.inboundPlannerVisible = state.inboundPlannerVisible === false;
       renderAll();
+      return;
+    }
+    const onHandToggle = e.target.closest("[data-inbound-on-hand-index]");
+    if (onHandToggle) {
+      const plan = state.inboundPlans[Number(onHandToggle.dataset.inboundOnHandIndex)];
+      if (plan) {
+        plan.onHandChecked = plan.onHandChecked !== true;
+        renderAll();
+      }
       return;
     }
     if (e.target.closest("#closeInboundPlanner")) {

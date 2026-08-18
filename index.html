@@ -9419,7 +9419,21 @@ document.addEventListener('click',function(event){
     }
     pages.settegastMap = {
       label: "Settegast Map",
-      html: settegastMapPageHtml()
+      html: `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Settegast Map</title>
+  <style>
+    html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#07111b}
+    iframe{display:block;width:100%;height:100%;border:0;background:#07111b}
+  </style>
+</head>
+<body>
+  <iframe src="settegast-map-page.html" title="Settegast Map"></iframe>
+</body>
+</html>`
     };
     pages.stackingGrid = {
       label: "Stacking Grid",
@@ -12922,6 +12936,52 @@ body.forecast-excel-view-open{padding-right:320px!important;}
       return bodyClose >= 0 ? html.slice(0, bodyClose) + popup + "\n" + script + "\n" + html.slice(bodyClose) : html + popup + script;
     }
 
+    function withExcelInboundOnHandChecks(html) {
+      const marker = "data-excel-inbound-on-hand-checks";
+      if (!html || html.includes(marker)) return html;
+      const replacements = [
+        [
+          'return { day:normalizedDay, color:inboundColorForDay(normalizedDay), tag:"", train:"TRAIN", eta:"", status:"", totalFt:"0", archivedAt:"", archiveId:"", rows:[blankInboundRow()] };',
+          'return { day:normalizedDay, color:inboundColorForDay(normalizedDay), tag:"", train:"TRAIN", eta:"", status:"", totalFt:"0", onHandChecked:false, archivedAt:"", archiveId:"", rows:[blankInboundRow()] };'
+        ],
+        [
+          'totalFt: String(plan && plan.totalFt || ""),\n      archivedAt:',
+          'totalFt: String(plan && plan.totalFt || ""),\n      onHandChecked: plan && plan.onHandChecked === true,\n      archivedAt:'
+        ],
+        [
+          'function inboundSummaryTrainHtml(plan, groupDay) {\n    return \'<span class="inbound-summary-train"><span>\' + escapeHtml(plan.train || "") + \'</span>\' + inboundSummaryUpsPill(plan, groupDay) + \'</span>\';\n  }',
+          'function inboundSummaryTrainHtml(plan, groupDay) {\n    const planIndex = state.inboundPlans.indexOf(plan);\n    const checked = plan && plan.onHandChecked === true;\n    return \'<span class="inbound-summary-train"><button class="inbound-summary-train-toggle" data-inbound-on-hand-index="\' + planIndex + \'" type="button" aria-pressed="\' + (checked ? \'true\' : \'false\') + \'" title="\' + (checked ? \'Already factored into current inventory; exclude from projection\' : \'Mark this inbound as already factored into current inventory\') + \'"><span>\' + escapeHtml(plan.train || "") + \'</span>\' + (checked ? \'<span class="inbound-summary-train-check" aria-label="Already factored into current inventory">&#10003;</span>\' : \'\') + \'</button>\' + inboundSummaryUpsPill(plan, groupDay) + \'</span>\';\n  }'
+        ],
+        [
+          'const projectedOnHand = stock.onHandValue - totalFt;',
+          'const checkedFt = group.plans.reduce((sum, plan) => sum + (plan.onHandChecked === true ? parseInboundFt(plan.totalFt) : 0), 0);\n      const pendingFt = Math.max(0, totalFt - checkedFt);\n      const currentOnHand = stock.onHandValue;\n      const projectedOnHand = currentOnHand - pendingFt;'
+        ],
+        [
+          'const onHandDisplayHtml = escapeHtml(stock.onHand) +',
+          'const onHandDisplayHtml = escapeHtml(fmtInt(currentOnHand)) +'
+        ],
+        [
+          'const projectedWith803 = stock.with803Value - totalFt;',
+          'const currentWith803 = stock.with803Value;\n      const projectedWith803 = currentWith803 - pendingFt;'
+        ],
+        [
+          'const with803DisplayHtml = escapeHtml(stock.with803) +',
+          'const with803DisplayHtml = escapeHtml(fmtInt(currentWith803)) +'
+        ],
+        [
+          'if (e.target.closest("#toggleInboundPlanner")) {',
+          'const onHandToggle = e.target.closest("[data-inbound-on-hand-index]");\n    if (onHandToggle) {\n      const plan = state.inboundPlans[Number(onHandToggle.dataset.inboundOnHandIndex)];\n      if (plan) { plan.onHandChecked = plan.onHandChecked !== true; renderAll(); }\n      return;\n    }\n    if (e.target.closest("#toggleInboundPlanner")) {'
+        ]
+      ];
+      let next = html;
+      for (const [before, after] of replacements) {
+        if (!next.includes(before)) return html;
+        next = next.replace(before, after);
+      }
+      const css = '<style ' + marker + '>.inbound-summary-train-toggle{display:inline-flex;align-items:center;gap:5px;border:0;padding:0;background:transparent;color:inherit;font:inherit;font-weight:inherit;cursor:pointer}.inbound-summary-train-toggle:focus-visible{outline:2px solid #d7a900;outline-offset:2px;border-radius:3px}.inbound-summary-train-check{color:#078149;font-weight:900}</style>';
+      return next.replace('</head>', css + '</head>');
+    }
+
     function bridgedHtmlForPage(id) {
       if (!bridgedPageHtml.has(id)) {
         let pageHtml = pages[id].html;
@@ -13003,6 +13063,7 @@ body.forecast-excel-view-open{padding-right:320px!important;}
           pageHtml = withExcelMorningMeetingPushFix(pageHtml);
           pageHtml = withExcelAfternoonMeeting(pageHtml);
           pageHtml = withExcelArchivePdfReader(pageHtml);
+          pageHtml = withExcelInboundOnHandChecks(pageHtml);
         }
         if (id === "chassisStatus") {
           pageHtml = withChassisGreenExcelHero(pageHtml);

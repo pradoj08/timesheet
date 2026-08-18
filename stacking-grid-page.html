@@ -18,7 +18,7 @@ button,.mode{border:0;border-radius:8px;padding:10px 12px;font-weight:900;font-s
 .viewport{width:100%;overflow:hidden;padding:0}
 .sheet{width:max-content;min-width:1490px;background:#111820;border:4px solid #111820;display:grid;grid-template-columns:86px auto 88px 92px;grid-template-rows:45px auto 45px}
 .track,.back,.front,.crane{background:#111820;color:#fff;font-weight:900;display:flex;align-items:center;justify-content:center;text-align:center}
-.track{grid-column:1;grid-row:1/4} .back{grid-column:2/4;grid-row:1} .front{grid-column:2/4;grid-row:3} .crane{grid-column:4;grid-row:1/4;border-left:7px solid #ddd}
+.track{grid-column:1;grid-row:1/4} .back{grid-column:2/4;grid-row:1} .front{grid-column:2/4;grid-row:3} .crane{grid-column:4;grid-row:1/4}
 .yardgrid{grid-column:2;grid-row:2;background:#c9cccb;padding:8px;display:grid;grid-template-columns:repeat(7,190px);gap:1px 8px}
 .rowlabels{grid-column:3;grid-row:2;background:#c9cccb;padding:8px 5px;display:grid;gap:1px}
 .rowlabels div{background:#eee;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:13px;height:42px}
@@ -36,8 +36,8 @@ button,.mode{border:0;border-radius:8px;padding:10px 12px;font-weight:900;font-s
 .y-track,.y-back,.y-front{background:#0b0f12;font-weight:900;display:flex;align-items:center;justify-content:center;text-align:center}
 .y-track{grid-column:1;grid-row:1/4} .y-back{grid-column:2/4;grid-row:1} .y-front{grid-column:2/4;grid-row:3}
 .y-map{grid-column:2;grid-row:2;padding:14px;background:linear-gradient(#151c20,#11171b);display:grid;grid-template-columns:repeat(7,190px);gap:14px 18px}
-.y-right{grid-column:3;grid-row:2;padding:14px 6px;display:grid;gap:14px;background:#141a1e}
-.y-pair{height:90px;display:grid;grid-template-rows:1fr 1fr;border:1px solid #30383d}
+.y-right{grid-column:3;grid-row:2;padding:14px 6px;display:grid;gap:14px;background:#0b0f12}
+.y-pair{height:90px;display:grid;grid-template-rows:1fr 1fr;border:1px solid #30383d;background:#0b0f12}
 .y-pair div{display:flex;align-items:center;justify-content:center;font-weight:900}
 .y-pair div+div{border-top:1px solid #30383d}
 .y-slot{height:38px;border:2px solid #687178;background:#151b1f;position:relative;border-radius:3px}
@@ -615,6 +615,7 @@ header{
 }
 .yard-shell{
   column-gap:0 !important;
+  position:relative;
 }
 .y-track{
   border-right:none !important;
@@ -622,6 +623,13 @@ header{
 }
 .y-map{
   border-left:none !important;
+}
+.y-right{
+  min-width:96px;
+  box-sizing:border-box;
+  position:relative;
+  z-index:2;
+  overflow:visible;
 }
 
 
@@ -1073,6 +1081,34 @@ body.highlight-focus.highlights-hidden #yardView .y-half.empty::after{
   filter:none !important;
   opacity:.38 !important;
   border-color:#efb300 !important;
+}
+
+/* Crisp, aligned container geometry. Keep the shallow 3D treatment without
+   letting roofs or side faces make paired boxes appear different widths. */
+.y-container{
+  left:0 !important;
+  right:0 !important;
+  border-radius:1px !important;
+}
+.y-container::before{
+  left:0 !important;
+  right:0 !important;
+  box-sizing:border-box !important;
+  transform:none !important;
+  border-radius:0 !important;
+}
+.y-container::after{
+  display:none !important;
+}
+.y-stack:has(.y-half.top:not(.empty)):has(.y-half.bottom:not(.empty)) .y-half.top .y-container{
+  border-radius:1px 1px 0 0 !important;
+  border-bottom-color:rgba(0,0,0,.55) !important;
+  box-shadow:inset -3px 0 3px rgba(0,0,0,.16),inset 3px 0 2px rgba(255,255,255,.05) !important;
+}
+.y-stack:has(.y-half.top:not(.empty)):has(.y-half.bottom:not(.empty)) .y-half.bottom .y-container{
+  border-radius:0 0 1px 1px !important;
+  border-top-color:rgba(255,255,255,.1) !important;
+  box-shadow:0 4px 5px rgba(0,0,0,.45),inset -3px 0 3px rgba(0,0,0,.16),inset 3px 0 2px rgba(255,255,255,.05) !important;
 }
 
 </style>
