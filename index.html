@@ -6052,20 +6052,25 @@ tfoot .lph-target-pill.below-target{background:#fecaca;color:#7f1d1d}
     try{hideDwellToggle.checked=localStorage.getItem("settegast-hide-dwell") === "true"}catch(error){}
   }
   var yardGrid=document.getElementById("yardGrid");
-  var dwellGridHosts=[yardGrid,document.getElementById("blankYardGrid"),document.getElementById("blankYardGridTwo")].filter(Boolean);
+  var dwellGridHosts=[yardGrid,document.getElementById("blankYardGrid"),document.getElementById("blankYardGridTwo"),document.getElementById("blankYardGridThree")].filter(Boolean);
+  function updateDwellToggleLabel(){
+    var textNode=Array.from(hideDwellControl.childNodes).find(function(node){return node.nodeType===Node.TEXT_NODE});
+    if(textNode)textNode.nodeValue=hideDwellToggle.checked?" Show dwell":" Hide dwell";
+  }
   function applyDwellVisibility(){
     dwellGridHosts.forEach(function(host){host.querySelectorAll(".cut-cell").forEach(function(cell){
       var walker=document.createTreeWalker(cell,NodeFilter.SHOW_TEXT),textNodes=[],node;
       while((node=walker.nextNode()))textNodes.push(node);
       if(hideDwellToggle.checked){
-        if(!cell.dataset.dwellOriginal)cell.dataset.dwellOriginal=JSON.stringify(textNodes.map(function(textNode){return textNode.nodeValue}));
+        if(!cell.dataset.dwellOriginalHtml)cell.dataset.dwellOriginalHtml=cell.innerHTML;
         textNodes.forEach(function(textNode){textNode.nodeValue=textNode.nodeValue.replace(/\\s*\\((?:\\?\\?|\\d+(?:\\.\\d+)?H?)\\)/gi,"")});
-      }else if(cell.dataset.dwellOriginal){
-        try{JSON.parse(cell.dataset.dwellOriginal).forEach(function(value,index){if(textNodes[index])textNodes[index].nodeValue=value})}catch(error){}
-        delete cell.dataset.dwellOriginal;
+      }else if(cell.dataset.dwellOriginalHtml){
+        cell.innerHTML=cell.dataset.dwellOriginalHtml;
+        delete cell.dataset.dwellOriginalHtml;
       }
     })
     });
+    updateDwellToggleLabel();
   }
   function placeHideTrackIds(){
     if(!yardGrid||!hideTrackIdsControl||!hideDwellControl)return;
@@ -6161,7 +6166,7 @@ tfoot .lph-target-pill.below-target{background:#fecaca;color:#7f1d1d}
     }
 
     function withExcelGridDisplayToggles(html) {
-      if (!html || typeof html !== "string" || html.includes("excel-grid-display-toggles")) return html;
+      if (!html || typeof html !== "string" || html.includes("excel-grid-display-toggles") || html.includes("excel-toolbar-groups")) return html;
       const patch = `
 <style id="excel-grid-display-toggles">
   #yardGrid .hide-track-ids-header{position:relative!important;z-index:12!important;padding:0 3px!important;overflow:visible!important;display:flex!important;align-items:center!important;justify-content:center!important}
@@ -10451,6 +10456,59 @@ document.addEventListener("input", event => {
       return bodyClose >= 0 ? html.slice(0, bodyClose) + style + "\n" + html.slice(bodyClose) : html + style;
     }
 
+    function withChassisPrimaryActionOrder(html) {
+      if (!html || typeof html !== "string" || html.includes("chassis-primary-action-order-v1")) return html;
+      const style = `<style id="chassis-primary-action-order-v1">
+#forecastUnplannedUnitsBtn{background:rgba(16,185,129,.22)!important;border-color:rgba(52,211,153,.48)!important;color:#d1fae5!important;box-shadow:0 8px 18px rgba(16,185,129,.12)!important}
+#forecastUnplannedUnitsBtn:hover{border-color:rgba(167,243,208,.72)!important;filter:brightness(1.08)}
+</style>`;
+      const script = `<script id="chassis-primary-action-order-script-v1">(()=>{
+  const unplanned=document.getElementById("forecastUnplannedUnitsBtn");
+  const hotbox=document.getElementById("forecastHotboxListBtn");
+  const mismatchClear=document.getElementById("forecastMismatchClearBtn");
+  if(unplanned&&hotbox&&unplanned.parentElement===hotbox.parentElement){
+    hotbox.parentElement.insertBefore(unplanned,hotbox);
+    if(mismatchClear&&mismatchClear.parentElement===hotbox.parentElement)mismatchClear.insertAdjacentElement("afterend",hotbox);
+  }
+})();<\/script>`;
+      html = html.replace("</head>", style + "\n</head>");
+      const bodyClose = html.toLowerCase().lastIndexOf("</body>");
+      return bodyClose >= 0 ? html.slice(0, bodyClose) + script + "\n" + html.slice(bodyClose) : html + script;
+    }
+
+    function withChassisReferenceCardLayout(html) {
+      if (!html || typeof html !== "string" || html.includes("chassis-reference-card-layout-v1")) return html;
+      const style = `<style id="chassis-reference-card-layout-v1">
+#forecastStatusCards.forecast-status-cards{grid-template-columns:repeat(3,minmax(0,1fr))!important;width:100%!important;gap:14px!important}
+#forecastStatusCards .forecast-day-section{width:100%!important;max-width:none!important}
+#forecastStatusCards .forecast-day-divider{position:relative!important;min-height:66px!important;margin:0 0 14px!important;padding:12px 18px 11px 58px!important;border:1px solid #334155!important;border-radius:9px!important;background:linear-gradient(145deg,#172231,#111a27)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.035),0 7px 18px rgba(0,0,0,.18)!important}
+#forecastStatusCards .forecast-day-divider::before{content:"☀";position:absolute;left:18px;top:50%;transform:translateY(-50%);color:#ff735d;font-size:29px;line-height:1}
+#forecastStatusCards .forecast-day-section:nth-child(2) .forecast-day-divider::before{content:"☼";color:#fbbf24}
+#forecastStatusCards .forecast-day-section:nth-child(3) .forecast-day-divider::before{content:"";left:19px;width:21px;height:19px;border:3px solid #a78bfa;border-radius:3px;box-sizing:border-box;background:linear-gradient(to bottom,#a78bfa 0 4px,transparent 4px)}
+#forecastStatusCards .forecast-day-section:nth-child(3) .forecast-day-divider::after{content:"";position:absolute;left:24px;top:calc(50% - 4px);width:3px;height:3px;border-radius:1px;background:#a78bfa;box-shadow:6px 0 #a78bfa,0 6px #a78bfa,6px 6px #a78bfa}
+#forecastStatusCards .forecast-day-divider>div:first-child strong,#forecastStatusCards .forecast-day-divider>div:first-child strong.forecast-day-status-pill{min-height:0!important;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;color:#ff735d!important;font-size:16px!important;font-weight:1000!important;letter-spacing:.025em!important}
+#forecastStatusCards .forecast-day-section:nth-child(2) .forecast-day-divider>div:first-child strong{color:#fbbf24!important}
+#forecastStatusCards .forecast-day-section:nth-child(3) .forecast-day-divider>div:first-child strong{color:#a78bfa!important}
+#forecastStatusCards .forecast-day-unit-total span{font-size:8px!important;color:#94a3b8!important}
+#forecastStatusCards .forecast-day-unit-total strong{font-size:27px!important;color:#f8fafc!important}
+#forecastStatusCards .forecast-status-cards-grid{gap:14px!important;padding:0!important}
+#forecastStatusCards .forecast-train-card.compact-option-three,#forecastStatusCards .forecast-status-cards-grid .forecast-train-card{padding:14px!important;border:1px solid #334155!important;border-radius:9px!important;background:linear-gradient(145deg,#172130,#121b28)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.04),0 7px 18px rgba(0,0,0,.16)!important}
+#forecastStatusCards .forecast-compact-train-head{margin-bottom:12px!important}
+#forecastStatusCards .forecast-compact-train-main .forecast-train-name{font-size:16px!important}
+#forecastStatusCards .forecast-compact-total strong{min-width:40px!important;height:26px!important;font-size:13px!important}
+#forecastStatusCards .forecast-pool-size-grid.forecast-four-quadrant-grid{gap:9px 10px!important}
+#forecastStatusCards .forecast-quadrant{padding:0!important;border-width:1px!important;border-left-width:1px!important;border-radius:6px!important}
+#forecastStatusCards .forecast-quadrant-item{min-height:31px!important;padding:5px 7px!important}
+#forecastStatusCards .forecast-quadrant-label{font-size:11px!important}
+#forecastStatusCards .forecast-count-bubble{font-size:10px!important}
+#forecastStatusCards .forecast-other-strip{margin-top:11px!important;padding-top:10px!important}
+@media(max-width:1100px){#forecastStatusCards.forecast-status-cards{grid-template-columns:repeat(2,minmax(330px,1fr))!important}}
+@media(max-width:720px){#forecastStatusCards.forecast-status-cards{grid-template-columns:1fr!important}}
+</style>`;
+      const bodyClose = html.toLowerCase().lastIndexOf("</body>");
+      return bodyClose >= 0 ? html.slice(0, bodyClose) + style + "\n" + html.slice(bodyClose) : html + style;
+    }
+
     function withChassisCompactRequestBoard(html) {
       if (!html || typeof html !== "string" || html.includes("chassis-compact-request-board-v1")) return html;
       const style = `<style id="chassis-compact-request-board-v1">
@@ -12448,6 +12506,21 @@ body.forecast-excel-view-open{padding-right:320px!important;}
       return html.replace("</head>", `${style}</head>`);
     }
 
+    function withChassisLighterOver50Cells(html) {
+      if (!html || typeof html !== "string" || html.includes("chassis-lighter-over-50-cells-v1")) return html;
+      const style = `<style id="chassis-lighter-over-50-cells-v1">
+#forecastExcelView .forecast-excel-main-table td.excel-over-50,
+#forecastExcelView .forecast-excel-page .forecast-excel-main-table tbody tr:not(.excel-total-row) > .excel-over-50,
+#forecastExcelView .forecast-excel-page.forecast-excel-test-copy .forecast-excel-main-table tbody tr:not(.excel-total-row) > .excel-over-50{
+  background:#f6d58a!important;
+  background-color:#f6d58a!important;
+  box-shadow:inset 0 0 0 1px #b77900!important;
+  color:#000!important;
+}
+</style>`;
+      return html.replace("</head>", style + "\n</head>");
+    }
+
     function withBillingExportDropdownV1(html) {
       if (!html || typeof html !== "string" || html.includes("billing-export-dropdown-v1")) return html;
       const injection = `<meta id="billing-export-dropdown-v1"><scr${""}ipt>
@@ -13082,6 +13155,8 @@ body.forecast-excel-view-open{padding-right:320px!important;}
           pageHtml = withChassisForecastSupplyWarnings(pageHtml);
           pageHtml = withChassisForecastWhiteCanvas(pageHtml);
           pageHtml = withChassisCompactInboundForecast(pageHtml);
+          pageHtml = withChassisPrimaryActionOrder(pageHtml);
+          pageHtml = withChassisReferenceCardLayout(pageHtml);
           pageHtml = withChassisCompactRequestBoard(pageHtml);
           pageHtml = withChassisUnifiedRequestBoard(pageHtml);
           pageHtml = withChassisOpenDrayRequests(pageHtml);
@@ -13091,6 +13166,7 @@ body.forecast-excel-view-open{padding-right:320px!important;}
           pageHtml = withChassisSplitTableTextSliders(pageHtml);
           pageHtml = withChassisUnplannedColumnTypography(pageHtml);
           pageHtml = withChassisExcelControlsViewport(pageHtml);
+          pageHtml = withChassisLighterOver50Cells(pageHtml);
         }
         bridgedPageHtml.set(id, withWorkbookSyncBridge(pageHtml));
       }

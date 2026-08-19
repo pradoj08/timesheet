@@ -4811,14 +4811,16 @@ body.forecast-view .forecast-bottom-controls {
   line-height:1 !important;
 }
 #forecastInventoryImportBtn,
-#forecastMismatchImportBtn {
+#forecastMismatchImportBtn,
+#forecastUnplannedUnitsBtn {
   background:rgba(16,185,129,.22) !important;
   border-color:rgba(52,211,153,.48) !important;
   color:#d1fae5 !important;
   box-shadow:0 8px 18px rgba(16,185,129,.12) !important;
 }
 #forecastInventoryImportBtn:hover,
-#forecastMismatchImportBtn:hover {
+#forecastMismatchImportBtn:hover,
+#forecastUnplannedUnitsBtn:hover {
   border-color:rgba(167,243,208,.72) !important;
   filter:brightness(1.08);
 }
@@ -6078,12 +6080,12 @@ body.forecast-view .forecast-bottom-controls {
         <button id="forecastTracklistImportBtn" type="button">Import Tracklist</button>
         <button id="forecastInventoryImportBtn" type="button">Import Chassis</button>
         <button id="forecastMismatchImportBtn" type="button">Import Mismatch</button>
-        <button id="forecastHotboxListBtn" type="button" aria-haspopup="dialog">Hotbox List <span id="forecastHotboxListCount">0</span></button>
+        <button id="forecastUnplannedUnitsBtn" type="button" class="forecast-tools-toggle-btn">Unplanned</button>
         <button id="forecastClearBtn" type="button">Clear Inbound</button>
         <button id="forecastInventoryClearBtn" type="button">Clear Inventory</button>
         <button id="forecastClearImportBtn" type="button">Clear Chassis</button>
         <button id="forecastMismatchClearBtn" type="button">Clear Mismatch</button>
-        <button id="forecastUnplannedUnitsBtn" type="button" class="forecast-tools-toggle-btn">Unplanned</button>
+        <button id="forecastHotboxListBtn" type="button" aria-haspopup="dialog">Hotbox List <span id="forecastHotboxListCount">0</span></button>
         <input id="forecastFileInput" type="file" accept=".csv,.xlsx,.xls" multiple hidden>
         <input id="forecastInventoryFileInput" type="file" accept=".csv,.xlsx,.xls" multiple hidden>
         <input id="forecastMismatchFileInput" type="file" accept=".csv,.xlsx,.xls" multiple hidden>
@@ -23025,7 +23027,8 @@ body.forecast-excel-view-open{
 }
 .forecast-excel-main-table td{color:#111}
 .forecast-excel-main-table td.excel-over-50{
-  background:#f59e0b!important;
+  background:#f6d58a!important;
+  box-shadow:inset 0 0 0 1px #b77900!important;
   color:#000!important;
 }
 .forecast-excel-zero{
@@ -23767,13 +23770,15 @@ body.forecast-excel-view-open{
   background:#fff!important;
 }
 #forecastExcelView .forecast-excel-page.forecast-excel-test-copy .forecast-excel-main-table .excel-over-50{
-  background:#f59e0b!important;
+  background:#f6d58a!important;
+  box-shadow:inset 0 0 0 1px #b77900!important;
   color:#000!important;
 }
 #forecastExcelView .forecast-excel-page .forecast-excel-main-table tbody tr:not(.excel-total-row) > .excel-over-50,
 #forecastExcelView .forecast-excel-page.forecast-excel-test-copy .forecast-excel-main-table tbody tr:not(.excel-total-row) > .excel-over-50{
-  background:#f59e0b!important;
-  background-color:#f59e0b!important;
+  background:#f6d58a!important;
+  background-color:#f6d58a!important;
+  box-shadow:inset 0 0 0 1px #b77900!important;
   color:#000!important;
 }
 #forecastExcelView .previous-submission-row .forecast-excel-request-input[readonly]{
@@ -26116,6 +26121,73 @@ body:not(.forecast-view) .app > .hero.clean-hero > .hero-actions{
   #forecastStatusCards.forecast-status-cards{grid-template-columns:1fr!important}
   #forecastStatusCards .forecast-day-section{max-width:372px!important}
 }
+</style>
+<style id="chassis-reference-card-layout-v1">
+#forecastUnplannedUnitsBtn{
+  background:rgba(16,185,129,.22)!important;border-color:rgba(52,211,153,.48)!important;
+  color:#d1fae5!important;box-shadow:0 8px 18px rgba(16,185,129,.12)!important;
+}
+#forecastUnplannedUnitsBtn:hover{border-color:rgba(167,243,208,.72)!important;filter:brightness(1.08)}
+#forecastStatusCards.forecast-status-cards{
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  width:100%!important;
+  gap:14px!important;
+}
+#forecastStatusCards .forecast-day-section{
+  width:100%!important;
+  max-width:none!important;
+}
+#forecastStatusCards .forecast-day-divider{
+  position:relative!important;
+  min-height:66px!important;
+  margin:0 0 14px!important;
+  padding:12px 18px 11px 58px!important;
+  border:1px solid #334155!important;
+  border-radius:9px!important;
+  background:linear-gradient(145deg,#172231,#111a27)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.035),0 7px 18px rgba(0,0,0,.18)!important;
+}
+#forecastStatusCards .forecast-day-divider::before{
+  content:"☀";position:absolute;left:18px;top:50%;transform:translateY(-50%);
+  color:#ff735d;font-size:29px;line-height:1;
+}
+#forecastStatusCards .forecast-day-section:nth-child(2) .forecast-day-divider::before{content:"☼";color:#fbbf24}
+#forecastStatusCards .forecast-day-section:nth-child(3) .forecast-day-divider::before{
+  content:"";left:19px;width:21px;height:19px;border:3px solid #a78bfa;border-radius:3px;
+  box-sizing:border-box;background:linear-gradient(to bottom,#a78bfa 0 4px,transparent 4px);
+}
+#forecastStatusCards .forecast-day-section:nth-child(3) .forecast-day-divider::after{
+  content:"";position:absolute;left:24px;top:calc(50% - 4px);width:3px;height:3px;border-radius:1px;
+  background:#a78bfa;box-shadow:6px 0 #a78bfa,0 6px #a78bfa,6px 6px #a78bfa;
+}
+#forecastStatusCards .forecast-day-divider>div:first-child strong,
+#forecastStatusCards .forecast-day-divider>div:first-child strong.forecast-day-status-pill{
+  min-height:0!important;padding:0!important;border:0!important;border-radius:0!important;
+  background:transparent!important;box-shadow:none!important;color:#ff735d!important;
+  font-size:16px!important;font-weight:1000!important;letter-spacing:.025em!important;
+}
+#forecastStatusCards .forecast-day-section:nth-child(2) .forecast-day-divider>div:first-child strong{color:#fbbf24!important}
+#forecastStatusCards .forecast-day-section:nth-child(3) .forecast-day-divider>div:first-child strong{color:#a78bfa!important}
+#forecastStatusCards .forecast-day-unit-total span{font-size:8px!important;color:#94a3b8!important}
+#forecastStatusCards .forecast-day-unit-total strong{font-size:27px!important;color:#f8fafc!important}
+#forecastStatusCards .forecast-status-cards-grid{gap:14px!important;padding:0!important}
+#forecastStatusCards .forecast-train-card.compact-option-three,
+#forecastStatusCards .forecast-status-cards-grid .forecast-train-card{
+  padding:14px!important;border:1px solid #334155!important;border-radius:9px!important;
+  background:linear-gradient(145deg,#172130,#121b28)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.04),0 7px 18px rgba(0,0,0,.16)!important;
+}
+#forecastStatusCards .forecast-compact-train-head{margin-bottom:12px!important}
+#forecastStatusCards .forecast-compact-train-main .forecast-train-name{font-size:16px!important}
+#forecastStatusCards .forecast-compact-total strong{min-width:40px!important;height:26px!important;font-size:13px!important}
+#forecastStatusCards .forecast-pool-size-grid.forecast-four-quadrant-grid{gap:9px 10px!important}
+#forecastStatusCards .forecast-quadrant{padding:0!important;border-width:1px!important;border-left-width:1px!important;border-radius:6px!important}
+#forecastStatusCards .forecast-quadrant-item{min-height:31px!important;padding:5px 7px!important}
+#forecastStatusCards .forecast-quadrant-label{font-size:11px!important}
+#forecastStatusCards .forecast-count-bubble{font-size:10px!important}
+#forecastStatusCards .forecast-other-strip{margin-top:11px!important;padding-top:10px!important}
+@media(max-width:1100px){#forecastStatusCards.forecast-status-cards{grid-template-columns:repeat(2,minmax(330px,1fr))!important}}
+@media(max-width:720px){#forecastStatusCards.forecast-status-cards{grid-template-columns:1fr!important}}
 </style>
 <style id="chassis-compact-request-board-v1">
 #forecastModal .forecast-chassis-request-board{

@@ -1083,22 +1083,28 @@ body.highlight-focus.highlights-hidden #yardView .y-half.empty::after{
   border-color:#efb300 !important;
 }
 
-/* Crisp, aligned container geometry. Keep the shallow 3D treatment without
-   letting roofs or side faces make paired boxes appear different widths. */
+/* Crisp, aligned container geometry. The old raised roof protruded above the
+   body and produced a stepped/crooked corner at the container edge. */
 .y-container{
   left:0 !important;
   right:0 !important;
   border-radius:1px !important;
 }
 .y-container::before{
-  left:0 !important;
-  right:0 !important;
-  box-sizing:border-box !important;
-  transform:none !important;
-  border-radius:0 !important;
+  display:none !important;
 }
 .y-container::after{
-  display:none !important;
+  display:block !important;
+  top:0 !important;
+  bottom:0 !important;
+  right:-6px !important;
+  width:6px !important;
+  transform:none !important;
+  transform-origin:left top !important;
+  box-sizing:border-box !important;
+  border-top:1px solid rgba(255,255,255,.08) !important;
+  border-right:1px solid rgba(0,0,0,.5) !important;
+  border-bottom:1px solid rgba(0,0,0,.5) !important;
 }
 .y-stack:has(.y-half.top:not(.empty)):has(.y-half.bottom:not(.empty)) .y-half.top .y-container{
   border-radius:1px 1px 0 0 !important;
