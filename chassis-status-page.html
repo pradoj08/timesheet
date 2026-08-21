@@ -6459,7 +6459,7 @@ body.forecast-view .forecast-bottom-controls {
           <span>Notes Height</span>
           <strong id="forecastExcelNotesHeightValue">90px</strong>
         </label>
-        <input id="forecastExcelNotesHeightSlider" type="range" min="54" max="240" step="2" value="90">
+        <input id="forecastExcelNotesHeightSlider" type="range" min="54" max="500" step="2" value="90">
         <label for="forecastExcelWidthSlider">
           <span>Table Width</span>
           <strong id="forecastExcelWidthValue">100%</strong>
@@ -10321,7 +10321,7 @@ function renderForecastExcelShortageNotes(notes){
     const item=typeof note==="string"?{text:note,pool:"",size:""}:note;
     const unplannedCount=getForecastUnplannedShortageCount(item.pool,item.size);
     const unplannedFlag=unplannedCount>0
-      ? `<span class="forecast-excel-unplanned-flag" title="Unplanned units available">Unplanned ${unplannedCount}</span>`
+      ? `<span class="forecast-excel-unplanned-flag" title="Loadplan units available">Loadplan ${unplannedCount}</span>`
       : "";
     return `<span class="forecast-excel-shortage-line">${escapeHtml(item.text)}${unplannedFlag}</span>`;
   }).join("");
@@ -10431,7 +10431,7 @@ function renderForecastExcelView(){
   const trainTable=renderForecastExcelTable(
     ["Train ID","Size","TRAC","FGCP","SNCZ","DCLI","TOTAL"],
     trainRows,
-    r=>{const rowClass=r.totalRow?"excel-total-row":r.placeholder?"excel-placeholder-row":r.groupClass||"";const editable=r.rowspan&&!r.placeholder&&!r.totalRow&&!["STACKED","MISMATCH"].includes(String(r.train||"").toUpperCase());return `<tr class="${rowClass}">${r.rowspan?`<th rowspan="${r.rowspan}" class="excel-train-name${editable?" excel-train-name-editable":""}"${editable?` data-excel-train="${escapeHtml(r.sourceTrain)}" data-excel-day="${escapeHtml(r.sourceDay)}" title="Click to rename train"`:""}>${escapeHtml(r.train)}${forecastExcelShowTrainTotals&&editable?`<span class="forecast-excel-train-total">${Number(r.trainTotal)||0} Units</span>`:""}${r.arrivalLabel?`<small class="${getForecastExcelArrivalClass(r.arrivalLabel)}">${escapeHtml(r.arrivalLabel)}</small>`:""}</th>`:""}<th>${r.size}</th>${["TRAC","FGCP","SNCZ","DCLI"].map(k=>{const value=r.counts[k]||0;return `<td class="${!r.totalRow&&value>50?"excel-over-50":""}">${renderForecastExcelValue(value)}</td>`}).join("")}<th>${renderForecastExcelValue(r.total)}</th></tr>`},
+    r=>{const rowClass=r.totalRow?"excel-total-row":r.placeholder?"excel-placeholder-row":r.groupClass||"";const editable=r.rowspan&&!r.placeholder&&!r.totalRow&&!["STACKED","MISMATCH"].includes(String(r.train||"").toUpperCase());return `<tr class="${rowClass}">${r.rowspan?`<th rowspan="${r.rowspan}" class="excel-train-name${editable?" excel-train-name-editable":""}"${editable?` data-excel-train="${escapeHtml(r.sourceTrain)}" data-excel-day="${escapeHtml(r.sourceDay)}" title="Click to rename train"`:""}>${escapeHtml(r.train)}${forecastExcelShowTrainTotals&&editable?`<span class="forecast-excel-train-total">${Number(r.trainTotal)||0} Units</span>`:""}${r.arrivalLabel?`<small class="${getForecastExcelArrivalClass(r.arrivalLabel)}">${escapeHtml(r.arrivalLabel)}</small>`:""}</th>`:""}<th>${r.size}</th>${["TRAC","FGCP","SNCZ","DCLI"].map(k=>{const value=r.counts[k]||0;return `<td>${renderForecastExcelValue(value)}</td>`}).join("")}<th>${renderForecastExcelValue(r.total)}</th></tr>`},
     "forecast-excel-main-table"
   );
   const calculatorIcon=`<svg class="forecast-excel-title-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="2.5" width="14" height="19" rx="1.5"/><rect x="8" y="5.5" width="8" height="4"/><path d="M8 13h1M12 13h1M16 13h1M8 16h1M12 16h1M16 16h1M8 19h1M12 19h1M16 19h1"/></svg>`;
@@ -10633,7 +10633,7 @@ function applyForecastExcelViewSettings(){
   const unplannedFlagText=Math.max(6,Math.min(18,Number(unplannedFlagSlider.value)||11));
   const unplannedColumnText=Math.max(6,Math.min(14,Number(unplannedColumnSlider.value)||9));
   const notesTrain=Math.max(8,Math.min(24,Number(notesTrainSlider.value)||16));
-  const notesHeight=Math.max(54,Math.min(240,Number(notesHeightSlider.value)||90));
+  const notesHeight=Math.max(54,Math.min(500,Number(notesHeightSlider.value)||90));
   const width=Math.max(30,Math.min(140,Number(widthSlider.value)||100));
   const height=Math.max(20,Math.min(180,Number(heightSlider.value)||100));
   const headerOpacity=Math.max(0,Math.min(100,Number(headerOpacitySlider.value)||100));
