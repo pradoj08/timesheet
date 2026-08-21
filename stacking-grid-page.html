@@ -16,12 +16,41 @@ button,.mode{border:0;border-radius:8px;padding:10px 12px;font-weight:900;font-s
 .mode{background:#35424d;display:flex;align-items:center;gap:4px}
 .status{font-size:12px;font-weight:800;color:#9cf0a8;margin-bottom:6px}
 .viewport{width:100%;overflow:hidden;padding:0}
-.sheet{width:max-content;min-width:1490px;background:#111820;border:4px solid #111820;display:grid;grid-template-columns:86px auto 88px 92px;grid-template-rows:45px auto 45px}
+.sheet{width:max-content;min-width:1490px;background:#111820;border:4px solid #111820;display:grid;grid-template-columns:86px auto 0 92px;grid-template-rows:45px auto 45px}
 .track,.back,.front,.crane{background:#111820;color:#fff;font-weight:900;display:flex;align-items:center;justify-content:center;text-align:center}
-.track{grid-column:1;grid-row:1/4} .back{grid-column:2/4;grid-row:1} .front{grid-column:2/4;grid-row:3} .crane{grid-column:4;grid-row:1/4}
+.track{grid-column:1;grid-row:1/4} .back{grid-column:2;grid-row:1} .front{grid-column:2;grid-row:3} .crane{grid-column:4;grid-row:1/4}
+.row-edge-controls{
+  background:#111820;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  align-items:center;
+  justify-self:end;
+  width:190px;
+  gap:5px;
+  padding:5px;
+  z-index:2;
+}
+.row-edge-controls.top{grid-column:2;grid-row:1}
+.row-edge-controls.bottom{grid-column:2;grid-row:3}
+.row-edge-controls button{
+  min-width:0;
+  height:34px;
+  padding:0;
+  border:2px solid #d9dfe2;
+  border-radius:5px;
+  background:#fff;
+  color:#101820;
+  font-size:22px;
+  line-height:1;
+  font-weight:900;
+  box-shadow:0 2px 4px #0005;
+  cursor:pointer;
+}
+.row-edge-controls button:active{transform:translateY(1px)}
 .yardgrid{grid-column:2;grid-row:2;background:#c9cccb;padding:8px;display:grid;grid-template-columns:repeat(7,190px);gap:1px 8px}
-.rowlabels{grid-column:3;grid-row:2;background:#c9cccb;padding:8px 5px;display:grid;gap:1px}
+.rowlabels{grid-column:3;grid-row:2;background:#c9cccb;padding:0;display:grid;gap:0;overflow:hidden}
 .rowlabels div{background:#eee;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:13px;height:42px}
+.rowlabels{position:relative;display:block !important}
 .unit{height:42px;position:relative;background:#fafafa;border:1px solid #aeb4b7;display:flex;min-width:0}
 .unit.green{background:#83dc8e}
 .handle{width:38px;min-width:38px;border:0;border-right:1px solid #abb1b5;background:#d9dfe2;font-size:18px;font-weight:900;touch-action:none}
@@ -448,6 +477,27 @@ header{
 .single-toolbar button,
 .single-toolbar .mode{
   flex:none;
+}
+.container-counter{
+  flex:none;
+  display:flex;
+  align-items:center;
+  gap:7px;
+  min-height:38px;
+  padding:7px 12px;
+  border:1px solid #52616c;
+  border-radius:8px;
+  background:#0d151c;
+  color:#c8d1d7;
+  font-size:12px;
+  font-weight:900;
+  letter-spacing:.04em;
+  white-space:nowrap;
+}
+.container-counter strong{
+  color:#fff;
+  font-size:20px;
+  line-height:1;
 }
 .status{
   display:none !important;
@@ -1117,6 +1167,220 @@ body.highlight-focus.highlights-hidden #yardView .y-half.empty::after{
   box-shadow:0 4px 5px rgba(0,0,0,.45),inset -3px 0 3px rgba(0,0,0,.16),inset 3px 0 2px rgba(255,255,255,.05) !important;
 }
 
+/* Three-high stacking: each bay has TOP, MIDDLE, and BOTTOM positions. */
+.y-pair{
+  height:132px !important;
+  grid-template-rows:repeat(3,1fr) !important;
+}
+.y-stack{
+  height:130px !important;
+}
+.y-half{
+  height:42px !important;
+  bottom:auto !important;
+}
+.y-half.top{top:2px !important}
+.y-half.middle{top:44px !important;z-index:4}
+.y-half.bottom{top:86px !important}
+.y-half.middle .y-container{
+  inset:0 !important;
+  transform:none !important;
+  border-radius:0 !important;
+  box-shadow:0 3px 5px #0007 !important;
+}
+.y-half.middle .y-container::after{display:none !important}
+.y-stack .y-half .y-container::before{display:none !important}
+.y-stack:has(.y-half.top:not(.empty)) .y-half.top .y-container::before,
+.y-stack:has(.y-half.top.empty):has(.y-half.middle:not(.empty)) .y-half.middle .y-container::before,
+.y-stack:has(.y-half.top.empty):has(.y-half.middle.empty):has(.y-half.bottom:not(.empty)) .y-half.bottom .y-container::before{
+  display:block !important;
+}
+.y-stack:has(.y-half.middle:not(.empty)) .y-half.top.empty,
+.y-stack:has(.y-half.bottom:not(.empty)) .y-half.middle.empty{
+  border-color:transparent !important;
+  background:transparent !important;
+  outline:none !important;
+  box-shadow:none !important;
+}
+.y-stack:has(.y-half.middle:not(.empty)) .y-half.top.empty::before,
+.y-stack:has(.y-half.middle:not(.empty)) .y-half.top.empty::after,
+.y-stack:has(.y-half.bottom:not(.empty)) .y-half.middle.empty::before,
+.y-stack:has(.y-half.bottom:not(.empty)) .y-half.middle.empty::after{
+  display:none !important;
+}
+/* Selected slots stay unmistakable in both views, including highlighted units. */
+.unit.selected,
+.unit.selected.green{
+  outline:4px solid #168bff !important;
+  outline-offset:-4px !important;
+  box-shadow:inset 0 0 0 2px #eaf6ff,0 0 12px rgba(22,139,255,.95) !important;
+  z-index:8 !important;
+}
+.y-half.selected{
+  outline:4px solid #168bff !important;
+  outline-offset:2px !important;
+  box-shadow:0 0 0 2px #eaf6ff,0 0 16px rgba(22,139,255,.95) !important;
+  z-index:9 !important;
+}
+/* Clean rectangular stacks: one aligned roof on the highest occupied box. */
+.y-stack .y-container{
+  left:0 !important;
+  right:0 !important;
+  top:0 !important;
+  bottom:0 !important;
+  transform:none !important;
+  border-radius:0 !important;
+  box-sizing:border-box !important;
+}
+.y-stack .y-container::after{display:none !important}
+.y-stack .y-container::before{display:none !important}
+.y-stack .y-container.stack-top::before{
+  content:"" !important;
+  display:block !important;
+  position:absolute !important;
+  left:0 !important;
+  right:0 !important;
+  top:-7px !important;
+  height:7px !important;
+  box-sizing:border-box !important;
+  background:inherit !important;
+  border:1px solid rgba(255,255,255,.2) !important;
+  border-bottom-color:rgba(0,0,0,.42) !important;
+  border-radius:1px 1px 0 0 !important;
+  transform:none !important;
+  filter:brightness(1.22) !important;
+  z-index:1 !important;
+}
+.y-stack:has(.y-half.top:not(.empty)):has(.y-half.middle:not(.empty)) .y-half.top .y-container,
+.y-stack:has(.y-half.middle:not(.empty)):has(.y-half.bottom:not(.empty)) .y-half.middle .y-container{
+  border-bottom-color:rgba(0,0,0,.58) !important;
+  box-shadow:inset 0 -1px rgba(0,0,0,.38),inset 3px 0 rgba(255,255,255,.04) !important;
+}
+/* Compact tier marker: B alone, B/T for two-high, B/M/T for three-high. */
+.tier-badge{
+  position:absolute;
+  right:3px;
+  bottom:3px;
+  z-index:6;
+  display:grid;
+  place-items:center;
+  width:14px;
+  height:14px;
+  border:1px solid #68c7ff;
+  border-radius:4px;
+  background:#075b9d;
+  box-shadow:0 0 0 1px rgba(0,0,0,.72),0 0 6px rgba(45,174,255,.95);
+  font:600 9px/1 Arial,sans-serif;
+  color:#fff;
+  text-shadow:0 1px 0 rgba(0,0,0,.7);
+  pointer-events:none;
+  opacity:1;
+}
+.unit{position:relative}
+.unit .tier-badge{right:4px;bottom:4px}
+.y-container .tier-badge{
+  right:8px;
+  bottom:5px;
+  width:13px;
+  height:13px;
+  box-shadow:0 0 0 1px rgba(0,0,0,.72),0 0 4px rgba(45,174,255,.9);
+}
+.slot-inline-editor{
+  position:absolute;
+  inset:3px;
+  z-index:12;
+  width:calc(100% - 6px);
+  height:calc(100% - 6px);
+  box-sizing:border-box;
+  border:2px solid #2ba7ff;
+  border-radius:2px;
+  outline:none;
+  background:#07131d;
+  color:#fff;
+  box-shadow:0 0 0 1px #07131d,0 0 8px rgba(43,167,255,.9);
+  font:900 13px/1 Arial,sans-serif;
+  text-align:center;
+  text-transform:uppercase;
+}
+.y-half{position:relative}
+.y-half .slot-inline-editor{inset:1px;width:calc(100% - 2px);height:calc(100% - 2px);font-size:10px}
+#remove.delete-confirm{
+  border-color:#ff7b7b !important;
+  background:#b5162c !important;
+  color:#fff !important;
+  box-shadow:0 0 0 2px rgba(255,56,82,.28),0 0 10px rgba(255,56,82,.65) !important;
+}
+#undo:disabled{opacity:.42;cursor:not-allowed}
+/* Three-level empty bays: keep all parking positions distinct and evenly spaced. */
+.y-stack .y-half.empty{
+  display:block !important;
+  height:38px !important;
+  border:1px solid rgba(120,132,140,.3) !important;
+  background:rgba(18,24,28,.22) !important;
+  outline:none !important;
+  box-shadow:none !important;
+}
+.y-stack .y-half.top.empty{top:2px !important;bottom:auto !important}
+.y-stack .y-half.middle.empty{top:46px !important;bottom:auto !important}
+.y-stack .y-half.bottom.empty{top:90px !important;bottom:auto !important}
+.y-stack .y-half.empty::before,
+.y-stack .y-half.empty::after{display:block !important}
+/* Final three-level geometry: occupied and empty positions use the same rows. */
+.yard-shell{grid-template-rows:48px auto 150px !important}
+.y-pair{height:132px !important;grid-template-rows:repeat(3,1fr) !important}
+.y-stack{height:130px !important}
+.y-stack .y-half,
+.y-stack .y-half.empty{height:42px !important}
+.y-stack .y-half.top,
+.y-stack .y-half.top.empty{top:2px !important;bottom:auto !important}
+.y-stack .y-half.middle,
+.y-stack .y-half.middle.empty{top:44px !important;bottom:auto !important}
+.y-stack .y-half.bottom,
+.y-stack .y-half.bottom.empty{top:86px !important;bottom:auto !important}
+.y-front{position:relative;min-height:150px;overflow:visible}
+.y-front .yard-machine-fixed{
+  left:9% !important;
+  bottom:-5px !important;
+  width:780px !important;
+  max-height:300px !important;
+  z-index:100 !important;
+}
+/* Strict three-high geometry: every bay and its side legend use three equal rows. */
+#yardView .y-stack{
+  display:grid !important;
+  grid-template-rows:repeat(3,42px) !important;
+  gap:0 !important;
+  height:126px !important;
+  overflow:visible !important;
+}
+#yardView .y-stack .y-half,
+#yardView .y-stack .y-half.empty{
+  position:relative !important;
+  inset:auto !important;
+  top:auto !important;
+  right:auto !important;
+  bottom:auto !important;
+  left:auto !important;
+  display:block !important;
+  width:100% !important;
+  height:42px !important;
+  min-height:42px !important;
+  border:1px solid rgba(120,132,140,.3) !important;
+  background:rgba(18,24,28,.22) !important;
+  outline:none !important;
+  box-shadow:none !important;
+}
+#yardView .y-stack .y-half:not(.empty){
+  border-color:transparent !important;
+  background:transparent !important;
+}
+#yardView .y-stack .y-half.empty::before,
+#yardView .y-stack .y-half.empty::after{display:block !important}
+#yardView .y-pair{
+  display:grid !important;
+  grid-template-rows:repeat(3,42px) !important;
+  height:126px !important;
+}
 </style>
 </head>
 <body>
@@ -1125,16 +1389,14 @@ body.highlight-focus.highlights-hidden #yardView .y-half.empty::after{
   <div class="single-toolbar"><div class="viewbar">
     <button class="viewbtn active" id="gridBtn">GRID VIEW</button>
     <button class="viewbtn" id="yardBtn">YARD VIEW</button>
+    <div class="container-counter" aria-live="polite">CONTAINERS <strong id="containerTotal">0</strong></div>
   </div><div class="controls">
     <label class="mode"><input type="radio" name="mode" value="swap" checked>Swap</label>
     <label class="mode"><input type="radio" name="mode" value="move">Move</label>
     <button id="edit">Edit</button>
-    <button id="remove">Remove</button>
+    <button id="remove">Delete</button>
+    <button id="undo" disabled>Undo</button>
     <button id="green">Gold Highlight</button><button id="hideHighlights">Hide Highlights</button>
-    <button id="addTop">+ Row Top</button>
-    <button id="removeTop">− Row Top</button>
-    <button id="addBottom">+ Row Bottom</button>
-    <button id="removeBottom">− Row Bottom</button>
   </div></div>
 </header>
 
@@ -1143,10 +1405,18 @@ body.highlight-focus.highlights-hidden #yardView .y-half.empty::after{
     <div class="sheet">
       <div class="track">TRACK<br>809/808</div>
       <div class="back">BACK FENCE</div>
+      <div class="row-edge-controls top" aria-label="Adjust rows at the back fence">
+        <button type="button" id="topAddRow" title="Add row at top" aria-label="Add row at top">+</button>
+        <button type="button" id="topRemoveRow" title="Remove top row" aria-label="Remove top row">−</button>
+      </div>
       <div class="yardgrid" id="grid"></div>
       <div class="rowlabels" id="labels"></div>
       <div class="crane">CRANE<br>PAD</div>
       <div class="front">FRONT — [BOWL]</div>
+      <div class="row-edge-controls bottom" aria-label="Adjust rows at the bowl">
+        <button type="button" id="bottomAddRow" title="Add row at bottom" aria-label="Add row at bottom">+</button>
+        <button type="button" id="bottomRemoveRow" title="Remove bottom row" aria-label="Remove bottom row">−</button>
+      </div>
     </div>
   </div>
 </div>
@@ -1164,15 +1434,114 @@ let dragStartX=0;
 let dragStartY=0;
 let didDrag=false;
 let dragGhost=null;
+let undoStack=[];
+let deleteArmed=false;
+let deleteTimer=0;
 
-function save(){localStorage.setItem(KEY,JSON.stringify(state));}
-function load(){try{const s=JSON.parse(localStorage.getItem(KEY));if(Array.isArray(s))state=s;}catch(e){}}
-function rowsCount(){return Math.ceil(state.length/14)}
-function blankRow(){return Array.from({length:14},()=>({text:'',green:false}))}
+const BAYS=7;
+const LEVELS=3;
+const ROW_SIZE=BAYS*LEVELS;
+const LEVEL_KEY=KEY+'_levels';
+const ORDER_KEY=KEY+'_three_level_order';
+function migrateTwoHighToThree(items){
+  const migrated=[];
+  for(let base=0;base<items.length;base+=BAYS*2){
+    for(let bay=0;bay<BAYS;bay++)migrated.push(items[base+bay]||{text:'',green:false});
+    for(let bay=0;bay<BAYS;bay++)migrated.push({text:'',green:false});
+    for(let bay=0;bay<BAYS;bay++)migrated.push(items[base+BAYS+bay]||{text:'',green:false});
+  }
+  return migrated;
+}
+function repairBayMajorThreeMigration(items){
+  const repaired=[];
+  for(let base=0;base<items.length;base+=ROW_SIZE){
+    const row=items.slice(base,base+ROW_SIZE);
+    for(let level=0;level<LEVELS;level++){
+      for(let bay=0;bay<BAYS;bay++)repaired.push(row[(bay*LEVELS)+level]||{text:'',green:false});
+    }
+  }
+  return repaired;
+}
+function save(){
+  localStorage.setItem(KEY,JSON.stringify(state));
+  localStorage.setItem(LEVEL_KEY,String(LEVELS));
+  localStorage.setItem(ORDER_KEY,'level-major-v3');
+}
+function rememberState(){
+  undoStack.push({state:state.map(item=>({...item})),selectedIndex});
+  if(undoStack.length>30)undoStack.shift();
+  updateUndoButton();
+}
+function updateUndoButton(){
+  const btn=document.getElementById('undo');
+  if(btn)btn.disabled=!undoStack.length;
+}
+function undoLast(){
+  const previous=undoStack.pop();
+  if(!previous)return;
+  state=previous.state.map(item=>({...item}));
+  selectedIndex=previous.selectedIndex;
+  cancelDelete();
+  save();
+  renderAll();
+  updateUndoButton();
+}
+function load(){
+  try{
+    const s=JSON.parse(localStorage.getItem(KEY));
+    if(Array.isArray(s))state=s;
+  }catch(e){}
+  if(localStorage.getItem(LEVEL_KEY)!==String(LEVELS)){
+    state=migrateTwoHighToThree(state);
+    save();
+  }else if(localStorage.getItem(ORDER_KEY)==='bay-major-v3'){
+    state=repairBayMajorThreeMigration(state);
+    save();
+  }else if(localStorage.getItem(ORDER_KEY)!=='level-major-v3'){
+    save();
+  }
+}
+function rowsCount(){return Math.ceil(state.length/ROW_SIZE)}
+function blankRow(){return Array.from({length:ROW_SIZE},()=>({text:'',green:false}))}
+function addTopRow(){
+  rememberState();
+  state=[...blankRow(),...state];
+  selectedIndex=null;
+  save();
+  renderAll();
+}
+function removeTopRow(){
+  if(rowsCount()<=1)return;
+  rememberState();
+  state=state.slice(ROW_SIZE);
+  selectedIndex=null;
+  save();
+  renderAll();
+}
+function addBottomRow(){
+  rememberState();
+  state=[...state,...blankRow()];
+  selectedIndex=null;
+  save();
+  renderAll();
+}
+function removeBottomRow(){
+  if(rowsCount()<=1)return;
+  rememberState();
+  state=state.slice(0,-ROW_SIZE);
+  selectedIndex=null;
+  save();
+  renderAll();
+}
 let stackingFitFrame=0;
 function fitStackingView(){
   cancelAnimationFrame(stackingFitFrame);
   stackingFitFrame=requestAnimationFrame(()=>{
+    window.scrollTo(0,0);
+    document.documentElement.scrollTop=0;
+    document.documentElement.scrollLeft=0;
+    document.body.scrollTop=0;
+    document.body.scrollLeft=0;
     const header=document.querySelector('header');
     const headerHeight=header&&getComputedStyle(header).display!=='none'?header.getBoundingClientRect().height:0;
     const availableHeight=Math.max(1,window.innerHeight-headerHeight);
@@ -1184,6 +1553,12 @@ function fitStackingView(){
     if(!host||!canvas)return;
     host.style.height=availableHeight+'px';
     const viewport=gridVisible?host.querySelector('.viewport'):host;
+    host.scrollTop=0;
+    host.scrollLeft=0;
+    if(viewport){
+      viewport.scrollTop=0;
+      viewport.scrollLeft=0;
+    }
     if(viewport)viewport.style.height=availableHeight+'px';
     canvas.style.zoom='1';
     canvas.style.margin='0';
@@ -1195,8 +1570,27 @@ function fitStackingView(){
     canvas.style.marginLeft=Math.max(0,(availableWidth-(naturalWidth*scale))/2)+'px';
   });
 }
-function renderAll(){renderGrid();renderYard();fitStackingView();}
+function updateContainerTotal(){
+  const total=state.reduce((count,item)=>count+(String(item&&item.text||'').trim()?1:0),0);
+  document.getElementById('containerTotal').textContent=String(total);
+}
+function renderAll(){renderGrid();renderYard();updateContainerTotal();fitStackingView();}
 window.addEventListener('resize',fitStackingView,{passive:true});
+
+function tierLabel(index){
+  const rowBase=Math.floor(index/ROW_SIZE)*ROW_SIZE;
+  const bay=(index-rowBase)%BAYS;
+  const occupied=[];
+  for(let level=0;level<LEVELS;level++){
+    const levelIndex=rowBase+(level*BAYS)+bay;
+    if((state[levelIndex]?.text||'').trim())occupied.push(levelIndex);
+  }
+  const position=occupied.indexOf(index);
+  if(position<0)return '';
+  if(occupied.length===1)return 'B';
+  if(occupied.length===2)return position===0?'T':'B';
+  return position===0?'T':position===1?'M':'B';
+}
 
 function renderGrid(){
   const grid=document.getElementById('grid');
@@ -1208,53 +1602,32 @@ function renderGrid(){
   const tracks=[];
   for(let r=0;r<rows;r++){
     tracks.push('42px');
-    tracks.push('52px');
+    tracks.push('42px');
+    // Keep all three slots 42px tall, then reserve 12px beneath the group.
+    tracks.push('54px');
   }
   grid.style.gridTemplateRows=tracks.join(' ');
-  labels.style.gridTemplateRows=tracks.join(' ');
 
   // IMPORTANT:
-  // State is stored by bay pair:
-  // [Bay1 TOP, Bay1 BOTTOM, Bay2 TOP, Bay2 BOTTOM, ... Bay7 TOP, Bay7 BOTTOM]
-  // Render TOP across all seven bays first, then BOTTOM across all seven bays.
+  // State is stored by level across each seven-bay row:
+  // [all LEVEL 1 bays, all LEVEL 2 bays, all LEVEL 3 bays].
   for(let r=0;r<rows;r++){
-    const base=r*14;
-
-    // TOP row
-    for(let bay=0;bay<7;bay++){
-      const i=base+(bay*2);
-      const d=state[i]||{text:'',green:false};
-      const u=document.createElement('div');
-      u.className='unit'+(d.green?' green':'')+(selectedIndex===i?' selected':'');
-      u.dataset.i=i;
-      u.innerHTML='<button class="label"></button>';
-      u.querySelector('.label').textContent=d.text||'';
-      grid.appendChild(u);
-    }
-
-    // BOTTOM row
-    for(let bay=0;bay<7;bay++){
-      const i=base+(bay*2)+1;
-      const d=state[i]||{text:'',green:false};
-      const u=document.createElement('div');
-      u.className='unit'+(d.green?' green':'')+(selectedIndex===i?' selected':'');
-      u.dataset.i=i;
-      u.innerHTML='<button class="label"></button>';
-      u.querySelector('.label').textContent=d.text||'';
-      grid.appendChild(u);
+    const base=r*ROW_SIZE;
+    for(let level=0;level<LEVELS;level++){
+      for(let bay=0;bay<BAYS;bay++){
+        const i=base+(level*BAYS)+bay;
+        const d=state[i]||{text:'',green:false};
+        const u=document.createElement('div');
+        u.className='unit'+(d.green?' green':'')+(selectedIndex===i?' selected':'');
+        u.dataset.i=i;
+        u.innerHTML='<button class="label"></button>'+(d.text?`<span class="tier-badge">${tierLabel(i)}</span>`:'');
+        u.querySelector('.label').textContent=d.text||'';
+        grid.appendChild(u);
+      }
     }
   }
 
-  for(let r=0;r<rows;r++){
-    const t=document.createElement('div');
-    t.textContent='TOP';
-
-    const b=document.createElement('div');
-    b.textContent='BOTTOM';
-    b.style.marginBottom='10px';
-
-    labels.append(t,b);
-  }
+  labels.innerHTML='';
 }
 function renderYard(){
   const panel=document.getElementById('yardView');
@@ -1262,34 +1635,44 @@ function renderYard(){
   let stacks='', labs='';
 
   for(let r=0;r<rows;r++){
-    const machineRow=(r===rows-1);
+    for(let bay=0;bay<BAYS;bay++){
+      const topIndex=r*ROW_SIZE+bay;
+      const middleIndex=r*ROW_SIZE+BAYS+bay;
+      const bottomIndex=r*ROW_SIZE+(BAYS*2)+bay;
 
-    for(let bay=0;bay<7;bay++){
-      const topIndex=r*14 + bay*2;
-      const bottomIndex=topIndex+1;
-
-      const top=machineRow ? {text:'',green:false} : (state[topIndex]||{text:'',green:false});
-      const bottom=machineRow ? {text:'',green:false} : (state[bottomIndex]||{text:'',green:false});
+      const top=state[topIndex]||{text:'',green:false};
+      const middle=state[middleIndex]||{text:'',green:false};
+      const bottom=state[bottomIndex]||{text:'',green:false};
 
       const yardPalette=['c1','c2','c3','c4','c5','c6'];
       let topCls=yardPalette[(r*7+bay)%yardPalette.length] + (top.green?' green':'');
+      let middleCls=yardPalette[(r*7+bay+1)%yardPalette.length] + (middle.green?' green':'');
       let bottomCls=yardPalette[(r*7+bay+1)%yardPalette.length] + (bottom.green?' green':'');
 
-      if(top.text && bottom.text && topCls===bottomCls){
-        bottomCls=yardPalette[(r*7+bay+2)%yardPalette.length];
+      if(top.text && middle.text && topCls===middleCls){
+        middleCls=yardPalette[(r*7+bay+2)%yardPalette.length] + (middle.green?' green':'');
       }
+      if(middle.text && bottom.text && middleCls===bottomCls){
+        bottomCls=yardPalette[(r*7+bay+2)%yardPalette.length] + (bottom.green?' green':'');
+      }
+      const topRoof=Boolean(top.text);
+      const middleRoof=!topRoof && Boolean(middle.text);
+      const bottomRoof=!topRoof && !middleRoof && Boolean(bottom.text);
 
-      stacks+=`<div class="y-stack ${machineRow?'machine-row':''}">
+      stacks+=`<div class="y-stack">
         <div class="y-half top ${top.text?'':'empty'} ${top.green?'highlighted':''} ${selectedIndex===topIndex?'selected':''}" data-i="${topIndex}">
-          ${top.text?`<div class="y-container ${topCls}" data-i="${topIndex}">${top.text}</div>`:''}
+          ${top.text?`<div class="y-container ${topCls} ${topRoof?'stack-top':''}" data-i="${topIndex}">${top.text}<span class="tier-badge">${tierLabel(topIndex)}</span></div>`:''}
+        </div>
+        <div class="y-half middle ${middle.text?'':'empty'} ${middle.green?'highlighted':''} ${selectedIndex===middleIndex?'selected':''}" data-i="${middleIndex}">
+          ${middle.text?`<div class="y-container ${middleCls} ${middleRoof?'stack-top':''}" data-i="${middleIndex}">${middle.text}<span class="tier-badge">${tierLabel(middleIndex)}</span></div>`:''}
         </div>
         <div class="y-half bottom ${bottom.text?'':'empty'} ${bottom.green?'highlighted':''} ${selectedIndex===bottomIndex?'selected':''}" data-i="${bottomIndex}">
-          ${bottom.text?`<div class="y-container ${bottomCls}" data-i="${bottomIndex}">${bottom.text}</div>`:''}
+          ${bottom.text?`<div class="y-container ${bottomCls} ${bottomRoof?'stack-top':''}" data-i="${bottomIndex}">${bottom.text}<span class="tier-badge">${tierLabel(bottomIndex)}</span></div>`:''}
         </div>
       </div>`;
     }
 
-    labs+='<div class="y-pair"><div>TOP</div><div>BOTTOM</div></div>';
+    labs+='<div class="y-pair"><div>LEVEL 1</div><div>LEVEL 2</div><div>LEVEL 3</div></div>';
   }
 
   panel.innerHTML=`<div class="yard-shell">
@@ -1302,11 +1685,60 @@ function renderYard(){
     <div class="y-right">${labs}</div>
     <div class="y-front">FRONT — [BOWL]</div>
   </div>`;
+  const machine=panel.querySelector('.yard-machine-fixed');
+  const front=panel.querySelector('.y-front');
+  if(machine&&front)front.prepend(machine);
 }
 function select(i){
+  if(selectedIndex!==i)cancelDelete();
   selectedIndex=i;
   renderAll();
   updateGlowButton();
+}
+function beginInlineEdit(i){
+  const gridVisible=getComputedStyle(document.getElementById('gridView')).display!=='none';
+  const slot=gridVisible
+    ? document.querySelector(`.unit[data-i="${i}"]`)
+    : document.querySelector(`.y-half[data-i="${i}"]`);
+  if(!slot)return;
+  const previous=state[i]?.text||'';
+  const input=document.createElement('input');
+  input.className='slot-inline-editor';
+  input.type='text';
+  input.value=previous;
+  input.placeholder='CONTAINER';
+  input.autocomplete='off';
+  input.spellcheck=false;
+  let cancelled=false;
+  const finish=()=>{
+    if(cancelled)return;
+    const text=input.value.trim().toUpperCase();
+    if(text===previous){renderAll();return;}
+    rememberState();
+    state[i]={...(state[i]||{}),text,green:state[i]?.green||false};
+    save();
+    renderAll();
+  };
+  input.addEventListener('keydown',e=>{
+    e.stopPropagation();
+    if(e.key==='Enter'){e.preventDefault();input.blur();}
+    if(e.key==='Escape'){
+      e.preventDefault();
+      cancelled=true;
+      renderAll();
+    }
+  });
+  input.addEventListener('pointerdown',e=>e.stopPropagation());
+  input.addEventListener('click',e=>e.stopPropagation());
+  input.addEventListener('blur',finish,{once:true});
+  slot.appendChild(input);
+  input.focus();
+  input.select();
+}
+function selectOrCreate(i){
+  select(i);
+  if(state[i]?.text)return;
+  beginInlineEdit(i);
 }
 
 function updateGlowButton(){
@@ -1318,20 +1750,53 @@ function updateGlowButton(){
 
 function editSelected(){
   if(selectedIndex===null)return alert('Tap a position first.');
-  const v=prompt('Unit number:',state[selectedIndex].text||'');
-  if(v!==null){state[selectedIndex].text=v.trim().toUpperCase();save();renderAll();}
+  beginInlineEdit(selectedIndex);
 }
-function removeSelected(){
-  if(selectedIndex===null)return alert('Tap a position first.');
-  state[selectedIndex]={text:'',green:false};save();renderAll();
+function updateDeleteButton(){
+  const btn=document.getElementById('remove');
+  if(!btn)return;
+  btn.textContent=deleteArmed?'Confirm Delete':'Delete';
+  btn.classList.toggle('delete-confirm',deleteArmed);
+}
+function cancelDelete(){
+  deleteArmed=false;
+  clearTimeout(deleteTimer);
+  deleteTimer=0;
+  updateDeleteButton();
+}
+function armDelete(){
+  if(selectedIndex===null||!state[selectedIndex]?.text)return;
+  if(deleteArmed){executeDelete();return;}
+  deleteArmed=true;
+  updateDeleteButton();
+  clearTimeout(deleteTimer);
+  deleteTimer=setTimeout(cancelDelete,5000);
+}
+function executeDelete(){
+  if(!deleteArmed||selectedIndex===null||!state[selectedIndex]?.text)return;
+  rememberState();
+  state[selectedIndex]={text:'',green:false};
+  cancelDelete();
+  save();
+  renderAll();
 }
 function greenSelected(){
   highlightMode=!highlightMode;
   document.body.classList.toggle('highlight-focus',highlightMode);
   updateGlowButton();
 }
+function toggleGoldHighlight(i){
+  if(!Number.isInteger(i)||i<0)return;
+  if(!state[i])state[i]={text:'',green:false};
+  rememberState();
+  state[i]={...state[i],green:!state[i].green};
+  save();
+  renderAll();
+  updateGlowButton();
+}
 function dropTo(target){
   if(dragIndex===null||target===null||dragIndex===target)return;
+  rememberState();
   const mode=document.querySelector('input[name=mode]:checked').value;
   const a={...state[dragIndex]},b={...state[target]};
   if(mode==='swap'){state[dragIndex]=b;state[target]=a}
@@ -1344,6 +1809,31 @@ function makeGhost(text,x,y){
 }
 function clearGhost(){dragGhost?.remove();dragGhost=null;dragIndex=null;document.querySelectorAll('.target').forEach(x=>x.classList.remove('target'))}
 
+document.addEventListener('keydown',e=>{
+  if(e.target.closest('input,textarea,select,[contenteditable="true"]'))return;
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){
+    e.preventDefault();
+    undoLast();
+    return;
+  }
+  if(e.key==='Delete'||e.key==='Backspace'){
+    if(selectedIndex!==null&&state[selectedIndex]?.text){
+      e.preventDefault();
+      armDelete();
+    }
+    return;
+  }
+  if(e.key==='Enter'&&deleteArmed){
+    e.preventDefault();
+    executeDelete();
+    return;
+  }
+  if(e.key==='Escape'&&deleteArmed){
+    e.preventDefault();
+    cancelDelete();
+  }
+});
+
 document.addEventListener('click',e=>{
   if(didDrag){
     didDrag=false;
@@ -1355,12 +1845,9 @@ document.addEventListener('click',e=>{
   if(gu){
     const i=Number(gu.dataset.i);
     if(highlightMode){
-      state[i].green=!state[i].green;
-      save();
-      renderAll();
-      updateGlowButton();
+      toggleGoldHighlight(i);
     }else{
-      select(i);
+      selectOrCreate(i);
     }
     return;
   }
@@ -1368,17 +1855,16 @@ document.addEventListener('click',e=>{
   if(yh){
     const i=Number(yh.dataset.i);
     if(highlightMode){
-      state[i].green=!state[i].green;
-      save();
-      renderAll();
-      updateGlowButton();
+      toggleGoldHighlight(i);
     }else{
-      select(i);
+      selectOrCreate(i);
     }
   }
 });
 
 document.addEventListener('pointerdown',e=>{
+  if(e.target.closest('.slot-inline-editor'))return;
+  if(highlightMode)return;
   const gu=e.target.closest('.unit');
   const yc=e.target.closest('.y-container');
 
@@ -1402,11 +1888,14 @@ document.addEventListener('pointerdown',e=>{
   }
 
   targetEl.setPointerCapture?.(e.pointerId);
-  makeGhost(text,e.clientX,e.clientY);
 });
 document.addEventListener('pointermove',e=>{
   if(dragIndex===null)return;
-  if(Math.hypot(e.clientX-dragStartX,e.clientY-dragStartY)>5) didDrag=true;
+  if(!didDrag && Math.hypot(e.clientX-dragStartX,e.clientY-dragStartY)>5){
+    didDrag=true;
+    makeGhost(state[dragIndex]?.text||'',e.clientX,e.clientY);
+  }
+  if(!didDrag)return;
   e.preventDefault();
   dragGhost.style.left=(e.clientX+12)+'px';dragGhost.style.top=(e.clientY+12)+'px';
   document.querySelectorAll('.target').forEach(x=>x.classList.remove('target'));
@@ -1415,11 +1904,16 @@ document.addEventListener('pointermove',e=>{
 },{passive:false});
 document.addEventListener('pointerup',e=>{
   if(dragIndex===null)return;
-  const t=document.elementFromPoint(e.clientX,e.clientY)?.closest('.unit,.y-half');
-  dropTo(t?Number(t.dataset.i):null);clearGhost();
+  if(didDrag){
+    const t=document.elementFromPoint(e.clientX,e.clientY)?.closest('.unit,.y-half');
+    dropTo(t?Number(t.dataset.i):null);
+  }
+  clearGhost();
 });
 
 document.addEventListener('touchstart',e=>{
+  if(e.target.closest('.slot-inline-editor'))return;
+  if(highlightMode)return;
   const gu=e.target.closest('.unit');
   const yc=e.target.closest('.y-container');
 
@@ -1439,12 +1933,15 @@ document.addEventListener('touchstart',e=>{
   dragStartX=t.clientX;
   dragStartY=t.clientY;
   didDrag=false;
-  makeGhost(text,t.clientX,t.clientY);
 },{passive:false});
 document.addEventListener('touchmove',e=>{
   if(dragIndex===null||e.touches.length!==1)return;
   const mt=e.touches[0];
-  if(Math.hypot(mt.clientX-dragStartX,mt.clientY-dragStartY)>5) didDrag=true;
+  if(!didDrag && Math.hypot(mt.clientX-dragStartX,mt.clientY-dragStartY)>5){
+    didDrag=true;
+    makeGhost(state[dragIndex]?.text||'',mt.clientX,mt.clientY);
+  }
+  if(!didDrag)return;
   e.preventDefault();
   const t=e.touches[0];dragGhost.style.left=(t.clientX+12)+'px';dragGhost.style.top=(t.clientY+12)+'px';
   document.querySelectorAll('.target').forEach(x=>x.classList.remove('target'));
@@ -1464,12 +1961,9 @@ document.addEventListener('touchend',e=>{
   if(gu){
     const i=Number(gu.dataset.i);
     if(highlightMode){
-      state[i].green=!state[i].green;
-      save();
-      renderAll();
-      updateGlowButton();
+      toggleGoldHighlight(i);
     }else{
-      select(i);
+      selectOrCreate(i);
     }
     return;
   }
@@ -1477,18 +1971,16 @@ document.addEventListener('touchend',e=>{
   if(yh){
     const i=Number(yh.dataset.i);
     if(highlightMode){
-      state[i].green=!state[i].green;
-      save();
-      renderAll();
-      updateGlowButton();
+      toggleGoldHighlight(i);
     }else{
-      select(i);
+      selectOrCreate(i);
     }
   }
 },{passive:true});
 
 document.getElementById('edit').onclick=editSelected;
-document.getElementById('remove').onclick=removeSelected;
+document.getElementById('remove').onclick=armDelete;
+document.getElementById('undo').onclick=undoLast;
 document.getElementById('green').onclick=greenSelected;
 document.getElementById('hideHighlights').onclick=()=>{
   highlightsHidden=!highlightsHidden;
@@ -1496,20 +1988,20 @@ document.getElementById('hideHighlights').onclick=()=>{
   document.getElementById('hideHighlights').textContent = highlightsHidden ? 'Show Highlights' : 'Hide Highlights';
 };
 
-document.getElementById('addTop').onclick=()=>{state=[...blankRow(),...state];selectedIndex=null;save();renderAll();}
-document.getElementById('addBottom').onclick=()=>{state=[...state,...blankRow()];selectedIndex=null;save();renderAll();}
-document.getElementById('removeTop').onclick=()=>{if(rowsCount()>1){state=state.slice(14);selectedIndex=null;save();renderAll();}}
-document.getElementById('removeBottom').onclick=()=>{if(rowsCount()>1){state=state.slice(0,-14);selectedIndex=null;save();renderAll();}}
+document.getElementById('topAddRow').onclick=addTopRow;
+document.getElementById('topRemoveRow').onclick=removeTopRow;
+document.getElementById('bottomAddRow').onclick=addBottomRow;
+document.getElementById('bottomRemoveRow').onclick=removeBottomRow;
 
 document.getElementById('gridBtn').onclick=()=>{
   document.getElementById('gridView').style.display='block';
   document.getElementById('yardView').style.display='none';
-  gridBtn.classList.add('active');yardBtn.classList.remove('active');fitStackingView();
+  gridBtn.classList.add('active');yardBtn.classList.remove('active');renderAll();
 }
 document.getElementById('yardBtn').onclick=()=>{
   document.getElementById('gridView').style.display='none';
   document.getElementById('yardView').style.display='block';
-  yardBtn.classList.add('active');gridBtn.classList.remove('active');fitStackingView();
+  yardBtn.classList.add('active');gridBtn.classList.remove('active');renderAll();
 }
 
 load();renderAll();updateGlowButton();
