@@ -16,7 +16,7 @@ button,.mode{border:0;border-radius:8px;padding:10px 12px;font-weight:900;font-s
 .mode{background:#35424d;display:flex;align-items:center;gap:4px}
 .status{font-size:12px;font-weight:800;color:#9cf0a8;margin-bottom:6px}
 .viewport{width:100%;overflow:hidden;padding:0}
-.sheet{width:max-content;min-width:1490px;background:#111820;border:4px solid #111820;display:grid;grid-template-columns:86px auto 0 92px;grid-template-rows:45px auto 45px}
+.sheet{width:max-content;min-width:1490px;background:#111820;border:4px solid #111820;display:grid;grid-template-columns:86px auto 56px 92px;grid-template-rows:45px auto 45px}
 .track,.back,.front,.crane{background:#111820;color:#fff;font-weight:900;display:flex;align-items:center;justify-content:center;text-align:center}
 .track{grid-column:1;grid-row:1/4} .back{grid-column:2;grid-row:1} .front{grid-column:2;grid-row:3} .crane{grid-column:4;grid-row:1/4}
 .row-edge-controls{
@@ -47,10 +47,9 @@ button,.mode{border:0;border-radius:8px;padding:10px 12px;font-weight:900;font-s
   cursor:pointer;
 }
 .row-edge-controls button:active{transform:translateY(1px)}
-.yardgrid{grid-column:2;grid-row:2;background:#c9cccb;padding:8px;display:grid;grid-template-columns:repeat(7,190px);gap:1px 8px}
-.rowlabels{grid-column:3;grid-row:2;background:#c9cccb;padding:0;display:grid;gap:0;overflow:hidden}
-.rowlabels div{background:#eee;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:13px;height:42px}
-.rowlabels{position:relative;display:block !important}
+.yardgrid{grid-column:2;grid-row:2;background:#c9cccb;padding:8px 0 8px 8px;display:grid;grid-template-columns:repeat(7,190px);gap:1px 8px}
+.rowlabels{grid-column:3;grid-row:2;background:#111820;padding:8px 0;display:grid!important;gap:0;overflow:hidden}
+.rowlabels div{background:#111820;color:#fff;border:1px solid #30383d;border-left:0;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:10px;height:42px;align-self:start;white-space:nowrap}
 .unit{height:42px;position:relative;background:#fafafa;border:1px solid #aeb4b7;display:flex;min-width:0}
 .unit.green{background:#83dc8e}
 .handle{width:38px;min-width:38px;border:0;border-right:1px solid #abb1b5;background:#d9dfe2;font-size:18px;font-weight:900;touch-action:none}
@@ -620,10 +619,8 @@ header{
 
 
 /* Darker Grid View background */
-#gridView .yardgrid,
-#gridView .rowlabels{
-  background:#aeb4b6 !important;
-}
+#gridView .yardgrid{background:#aeb4b6 !important}
+#gridView .rowlabels{background:#111820 !important}
 #gridView .viewport{
   background:#c3c8ca !important;
 }
@@ -680,6 +677,25 @@ header{
   position:relative;
   z-index:2;
   overflow:visible;
+}
+
+/* Keep the live Grid View as one compact rail. The former `auto` center
+   track could absorb the viewport's unused width and push the level labels
+   to the far-right edge, leaving a large empty band after Bay 1. */
+#gridView .sheet{
+  width:1628px !important;
+  min-width:1628px !important;
+  max-width:1628px !important;
+  grid-template-columns:86px 1386px 56px 92px !important;
+}
+#gridView .yardgrid{
+  width:1386px !important;
+  min-width:1386px !important;
+  max-width:1386px !important;
+}
+#gridView .back,
+#gridView .front{
+  width:1386px !important;
 }
 
 
@@ -1341,8 +1357,8 @@ body.highlight-focus.highlights-hidden #yardView .y-half.empty::after{
 .y-front .yard-machine-fixed{
   left:9% !important;
   bottom:-5px !important;
-  width:780px !important;
-  max-height:300px !important;
+  width:546px !important;
+  max-height:210px !important;
   z-index:100 !important;
 }
 /* Strict three-high geometry: every bay and its side legend use three equal rows. */
@@ -1390,6 +1406,7 @@ body.highlight-focus.highlights-hidden #yardView .y-half.empty::after{
     <button class="viewbtn active" id="gridBtn">GRID VIEW</button>
     <button class="viewbtn" id="yardBtn">YARD VIEW</button>
     <div class="container-counter" aria-live="polite">CONTAINERS <strong id="containerTotal">0</strong></div>
+    <button type="button" id="exportExcel">EXPORT EXCEL</button>
   </div><div class="controls">
     <label class="mode"><input type="radio" name="mode" value="swap" checked>Swap</label>
     <label class="mode"><input type="radio" name="mode" value="move">Move</label>
@@ -1574,6 +1591,89 @@ function updateContainerTotal(){
   const total=state.reduce((count,item)=>count+(String(item&&item.text||'').trim()?1:0),0);
   document.getElementById('containerTotal').textContent=String(total);
 }
+function excelXmlEscape(value){
+  return String(value??'')
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&apos;');
+}
+function excelCell(value,style='Text',type='String',mergeAcross=0){
+  const merge=mergeAcross?` ss:MergeAcross="${mergeAcross}"`:'';
+  return `<Cell ss:StyleID="${style}"${merge}><Data ss:Type="${type}">${excelXmlEscape(value)}</Data></Cell>`;
+}
+function exportStackingGridExcel(){
+  const rows=rowsCount();
+  const total=state.reduce((count,item)=>count+(String(item&&item.text||'').trim()?1:0),0);
+  const layoutRows=[];
+  layoutRows.push(`<Row ss:Height="28">${excelCell('SETTEGAST STACKING GRID','Title','String',8)}</Row>`);
+  layoutRows.push(`<Row>${excelCell('Track 809/808','Subtitle','String',6)}${excelCell('Containers','Header')}${excelCell(total,'Total','Number')}</Row>`);
+  layoutRows.push(`<Row>${excelCell('BACK FENCE','Fence','String',8)}</Row>`);
+  layoutRows.push(`<Row>${Array.from({length:BAYS},(_,bay)=>excelCell(`BAY ${BAYS-bay}`,'Header')).join('')}${excelCell('ROW','Header')}${excelCell('LEVEL','Header')}</Row>`);
+  for(let row=0;row<rows;row++){
+    for(let level=0;level<LEVELS;level++){
+      const cells=[];
+      for(let bay=0;bay<BAYS;bay++){
+        const item=state[(row*ROW_SIZE)+(level*BAYS)+bay]||{text:'',green:false};
+        cells.push(excelCell(item.text||'',item.text?(item.green?'Gold':'Occupied'):'Blank'));
+      }
+      cells.push(excelCell(rows-row,'Center','Number'),excelCell(`LEVEL ${level+1}`,'Center'));
+      layoutRows.push(`<Row ss:Height="24">${cells.join('')}</Row>`);
+    }
+    if(row<rows-1)layoutRows.push(`<Row ss:Height="8">${excelCell('','Spacer','String',8)}</Row>`);
+  }
+  layoutRows.push(`<Row>${excelCell('FRONT - [BOWL]','Fence','String',8)}</Row>`);
+
+  const manifestRows=[];
+  manifestRows.push(`<Row ss:Height="28">${excelCell('CONTAINER MANIFEST','Title','String',5)}</Row>`);
+  manifestRows.push(`<Row>${['ROW','BAY','LEVEL','STACK POSITION','CONTAINER','GOLD HIGHLIGHT'].map(value=>excelCell(value,'Header')).join('')}</Row>`);
+  for(let row=0;row<rows;row++){
+    for(let bay=0;bay<BAYS;bay++){
+      for(let level=0;level<LEVELS;level++){
+        const index=(row*ROW_SIZE)+(level*BAYS)+bay;
+        const item=state[index]||{text:'',green:false};
+        if(!String(item.text||'').trim())continue;
+        manifestRows.push(`<Row>${excelCell(rows-row,'Center','Number')}${excelCell(BAYS-bay,'Center','Number')}${excelCell(level+1,'Center','Number')}${excelCell(tierLabel(index),'Center')}${excelCell(item.text,item.green?'Gold':'Occupied')}${excelCell(item.green?'YES':'NO',item.green?'Gold':'Center')}</Row>`);
+      }
+    }
+  }
+
+  const workbook=`<?xml version="1.0"?><?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+<Styles>
+<Style ss:ID="Default" ss:Name="Normal"><Alignment ss:Vertical="Center"/><Font ss:FontName="Arial" ss:Size="10"/></Style>
+<Style ss:ID="Text"><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/></Borders></Style>
+<Style ss:ID="Title"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Font ss:Bold="1" ss:Size="16" ss:Color="#FFFFFF"/><Interior ss:Color="#111820" ss:Pattern="Solid"/></Style>
+<Style ss:ID="Subtitle"><Font ss:Bold="1"/><Interior ss:Color="#DCE6F1" ss:Pattern="Solid"/></Style>
+<Style ss:ID="Header"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Font ss:Bold="1" ss:Color="#FFFFFF"/><Interior ss:Color="#111820" ss:Pattern="Solid"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/></Borders></Style>
+<Style ss:ID="Total"><Alignment ss:Horizontal="Center"/><Font ss:Bold="1"/><Interior ss:Color="#DCE6F1" ss:Pattern="Solid"/></Style>
+<Style ss:ID="Center"><Alignment ss:Horizontal="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/></Borders></Style>
+<Style ss:ID="Occupied"><Font ss:Bold="1"/><Interior ss:Color="#E7ECF1" ss:Pattern="Solid"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/></Borders></Style>
+<Style ss:ID="Gold"><Font ss:Bold="1"/><Interior ss:Color="#D4A51E" ss:Pattern="Solid"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/></Borders></Style>
+<Style ss:ID="Blank"><Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/></Borders></Style>
+<Style ss:ID="Fence"><Alignment ss:Horizontal="Center"/><Font ss:Bold="1" ss:Color="#FFFFFF"/><Interior ss:Color="#111820" ss:Pattern="Solid"/></Style>
+<Style ss:ID="Spacer"><Interior ss:Color="#B8BEC2" ss:Pattern="Solid"/></Style>
+</Styles>
+<Worksheet ss:Name="Stacking Grid"><Table>${'<Column ss:Width="112"/>'.repeat(BAYS)}<Column ss:Width="42"/><Column ss:Width="70"/>${layoutRows.join('')}</Table><WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel"><FreezePanes/><FrozenNoSplit/><SplitHorizontal>4</SplitHorizontal><TopRowBottomPane>4</TopRowBottomPane><ProtectObjects>False</ProtectObjects><ProtectScenarios>False</ProtectScenarios></WorksheetOptions></Worksheet>
+<Worksheet ss:Name="Container Manifest"><Table><Column ss:Width="42"/><Column ss:Width="42"/><Column ss:Width="48"/><Column ss:Width="88"/><Column ss:Width="118"/><Column ss:Width="92"/>${manifestRows.join('')}</Table><WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel"><FreezePanes/><FrozenNoSplit/><SplitHorizontal>2</SplitHorizontal><TopRowBottomPane>2</TopRowBottomPane><ProtectObjects>False</ProtectObjects><ProtectScenarios>False</ProtectScenarios></WorksheetOptions></Worksheet>
+</Workbook>`;
+  const blob=new Blob(['\ufeff',workbook],{type:'application/vnd.ms-excel'});
+  const url=URL.createObjectURL(blob);
+  const link=document.createElement('a');
+  const now=new Date();
+  const stamp=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}-${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}`;
+  link.href=url;
+  link.download=`settegast-stacking-grid-${stamp}.xml`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+  const button=document.getElementById('exportExcel');
+  const previous=button.textContent;
+  button.textContent='EXPORTED';
+  setTimeout(()=>{button.textContent=previous},1400);
+}
 function renderAll(){renderGrid();renderYard();updateContainerTotal();fitStackingView();}
 window.addEventListener('resize',fitStackingView,{passive:true});
 
@@ -1607,6 +1707,7 @@ function renderGrid(){
     tracks.push('54px');
   }
   grid.style.gridTemplateRows=tracks.join(' ');
+  labels.style.gridTemplateRows=tracks.join(' ');
 
   // IMPORTANT:
   // State is stored by level across each seven-bay row:
@@ -1627,7 +1728,13 @@ function renderGrid(){
     }
   }
 
-  labels.innerHTML='';
+  for(let r=0;r<rows;r++){
+    for(let level=1;level<=LEVELS;level++){
+      const label=document.createElement('div');
+      label.textContent=`LEVEL ${level}`;
+      labels.appendChild(label);
+    }
+  }
 }
 function renderYard(){
   const panel=document.getElementById('yardView');
@@ -1979,6 +2086,7 @@ document.addEventListener('touchend',e=>{
 },{passive:true});
 
 document.getElementById('edit').onclick=editSelected;
+document.getElementById('exportExcel').onclick=exportStackingGridExcel;
 document.getElementById('remove').onclick=armDelete;
 document.getElementById('undo').onclick=undoLast;
 document.getElementById('green').onclick=greenSelected;

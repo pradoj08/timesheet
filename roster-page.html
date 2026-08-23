@@ -14,6 +14,7 @@
       --crane: #ffff00;
       --everything: #e7c7e8;
       --lead: #ffff00;
+      --newhire: #22c55e;
       --blue-grid: #9eb6d8;
     }
 
@@ -352,6 +353,10 @@
 
     .lead {
       background: var(--lead);
+    }
+
+    .newhire {
+      background: var(--newhire);
     }
 
     tfoot .total-label {
@@ -698,7 +703,8 @@
     .name.side,
     .name.crane,
     .name.everything,
-    .name.lead {
+    .name.lead,
+    .name.newhire {
       background: transparent;
       padding-left: 31px;
     }
@@ -706,7 +712,8 @@
     .name.side::before,
     .name.crane::before,
     .name.everything::before,
-    .name.lead::before {
+    .name.lead::before,
+    .name.newhire::before {
       content: "";
       position: absolute;
       left: 12px;
@@ -728,6 +735,10 @@
 
     .name.everything::before {
       background: #a987de;
+    }
+
+    .name.newhire::before {
+      background: #22c55e;
     }
 
     tbody td.w,
@@ -865,7 +876,22 @@
     }
 
     .role-editor-panel {
-      display: block;
+      display: grid;
+      grid-template-columns: minmax(150px, 190px) minmax(0, 1fr);
+      gap: 8px;
+      align-items: center;
+    }
+
+    .role-color-select {
+      width: 100%;
+      min-height: 30px;
+      border: 1px solid #aebccd;
+      border-radius: 4px;
+      padding: 4px 8px;
+      background: #fff;
+      color: #1e293b;
+      font-size: 10px;
+      font-weight: 800;
     }
 
     .role-capability-grid {
@@ -901,6 +927,7 @@
     .role-capability-option[data-role="flip"] input { accent-color: #ea580c; }
 
     @media (max-width: 760px) {
+      .role-editor-panel { grid-template-columns: 1fr; }
       .role-capability-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
 
@@ -1007,6 +1034,7 @@
               <option value="crane">Crane</option>
               <option value="everything">Everything</option>
               <option value="lead">Lead</option>
+              <option value="newhire">New Hire</option>
             </select>
             <div class="off-days" aria-label="Off days">
               <label><input type="checkbox" name="off" value="0" />Mon</label>
@@ -1078,6 +1106,7 @@
               <option value="crane">Crane</option>
               <option value="everything">Everything</option>
               <option value="lead">Lead</option>
+              <option value="newhire">New Hire</option>
             </select>
             <div class="off-days" aria-label="Off days">
               <label><input type="checkbox" name="off" value="0" />Mon</label>
@@ -1138,6 +1167,7 @@
               <option value="side">Side-loader</option>
               <option value="crane">Crane</option>
               <option value="everything">Everything</option>
+              <option value="newhire">New Hire</option>
             </select>
             <div class="off-days" aria-label="Off days">
               <label><input type="checkbox" name="off" value="0" />Mon</label>
@@ -1191,6 +1221,7 @@
               <option value="side">Side-loader</option>
               <option value="crane">Crane</option>
               <option value="everything">Everything</option>
+              <option value="newhire">New Hire</option>
             </select>
             <div class="off-days" aria-label="Off days">
               <label><input type="checkbox" name="off" value="0" />Mon</label>
@@ -1237,6 +1268,7 @@
               <option value="side">Side-loader</option>
               <option value="crane">Crane</option>
               <option value="everything">Everything</option>
+              <option value="newhire">New Hire</option>
             </select>
             <div class="off-days" aria-label="Off days">
               <label><input type="checkbox" name="off" value="0" />Mon</label>
@@ -1461,7 +1493,7 @@
 
     function rowToData(row) {
       const nameCell = row.querySelector(".name");
-      const role = ["side", "crane", "everything", "lead"].find((className) => nameCell.classList.contains(className)) || "";
+      const role = ["side", "crane", "everything", "lead", "newhire"].find((className) => nameCell.classList.contains(className)) || "";
       return {
         name: nameCell.textContent.trim(),
         role,
@@ -1710,12 +1742,22 @@
       if (!table || !["first", "second"].includes(table.dataset.roster)) return;
       removeRoleEditor(row);
       const selected = new Set(rowCapabilities(row));
+      const selectedRole = ["side", "crane", "everything", "lead", "newhire"]
+        .find((role) => row.querySelector(".name").classList.contains(role)) || "";
       const editor = document.createElement("tr");
       editor.className = "role-editor-row";
       const cell = document.createElement("td");
       cell.colSpan = row.children.length;
       cell.innerHTML = `
         <div class="role-editor-panel">
+          <select class="role-color-select" data-roster-color-role aria-label="Employee color role">
+            <option value="" ${selectedRole === "" ? "selected" : ""}>Regular</option>
+            <option value="side" ${selectedRole === "side" ? "selected" : ""}>Side-loader</option>
+            <option value="crane" ${selectedRole === "crane" ? "selected" : ""}>Crane</option>
+            <option value="everything" ${selectedRole === "everything" ? "selected" : ""}>Everything</option>
+            <option value="lead" ${selectedRole === "lead" ? "selected" : ""}>Lead</option>
+            <option value="newhire" ${selectedRole === "newhire" ? "selected" : ""}>New Hire</option>
+          </select>
           <div class="role-capability-grid">
             ${editableCapabilityValues.map((role) => `
               <label class="role-capability-option" data-role="${role}">
@@ -1753,10 +1795,15 @@
       const capabilities = editor
         ? Array.from(editor.querySelectorAll("[data-roster-capability]:checked")).map((input) => input.dataset.rosterCapability)
         : [];
+      const selectedRole = editor && editor.querySelector("[data-roster-color-role]")
+        ? editor.querySelector("[data-roster-color-role]").value
+        : "";
       const previousKey = rowBeingEdited.dataset.originalEmployeeKey || "";
       const nameCell = rowBeingEdited.querySelector(".name");
       if (nameCell) {
         nameCell.textContent = nameCell.textContent.replace(/\s+/g, " ").trim();
+        nameCell.classList.remove("side", "crane", "everything", "lead", "newhire");
+        if (selectedRole) nameCell.classList.add(selectedRole);
         nameCell.contentEditable = "false";
       }
       if (editor) saveRowCapabilities(rowBeingEdited, capabilities, previousKey);

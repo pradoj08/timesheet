@@ -2712,6 +2712,16 @@
     transform: translateY(-50%);
     pointer-events: none;
   }
+  .inbound-shove-flag.inbound-sequence-two {
+    border-color: #93c5fd;
+    background: #2563eb;
+    color: #fff;
+  }
+  .inbound-shove-flag.inbound-sequence-three {
+    border-color: #86efac;
+    background: #16a34a;
+    color: #fff;
+  }
   .status-strip {
     margin-top: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
   }
@@ -6747,6 +6757,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     return {
       footage:Math.max(0, Number(cell.dataset.footage) || 0),
       shoveOrder:Math.max(0, Number(cell.dataset.shoveOrder) || 0),
+      inboundSequence:Math.max(0, Number(cell.dataset.inboundSequence) || 0),
       className:String(cell.className || "cut-cell gray")
         .replace(/\b(?:block-selected|block-paste-target|block-drag-target)\b/g, "")
         .replace(/\s+/g, " ").trim(),
@@ -7114,6 +7125,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     next.footage = Math.max(0, Number(next.footage) || 0);
     const inboundIdMatch = next.id.match(/^inbound-\d+-\d+-(\d+)$/);
     next.shoveOrder = Math.max(0, Math.round(Number(next.shoveOrder) || (inboundIdMatch ? Number(inboundIdMatch[1]) + 1 : 0)));
+    next.inboundSequence = Math.max(0, Math.round(Number(next.inboundSequence) || 0));
     next.className = String(next.className || "cut-cell gray")
       .replace(/\b(?:block-selected|block-paste-target|block-drag-target|inbound-added-block)\b/g, "")
       .replace(/\s+/g, " ").trim();
@@ -7170,6 +7182,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         id: cell.dataset.blockId,
         footage,
         shoveOrder:Number(cell.dataset.shoveOrder) || 0,
+        inboundSequence:Number(cell.dataset.inboundSequence) || 0,
         className: cell.className,
         content: cleanBlockCellContent(cell),
         title: cell.title,
@@ -7917,14 +7930,23 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     if (!train || !result.footage || !result.allocations.length) return;
     const model = ensureInboundTrainTargetModel();
     const stamp = Date.now();
+    const inboundGroups = new Set();
+    Object.values(model.tracks || {}).forEach(blocks => {
+      (Array.isArray(blocks) ? blocks : []).forEach(block => {
+        const match = String(block && block.id || "").match(/^inbound-(\d+)-/);
+        if (match) inboundGroups.add(match[1]);
+      });
+    });
+    const inboundSequence = Math.min(3, inboundGroups.size + 1);
     let added = 0;
     result.allocations.forEach((item, index) => {
       if (item.assigned <= 0) return;
       const label = `${fmtInt(item.assigned)} ${train} [${item.track}]`;
       model.tracks[item.track].push(normalizeSecondaryBlock({
         id:`inbound-${stamp}-${item.track}-${index}`,
-        footage:item.assigned,
-        shoveOrder:index + 1,
+      footage:item.assigned,
+      shoveOrder:index + 1,
+      inboundSequence,
         className:"cut-cell orange block-reorderable",
         content:escapeHtml(label),
         title:label,
@@ -8073,10 +8095,14 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         const block = blocks[i];
         if (block) {
           const shoveOrder = Math.max(0, Number(block.shoveOrder) || 0);
+          const inboundSequence = Math.max(0, Number(block.inboundSequence) || 0);
+          const inboundSequenceClass = inboundSequence === 2
+            ? " inbound-sequence-two"
+            : inboundSequence >= 3 ? " inbound-sequence-three" : "";
           const displayContent = blockContentForDisplay(block.content);
           const displayTitle = state.hideTrackIds ? stripBlockTrackIds(block.title) : block.title;
           const currentClassName = classNameWithCurrentColor(block.className, block.title || textFromCellHtml(`<div>${block.content}</div>`));
-          cells.push(`<div class="${escapeAttr(currentClassName)}" data-block-id="${escapeAttr(block.id)}" data-track="${track}" data-footage="${Number(block.footage) || 0}"${shoveOrder ? ` data-shove-order="${shoveOrder}"` : ""} role="button" aria-selected="false" title="${escapeAttr(displayTitle)}">${displayContent}${shoveOrder ? `<span class="inbound-shove-flag" aria-label="Shove ${shoveOrder}">${shoveOrder}</span>` : ""}${i === 7 && blocks.length > 8 ? `<span class="overflow">+${blocks.length - 8}</span>` : ""}</div>`);
+          cells.push(`<div class="${escapeAttr(currentClassName)}" data-block-id="${escapeAttr(block.id)}" data-track="${track}" data-footage="${Number(block.footage) || 0}"${shoveOrder ? ` data-shove-order="${shoveOrder}"` : ""}${inboundSequence ? ` data-inbound-sequence="${inboundSequence}"` : ""} role="button" aria-selected="false" title="${escapeAttr(displayTitle)}">${displayContent}${shoveOrder ? `<span class="inbound-shove-flag${inboundSequenceClass}" aria-label="Shove ${shoveOrder}, inbound ${inboundSequence || 1}">${shoveOrder}</span>` : ""}${i === 7 && blocks.length > 8 ? `<span class="overflow">+${blocks.length - 8}</span>` : ""}</div>`);
         } else {
           cells.push(`<div class="cut-cell empty block-drop-end" data-drop-end-track="${track}" title="Place selected blocks at end of Track ${track}">0</div>`);
         }

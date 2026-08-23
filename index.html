@@ -13009,6 +13009,65 @@ body.forecast-excel-view-open{padding-right:320px!important;}
       return bodyClose >= 0 ? html.slice(0, bodyClose) + popup + "\n" + script + "\n" + html.slice(bodyClose) : html + popup + script;
     }
 
+    function withRosterEditableColorRoles(html) {
+      const marker = "data-roster-color-role-editor-v1";
+      if (!html || html.includes(marker)) return html;
+      let next = html;
+
+      next = next.replace(/(<option value="lead">Lead<\/option>)(?!\s*<option value="newhire">)/g,
+        '$1\n              <option value="newhire">New Hire</option>');
+      next = next.replace(
+        /const role = \["side", "crane", "everything", "lead"\]\.find\(\(className\) => nameCell\.classList\.contains\(className\)\) \|\| "";/,
+        'const role = ["side", "crane", "everything", "lead", "newhire"].find((className) => nameCell.classList.contains(className)) || "";'
+      );
+      if (!next.includes('"lead", "newhire"')) return html;
+      const style = '<style ' + marker + '>.newhire{background:#22c55e}.name.newhire{position:relative;background:transparent;padding-left:31px}.name.newhire::before{content:"";position:absolute;left:12px;top:50%;width:11px;height:11px;border-radius:3px;transform:translateY(-50%);background:#22c55e}.role-editor-panel{display:grid!important;grid-template-columns:minmax(150px,190px) minmax(0,1fr)!important;gap:8px!important;align-items:center}.role-color-select{width:100%;min-height:30px;border:1px solid #aebccd;border-radius:4px;padding:4px 8px;background:#fff;color:#1e293b;font-size:10px;font-weight:800}@media(max-width:760px){.role-editor-panel{grid-template-columns:1fr!important}}</style>';
+      const script = `<script ${marker}>
+(() => {
+  const roles = ["", "side", "crane", "everything", "lead", "newhire"];
+  const labels = {"":"Regular",side:"Side-loader",crane:"Crane",everything:"Everything",lead:"Lead",newhire:"New Hire"};
+  const roleClasses = roles.filter(Boolean);
+  function rowRole(row) {
+    const name = row && row.querySelector(".name");
+    return roleClasses.find((role) => name && name.classList.contains(role)) || "";
+  }
+  function addRoleSelect(row) {
+    const editor = row && row.nextElementSibling;
+    const panel = editor && editor.classList.contains("role-editor-row") && editor.querySelector(".role-editor-panel");
+    if (!panel || panel.querySelector("[data-roster-color-role]")) return;
+    const select = document.createElement("select");
+    select.className = "role-color-select";
+    select.dataset.rosterColorRole = "";
+    select.setAttribute("aria-label", "Employee color role");
+    const selected = rowRole(row);
+    select.innerHTML = roles.map((role) => '<option value="' + role + '"' + (role === selected ? ' selected' : '') + '>' + labels[role] + '</option>').join("");
+    panel.prepend(select);
+  }
+  document.querySelectorAll('select[name="role"]').forEach((select) => {
+    if (!select.querySelector('option[value="newhire"]')) select.add(new Option("New Hire", "newhire"));
+  });
+  document.addEventListener("click", (event) => {
+    const button = event.target.closest(".row-action.edit");
+    if (!button) return;
+    const row = button.closest("tr");
+    if (button.classList.contains("saving")) {
+      const editor = row && row.nextElementSibling;
+      const select = editor && editor.querySelector("[data-roster-color-role]");
+      const name = row && row.querySelector(".name");
+      if (select && name) {
+        name.classList.remove(...roleClasses);
+        if (select.value) name.classList.add(select.value);
+      }
+    } else {
+      setTimeout(() => addRoleSelect(row), 0);
+    }
+  }, true);
+})();
+</scr${""}ipt>`;
+      next = next.replace("</head>", style + "</head>");
+      return next.replace("</body>", script + "</body>");
+    }
+
     function withExcelInboundOnHandChecks(html) {
       const marker = "data-excel-inbound-on-hand-checks";
       if (!html || html.includes(marker)) return html;
@@ -13055,6 +13114,59 @@ body.forecast-excel-view-open{padding-right:320px!important;}
       return next.replace('</head>', css + '</head>');
     }
 
+    function withExcelInboundSequenceCounterColors(html) {
+      const marker = 'data-excel-inbound-sequence-counter-colors-v1';
+      if (!html || html.includes(marker)) return html;
+      const replacements = [
+        [
+          'shoveOrder:Math.max(0, Number(cell.dataset.shoveOrder) || 0),\n      className:',
+          'shoveOrder:Math.max(0, Number(cell.dataset.shoveOrder) || 0),\n      inboundSequence:Math.max(0, Number(cell.dataset.inboundSequence) || 0),\n      className:'
+        ],
+        [
+          'next.shoveOrder = Math.max(0, Math.round(Number(next.shoveOrder) || (inboundIdMatch ? Number(inboundIdMatch[1]) + 1 : 0)));',
+          'next.shoveOrder = Math.max(0, Math.round(Number(next.shoveOrder) || (inboundIdMatch ? Number(inboundIdMatch[1]) + 1 : 0)));\n    next.inboundSequence = Math.max(0, Math.round(Number(next.inboundSequence) || 0));'
+        ],
+        [
+          'shoveOrder:Number(cell.dataset.shoveOrder) || 0,\n        className:',
+          'shoveOrder:Number(cell.dataset.shoveOrder) || 0,\n        inboundSequence:Number(cell.dataset.inboundSequence) || 0,\n        className:'
+        ],
+        [
+          'const stamp = Date.now();\n    let added = 0;',
+          'const stamp = Date.now();\n    const inboundGroups = new Set();\n    Object.values(model.tracks || {}).forEach(blocks => {\n      (Array.isArray(blocks) ? blocks : []).forEach(block => {\n        const match = String(block && block.id || "").match(/^inbound-(\\d+)-/);\n        if (match) inboundGroups.add(match[1]);\n      });\n    });\n    const inboundSequence = Math.min(3, inboundGroups.size + 1);\n    let added = 0;'
+        ],
+        [
+          'shoveOrder:index + 1,\n        className:',
+          'shoveOrder:index + 1,\n        inboundSequence,\n        className:'
+        ],
+        [
+          'const shoveOrder = Math.max(0, Number(block.shoveOrder) || 0);\n          const displayContent =',
+          'const shoveOrder = Math.max(0, Number(block.shoveOrder) || 0);\n          const inboundSequence = Math.max(0, Number(block.inboundSequence) || 0);\n          const inboundSequenceClass = inboundSequence === 2 ? " inbound-sequence-two" : inboundSequence >= 3 ? " inbound-sequence-three" : "";\n          const displayContent ='
+        ],
+        [
+          '${shoveOrder ? ` data-shove-order="${shoveOrder}"` : ""} role="button"',
+          '${shoveOrder ? ` data-shove-order="${shoveOrder}"` : ""}${inboundSequence ? ` data-inbound-sequence="${inboundSequence}"` : ""} role="button"'
+        ],
+        [
+          '<span class="inbound-shove-flag" aria-label="Shove ${shoveOrder}">${shoveOrder}</span>',
+          '<span class="inbound-shove-flag${inboundSequenceClass}" aria-label="Shove ${shoveOrder}, inbound ${inboundSequence || 1}">${shoveOrder}</span>'
+        ]
+      ];
+      let next = html;
+      for (const [before, after] of replacements) {
+        if (!next.includes(before)) return html;
+        next = next.replace(before, after);
+      }
+      const css = '<style ' + marker + '>.inbound-shove-flag.inbound-sequence-two{border-color:#93c5fd;background:#2563eb;color:#fff}.inbound-shove-flag.inbound-sequence-three{border-color:#86efac;background:#16a34a;color:#fff}</style>';
+      return next.replace('</head>', css + '</head>');
+    }
+
+    function withStackingGridSmallerSideLoader(html) {
+      const marker = 'data-stacking-grid-smaller-side-loader-v1';
+      if (html.includes(marker)) return html;
+      const css = '<style ' + marker + '>.y-front .yard-machine-fixed{width:546px !important;max-height:210px !important}</style>';
+      return html.replace('</head>', css + '</head>');
+    }
+
     function bridgedHtmlForPage(id) {
       if (!bridgedPageHtml.has(id)) {
         let pageHtml = pages[id].html;
@@ -13074,6 +13186,7 @@ body.forecast-excel-view-open{padding-right:320px!important;}
           pageHtml = withAmReportDataImport(pageHtml);
         }
         if (id === "reading") pageHtml = withReadingArchiveBotImport(pageHtml);
+        if (id === "stackingGrid") pageHtml = withStackingGridSmallerSideLoader(pageHtml);
         if (id === "timeMd") pageHtml = withTimeMdResponsiveWidth(pageHtml);
         if (id === "timeOff") pageHtml = withTimeOffCurrentRosterSnapshot(withTimeOffCameInActions(withTimeOffMonthlyWeeklyStyle(pageHtml)));
         if (id === "billing") pageHtml = withBillingFlipStackReclassificationV1(withBillingExportDropdownV1(withBillingDuplicateStatusPillsV1(withBillingOperationalLphGuardV1(withBillingMoveDetailsIndexedDbV1(withBillingLiftFolderImportV1(withBillingImportFeedbackV1(withBillingLiftFlipPersistenceV2(withBillingUnifiedDuplicateReview(withBillingExcludeDuplicateRows(withBillingRampDerampMonthlyReview(withBillingRampDerampExcludedFlags(withBillingCountDuplicateRows(withBillingLphTargetPills(withBillingFlipDuplicateFlags(withBillingMonthlyFlipReview(withBillingStackReasonRouting(withBillingCompactDuplicateGroups(withBillingDailyShiftProjection(withBillingPerformanceArchiveIndexedDb(withBillingShiftLpmhGrid(withBillingSummaryExportStyles(withBillingLpmhSourcePair(withBillingHoursColumnOrder(withBillingDisplayFlagsMenu(withBillingPowerBiLiftDeltaFlag(withBillingPowerBiImport(withBillingQuotaSafePersistence(withBillingAnalyticsLiftFallback(withBillingAnalyticsArchiveHydration(withBillingManHoursPrecision(withBillingArchiveIndexedDb(withBillingSplitLiftAndChassisClear(withBillingHeaderRemoved(pageHtml))))))))))))))))))))))))))))))))));
@@ -13105,7 +13218,7 @@ body.forecast-excel-view-open{padding-right:320px!important;}
           pageHtml = withLphResetConfirmation(pageHtml);
           pageHtml = withLphCompactHourlyLog(pageHtml);
         }
-        if (id === "roster") pageHtml = withSchedulePersistence(pageHtml);
+        if (id === "roster") pageHtml = withRosterEditableColorRoles(withSchedulePersistence(pageHtml));
         if (id === "audits") pageHtml = withAuditsClearKeepsView(pageHtml);
         if (id === "excelView") {
           pageHtml = withExcelInboundPlannerClosedAtBoot(pageHtml);
@@ -13137,6 +13250,7 @@ body.forecast-excel-view-open{padding-right:320px!important;}
           pageHtml = withExcelAfternoonMeeting(pageHtml);
           pageHtml = withExcelArchivePdfReader(pageHtml);
           pageHtml = withExcelInboundOnHandChecks(pageHtml);
+          pageHtml = withExcelInboundSequenceCounterColors(pageHtml);
         }
         if (id === "chassisStatus") {
           pageHtml = withChassisGreenExcelHero(pageHtml);
