@@ -10322,7 +10322,7 @@ function renderForecastExcelShortageNotes(notes){
     const unplannedCount=getForecastUnplannedShortageCount(item.pool,item.size);
     const unplannedFlag=unplannedCount>0
       ? `<span class="forecast-excel-unplanned-flag" title="Loadplan units available">Loadplan ${unplannedCount}</span>`
-      : "";
+      : `<span class="forecast-excel-unplanned-flag" title="No loadplan units available">Loadplan 0</span>`;
     return `<span class="forecast-excel-shortage-line">${escapeHtml(item.text)}${unplannedFlag}</span>`;
   }).join("");
 }
@@ -10379,7 +10379,11 @@ function getForecastRequestUnplannedUnits(pool,size){
 }
 function renderForecastRequestUnplannedCell(pool,size){
   const units=getForecastRequestUnplannedUnits(pool,size);
-  return `<span class="forecast-request-unplanned-cell"><strong class="forecast-request-unplanned-count">${units.length}</strong></span>`;
+  const target=getForecastRequestBoardPair(pool,size);
+  const manuallyAdded=target.pool==="DCLI"&&String(target.size)==="53"
+    ? Math.max(0,Math.trunc(Number(forecastUnplannedEmptyContainers)||0))
+    : 0;
+  return `<span class="forecast-request-unplanned-cell"><strong class="forecast-request-unplanned-count">${units.length+manuallyAdded}</strong></span>`;
 }
 function renderForecastRequestNetCell(pool,size,value){
   const cell=renderForecastExcelNetCell(pool,size,value,"request-net-flag");
@@ -23414,7 +23418,8 @@ body.forecast-excel-view-open{
   transform-origin:center;
 }
 .forecast-excel-shortage-line{
-  display:flex!important;
+  display:grid!important;
+  grid-template-columns:max-content 88px;
   align-items:center!important;
   justify-content:center!important;
   gap:6px;

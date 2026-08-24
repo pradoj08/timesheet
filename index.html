@@ -2275,24 +2275,24 @@
     flex-direction: column;
   }
   #amScwLatestHost .scw-popup-head { display: flex; min-height: 40px; align-items: center; justify-content: space-between; gap: 10px; padding: 7px 8px 7px 13px; background: #0f172a; color: #fff; }
-  #amScwLatestHost .scw-popup-head strong { font-size: 13px; letter-spacing: .04em; text-transform: uppercase; }
+  #amScwLatestHost .scw-popup-head strong { font-size: 15px; letter-spacing: .04em; text-transform: uppercase; }
   #amScwLatestHost .scw-popup-head-actions { display: inline-flex; gap: 5px; }
   #amScwLatestHost .scw-popup-head button { width: 28px; height: 27px; padding: 0; border: 1px solid #64748b; border-radius: 5px; background: #1e293b; color: #fff; font-size: 16px; font-weight: 900; cursor: pointer; }
-  #amScwLatestHost .scw-popup-head button.scw-push-alert { width: auto; min-width: 48px; padding: 0 7px; border-color: #0d9488; background: #0f766e; font-size: 10px; letter-spacing: .03em; }
+  #amScwLatestHost .scw-popup-head button.scw-push-alert { width: auto; min-width: 48px; padding: 0 7px; border-color: #0d9488; background: #0f766e; font-size: 12px; letter-spacing: .03em; }
   #amScwLatestHost .scw-popup-head button.scw-push-alert:disabled { cursor: wait; opacity: .78; }
   #amScwLatestHost .scw-popup-body { min-height: 0; max-height: none; flex: 1; padding: 15px 16px 14px; overflow: auto; background: #fff; }
-  #amScwLatestHost .scw-popup-source { margin-bottom: 7px; color: #0f766e; font-size: 10px; font-weight: 950; letter-spacing: .08em; text-transform: uppercase; }
-  #amScwLatestHost .scw-popup-title { margin: 0; font-size: 20px; line-height: 1.18; }
-  #amScwLatestHost .scw-popup-date { margin-top: 7px; color: #64748b; font-size: 11px; font-weight: 750; }
-  #amScwLatestHost .scw-popup-summary { margin: 12px 0; color: #334155; font-size: 13px; font-weight: 650; line-height: 1.45; }
-  #amScwLatestHost .scw-popup-article { margin: 13px 0; color: #334155; font-size: 13px; font-weight: 600; line-height: 1.5; }
+  #amScwLatestHost .scw-popup-source { margin-bottom: 7px; color: #0f766e; font-size: 12px; font-weight: 950; letter-spacing: .08em; text-transform: uppercase; }
+  #amScwLatestHost .scw-popup-title { margin: 0; font-size: 22px; line-height: 1.18; }
+  #amScwLatestHost .scw-popup-date { margin-top: 7px; color: #64748b; font-size: 13px; font-weight: 750; }
+  #amScwLatestHost .scw-popup-summary { margin: 12px 0; color: #334155; font-size: 15px; font-weight: 650; line-height: 1.45; }
+  #amScwLatestHost .scw-popup-article { margin: 13px 0; color: #334155; font-size: 15px; font-weight: 600; line-height: 1.5; }
   #amScwLatestHost .scw-popup-article h1, #amScwLatestHost .scw-popup-article h2, #amScwLatestHost .scw-popup-article h3 { color: #172033; line-height: 1.25; }
   #amScwLatestHost .scw-popup-article img { display: block; max-width: 100%; height: auto; margin: 10px auto; border-radius: 7px; }
   #amScwLatestHost .scw-popup-article a, #amScwLatestHost .scw-popup-link { color: #0369a1; }
   #amScwLatestHost .scw-popup-article figure { max-width: 100%; margin: 12px 0; }
   #amScwLatestHost .scw-popup-article iframe, #amScwLatestHost .scw-popup-article video { max-width: 100%; }
-  #amScwLatestHost .scw-popup-link { font-size: 12px; font-weight: 900; text-decoration: none; }
-  #amScwLatestHost .scw-popup-status { padding: 18px 16px; color: #52617a; font-size: 13px; font-weight: 800; text-align: center; }
+  #amScwLatestHost .scw-popup-link { font-size: 14px; font-weight: 900; text-decoration: none; }
+  #amScwLatestHost .scw-popup-status { padding: 18px 16px; color: #52617a; font-size: 15px; font-weight: 800; text-align: center; }
   @media (max-width: 620px) {
     #amFloatingTodayRoster .amfr-dialog { top: 4px; left: 4px; width: calc(100vw - 8px); max-height: none; }
     #amFloatingTodayRoster .amfr-card { max-height: none; }
@@ -2526,21 +2526,24 @@
     try {
       var weather = frame.contentDocument.querySelector(".am-weather-readout");
       if (!weather) return;
-      if (showRoster) {
-        var height = Math.max(120, Math.ceil(dialog.getBoundingClientRect().height));
-        var weatherHost = document.getElementById("amScwLatestHost");
-        var weatherPanel = weatherHost && weatherHost.querySelector(".scw-popup:not([hidden])");
-        if (document.body.classList.contains("am-scw-left-column") && weatherPanel) {
-          height += 8 + Math.max(0, Math.ceil(weatherPanel.getBoundingClientRect().height));
-        }
+      var weatherHost = document.getElementById("amScwLatestHost");
+      var weatherPanel = weatherHost && weatherHost.querySelector(".scw-popup:not([hidden])");
+      var weatherVisible = document.body.classList.contains("am-scw-left-column") && weatherPanel;
+      if (showRoster || weatherVisible) {
+        var height = showRoster ? Math.max(120, Math.ceil(dialog.getBoundingClientRect().bottom + 8)) : 0;
+        if (weatherVisible) height = Math.max(height, Math.ceil(weatherHost.getBoundingClientRect().bottom + 8));
+        frame.style.setProperty("margin-top", height + "px", "important");
         weather.style.setProperty("visibility", "hidden", "important");
-        weather.style.setProperty("height", height + "px", "important");
-        weather.style.setProperty("min-height", height + "px", "important");
+        weather.style.setProperty("height", "0", "important");
+        weather.style.setProperty("min-height", "0", "important");
+        weather.style.setProperty("overflow", "hidden", "important");
         weather.style.setProperty("margin", "0", "important");
       } else {
+        frame.style.removeProperty("margin-top");
         weather.style.removeProperty("visibility");
         weather.style.removeProperty("height");
         weather.style.removeProperty("min-height");
+        weather.style.removeProperty("overflow");
         weather.style.removeProperty("margin");
       }
     } catch (_) {}
@@ -3013,7 +3016,10 @@
   window.addEventListener("message", function(event){
     if (!event.data || event.data.type !== "conglobal-am-third-column-mode") return;
     document.body.classList.toggle("am-scw-left-column", Boolean(event.data.weather));
-    if (rosterWanted && !root.hidden) window.requestAnimationFrame(function(){ syncYesterdayWeatherSlot(true); });
+    var syncWeatherColumn = function(){ syncYesterdayWeatherSlot(rosterWanted && !root.hidden); };
+    window.requestAnimationFrame(syncWeatherColumn);
+    window.setTimeout(syncWeatherColumn, 80);
+    window.setTimeout(syncWeatherColumn, 320);
     scheduleHookFrames();
   });
   window.addEventListener("storage", function(event){
@@ -3204,12 +3210,13 @@
       if (!html || typeof html !== "string" || html.includes("am-report-data-import-patch")) return html;
       const patch = `
 <style id="am-report-data-import-styles">
-  .am-import-backdrop{position:fixed;inset:0;z-index:2147483600;display:grid;place-items:start center;padding:22px 18px 18px;background:rgba(15,23,42,.56);overflow:auto}
+  .am-import-backdrop{position:fixed;inset:0;z-index:2147483600;display:grid;place-items:start center;padding:12px 18px;background:rgba(15,23,42,.56);overflow:hidden}
   .am-import-backdrop[hidden]{display:none!important}
-  .am-import-dialog{width:min(920px,96vw);max-height:92vh;display:flex;flex-direction:column;overflow:hidden;border:1px solid #334155;border-radius:14px;background:#f8fafc;color:#172033;box-shadow:0 24px 70px rgba(15,23,42,.35);font:14px/1.35 Arial,sans-serif}
+  .am-import-dialog{width:min(920px,96vw);height:min(860px,calc(100vh - 24px));height:min(860px,calc(100dvh - 24px));max-height:calc(100vh - 24px);max-height:calc(100dvh - 24px);display:flex;flex-direction:column;overflow:hidden;border:1px solid #334155;border-radius:14px;background:#f8fafc;color:#172033;box-shadow:0 24px 70px rgba(15,23,42,.35);font:14px/1.35 Arial,sans-serif}
   .am-import-head,.am-import-foot{display:flex;align-items:center;gap:10px;padding:13px 16px;background:#0f1a2f;color:white}
+  .am-import-head,.am-import-foot{flex:0 0 auto}.am-import-foot{position:relative;z-index:3;box-shadow:0 -8px 18px rgba(15,23,42,.18)}
   .am-import-head h2{margin:0;font-size:18px}.am-import-head p{margin:2px 0 0;color:#cbd5e1;font-size:12px}.am-import-head-copy{flex:1}.am-import-close{border:0;background:transparent;color:white;font-size:25px;cursor:pointer}
-  .am-import-body{display:grid;grid-template-columns:minmax(260px,.85fr) minmax(360px,1.15fr);gap:14px;padding:14px;overflow:auto}
+  .am-import-body{display:grid;grid-template-columns:minmax(260px,.85fr) minmax(360px,1.15fr);gap:14px;padding:14px;min-height:0;flex:1 1 auto;overflow:auto}
   .am-import-pane{min-width:0}.am-import-pane h3{margin:0 0 7px;font-size:13px}.am-import-source{width:100%;min-height:410px;resize:vertical;padding:10px;border:1px solid #94a3b8;border-radius:8px;background:white;font:12px/1.4 Consolas,monospace}
   .am-import-review{min-height:410px;max-height:55vh;overflow:auto;border:1px solid #94a3b8;border-radius:8px;background:white}.am-import-empty{padding:28px;color:#64748b;text-align:center}
   .am-import-report-title{padding:10px 10px 2px;color:#c00000;font-size:18px;font-weight:900}.am-import-report-date{padding:0 10px 12px;color:#c00000;font-size:16px;font-weight:800}
@@ -12345,7 +12352,11 @@ function getForecastRequestUnplannedUnits(pool,size){
 }
 function renderForecastRequestUnplannedCell(pool,size){
   const units=getForecastRequestUnplannedUnits(pool,size);
-  return \`<span class="forecast-request-unplanned-cell"><strong class="forecast-request-unplanned-count">\${units.length}</strong></span>\`;
+  const target=getForecastRequestBoardPair(pool,size);
+  const manuallyAdded=target.pool==="DCLI"&&String(target.size)==="53"
+    ? Math.max(0,Math.trunc(Number(forecastUnplannedEmptyContainers)||0))
+    : 0;
+  return \`<span class="forecast-request-unplanned-cell"><strong class="forecast-request-unplanned-count">\${units.length+manuallyAdded}</strong></span>\`;
 }
 function renderForecastRequestNetCell(pool,size,value){
   const cell=renderForecastExcelNetCell(pool,size,value,"request-net-flag");
@@ -12516,6 +12527,24 @@ body.forecast-excel-view-open{padding-right:320px!important;}
   background-color:#f6d58a!important;
   box-shadow:inset 0 0 0 1px #b77900!important;
   color:#000!important;
+}
+</style>`;
+      return html.replace("</head>", style + "\n</head>");
+    }
+
+    function withChassisLoadplanRowAlignment(html) {
+      if (!html || typeof html !== "string" || html.includes("chassis-loadplan-row-alignment-v1")) return html;
+      const emptyFlag = `: \`<span class="forecast-excel-unplanned-flag" title="No loadplan units available">Loadplan 0</span>\`;`;
+      html = html.replace(
+        ': "";\n    return `<span class="forecast-excel-shortage-line">${escapeHtml(item.text)}${unplannedFlag}</span>`;',
+        `${emptyFlag}\n    return \`<span class="forecast-excel-shortage-line">\${escapeHtml(item.text)}\${unplannedFlag}</span>\`;`
+      );
+      const style = `<style id="chassis-loadplan-row-alignment-v1">
+.forecast-excel-shortage-line{
+  display:grid!important;
+  grid-template-columns:max-content 88px!important;
+  align-items:center!important;
+  justify-content:center!important;
 }
 </style>`;
       return html.replace("</head>", style + "\n</head>");
@@ -13281,6 +13310,7 @@ body.forecast-excel-view-open{padding-right:320px!important;}
           pageHtml = withChassisUnplannedColumnTypography(pageHtml);
           pageHtml = withChassisExcelControlsViewport(pageHtml);
           pageHtml = withChassisLighterOver50Cells(pageHtml);
+          pageHtml = withChassisLoadplanRowAlignment(pageHtml);
         }
         bridgedPageHtml.set(id, withWorkbookSyncBridge(pageHtml));
       }
