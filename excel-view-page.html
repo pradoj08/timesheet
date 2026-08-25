@@ -438,6 +438,14 @@
   .yard-view-popup { z-index: 84; width: min(1460px, calc(100vw - 28px)); }
   .yard-view-title { display:flex; align-items:center; justify-content:center; gap:8px; }
   .yard-view-summary { color:#9ed0ff; font-size:10px; letter-spacing:.04em; }
+  .yard-view-display-modes { display:flex; align-items:center; gap:4px; margin-left:auto; }
+  .yard-view-display-mode {
+    min-height:25px; padding:3px 9px; border:1px solid #53657c; border-radius:5px;
+    background:#172235; color:#cbd5e1; font:800 10px/1 "Aptos Narrow",Arial,sans-serif;
+    text-transform:uppercase; cursor:pointer;
+  }
+  .yard-view-display-mode:hover { border-color:#93c5fd; color:#fff; }
+  .yard-view-display-mode.active { border-color:#fbbf24; background:#fbbf24; color:#111827; }
   .yard-view-body { background:#d7d7d7; }
   .yard-view-section-title {
     padding: 8px 10px;
@@ -1625,7 +1633,7 @@
     line-height: 1.1;
   }
   .third-summary-head {
-    background: #c40000;
+    background: #050505;
     color: #ffffff;
     text-transform: uppercase;
     letter-spacing: .02em;
@@ -1857,7 +1865,7 @@
     z-index: 4;
   }
   .third-summary-head.copy-grid-head {
-    background: #c40000;
+    background: #050505;
     color: #ffffff;
   }
   .copy-grid-actions {
@@ -2130,8 +2138,8 @@
     border-bottom-color: #303030;
   }
   #blankYardGrid .grid-head {
-    background: #b42318;
-    border-bottom-color: #8f1c14;
+    background: #050505;
+    border-bottom-color: #303030;
   }
   #blankYardGridTwo .grid-head {
     background: #050505;
@@ -3730,6 +3738,11 @@
   <section class="split-view-popup yard-view-popup" id="yardViewPopup" hidden aria-label="Cars in Yard and Pierce tracks">
     <div class="split-view-titlebar" id="yardViewHandle">
       <span class="yard-view-title">YARD / PIERCE <span class="yard-view-summary" id="yardViewSummary"></span></span>
+      <div class="yard-view-display-modes" role="group" aria-label="Yard and Pierce display mode">
+        <button class="yard-view-display-mode active" type="button" data-yard-display="blocks">Blocks</button>
+        <button class="yard-view-display-mode" type="button" data-yard-display="long-short">Long / Short</button>
+        <button class="yard-view-display-mode" type="button" data-yard-display="ss-map">SS Map</button>
+      </div>
       <button class="split-view-close" id="yardViewClose" type="button" aria-label="Close yard view">&times;</button>
     </div>
     <div class="split-view-body yard-view-body" id="yardViewBody"></div>
@@ -3862,6 +3875,10 @@
             <label class="track-id-toggle" title="Hide dwell tags inside ramp block labels">
               <input id="hideDwellToggle" type="checkbox">
               Hide dwell
+            </label>
+            <label class="track-id-toggle" title="Show the source inbound train at the end of each ramp block label">
+              <input id="showInboundTrainToggle" type="checkbox">
+              Show train
             </label>
             <input class="field" id="departureTime" type="datetime-local" title="Projected departure time" style="width:178px;max-width:178px">
           </div>
@@ -4260,13 +4277,13 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     {label:"Patterns", colors:COLOR_PALETTE.filter(color => color.id === "zebra")}
   ]);
   const DEFAULT_COLOR_RULES = Object.freeze([
-    {color:"black", terms:"BO, ST, TH, NO"},
+    {color:"midnight", terms:"BO, ST, TH, NO"},
     {color:"darkred", terms:"AVDS"},
     {color:"purple", terms:"DK, BBCT"},
-    {color:"purple", terms:"DB"},
-    {color:"solid-copper", terms:"ZLBHO, ZPBHO, INBOUND, MPSHO, CU, RAMP, ISIHOX"},
+    {color:"orange", terms:"DB"},
+    {color:"yellow", terms:"ZLBHO, ZPBHO, INBOUND, MPSHO, CU, RAMP, ISIHOX"},
     {color:"solid-blue", terms:"SS, SL, HC, MTY, MTP1"},
-    {color:"solid-rose", terms:"MHOAS, OADS, SCDS, DEDS, G4DS, ALS, DUDS, SETT, MNDS, SEDS"},
+    {color:"magenta", terms:"MHOAS, OADS, SCDS, DEDS, G4DS, ALS, DUDS, SETT, MNDS, SEDS"},
     {color:"teal", terms:"IHOSA, ICDS, SADS, FXSI, EGWD, SANT, PHNX, MXFE, LTDS, DADS, ICTF, YTDS, SIDS, WBDS, PFDS, LDDS, LATC"}
   ]);
   const GRID_FONT_OPTIONS = Object.freeze([
@@ -4463,6 +4480,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       trackTarget: 2500,
       hideTrackIds: true,
       hideDwell: false,
+      showInboundTrain: false,
       tableDensity: 50,
       inboundPlannerVisible: false,
       inboundPlannerPopupMigrated: true,
@@ -5702,11 +5720,31 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       .sort((a, b) => yardViewTrackLabel(a.track).localeCompare(yardViewTrackLabel(b.track), undefined, {numeric:true, sensitivity:"base"}));
   }
 
+  const YARD_VIEW_DISPLAY_KEY = "settegast-yard-pierce-display-v1";
+  let yardViewDisplayMode = localStorage.getItem(YARD_VIEW_DISPLAY_KEY) || "blocks";
+
+  function setYardViewDisplayMode(mode) {
+    yardViewDisplayMode = ["blocks", "long-short", "ss-map"].includes(mode) ? mode : "blocks";
+    localStorage.setItem(YARD_VIEW_DISPLAY_KEY, yardViewDisplayMode);
+    renderYardView();
+  }
+
   function yardCarHtml(row) {
     const equipment = clean(row[2]) || "UNKNOWN CAR";
     const length = Number(row[4]) || 0;
     const status = normalizedStatus(row);
     const train = clean(row[10]);
+    if (yardViewDisplayMode === "long-short") {
+      const type = length >= 68 ? "LONG" : "SHORT";
+      return `<div class="yard-view-car cut-cell ${type === "LONG" ? "green" : "red"}" title="${escapeAttr(`${equipment} · ${fmtInt(length)} FT · ${type}`)}"><strong class="yard-view-car-details">${escapeHtml(`${fmtInt(length)} FT · ${type}`)}</strong><small class="yard-view-car-id">${escapeHtml(equipment)}</small></div>`;
+    }
+    if (yardViewDisplayMode === "ss-map") {
+      const isSS = containsSS(row);
+      const elapsed = (Number(row[8]) || 0) * 24 + (Number(row[9]) || 0);
+      const label = isSS ? `SS ${fmtOne(elapsed)}H` : "NOT SS";
+      const tone = isSS ? (elapsed >= 24 ? "green" : "yellow") : "empty";
+      return `<div class="yard-view-car cut-cell ${tone}" title="${escapeAttr(`${equipment} · ${label}`)}"><strong class="yard-view-car-details">${escapeHtml(label)}</strong><small class="yard-view-car-id">${escapeHtml(equipment)}</small></div>`;
+    }
     const details = [`${fmtInt(length)} FT`, status, train].filter(Boolean).join(" · ");
     const tone = classifyCell(`${status} ${train}`, "CURRENT RAMP BLOCKING");
     const detailParts = [
@@ -5750,6 +5788,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       button.title = `${yardGroups.length} Yard track${yardGroups.length === 1 ? "" : "s"} and ${pierceGroups.length} Pierce track${pierceGroups.length === 1 ? "" : "s"}`;
     }
     if (!popup || !host || popup.hidden) return;
+    popup.querySelectorAll("[data-yard-display]").forEach(control => control.classList.toggle("active", control.dataset.yardDisplay === yardViewDisplayMode));
     if (summary) summary.textContent = `· YARD ${yardGroups.length} · PIERCE ${pierceGroups.length} · ${carCount} CARS`;
     host.innerHTML =
       yardViewTableHtml("YARD VIEW", yardGroups, "No cars were found in non-ramp yard tracks.") +
@@ -7702,6 +7741,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   function renderGrid() {
     const hideTrackIdsControl = $("#hideTrackIdsToggle")?.closest("label");
     const hideDwellControl = $("#hideDwellToggle")?.closest("label");
+    const showInboundTrainControl = $("#showInboundTrainToggle")?.closest("label");
     const view = state.view;
     const source = view === "CURRENT RAMP BLOCKING" ? computed.currentByTrack
       : view === "LONG SHORT / BREAKDOWN" ? computed.longShortByTrack
@@ -7726,8 +7766,11 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       for (let i=0;i<8;i++) {
         const text = values[i] || "";
         const cls = classifyCell(text, view);
-        const displayText = blockTextForDisplay(text);
         const group = trackGroups[i] || null;
+        const baseDisplayText = blockTextForDisplay(text);
+        const displayText = baseDisplayText && state.showInboundTrain && clean(group?.train)
+          ? `${baseDisplayText} (${clean(group.train)})`
+          : baseDisplayText;
         const interactiveClass = group
           ? " block-reorderable"
           : (!text && blockReorderingAvailable() ? " block-drop-end" : "");
@@ -7746,11 +7789,11 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     $("#yardGrid").innerHTML = cells.join("");
     const deltaRemainingHeader = $("#yardGrid").querySelector('.grid-head[title="Track capacity minus current footage"]');
     const hideTrackIdsHeader = deltaRemainingHeader?.previousElementSibling;
-    if (hideTrackIdsControl && hideDwellControl && hideTrackIdsHeader) {
+    if (hideTrackIdsControl && hideDwellControl && showInboundTrainControl && hideTrackIdsHeader) {
       hideTrackIdsHeader.classList.add("hide-track-ids-header");
       const toggles = document.createElement("div");
       toggles.className = "grid-display-toggles";
-      toggles.append(hideTrackIdsControl, hideDwellControl);
+      toggles.append(hideTrackIdsControl, hideDwellControl, showInboundTrainControl);
       hideTrackIdsHeader.replaceChildren(toggles);
     }
     renderBlankGrid();
@@ -8160,6 +8203,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     if (hideToggle) hideToggle.checked = Boolean(state.hideTrackIds);
     const hideDwellToggle = $("#hideDwellToggle");
     if (hideDwellToggle) hideDwellToggle.checked = Boolean(state.hideDwell);
+    const showInboundTrainToggle = $("#showInboundTrainToggle");
+    if (showInboundTrainToggle) showInboundTrainToggle.checked = Boolean(state.showInboundTrain);
     $("#inventoryMeta").textContent = `${state.rows.length} source rows ? ${state.sourceName || "manual data"} ? saved locally`;
   }
 
@@ -8370,15 +8415,25 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     return headers.findIndex((h,i) => tests.some(test => typeof test === "string" ? h === test : test.test(h)) && !excluded.includes(i));
   }
 
+  function canonicalImportedTrack(yardValue, trackValue) {
+    const yard = clean(yardValue).toUpperCase().replace(/\.0+$/, "");
+    const track = clean(trackValue).toUpperCase().replace(/\.0+$/, "");
+    if (!yard || !track) return track;
+    if (/^0?3$/.test(yard)) return `03-${/^\d+$/.test(track) ? track.padStart(3, "0") : track}`;
+    if (/^0?6$/.test(yard)) return track;
+    return `${yard}-${track}`;
+  }
+
   function buildHeaderMap(row) {
     const h = row.map(normalizeHeader);
+    const yard = firstHeaderIndex(h,["YARD"]);
     const track = firstHeaderIndex(h,["TRACK"]);
     const seq = firstHeaderIndex(h,[/TRACK (SEQ|SEQUENCE)/]);
     const equipment = firstHeaderIndex(h,[/EQUIP(MENT)? ID/,"CAR ID"]);
     const tons = firstHeaderIndex(h,["WEIGHT","TONS"]);
     const length = firstHeaderIndex(h,["LENGTH","LN","LENGTH FT"]);
     const holdStart = firstHeaderIndex(h,["TIME IN HOLD","HOLD START"]);
-    const inbound = firstHeaderIndex(h,["INBOUND TRAIN","TRAIN"]);
+    const inbound = firstHeaderIndex(h,["INBOUND TRAIN","TRAIN",/^INBOUND TR(?:AIN)?(?: ID)?$/,/^INBOUND TRAIN\b/]);
     let arrival = firstHeaderIndex(h,[
       /^(ARRIVAL|ARRIVAL TIME|ARRIVAL DATE|ARRIVAL DATE TIME|ARRIVAL DATETIME|ARRIVAL EVENT DATE TIME|ARRIVAL EVENT DATETIME)$/,
       /^(ETA|EST ARRIVAL|ESTIMATED ARRIVAL|INBOUND ARRIVAL)$/,
@@ -8401,7 +8456,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     if (holdStart >= 0 && hours < 0) hours = holdStart + 2;
     const required = [track,seq,equipment,tons,length];
     if (required.some(i=>i<0)) return null;
-    return {track,seq,equipment,tons,length,pStatus,qStatus,holdStart,days,hours,inbound,arrival,arrivalCandidates,yardBlock};
+    return {yard,track,seq,equipment,tons,length,pStatus,qStatus,holdStart,days,hours,inbound,arrival,arrivalCandidates,yardBlock};
   }
 
   function mappedValue(row, index) {
@@ -8410,7 +8465,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
 
   function mapByHeader(row, map) {
     return normalizeRow([
-      mappedValue(row,map.track), mappedValue(row,map.seq), mappedValue(row,map.equipment),
+      canonicalImportedTrack(mappedValue(row,map.yard), mappedValue(row,map.track)), mappedValue(row,map.seq), mappedValue(row,map.equipment),
       mappedValue(row,map.tons), mappedValue(row,map.length), mappedValue(row,map.pStatus),
       mappedValue(row,map.qStatus), mappedValue(row,map.holdStart), mappedValue(row,map.days),
       mappedValue(row,map.hours), mappedValue(row,map.inbound),
@@ -8429,9 +8484,17 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     // Direct DASH K:W copy: Track is the first column.
     if (hasInventoryAt(0)) return normalizeRow(values.slice(0,13));
     // Full yard export / DASH J:W: Yard precedes Track.
-    if (hasInventoryAt(1)) return normalizeRow(values.slice(1,14));
+    if (hasInventoryAt(1)) {
+      const mapped = values.slice(1,14);
+      mapped[0] = canonicalImportedTrack(values[0], values[1]);
+      return normalizeRow(mapped);
+    }
     // Entire DASH worksheet matrix: Track is in Excel column K (zero-based index 10).
-    if (hasInventoryAt(10)) return normalizeRow(values.slice(10,23));
+    if (hasInventoryAt(10)) {
+      const mapped = values.slice(10,23);
+      mapped[0] = canonicalImportedTrack(values[9], values[10]);
+      return normalizeRow(mapped);
+    }
     return null;
   }
 
@@ -8947,6 +9010,16 @@ https://github.com/nodeca/pako/blob/main/LICENSE
 
   $("#hideDwellToggle").addEventListener("change", e => {
     state.hideDwell = e.target.checked;
+    saveState();
+    renderAll();
+  });
+  $("#yardViewPopup").addEventListener("click", event => {
+    const control = event.target.closest("[data-yard-display]");
+    if (control) setYardViewDisplayMode(control.dataset.yardDisplay);
+  });
+
+  $("#showInboundTrainToggle").addEventListener("change", e => {
+    state.showInboundTrain = e.target.checked;
     saveState();
     renderAll();
   });

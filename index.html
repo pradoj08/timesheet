@@ -501,14 +501,15 @@
   <nav class="am-report-actions" id="amReportActions" aria-label="AM Report tools" hidden>
     <span class="am-report-actions-group am-report-actions-left">
       <button type="button" class="weather-post" id="amHeaderThirdColumn">Show Weather</button>
-      <button type="button" class="report-tool" id="amHeaderImportReport" aria-haspopup="dialog">Import Report</button>
       <button type="button" class="today-roster" id="amHeaderTodayRoster" aria-haspopup="dialog">Today's Roster</button>
     </span>
     <span class="am-report-actions-group am-report-actions-center">
+      <button type="button" class="report-tool" id="amHeaderImportReport" aria-haspopup="dialog">Import Report</button>
+    </span>
+    <span class="am-report-actions-group am-report-actions-right">
       <button type="button" class="report-tool" id="amHeaderAudits" aria-haspopup="dialog">Audits</button>
       <button type="button" class="report-tool" id="amHeaderChecklist" aria-haspopup="dialog">Checklist</button>
     </span>
-    <span class="am-report-actions-group am-report-actions-right"></span>
   </nav>
   <section class="scw-popup" id="scwLatestPopup" role="dialog" aria-modal="false" aria-labelledby="scwLatestHeading" hidden>
     <header class="scw-popup-head" id="scwLatestHandle">
@@ -5655,6 +5656,36 @@ tfoot .lph-target-pill.below-target{background:#fecaca;color:#7f1d1d}
         .replace("</head>", '<meta name="conglobal-excel-inbound-closed-at-boot-v1" content="enabled">\n</head>');
     }
 
+    function withExcelBlackOperationalHeaders(html) {
+      const marker = "excel-black-operational-headers-v1";
+      if (!html || typeof html !== "string" || html.includes(marker)) return html;
+      return html.replace(/<\/head>/i, `<style id="${marker}">
+#blankYardGrid .grid-head,
+.third-summary-head,
+.third-summary-head.copy-grid-head{
+  background:#050505!important;
+  border-bottom-color:#303030!important;
+  color:#fff!important
+}
+</style>
+</head>`);
+    }
+
+    function withExcelContrastingBlockColors(html) {
+      const marker = "data-excel-contrasting-block-colors-v1";
+      if (!html || html.includes(marker)) return html;
+      const replacements = [
+        ['{color:"black", terms:"BO, ST, TH, NO"}', '{color:"midnight", terms:"BO, ST, TH, NO"}'],
+        ['{color:"purple", terms:"DB"}', '{color:"orange", terms:"DB"}'],
+        ['{color:"solid-copper", terms:"ZLBHO, ZPBHO, INBOUND, MPSHO, CU, RAMP, ISIHOX"}', '{color:"yellow", terms:"ZLBHO, ZPBHO, INBOUND, MPSHO, CU, RAMP, ISIHOX"}'],
+        ['{color:"solid-rose", terms:"MHOAS, OADS, SCDS, DEDS, G4DS, ALS, DUDS, SETT, MNDS, SEDS"}', '{color:"magenta", terms:"MHOAS, OADS, SCDS, DEDS, G4DS, ALS, DUDS, SETT, MNDS, SEDS"}']
+      ];
+      let next = html;
+      replacements.forEach(([before, after]) => { next = next.replace(before, after); });
+      const migration = `<script ${marker}>(function(){var rules=window.__CONGLOBAL_BOOTSTRAP_COLOR_RULES__;if(!Array.isArray(rules))return;var map={"BO, ST, TH, NO":"midnight","DB":"orange","ZLBHO, ZPBHO, INBOUND, MPSHO, CU, RAMP, ISIHOX":"yellow","MHOAS, OADS, SCDS, DEDS, G4DS, ALS, DUDS, SETT, MNDS, SEDS":"magenta"};rules.forEach(function(rule){var terms=String(rule&&rule.terms||"").trim();if(map[terms])rule.color=map[terms];});})();</scr${""}ipt>`;
+      return next.replace(/<head([^>]*)>/i, match => match + migration);
+    }
+
     function withExcelTableDensityControl(html) {
       if (!html || typeof html !== "string" || html.includes("excel-table-density-control-v1")) return html;
       const style = `<style id="excel-table-density-control-v1">
@@ -5940,6 +5971,10 @@ tfoot .lph-target-pill.below-target{background:#fecaca;color:#7f1d1d}
     function withExcelToolbarGroups(html) {
       if (!html || typeof html !== "string") return html;
       html = html.replace(
+        'const inbound = firstHeaderIndex(h,["INBOUND TRAIN","TRAIN"]);',
+        'const inbound = firstHeaderIndex(h,["INBOUND TRAIN","TRAIN",/^INBOUND TR(?:AIN)?(?: ID)?$/,/^INBOUND TRAIN\\b/]);'
+      );
+      html = html.replace(
 `  function parsePersistedColorRules(raw) {
     if (!raw) return null;
     try {
@@ -6058,6 +6093,16 @@ tfoot .lph-target-pill.below-target{background:#fecaca;color:#7f1d1d}
     hideDwellToggle=hideDwellControl.querySelector("input");
     try{hideDwellToggle.checked=localStorage.getItem("settegast-hide-dwell") === "true"}catch(error){}
   }
+  var showInboundTrainToggle=document.getElementById("showInboundTrainToggle");
+  var showInboundTrainControl=showInboundTrainToggle&&showInboundTrainToggle.closest("label");
+  if(!showInboundTrainToggle){
+    showInboundTrainControl=document.createElement("label");
+    showInboundTrainControl.className="track-id-toggle";
+    showInboundTrainControl.title="Show the source inbound train at the end of each ramp block label";
+    showInboundTrainControl.innerHTML='<input id="showInboundTrainToggle" type="checkbox"> Show train';
+    showInboundTrainToggle=showInboundTrainControl.querySelector("input");
+    try{showInboundTrainToggle.checked=localStorage.getItem("settegast-show-inbound-train")==="true"}catch(error){}
+  }
   var yardGrid=document.getElementById("yardGrid");
   var dwellGridHosts=[yardGrid,document.getElementById("blankYardGrid"),document.getElementById("blankYardGridTwo"),document.getElementById("blankYardGridThree")].filter(Boolean);
   function updateDwellToggleLabel(){
@@ -6079,8 +6124,34 @@ tfoot .lph-target-pill.below-target{background:#fecaca;color:#7f1d1d}
     });
     updateDwellToggleLabel();
   }
+  function applyInboundTrainVisibility(){
+    if(!yardGrid||typeof computed==="undefined"||!computed||!Array.isArray(computed.groups))return;
+    var groupsById=new Map(computed.groups.map(function(group){return [String(group.blockId||""),group]}));
+    yardGrid.querySelectorAll(".cut-cell[data-block-id]").forEach(function(cell){
+      var existing=cell.querySelector(".inbound-train-suffix");
+      if(!showInboundTrainToggle.checked){
+        if(existing)existing.remove();
+        return;
+      }
+      var group=groupsById.get(String(cell.dataset.blockId||""));
+      var train=String(group&&group.train||"").trim();
+      if(!train){
+        if(existing)existing.remove();
+        return;
+      }
+      var expected=" ("+train+")";
+      if(existing){
+        if(existing.textContent!==expected)existing.textContent=expected;
+        return;
+      }
+      var suffix=document.createElement("span");
+      suffix.className="inbound-train-suffix";
+      suffix.textContent=expected;
+      cell.appendChild(suffix);
+    });
+  }
   function placeHideTrackIds(){
-    if(!yardGrid||!hideTrackIdsControl||!hideDwellControl)return;
+    if(!yardGrid||!hideTrackIdsControl||!hideDwellControl||!showInboundTrainControl)return;
     var deltaHeader=yardGrid.querySelector('.grid-head[title="Track capacity minus current footage"]')||Array.from(yardGrid.querySelectorAll(".grid-head")).find(function(header){return /remaining/i.test(header.textContent||"")});
     var target=deltaHeader&&deltaHeader.previousElementSibling;
     if(!target)return;
@@ -6088,16 +6159,22 @@ tfoot .lph-target-pill.below-target{background:#fecaca;color:#7f1d1d}
     if(!target.querySelector(".grid-display-toggles")){
       var toggles=document.createElement("div");
       toggles.className="grid-display-toggles";
-      toggles.append(hideTrackIdsControl,hideDwellControl);
+      toggles.append(hideTrackIdsControl,hideDwellControl,showInboundTrainControl);
       target.replaceChildren(toggles);
     }
 
 
     applyDwellVisibility();
+    applyInboundTrainVisibility();
   }
   hideDwellToggle.addEventListener("change",function(){
     try{localStorage.setItem("settegast-hide-dwell",hideDwellToggle.checked?"true":"false")}catch(error){}
     applyDwellVisibility();
+    applyInboundTrainVisibility();
+  });
+  showInboundTrainToggle.addEventListener("change",function(){
+    try{localStorage.setItem("settegast-show-inbound-train",showInboundTrainToggle.checked?"true":"false")}catch(error){}
+    applyInboundTrainVisibility();
   });
   placeHideTrackIds();
   if(yardGrid)new MutationObserver(function(){requestAnimationFrame(placeHideTrackIds)}).observe(yardGrid,{childList:true});
@@ -10697,6 +10774,10 @@ const net=getForecastRequestOnHandCount(pool,size)+drayIn-drayOut-getForecastReq
         'return {yard,track,seq,equipment,tons,length,pStatus,qStatus,holdStart,days,hours,inbound,arrival,yardBlock};'
       );
       html = html.replace(
+        'return {track,seq,equipment,tons,length,pStatus,qStatus,holdStart,days,hours,inbound,arrival,arrivalCandidates,yardBlock};',
+        'return {yard,track,seq,equipment,tons,length,pStatus,qStatus,holdStart,days,hours,inbound,arrival,arrivalCandidates,yardBlock};'
+      );
+      html = html.replace(
         'mappedValue(row,map.track), mappedValue(row,map.seq), mappedValue(row,map.equipment),',
         'canonicalImportedTrack(mappedValue(row,map.yard), mappedValue(row,map.track)), mappedValue(row,map.seq), mappedValue(row,map.equipment),'
       );
@@ -10750,7 +10831,16 @@ const net=getForecastRequestOnHandCount(pool,size)+drayIn-drayOut-getForecastReq
 
   function yardCarHtml`;
       html = html.replace(/function yardTrackGroups\(\) \{[\s\S]*?\n  \}\n\n  function yardCarHtml/, groupReplacement);
-      const replacement = `function yardRunDescriptor(rows) {
+      const replacement = `const YARD_VIEW_DISPLAY_KEY = "settegast-yard-pierce-display-v1";
+  let yardViewDisplayMode = localStorage.getItem(YARD_VIEW_DISPLAY_KEY) || "blocks";
+
+  function setYardViewDisplayMode(mode) {
+    yardViewDisplayMode = ["blocks", "long-short", "ss-map"].includes(mode) ? mode : "blocks";
+    localStorage.setItem(YARD_VIEW_DISPLAY_KEY, yardViewDisplayMode);
+    renderYardView();
+  }
+
+  function yardRunDescriptor(rows) {
     const first = rows[0] || [];
     const equipment = rows.map(row => clean(row[2]) || "UNKNOWN CAR");
     const length = rows.reduce((total, row) => total + (Number(row[4]) || 0), 0);
@@ -10784,6 +10874,39 @@ const net=getForecastRequestOnHandCount(pool,size)+drayIn-drayOut-getForecastReq
   }
 
   function yardCarsHtml(entries) {
+    if (yardViewDisplayMode === "long-short") {
+      const segments = [];
+      entries.forEach(entry => {
+        const row = entry.row;
+        const type = (Number(row[4]) || 0) >= 68 ? "LONG" : "SHORT";
+        const previous = segments[segments.length - 1];
+        if (previous && previous.type === type) {
+          previous.rows.push(row);
+        } else {
+          segments.push({type:type, rows:[row]});
+        }
+      });
+      return segments.map(segment => {
+        const footage = segment.rows.reduce((total, row) => total + (Number(row[4]) || 0), 0);
+        const equipment = segment.rows.map(row => clean(row[2]) || "UNKNOWN CAR");
+        const count = segment.rows.length > 1 ? '<span class="yard-view-car-count">' + segment.rows.length + '</span>' : "";
+        return '<div class="yard-view-car yard-view-car-consolidated cut-cell ' + (segment.type === "LONG" ? "green" : "red") +
+          '" style="flex-basis:180px;width:180px" title="' + escapeAttr(equipment.join(", ") + " · " + footage + " FT · " + segment.type) +
+          '"><strong class="yard-view-car-details">' + escapeHtml(pad(footage, 4) + " FT " + segment.type) + '</strong>' + count + '</div>';
+      }).join("");
+    }
+    if (yardViewDisplayMode === "ss-map") {
+      return entries.map(entry => {
+        const row = entry.row;
+        const equipment = clean(row[2]) || "UNKNOWN CAR";
+        const isSS = containsSS(row);
+        const elapsed = (Number(row[8]) || 0) * 24 + (Number(row[9]) || 0);
+        const label = isSS ? "SS " + fmtOne(elapsed) + "H" : "NOT SS";
+        const tone = isSS ? (elapsed >= 24 ? "green" : "yellow") : "empty";
+        return '<div class="yard-view-car cut-cell ' + tone + '" style="flex-basis:180px;width:180px" title="' + escapeAttr(equipment + " · " + label) +
+          '"><strong class="yard-view-car-details">' + escapeHtml(label) + '</strong></div>';
+      }).join("");
+    }
     const runs = [];
     entries.forEach(entry => {
       const row = entry.row;
@@ -10850,6 +10973,17 @@ const net=getForecastRequestOnHandCount(pool,size)+drayIn-drayOut-getForecastReq
     const title = document.querySelector("#yardViewHandle .yard-view-title");
     if (title && title.firstChild) title.firstChild.nodeValue = "YARD / PIERCE ";
     if (!popup || !host || popup.hidden) return;
+    popup.querySelectorAll("[data-yard-display]").forEach(control => {
+      control.classList.toggle("active", control.dataset.yardDisplay === yardViewDisplayMode);
+      if (!control.dataset.displayReady) {
+        control.dataset.displayReady = "1";
+        control.addEventListener("click", event => {
+          event.preventDefault();
+          event.stopPropagation();
+          setYardViewDisplayMode(control.dataset.yardDisplay);
+        });
+      }
+    });
     if (summary) {
       summary.textContent = "· YARD " + yardGroups.length + " · PIERCE " + pierceGroups.length + " · " + carCount + " CARS";
     }
@@ -10861,7 +10995,19 @@ const net=getForecastRequestOnHandCount(pool,size)+drayIn-drayOut-getForecastReq
   function openYardView`;
       html = html.replace(/function renderYardView\(\) \{[\s\S]*?\n  \}\n\n  function openYardView/, renderReplacement);
       html = html.replace('aria-label="Cars in yard tracks"', 'aria-label="Cars in Yard and Pierce tracks"');
+      html = html.replace(
+        '<span class="yard-view-title">YARD VIEW <span class="yard-view-summary" id="yardViewSummary"></span></span>\n      <button class="split-view-close" id="yardViewClose"',
+        '<span class="yard-view-title">YARD / PIERCE <span class="yard-view-summary" id="yardViewSummary"></span></span>\n      <div class="yard-view-display-modes" role="group" aria-label="Yard and Pierce display mode">\n        <button class="yard-view-display-mode active" type="button" data-yard-display="blocks">Blocks</button>\n        <button class="yard-view-display-mode" type="button" data-yard-display="long-short">Long / Short</button>\n        <button class="yard-view-display-mode" type="button" data-yard-display="ss-map">SS Map</button>\n      </div>\n      <button class="split-view-close" id="yardViewClose"'
+      );
       const css = `<style id="excel-yard-view-table-parity">
+  .yard-view-display-modes { display:flex; align-items:center; gap:4px; margin-left:auto; }
+  .yard-view-display-mode {
+    min-height:25px; padding:3px 9px; border:1px solid #53657c; border-radius:5px;
+    background:#172235; color:#cbd5e1; font:800 10px/1 "Aptos Narrow",Arial,sans-serif;
+    text-transform:uppercase; cursor:pointer;
+  }
+  .yard-view-display-mode:hover { border-color:#93c5fd; color:#fff; }
+  .yard-view-display-mode.active { border-color:#fbbf24; background:#fbbf24; color:#111827; }
   .yard-view-cars {
     align-content: start;
     align-items: start;
@@ -12399,6 +12545,60 @@ function getForecastPreviousSubmissionValues(){`;
       return html.replace("</head>", styles + "\n</head>");
     }
 
+    function withChassisUnplannedPersistence(html) {
+      if (!html || typeof html !== "string" || html.includes("chassis-unplanned-persistence-v1")) return html;
+      const script = `<script id="chassis-unplanned-persistence-v1">(function(){
+  const STORAGE_KEY="conglobal-chassis-unplanned-units-v1";
+  function persist(){
+    try{
+      localStorage.setItem(STORAGE_KEY,JSON.stringify({
+        version:1,
+        records:Array.isArray(forecastUnplannedRecords)?forecastUnplannedRecords:[],
+        stats:forecastUnplannedStats&&typeof forecastUnplannedStats==="object"?forecastUnplannedStats:null,
+        emptyContainers:Math.max(0,Math.trunc(Number(forecastUnplannedEmptyContainers)||0)),
+        dayFilter:document.getElementById("forecastUnplannedDayFilter")?.value||"all",
+        savedAt:new Date().toISOString()
+      }));
+    }catch(error){console.warn("Unable to save Unplanned Units locally",error);}
+  }
+  function hydrate(){
+    try{
+      const saved=JSON.parse(localStorage.getItem(STORAGE_KEY)||"null");
+      if(!saved||typeof saved!=="object")return;
+      forecastUnplannedRecords=Array.isArray(saved.records)?saved.records:[];
+      forecastUnplannedStats=saved.stats&&typeof saved.stats==="object"?saved.stats:null;
+      forecastUnplannedEmptyContainers=Math.max(0,Math.trunc(Number(saved.emptyContainers)||0));
+      const input=document.getElementById("forecastUnplannedEmptyContainers");
+      if(input)input.value=String(forecastUnplannedEmptyContainers);
+      populateForecastUnplannedDayFilter(forecastUnplannedRecords);
+      const filter=document.getElementById("forecastUnplannedDayFilter");
+      const requested=typeof saved.dayFilter==="string"?saved.dayFilter:"all";
+      if(filter&&Array.from(filter.options).some(option=>option.value===requested))filter.value=requested;
+      renderForecastUnplannedOutput(forecastUnplannedRecords,forecastUnplannedStats,filter?.value||"all");
+      if(document.body.classList.contains("forecast-excel-view-open"))renderForecastExcelView();
+    }catch(error){console.warn("Unable to restore Unplanned Units locally",error);}
+  }
+  if(typeof importForecastUnplannedUnits==="function"){
+    const originalImportForecastUnplannedUnits=importForecastUnplannedUnits;
+    importForecastUnplannedUnits=async function(files){
+      const result=await originalImportForecastUnplannedUnits(files);
+      persist();
+      return result;
+    };
+  }
+  window.addEventListener("DOMContentLoaded",()=>setTimeout(()=>{
+    hydrate();
+    const emptyInput=document.getElementById("forecastUnplannedEmptyContainers");
+    const dayFilter=document.getElementById("forecastUnplannedDayFilter");
+    const clearButton=document.getElementById("forecastUnplannedClearBtn");
+    if(emptyInput)emptyInput.addEventListener("input",()=>setTimeout(persist,0));
+    if(dayFilter)dayFilter.addEventListener("change",()=>setTimeout(persist,0));
+    if(clearButton)clearButton.addEventListener("click",()=>setTimeout(persist,0));
+  },0));
+})();<\/script>`;
+      return html.replace("</body>", script + "\n</body>");
+    }
+
     function withChassisSplitTableTextSliders(html) {
       if (!html || typeof html !== "string" || html.includes("chassis-split-table-text-sliders-v1")) return html;
       const oldControl = `<label for="forecastExcelTableTextSizeSlider">
@@ -13251,7 +13451,9 @@ body.forecast-excel-view-open{padding-right:320px!important;}
         if (id === "audits") pageHtml = withAuditsClearKeepsView(pageHtml);
         if (id === "excelView") {
           pageHtml = withExcelInboundPlannerClosedAtBoot(pageHtml);
+          pageHtml = withExcelContrastingBlockColors(pageHtml);
           pageHtml = withExcelDarkerGreyBackground(pageHtml);
+          pageHtml = withExcelBlackOperationalHeaders(pageHtml);
           pageHtml = withExcelTableDensityControl(pageHtml);
           pageHtml = withExcelCurrentRosterSnapshotParity(pageHtml);
           pageHtml = withExcelSelectionHighlight(pageHtml);
@@ -13305,6 +13507,7 @@ body.forecast-excel-view-open{padding-right:320px!important;}
           pageHtml = withChassisOpenDrayRequests(pageHtml);
           pageHtml = withChassisSoftDeficitPills(pageHtml);
           pageHtml = withChassisInventoryReportUnplannedImport(pageHtml);
+          pageHtml = withChassisUnplannedPersistence(pageHtml);
           pageHtml = withChassisUnplannedRequestColumn(pageHtml);
           pageHtml = withChassisSplitTableTextSliders(pageHtml);
           pageHtml = withChassisUnplannedColumnTypography(pageHtml);

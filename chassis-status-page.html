@@ -10125,6 +10125,8 @@ function setAppPage(page,options={}){
     if(drop && !drop.innerHTML)drop.innerHTML=YARD_OPTIONS.map(o=>`<option>${o}</option>`).join("");
     if(hydrate && !forecastPageHydrated){
       loadForecastState();
+      loadForecastUnplannedState();
+      hydrateForecastUnplannedState();
       renderForecastImportedUnits();
       renderForecastRequestHistoryPreview();
       renderForecastArchiveList();
@@ -14436,10 +14438,49 @@ function getForecastUnplannedPool(shipper,fallbackPool){
   }
   return mapped||fallbackPool;
 }
+// chassis-unplanned-persistence-v1
 const FORECAST_UNPLANNED_TRAIN_BASELINES={IHOSA:15,YHO37R:16};
+const FORECAST_UNPLANNED_STORAGE_KEY="conglobal-chassis-unplanned-units-v1";
 let forecastUnplannedRecords=[];
 let forecastUnplannedStats=null;
 let forecastUnplannedEmptyContainers=0;
+let forecastUnplannedSavedDayFilter="all";
+function saveForecastUnplannedState(){
+  try{
+    localStorage.setItem(FORECAST_UNPLANNED_STORAGE_KEY,JSON.stringify({
+      version:1,
+      records:Array.isArray(forecastUnplannedRecords)?forecastUnplannedRecords:[],
+      stats:forecastUnplannedStats&&typeof forecastUnplannedStats==="object"?forecastUnplannedStats:null,
+      emptyContainers:Math.max(0,Math.trunc(Number(forecastUnplannedEmptyContainers)||0)),
+      dayFilter:$("forecastUnplannedDayFilter")?.value||forecastUnplannedSavedDayFilter||"all",
+      savedAt:new Date().toISOString()
+    }));
+  }catch(error){
+    console.warn("Unable to save Unplanned Units locally",error);
+  }
+}
+function loadForecastUnplannedState(){
+  try{
+    const saved=JSON.parse(localStorage.getItem(FORECAST_UNPLANNED_STORAGE_KEY)||"null");
+    if(!saved||typeof saved!=="object")return;
+    forecastUnplannedRecords=Array.isArray(saved.records)?saved.records:[];
+    forecastUnplannedStats=saved.stats&&typeof saved.stats==="object"?saved.stats:null;
+    forecastUnplannedEmptyContainers=Math.max(0,Math.trunc(Number(saved.emptyContainers)||0));
+    forecastUnplannedSavedDayFilter=typeof saved.dayFilter==="string"?saved.dayFilter:"all";
+  }catch(error){
+    console.warn("Unable to restore Unplanned Units locally",error);
+  }
+}
+function hydrateForecastUnplannedState(){
+  const emptyInput=$("forecastUnplannedEmptyContainers");
+  if(emptyInput)emptyInput.value=String(forecastUnplannedEmptyContainers);
+  populateForecastUnplannedDayFilter(forecastUnplannedRecords);
+  renderForecastUnplannedOutput(
+    forecastUnplannedRecords,
+    forecastUnplannedStats,
+    $("forecastUnplannedDayFilter")?.value||"all"
+  );
+}
 function getForecastUnplannedDay(train){
   const match=String(train||"").trim().toUpperCase().match(/^(IHOSA|YHO37R)\s+(\d+)/);
   if(!match)return null;
@@ -14457,13 +14498,15 @@ function getForecastUnplannedDayLabel(offset){
 function populateForecastUnplannedDayFilter(records){
   const select=$("forecastUnplannedDayFilter");
   if(!select)return;
+  const requestedValue=forecastUnplannedSavedDayFilter||select.value||"all";
   const offsets=[...new Set(records.map(record=>record.dayOffset))].sort((a,b)=>a-b);
   select.innerHTML=`<option value="all">All Days</option><option value="grouped">Grouped</option>${offsets.map(offset=>{
     const label=getForecastUnplannedDayLabel(offset);
     return `<option value="${offset}">${label}</option>`;
   }).join("")}`;
   select.disabled=!offsets.length;
-  select.value="all";
+  select.value=[...select.options].some(option=>option.value===requestedValue)?requestedValue:"all";
+  forecastUnplannedSavedDayFilter=select.value;
 }
 function groupForecastUnplannedRecords(records){
   const groups=new Map();
@@ -14600,6 +14643,7 @@ async function importForecastUnplannedUnits(files){
   populateForecastUnplannedDayFilter(records);
   renderForecastUnplannedOutput(records,stats);
   if(document.body.classList.contains("forecast-excel-view-open"))renderForecastExcelView();
+  saveForecastUnplannedState();
 }
 function renderForecastRequestHistoryPreview(){
   const box=$("forecastRequestHistoryPreview");
@@ -15264,6 +15308,8 @@ async function init(){
         const emptyInput=$("forecastUnplannedEmptyContainers");
         if(emptyInput)emptyInput.value="0";
         forecastUnplannedEmptyContainers=0;
+        forecastUnplannedSavedDayFilter="all";
+        saveForecastUnplannedState();
         if(typeof showArchiveToast==="function")showArchiveToast("Unplanned units cleared.");
       }
     };
@@ -15301,9 +15347,11 @@ async function init(){
       $("forecastUnplannedDayFilter")?.value||"all"
     );
     if(document.body.classList.contains("forecast-excel-view-open"))renderForecastExcelView();
+    saveForecastUnplannedState();
   };
   const forecastUnplannedDayFilter=$("forecastUnplannedDayFilter");
   if(forecastUnplannedDayFilter)forecastUnplannedDayFilter.onchange=()=>{
+    forecastUnplannedSavedDayFilter=forecastUnplannedDayFilter.value;
     if(forecastUnplannedStats){
       renderForecastUnplannedOutput(
         forecastUnplannedRecords,
@@ -15311,6 +15359,7 @@ async function init(){
         forecastUnplannedDayFilter.value
       );
     }
+    saveForecastUnplannedState();
   };
   const forecastRequestHistoryToggleBtn=$("forecastRequestHistoryToggleBtn"); if(forecastRequestHistoryToggleBtn)forecastRequestHistoryToggleBtn.onclick=toggleForecastRequestHistoryPreview;
   const forecastClearChassisRequestsBtn=$("forecastClearChassisRequestsBtn"); setupForecastClearConfirmation(forecastClearChassisRequestsBtn,clearForecastChassisRequests);

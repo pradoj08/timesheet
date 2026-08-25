@@ -1607,34 +1607,37 @@ function exportStackingGridExcel(){
   const rows=rowsCount();
   const total=state.reduce((count,item)=>count+(String(item&&item.text||'').trim()?1:0),0);
   const layoutRows=[];
-  layoutRows.push(`<Row ss:Height="28">${excelCell('SETTEGAST STACKING GRID','Title','String',8)}</Row>`);
-  layoutRows.push(`<Row>${excelCell('Track 809/808','Subtitle','String',6)}${excelCell('Containers','Header')}${excelCell(total,'Total','Number')}</Row>`);
-  layoutRows.push(`<Row>${excelCell('BACK FENCE','Fence','String',8)}</Row>`);
-  layoutRows.push(`<Row>${Array.from({length:BAYS},(_,bay)=>excelCell(`BAY ${BAYS-bay}`,'Header')).join('')}${excelCell('ROW','Header')}${excelCell('LEVEL','Header')}</Row>`);
+  const excelGridColumnCount=(BAYS*2)+2;
+  const bayHeaderCells=Array.from({length:BAYS},(_,bay)=>excelCell(`BAY ${BAYS-bay}`,'Header')+excelCell('','VSpacer')).join('');
+  layoutRows.push(`<Row ss:Height="24">${excelCell('SETTEGAST STACKING GRID','Title','String',excelGridColumnCount-1)}</Row>`);
+  layoutRows.push(`<Row ss:Height="18">${excelCell('Track 809/808','Subtitle','String',(BAYS*2)-1)}${excelCell('Containers','Header')}${excelCell(total,'Total','Number')}</Row>`);
+  layoutRows.push(`<Row ss:Height="18">${excelCell('BACK FENCE','Fence','String',excelGridColumnCount-1)}</Row>`);
+  layoutRows.push(`<Row ss:Height="18">${bayHeaderCells}${excelCell('ROW','Header')}${excelCell('LEVEL','Header')}</Row>`);
   for(let row=0;row<rows;row++){
     for(let level=0;level<LEVELS;level++){
       const cells=[];
       for(let bay=0;bay<BAYS;bay++){
         const item=state[(row*ROW_SIZE)+(level*BAYS)+bay]||{text:'',green:false};
         cells.push(excelCell(item.text||'',item.text?(item.green?'Gold':'Occupied'):'Blank'));
+        cells.push(excelCell('','VSpacer'));
       }
-      cells.push(excelCell(rows-row,'Center','Number'),excelCell(`LEVEL ${level+1}`,'Center'));
-      layoutRows.push(`<Row ss:Height="24">${cells.join('')}</Row>`);
+      cells.push(excelCell(rows-row,'Center','Number'),excelCell(`LEVEL ${LEVELS-level}`,'Center'));
+      layoutRows.push(`<Row ss:Height="18">${cells.join('')}</Row>`);
     }
-    if(row<rows-1)layoutRows.push(`<Row ss:Height="8">${excelCell('','Spacer','String',8)}</Row>`);
+    if(row<rows-1)layoutRows.push(`<Row ss:Height="8">${excelCell('','Spacer','String',excelGridColumnCount-1)}</Row>`);
   }
-  layoutRows.push(`<Row>${excelCell('FRONT - [BOWL]','Fence','String',8)}</Row>`);
+  layoutRows.push(`<Row ss:Height="18">${excelCell('FRONT - [BOWL]','Fence','String',excelGridColumnCount-1)}</Row>`);
 
   const manifestRows=[];
-  manifestRows.push(`<Row ss:Height="28">${excelCell('CONTAINER MANIFEST','Title','String',5)}</Row>`);
-  manifestRows.push(`<Row>${['ROW','BAY','LEVEL','STACK POSITION','CONTAINER','GOLD HIGHLIGHT'].map(value=>excelCell(value,'Header')).join('')}</Row>`);
+  manifestRows.push(`<Row ss:Height="24">${excelCell('CONTAINER MANIFEST','Title','String',5)}</Row>`);
+  manifestRows.push(`<Row ss:Height="18">${['ROW','BAY','LEVEL','STACK POSITION','CONTAINER','GOLD HIGHLIGHT'].map(value=>excelCell(value,'Header')).join('')}</Row>`);
   for(let row=0;row<rows;row++){
     for(let bay=0;bay<BAYS;bay++){
       for(let level=0;level<LEVELS;level++){
         const index=(row*ROW_SIZE)+(level*BAYS)+bay;
         const item=state[index]||{text:'',green:false};
         if(!String(item.text||'').trim())continue;
-        manifestRows.push(`<Row>${excelCell(rows-row,'Center','Number')}${excelCell(BAYS-bay,'Center','Number')}${excelCell(level+1,'Center','Number')}${excelCell(tierLabel(index),'Center')}${excelCell(item.text,item.green?'Gold':'Occupied')}${excelCell(item.green?'YES':'NO',item.green?'Gold':'Center')}</Row>`);
+        manifestRows.push(`<Row ss:Height="18">${excelCell(rows-row,'Center','Number')}${excelCell(BAYS-bay,'Center','Number')}${excelCell(LEVELS-level,'Center','Number')}${excelCell(tierLabel(index),'Center')}${excelCell(item.text,item.green?'Gold':'Occupied')}${excelCell(item.green?'YES':'NO',item.green?'Gold':'Center')}</Row>`);
       }
     }
   }
@@ -1642,21 +1645,22 @@ function exportStackingGridExcel(){
   const workbook=`<?xml version="1.0"?><?mso-application progid="Excel.Sheet"?>
 <Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
 <Styles>
-<Style ss:ID="Default" ss:Name="Normal"><Alignment ss:Vertical="Center"/><Font ss:FontName="Arial" ss:Size="10"/></Style>
+<Style ss:ID="Default" ss:Name="Normal"><Alignment ss:Vertical="Center"/><Font ss:FontName="Arial" ss:Size="9"/></Style>
 <Style ss:ID="Text"><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/></Borders></Style>
-<Style ss:ID="Title"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Font ss:Bold="1" ss:Size="16" ss:Color="#FFFFFF"/><Interior ss:Color="#111820" ss:Pattern="Solid"/></Style>
+<Style ss:ID="Title"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Font ss:Bold="1" ss:Size="14" ss:Color="#FFFFFF"/><Interior ss:Color="#111820" ss:Pattern="Solid"/></Style>
 <Style ss:ID="Subtitle"><Font ss:Bold="1"/><Interior ss:Color="#DCE6F1" ss:Pattern="Solid"/></Style>
 <Style ss:ID="Header"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Font ss:Bold="1" ss:Color="#FFFFFF"/><Interior ss:Color="#111820" ss:Pattern="Solid"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/></Borders></Style>
 <Style ss:ID="Total"><Alignment ss:Horizontal="Center"/><Font ss:Bold="1"/><Interior ss:Color="#DCE6F1" ss:Pattern="Solid"/></Style>
 <Style ss:ID="Center"><Alignment ss:Horizontal="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/></Borders></Style>
-<Style ss:ID="Occupied"><Font ss:Bold="1"/><Interior ss:Color="#E7ECF1" ss:Pattern="Solid"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/></Borders></Style>
-<Style ss:ID="Gold"><Font ss:Bold="1"/><Interior ss:Color="#D4A51E" ss:Pattern="Solid"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/></Borders></Style>
-<Style ss:ID="Blank"><Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/></Borders></Style>
+<Style ss:ID="Occupied"><Alignment ss:Horizontal="Left" ss:Vertical="Center" ss:Indent="1"/><Font ss:Bold="1"/><Interior ss:Color="#E7ECF1" ss:Pattern="Solid"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#AEB6BC"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="3" ss:Color="#AEB6BC"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="3" ss:Color="#AEB6BC"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#AEB6BC"/></Borders></Style>
+<Style ss:ID="Gold"><Alignment ss:Horizontal="Left" ss:Vertical="Center" ss:Indent="1"/><Font ss:Bold="1"/><Interior ss:Color="#D4A51E" ss:Pattern="Solid"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#AEB6BC"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="3" ss:Color="#AEB6BC"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="3" ss:Color="#AEB6BC"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#AEB6BC"/></Borders></Style>
+<Style ss:ID="Blank"><Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#AEB6BC"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="3" ss:Color="#AEB6BC"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="3" ss:Color="#AEB6BC"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#AEB6BC"/></Borders></Style>
 <Style ss:ID="Fence"><Alignment ss:Horizontal="Center"/><Font ss:Bold="1" ss:Color="#FFFFFF"/><Interior ss:Color="#111820" ss:Pattern="Solid"/></Style>
 <Style ss:ID="Spacer"><Interior ss:Color="#B8BEC2" ss:Pattern="Solid"/></Style>
+<Style ss:ID="VSpacer"><Interior ss:Color="#AEB6BC" ss:Pattern="Solid"/></Style>
 </Styles>
-<Worksheet ss:Name="Stacking Grid"><Table>${'<Column ss:Width="112"/>'.repeat(BAYS)}<Column ss:Width="42"/><Column ss:Width="70"/>${layoutRows.join('')}</Table><WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel"><FreezePanes/><FrozenNoSplit/><SplitHorizontal>4</SplitHorizontal><TopRowBottomPane>4</TopRowBottomPane><ProtectObjects>False</ProtectObjects><ProtectScenarios>False</ProtectScenarios></WorksheetOptions></Worksheet>
-<Worksheet ss:Name="Container Manifest"><Table><Column ss:Width="42"/><Column ss:Width="42"/><Column ss:Width="48"/><Column ss:Width="88"/><Column ss:Width="118"/><Column ss:Width="92"/>${manifestRows.join('')}</Table><WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel"><FreezePanes/><FrozenNoSplit/><SplitHorizontal>2</SplitHorizontal><TopRowBottomPane>2</TopRowBottomPane><ProtectObjects>False</ProtectObjects><ProtectScenarios>False</ProtectScenarios></WorksheetOptions></Worksheet>
+<Worksheet ss:Name="Stacking Grid"><Table>${Array.from({length:BAYS},()=>'<Column ss:Width="84"/><Column ss:Width="8"/>').join('')}<Column ss:Width="40"/><Column ss:Width="54"/>${layoutRows.join('')}</Table><WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel"><DoNotDisplayGridlines/><Zoom>90</Zoom><FreezePanes/><FrozenNoSplit/><SplitHorizontal>4</SplitHorizontal><TopRowBottomPane>4</TopRowBottomPane><ProtectObjects>False</ProtectObjects><ProtectScenarios>False</ProtectScenarios></WorksheetOptions></Worksheet>
+<Worksheet ss:Name="Container Manifest"><Table><Column ss:Width="36"/><Column ss:Width="36"/><Column ss:Width="42"/><Column ss:Width="76"/><Column ss:Width="96"/><Column ss:Width="76"/>${manifestRows.join('')}</Table><WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel"><DoNotDisplayGridlines/><Zoom>90</Zoom><FreezePanes/><FrozenNoSplit/><SplitHorizontal>2</SplitHorizontal><TopRowBottomPane>2</TopRowBottomPane><ProtectObjects>False</ProtectObjects><ProtectScenarios>False</ProtectScenarios></WorksheetOptions></Worksheet>
 </Workbook>`;
   const blob=new Blob(['\ufeff',workbook],{type:'application/vnd.ms-excel'});
   const url=URL.createObjectURL(blob);
@@ -1664,7 +1668,7 @@ function exportStackingGridExcel(){
   const now=new Date();
   const stamp=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}-${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}`;
   link.href=url;
-  link.download=`settegast-stacking-grid-${stamp}.xml`;
+  link.download=`settegast-stacking-grid-${stamp}.xls`;
   document.body.appendChild(link);
   link.click();
   link.remove();
