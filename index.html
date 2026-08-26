@@ -6038,6 +6038,73 @@ tfoot .lph-target-pill.below-target{background:#fecaca;color:#7f1d1d}
         'if (savedVersion >= COLOR_KEY_BASELINE_VERSION) return next;',
         'if (savedVersion >= COLOR_KEY_BASELINE_VERSION || loadPersistedColorRules()) { next.colorKeyBaselineVersion = COLOR_KEY_BASELINE_VERSION; return next; }'
       );
+      if (!html.includes("excel-show-train-render-v2")) {
+        html = html.replace(
+          '  function renderGrid() {',
+`  /* excel-show-train-render-v2 */
+  function inboundTrainLabelForRows(rows) {
+    return [...new Set((rows || []).map(row => clean(row && row[10])).filter(Boolean))].join(" + ");
+  }
+
+  function inboundTrainLabelsForView(view) {
+    const out = emptyTrackMap();
+    if (!computed) return out;
+    if (view === "CURRENT RAMP BLOCKING" || view === "FUTURE DWELL IHOSA 2030") {
+      (computed.groups || []).forEach(group => {
+        if (out[group.track]) out[group.track].push(inboundTrainLabelForRows(group.rows));
+      });
+      return out;
+    }
+    if (view === "LONG SHORT / BREAKDOWN") {
+      let segment = null;
+      (computed.sorted || []).forEach(row => {
+        const track = Number(row[0]);
+        if (!out[track]) return;
+        const type = (Number(row[4]) || 0) >= 68 ? "long" : "short";
+        if (!segment || segment.track !== track || segment.type !== type) {
+          segment = {track, type, rows:[]};
+          out[track].push(segment);
+        }
+        segment.rows.push(row);
+      });
+      TRACKS.forEach(track => { out[track] = out[track].map(item => inboundTrainLabelForRows(item.rows)); });
+      return out;
+    }
+    const ssGroups = new Map();
+    (computed.validRows || []).forEach((row, index) => {
+      if (!containsSS(row)) return;
+      const track = Number(row[0]);
+      if (!out[track]) return;
+      const key = track + "|" + (Number(row[8]) || 0) + "|" + (Number(row[9]) || 0);
+      if (!ssGroups.has(key)) ssGroups.set(key, {track, rows:[], firstIndex:index});
+      ssGroups.get(key).rows.push(row);
+    });
+    [...ssGroups.values()].sort((a,b) => a.firstIndex - b.firstIndex).forEach(group => {
+      out[group.track].push(inboundTrainLabelForRows(group.rows));
+    });
+    return out;
+  }
+
+  function renderGrid() {`
+        );
+        html = html.replace(
+          '    const target = Number(state.trackTarget) || 0;\n    const cells = [',
+          '    const target = Number(state.trackTarget) || 0;\n    const inboundTrainLabels = inboundTrainLabelsForView(view);\n    const cells = ['
+        );
+        html = html.replace(
+          '      const values = source[track] || [];\n      const trackGroups = blockReorderingAvailable()',
+          '      const values = source[track] || [];\n      const trackInboundTrains = inboundTrainLabels[track] || [];\n      const trackGroups = blockReorderingAvailable()'
+        );
+        html = html.replace(
+          '        const displayText = state.hideTrackIds ? stripBlockTrackIds(text) : text;\n        const group = trackGroups[i] || null;',
+`        const baseDisplayText = state.hideTrackIds ? stripBlockTrackIds(text) : text;
+        const inboundTrain = clean(trackInboundTrains[i]);
+        const displayText = baseDisplayText && document.getElementById("showInboundTrainToggle")?.checked && inboundTrain
+          ? baseDisplayText + " (" + inboundTrain + ")"
+          : baseDisplayText;
+        const group = trackGroups[i] || null;`
+        );
+      }
       if (html.includes("excel-toolbar-groups")) return html;
       const patch = `
 <style id="excel-toolbar-groups">
@@ -6127,14 +6194,48 @@ tfoot .lph-target-pill.below-target{background:#fecaca;color:#7f1d1d}
   function applyInboundTrainVisibility(){
     if(!yardGrid||typeof computed==="undefined"||!computed||!Array.isArray(computed.groups))return;
     var groupsById=new Map(computed.groups.map(function(group){return [String(group.blockId||""),group]}));
-    yardGrid.querySelectorAll(".cut-cell[data-block-id]").forEach(function(cell){
+    var labelsByCell=new Map();
+    var view=typeof state!=="undefined"&&state?String(state.view||""):"";
+    var trackLabels={};
+    function cleanTrain(value){return String(value==null?"":value).replace(/\u00a0/g," ").trim()}
+    function trainLabel(rows){return Array.from(new Set((rows||[]).map(function(row){return cleanTrain(row&&row[10])}).filter(Boolean))).join(" + ")}
+    function addLabel(track,label){(trackLabels[track]||(trackLabels[track]=[])).push(label)}
+    if(view==="CURRENT RAMP BLOCKING"||view==="FUTURE DWELL IHOSA 2030"){
+      computed.groups.forEach(function(group){addLabel(Number(group.track),trainLabel(group.rows))});
+    }else if(view==="LONG SHORT / BREAKDOWN"){
+      var segment=null;
+      (computed.sorted||[]).forEach(function(row){
+        var track=Number(row[0]),type=(Number(row[4])||0)>=68?"long":"short";
+        if(!segment||segment.track!==track||segment.type!==type){segment={track:track,type:type,rows:[]};addLabel(track,segment)}
+        segment.rows.push(row);
+      });
+      Object.keys(trackLabels).forEach(function(track){trackLabels[track]=trackLabels[track].map(function(item){return trainLabel(item.rows)})});
+    }else{
+      var ssGroups=new Map();
+      (computed.validRows||[]).forEach(function(row,index){
+        if(typeof containsSS==="function"&&!containsSS(row))return;
+        var track=Number(row[0]),key=track+"|"+(Number(row[8])||0)+"|"+(Number(row[9])||0);
+        if(!ssGroups.has(key))ssGroups.set(key,{track:track,rows:[],firstIndex:index});
+        ssGroups.get(key).rows.push(row);
+      });
+      Array.from(ssGroups.values()).sort(function(a,b){return a.firstIndex-b.firstIndex}).forEach(function(group){addLabel(group.track,trainLabel(group.rows))});
+    }
+    if(typeof TRACKS!=="undefined"){
+      var renderedCells=Array.from(yardGrid.querySelectorAll(".cut-cell"));
+      TRACKS.forEach(function(track,trackIndex){
+        renderedCells.slice(trackIndex*8,trackIndex*8+8).forEach(function(cell,index){
+          labelsByCell.set(cell,cleanTrain((trackLabels[track]||[])[index]));
+        });
+      });
+    }
+    yardGrid.querySelectorAll(".cut-cell").forEach(function(cell){
       var existing=cell.querySelector(".inbound-train-suffix");
       if(!showInboundTrainToggle.checked){
         if(existing)existing.remove();
         return;
       }
       var group=groupsById.get(String(cell.dataset.blockId||""));
-      var train=String(group&&group.train||"").trim();
+      var train=labelsByCell.get(cell)||trainLabel(group&&group.rows)||cleanTrain(group&&group.train);
       if(!train){
         if(existing)existing.remove();
         return;
@@ -6144,6 +6245,7 @@ tfoot .lph-target-pill.below-target{background:#fecaca;color:#7f1d1d}
         if(existing.textContent!==expected)existing.textContent=expected;
         return;
       }
+      if(String(cell.textContent||"").trim().endsWith(expected.trim()))return;
       var suffix=document.createElement("span");
       suffix.className="inbound-train-suffix";
       suffix.textContent=expected;
@@ -6174,9 +6276,17 @@ tfoot .lph-target-pill.below-target{background:#fecaca;color:#7f1d1d}
   });
   showInboundTrainToggle.addEventListener("change",function(){
     try{localStorage.setItem("settegast-show-inbound-train",showInboundTrainToggle.checked?"true":"false")}catch(error){}
+    if(typeof renderGrid==="function"){
+      renderGrid();
+      return;
+    }
     applyInboundTrainVisibility();
   });
   placeHideTrackIds();
+  if(showInboundTrainToggle.checked&&typeof renderGrid==="function"){
+    renderGrid();
+    placeHideTrackIds();
+  }
   if(yardGrid)new MutationObserver(function(){requestAnimationFrame(placeHideTrackIds)}).observe(yardGrid,{childList:true});
   dwellGridHosts.filter(function(host){return host!==yardGrid}).forEach(function(host){new MutationObserver(function(){requestAnimationFrame(applyDwellVisibility)}).observe(host,{childList:true})});
   var secondaryColorHosts=[document.getElementById("blankYardGrid"),document.getElementById("blankYardGridTwo"),document.getElementById("blankYardGridThree")].filter(Boolean);
@@ -12596,7 +12706,9 @@ function getForecastPreviousSubmissionValues(){`;
     if(clearButton)clearButton.addEventListener("click",()=>setTimeout(persist,0));
   },0));
 })();<\/script>`;
-      return html.replace("</body>", script + "\n</body>");
+      const closingBody = html.lastIndexOf("</body>");
+      if (closingBody < 0) return html;
+      return html.slice(0, closingBody) + script + "\n" + html.slice(closingBody);
     }
 
     function withChassisSplitTableTextSliders(html) {

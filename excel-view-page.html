@@ -5139,6 +5139,49 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     });
     return out;
   }
+
+  function inboundTrainLabel(rows) {
+    return [...new Set((rows || []).map(row => clean(row && row[10])).filter(Boolean))].join(" + ");
+  }
+
+  function inboundTrainLabelsByTrack(view) {
+    const out = emptyTrackMap();
+    if (!computed) return out;
+    if (view === "CURRENT RAMP BLOCKING" || view === "FUTURE DWELL IHOSA 2030") {
+      (computed.groups || []).forEach(group => {
+        if (out[group.track]) out[group.track].push(inboundTrainLabel(group.rows));
+      });
+      return out;
+    }
+    if (view === "LONG SHORT / BREAKDOWN") {
+      let segment = null;
+      (computed.sorted || []).forEach(row => {
+        const track = Number(row[0]);
+        if (!out[track]) return;
+        const type = (Number(row[4]) || 0) >= 68 ? "long" : "short";
+        if (!segment || segment.track !== track || segment.type !== type) {
+          segment = {track, type, rows:[]};
+          out[track].push(segment);
+        }
+        segment.rows.push(row);
+      });
+      TRACKS.forEach(track => { out[track] = out[track].map(item => inboundTrainLabel(item.rows)); });
+      return out;
+    }
+    const ssGroups = new Map();
+    (computed.validRows || []).forEach((row, index) => {
+      if (!containsSS(row)) return;
+      const track = Number(row[0]);
+      if (!out[track]) return;
+      const key = `${track}|${Number(row[8]) || 0}|${Number(row[9]) || 0}`;
+      if (!ssGroups.has(key)) ssGroups.set(key, {track, rows:[], firstIndex:index});
+      ssGroups.get(key).rows.push(row);
+    });
+    [...ssGroups.values()].sort((a,b) => a.firstIndex - b.firstIndex).forEach(group => {
+      out[group.track].push(inboundTrainLabel(group.rows));
+    });
+    return out;
+  }
   function buildTrainSummary(rows, trainArrival) {
     const map = new Map();
     rows.forEach(row => {
@@ -7748,6 +7791,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       : view === "SS COLOR MAP" ? computed.ssMapByTrack
       : computed.futureByTrack;
     const target = Number(state.trackTarget) || 0;
+    const inboundTrainLabels = inboundTrainLabelsByTrack(view);
     const cells = [
       `<div class="grid-head">Track</div>`,
       `<div class="grid-head">Current</div>`,
@@ -7756,6 +7800,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     ];
     TRACKS.forEach(track => {
       const values = source[track] || [];
+      const trackInboundTrains = inboundTrainLabels[track] || [];
       const trackGroups = blockReorderingAvailable()
         ? computed.groups.filter(group => group.track === track)
         : [];
@@ -7768,8 +7813,9 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         const cls = classifyCell(text, view);
         const group = trackGroups[i] || null;
         const baseDisplayText = blockTextForDisplay(text);
-        const displayText = baseDisplayText && state.showInboundTrain && clean(group?.train)
-          ? `${baseDisplayText} (${clean(group.train)})`
+        const inboundTrain = clean(trackInboundTrains[i]);
+        const displayText = baseDisplayText && state.showInboundTrain && inboundTrain
+          ? `${baseDisplayText} (${inboundTrain})`
           : baseDisplayText;
         const interactiveClass = group
           ? " block-reorderable"
