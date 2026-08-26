@@ -3255,8 +3255,11 @@
     var first=index("1st shift 0300-1500"), second=index("2nd shift 1500-0300"), firstLines=first>=0?lines.slice(first+1,second>=0?second:lines.length):[], secondLines=second>=0?lines.slice(second+1,index("Parking Capacity",second)>0?index("Parking Capacity",second):lines.length):[];
     var prevStart=lift.findIndex(function(x){return /previous day lifts/i.test(x)}), projectedStart=lift.findIndex(function(x){return /projected lifts/i.test(x)}), previous=prevStart>=0?lift.slice(prevStart+1,projectedStart>=0?projectedStart:lift.length):[], projected=projectedStart>=0?lift.slice(projectedStart+1):[];
     var ranges=["-24 hours","24-48 hours","48-72 hours"].map(function(label){var p=inbound.findIndex(function(x){return x.toLowerCase()===label.toLowerCase()});if(p<0)return null;for(var j=p+1;j<inbound.length;j++){var m=inbound[j].match(/^([\\d,]+)\\s+(.+)$/);if(m)return{number:cleanNumber(m[1]),label:m[2]}}return null});
+    var parkingText=parking.join(" "), slotsMatch=parkingText.match(/([\\d,]+)\\s+of\\s+([\\d,]+)\\s+slots?/i);
+    var occupied=slotsMatch&&slotsMatch[1]||"", slotCapacity=slotsMatch&&slotsMatch[2]||"";
     var pct=(parking.find(function(x){return /^\\d+(?:\\.\\d+)?%$/.test(x)})||"").replace(/%$/,"");
-    var occupied=(parking.join(" ").match(/([\\d,]+)\\s+of\\s+1098/i)||[])[1]||"", stacked=(parking.join(" ").match(/([\\d,]+)\\s+units stacked/i)||[])[1]||"";
+    if(!pct&&occupied&&slotCapacity){pct=String(Math.round((Number(cleanNumber(occupied))/Number(cleanNumber(slotCapacity)))*100))}
+    var stacked=(parkingText.match(/([\\d,]+)\\s+units stacked/i)||[])[1]||"";
     var fields=[
       ["Report date",dateLine,"",false],["Inbound footage 1",inboundPrev[0]&&inboundPrev[0].number,"A6",true],["Inbound train 1",inboundPrev[0]&&inboundPrev[0].label,"B6",true],["Inbound footage 2",inboundPrev[1]&&inboundPrev[1].number,"A7",true],["Inbound train 2",inboundPrev[1]&&inboundPrev[1].label,"B7",true],["Inbound footage 3",inboundPrev[2]&&inboundPrev[2].number,"A8",true],["Inbound train 3",inboundPrev[2]&&inboundPrev[2].label,"B8",true],
       ["Outbound footage 1",outboundPrev[0]&&outboundPrev[0].number,"A12",true],["Outbound train 1",outboundPrev[0]&&outboundPrev[0].label,"B12",true],["Outbound footage 2",outboundPrev[1]&&outboundPrev[1].number,"A13",true],["Outbound train 2",outboundPrev[1]&&outboundPrev[1].label,"B13",true],["Outbound footage 3",outboundPrev[2]&&outboundPrev[2].number,"A14",true],["Outbound train 3",outboundPrev[2]&&outboundPrev[2].label,"B14",true],["UPS count",valueFor(overview,"UPS count"),"A18",true],["Estimated arrival",valueFor(overview,"Estimated arrival time"),"A19",true],["Concerns",valueFor(overview,"Concerns"),"A21",true],
@@ -12474,21 +12477,23 @@ body.reconciliation-view #openForecastExcelViewBtn{
     }
 
     function withChassisRequestTableBorders(html) {
-      if (!html || typeof html !== "string" || html.includes("chassis-request-table-borders-v3")) return html;
-      const style = `<style id="chassis-request-table-borders-v3">
+      if (!html || typeof html !== "string" || html.includes("chassis-request-table-borders-v4")) return html;
+      const style = `<style id="chassis-request-table-borders-v4">
 body #forecastExcelView .forecast-excel-block .forecast-excel-table {
   border-collapse: collapse !important;
-  border: 1px solid #334155 !important;
+  border: 1px solid #111 !important;
 }
 body #forecastExcelView .forecast-excel-block .forecast-excel-table th,
 body #forecastExcelView .forecast-excel-block .forecast-excel-table td {
-  border: 1px solid #334155 !important;
+  border: 1px solid #111 !important;
 }
 body #forecastExcelView .forecast-excel-block .forecast-excel-table tbody th[rowspan] {
-  box-shadow: inset 0 0 0 1px #334155 !important;
+  border: 1px solid #111 !important;
+  box-shadow: inset 0 0 0 1px #111 !important;
+  background-clip: padding-box !important;
 }
 body #forecastExcelView .forecast-excel-block .forecast-excel-table tbody tr:last-child > * {
-  border-bottom: 1px solid #334155 !important;
+  border-bottom: 1px solid #111 !important;
 }
 </style>`;
       const headClose = html.toLowerCase().lastIndexOf("</head>");
