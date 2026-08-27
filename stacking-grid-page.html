@@ -1397,6 +1397,77 @@ body.highlight-focus.highlights-hidden #yardView .y-half.empty::after{
   grid-template-rows:repeat(3,42px) !important;
   height:126px !important;
 }
+
+/* Selectable container highlight palette. The legacy .green class remains the
+   persisted highlighted/not-highlighted flag; these variables control its look. */
+:root{
+  --stack-highlight-fill:#a87d19;
+  --stack-highlight-grid:#c79a24;
+  --stack-highlight-border:#d9ac34;
+  --stack-highlight-text:#111;
+  --stack-highlight-yard-text:#fff;
+  --stack-highlight-glow:rgba(217,172,52,.28);
+}
+#highlightColor{
+  min-width:142px;
+  border:1px solid var(--stack-highlight-border);
+  border-radius:4px;
+  background:#111820;
+  color:#fff;
+  font:800 12px/1 system-ui,sans-serif;
+  padding:7px 28px 7px 10px;
+  cursor:pointer;
+}
+#highlightColor.highlight-active{
+  background:var(--stack-highlight-fill);
+  border-color:var(--stack-highlight-border);
+  color:var(--stack-highlight-yard-text);
+  box-shadow:0 0 0 1px var(--stack-highlight-glow);
+}
+.unit.green{
+  background:var(--stack-highlight-grid) !important;
+  border-color:var(--stack-highlight-border) !important;
+  color:var(--stack-highlight-text) !important;
+  box-shadow:inset 0 0 0 1px var(--stack-highlight-glow),0 0 0 1px var(--stack-highlight-glow) !important;
+}
+.unit.green .label{color:var(--stack-highlight-text) !important}
+.y-container.green,
+.y-stack:has(.y-half.top .y-container.green):has(.y-half.bottom .y-container.green) .y-half.top .y-container.green,
+.y-stack:has(.y-half.top .y-container.green):has(.y-half.bottom .y-container.green) .y-half.bottom .y-container.green{
+  background:repeating-linear-gradient(90deg,rgba(255,255,255,.08) 0 3px,rgba(0,0,0,.06) 3px 7px),var(--stack-highlight-fill) !important;
+  border-color:var(--stack-highlight-border) !important;
+  color:var(--stack-highlight-yard-text) !important;
+  box-shadow:inset 0 0 0 1px var(--stack-highlight-glow),0 4px 6px rgba(0,0,0,.48) !important;
+}
+.y-half.highlighted{border-color:var(--stack-highlight-border) !important}
+#boxContextMenu{
+  position:fixed;
+  z-index:10000;
+  display:none;
+  width:190px;
+  padding:8px;
+  border:1px solid #526374;
+  border-radius:7px;
+  background:#101820;
+  box-shadow:0 12px 28px rgba(0,0,0,.55);
+  color:#fff;
+}
+#boxContextMenu.open{display:block}
+#boxContextMenu button{width:100%;margin:0 0 7px;padding:8px;text-align:left}
+#boxContextMenu .context-title{margin:0 0 7px;color:#aebdca;font:800 10px/1 system-ui,sans-serif;text-transform:uppercase;letter-spacing:.08em}
+#boxContextMenu .context-colors{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
+#boxContextMenu .context-color{
+  width:auto;
+  height:28px;
+  margin:0;
+  padding:0;
+  border:2px solid rgba(255,255,255,.5);
+  border-radius:4px;
+  background:var(--swatch);
+  cursor:pointer;
+}
+#boxContextMenu .context-color:hover,#boxContextMenu .context-color:focus{border-color:#fff;transform:translateY(-1px)}
+#boxContextMenu .context-clear{margin:7px 0 0;color:#f3c8c8;text-align:center}
 </style>
 </head>
 <body>
@@ -1413,7 +1484,17 @@ body.highlight-focus.highlights-hidden #yardView .y-half.empty::after{
     <button id="edit">Edit</button>
     <button id="remove">Delete</button>
     <button id="undo" disabled>Undo</button>
-    <button id="green">Gold Highlight</button><button id="hideHighlights">Hide Highlights</button>
+    <select id="highlightColor" aria-label="Container highlight color" title="Choose a highlight color or turn highlighting off">
+      <option value="off">Highlight Off</option>
+      <option value="gold">Gold Highlight</option>
+      <option value="green">Green Highlight</option>
+      <option value="purple">Purple Highlight</option>
+      <option value="red">Red Highlight</option>
+      <option value="orange">Orange Highlight</option>
+      <option value="pink">Pink Highlight</option>
+      <option value="blue">Blue Highlight</option>
+      <option value="brown">Brown Highlight</option>
+    </select><button id="hideHighlights">Hide Highlights</button>
   </div></div>
 </header>
 
@@ -1439,6 +1520,12 @@ body.highlight-focus.highlights-hidden #yardView .y-half.empty::after{
 </div>
 
 <div id="yardView"></div>
+<div id="boxContextMenu" role="menu" aria-label="Box actions">
+  <button type="button" id="contextEditText" role="menuitem">Edit Text</button>
+  <div class="context-title">Change box color</div>
+  <div class="context-colors" id="contextColors"></div>
+  <button type="button" class="context-clear" id="contextClearColor" role="menuitem">Remove Color</button>
+</div>
 
 <script>
 const KEY='track809_dual_view_gold_highlight_v9';
@@ -1446,6 +1533,18 @@ let state=[{"text": "", "green": false}, {"text": "", "green": false}, {"text": 
 let selectedIndex=null;
 let highlightMode=false;
 let highlightsHidden=false;
+const HIGHLIGHT_COLOR_KEY=KEY+'_highlight_color';
+const HIGHLIGHT_PALETTES={
+  gold:{fill:'#a87d19',grid:'#c79a24',border:'#d9ac34',text:'#111',yardText:'#fff',glow:'rgba(217,172,52,.28)'},
+  green:{fill:'#176b3a',grid:'#2f9b57',border:'#58d184',text:'#fff',yardText:'#fff',glow:'rgba(88,209,132,.30)'},
+  purple:{fill:'#5b2a86',grid:'#7942a8',border:'#b47be0',text:'#fff',yardText:'#fff',glow:'rgba(180,123,224,.30)'},
+  red:{fill:'#8f2525',grid:'#bd3434',border:'#f06b6b',text:'#fff',yardText:'#fff',glow:'rgba(240,107,107,.30)'},
+  orange:{fill:'#a94d13',grid:'#d76b1d',border:'#ff9d52',text:'#fff',yardText:'#fff',glow:'rgba(255,157,82,.30)'},
+  pink:{fill:'#9b3264',grid:'#c64a83',border:'#f28bbb',text:'#fff',yardText:'#fff',glow:'rgba(242,139,187,.30)'},
+  blue:{fill:'#185b91',grid:'#287fbd',border:'#68b8ef',text:'#fff',yardText:'#fff',glow:'rgba(104,184,239,.30)'},
+  brown:{fill:'#653f2b',grid:'#83553b',border:'#bd8a67',text:'#fff',yardText:'#fff',glow:'rgba(189,138,103,.30)'}
+};
+let highlightColor=localStorage.getItem(HIGHLIGHT_COLOR_KEY)||'gold';
 let dragIndex=null;
 let dragStartX=0;
 let dragStartY=0;
@@ -1454,6 +1553,27 @@ let dragGhost=null;
 let undoStack=[];
 let deleteArmed=false;
 let deleteTimer=0;
+let contextIndex=null;
+
+function paletteForItem(item){
+  const name=item?.green&&HIGHLIGHT_PALETTES[item?.highlightColor]?item.highlightColor:'gold';
+  return HIGHLIGHT_PALETTES[name];
+}
+function applyItemHighlightPalette(element,item){
+  if(!element||!item?.green)return;
+  const palette=paletteForItem(item);
+  element.style.setProperty('--stack-highlight-fill',palette.fill);
+  element.style.setProperty('--stack-highlight-grid',palette.grid);
+  element.style.setProperty('--stack-highlight-border',palette.border);
+  element.style.setProperty('--stack-highlight-text',palette.text);
+  element.style.setProperty('--stack-highlight-yard-text',palette.yardText);
+  element.style.setProperty('--stack-highlight-glow',palette.glow);
+}
+function itemHighlightStyle(item){
+  if(!item?.green)return '';
+  const palette=paletteForItem(item);
+  return `style="--stack-highlight-fill:${palette.fill};--stack-highlight-grid:${palette.grid};--stack-highlight-border:${palette.border};--stack-highlight-text:${palette.text};--stack-highlight-yard-text:${palette.yardText};--stack-highlight-glow:${palette.glow}"`;
+}
 
 const BAYS=7;
 const LEVELS=3;
@@ -1517,6 +1637,12 @@ function load(){
   }else if(localStorage.getItem(ORDER_KEY)!=='level-major-v3'){
     save();
   }
+  state=state.map(item=>({
+    ...(item||{}),
+    text:String(item?.text||''),
+    green:Boolean(item?.green),
+    highlightColor:item?.green&&HIGHLIGHT_PALETTES[item?.highlightColor]?item.highlightColor:(item?.green?'gold':undefined)
+  }));
 }
 function rowsCount(){return Math.ceil(state.length/ROW_SIZE)}
 function blankRow(){return Array.from({length:ROW_SIZE},()=>({text:'',green:false}))}
@@ -1725,6 +1851,7 @@ function renderGrid(){
         const u=document.createElement('div');
         u.className='unit'+(d.green?' green':'')+(selectedIndex===i?' selected':'');
         u.dataset.i=i;
+        applyItemHighlightPalette(u,d);
         u.innerHTML='<button class="label"></button>'+(d.text?`<span class="tier-badge">${tierLabel(i)}</span>`:'');
         u.querySelector('.label').textContent=d.text||'';
         grid.appendChild(u);
@@ -1771,13 +1898,13 @@ function renderYard(){
       const bottomRoof=!topRoof && !middleRoof && Boolean(bottom.text);
 
       stacks+=`<div class="y-stack">
-        <div class="y-half top ${top.text?'':'empty'} ${top.green?'highlighted':''} ${selectedIndex===topIndex?'selected':''}" data-i="${topIndex}">
+        <div class="y-half top ${top.text?'':'empty'} ${top.green?'highlighted':''} ${selectedIndex===topIndex?'selected':''}" data-i="${topIndex}" ${itemHighlightStyle(top)}>
           ${top.text?`<div class="y-container ${topCls} ${topRoof?'stack-top':''}" data-i="${topIndex}">${top.text}<span class="tier-badge">${tierLabel(topIndex)}</span></div>`:''}
         </div>
-        <div class="y-half middle ${middle.text?'':'empty'} ${middle.green?'highlighted':''} ${selectedIndex===middleIndex?'selected':''}" data-i="${middleIndex}">
+        <div class="y-half middle ${middle.text?'':'empty'} ${middle.green?'highlighted':''} ${selectedIndex===middleIndex?'selected':''}" data-i="${middleIndex}" ${itemHighlightStyle(middle)}>
           ${middle.text?`<div class="y-container ${middleCls} ${middleRoof?'stack-top':''}" data-i="${middleIndex}">${middle.text}<span class="tier-badge">${tierLabel(middleIndex)}</span></div>`:''}
         </div>
-        <div class="y-half bottom ${bottom.text?'':'empty'} ${bottom.green?'highlighted':''} ${selectedIndex===bottomIndex?'selected':''}" data-i="${bottomIndex}">
+        <div class="y-half bottom ${bottom.text?'':'empty'} ${bottom.green?'highlighted':''} ${selectedIndex===bottomIndex?'selected':''}" data-i="${bottomIndex}" ${itemHighlightStyle(bottom)}>
           ${bottom.text?`<div class="y-container ${bottomCls} ${bottomRoof?'stack-top':''}" data-i="${bottomIndex}">${bottom.text}<span class="tier-badge">${tierLabel(bottomIndex)}</span></div>`:''}
         </div>
       </div>`;
@@ -1852,11 +1979,22 @@ function selectOrCreate(i){
   beginInlineEdit(i);
 }
 
+function applyHighlightColor(color){
+  const palette=HIGHLIGHT_PALETTES[color]||HIGHLIGHT_PALETTES.gold;
+  const root=document.documentElement.style;
+  root.setProperty('--stack-highlight-fill',palette.fill);
+  root.setProperty('--stack-highlight-grid',palette.grid);
+  root.setProperty('--stack-highlight-border',palette.border);
+  root.setProperty('--stack-highlight-text',palette.text);
+  root.setProperty('--stack-highlight-yard-text',palette.yardText);
+  root.setProperty('--stack-highlight-glow',palette.glow);
+}
 function updateGlowButton(){
-  const btn=document.getElementById('green');
-  if(!btn) return;
-  btn.classList.toggle('glow-active',highlightMode);
-  btn.textContent=highlightMode ? 'Gold Highlight On' : 'Gold Highlight';
+  const select=document.getElementById('highlightColor');
+  if(!select)return;
+  select.value=highlightMode?highlightColor:'off';
+  select.classList.toggle('highlight-active',highlightMode);
+  applyHighlightColor(highlightColor);
 }
 
 function editSelected(){
@@ -1891,8 +2029,12 @@ function executeDelete(){
   save();
   renderAll();
 }
-function greenSelected(){
-  highlightMode=!highlightMode;
+function setHighlightMode(value){
+  highlightMode=value!=='off';
+  if(highlightMode){
+    highlightColor=HIGHLIGHT_PALETTES[value]?value:'gold';
+    localStorage.setItem(HIGHLIGHT_COLOR_KEY,highlightColor);
+  }
   document.body.classList.toggle('highlight-focus',highlightMode);
   updateGlowButton();
 }
@@ -1900,10 +2042,67 @@ function toggleGoldHighlight(i){
   if(!Number.isInteger(i)||i<0)return;
   if(!state[i])state[i]={text:'',green:false};
   rememberState();
-  state[i]={...state[i],green:!state[i].green};
+  state[i]={...state[i],green:true,highlightColor:HIGHLIGHT_PALETTES[highlightColor]?highlightColor:'gold'};
   save();
   renderAll();
   updateGlowButton();
+}
+function setBoxHighlightColor(i,color){
+  if(!Number.isInteger(i)||i<0||!HIGHLIGHT_PALETTES[color])return;
+  if(!state[i])state[i]={text:'',green:false};
+  rememberState();
+  state[i]={...state[i],green:true,highlightColor:color};
+  save();
+  renderAll();
+}
+function clearBoxHighlightColor(i){
+  if(!Number.isInteger(i)||i<0||!state[i])return;
+  rememberState();
+  const next={...state[i],green:false};
+  delete next.highlightColor;
+  state[i]=next;
+  save();
+  renderAll();
+}
+function closeBoxContextMenu(){
+  const menu=document.getElementById('boxContextMenu');
+  menu?.classList.remove('open');
+  contextIndex=null;
+}
+function openBoxContextMenu(i,x,y){
+  if(!Number.isInteger(i)||i<0)return;
+  contextIndex=i;
+  selectedIndex=i;
+  cancelDelete();
+  renderAll();
+  const menu=document.getElementById('boxContextMenu');
+  if(!menu)return;
+  menu.classList.add('open');
+  menu.style.left='0px';
+  menu.style.top='0px';
+  const rect=menu.getBoundingClientRect();
+  menu.style.left=Math.max(8,Math.min(x,window.innerWidth-rect.width-8))+'px';
+  menu.style.top=Math.max(8,Math.min(y,window.innerHeight-rect.height-8))+'px';
+}
+function buildBoxContextColors(){
+  const host=document.getElementById('contextColors');
+  if(!host)return;
+  host.innerHTML='';
+  Object.entries(HIGHLIGHT_PALETTES).forEach(([name,palette])=>{
+    const button=document.createElement('button');
+    button.type='button';
+    button.className='context-color';
+    button.title=name[0].toUpperCase()+name.slice(1);
+    button.setAttribute('aria-label','Set box color to '+name);
+    button.style.setProperty('--swatch',palette.grid);
+    button.addEventListener('click',event=>{
+      event.stopPropagation();
+      const i=contextIndex;
+      closeBoxContextMenu();
+      setBoxHighlightColor(i,name);
+    });
+    host.appendChild(button);
+  });
 }
 function dropTo(target){
   if(dragIndex===null||target===null||dragIndex===target)return;
@@ -1921,6 +2120,11 @@ function makeGhost(text,x,y){
 function clearGhost(){dragGhost?.remove();dragGhost=null;dragIndex=null;document.querySelectorAll('.target').forEach(x=>x.classList.remove('target'))}
 
 document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'&&document.getElementById('boxContextMenu')?.classList.contains('open')){
+    e.preventDefault();
+    closeBoxContextMenu();
+    return;
+  }
   if(e.target.closest('input,textarea,select,[contenteditable="true"]'))return;
   if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){
     e.preventDefault();
@@ -1946,6 +2150,11 @@ document.addEventListener('keydown',e=>{
 });
 
 document.addEventListener('click',e=>{
+  const contextMenu=document.getElementById('boxContextMenu');
+  if(contextMenu?.classList.contains('open')){
+    if(contextMenu.contains(e.target))return;
+    closeBoxContextMenu();
+  }
   if(didDrag){
     didDrag=false;
     return;
@@ -1974,6 +2183,7 @@ document.addEventListener('click',e=>{
 });
 
 document.addEventListener('pointerdown',e=>{
+  if(e.button!==undefined&&e.button!==0)return;
   if(e.target.closest('.slot-inline-editor'))return;
   if(highlightMode)return;
   const gu=e.target.closest('.unit');
@@ -1999,6 +2209,14 @@ document.addEventListener('pointerdown',e=>{
   }
 
   targetEl.setPointerCapture?.(e.pointerId);
+});
+document.addEventListener('contextmenu',e=>{
+  const box=e.target.closest('.unit,.y-half,.y-container');
+  if(!box)return;
+  const i=Number(box.dataset.i);
+  if(!Number.isInteger(i))return;
+  e.preventDefault();
+  openBoxContextMenu(i,e.clientX,e.clientY);
 });
 document.addEventListener('pointermove',e=>{
   if(dragIndex===null)return;
@@ -2093,7 +2311,24 @@ document.getElementById('edit').onclick=editSelected;
 document.getElementById('exportExcel').onclick=exportStackingGridExcel;
 document.getElementById('remove').onclick=armDelete;
 document.getElementById('undo').onclick=undoLast;
-document.getElementById('green').onclick=greenSelected;
+document.getElementById('highlightColor').onchange=e=>setHighlightMode(e.target.value);
+document.getElementById('boxContextMenu').addEventListener('click',e=>e.stopPropagation());
+document.getElementById('contextEditText').onclick=()=>{
+  const i=contextIndex;
+  closeBoxContextMenu();
+  if(!Number.isInteger(i))return;
+  selectedIndex=i;
+  renderAll();
+  beginInlineEdit(i);
+};
+document.getElementById('contextClearColor').onclick=()=>{
+  const i=contextIndex;
+  closeBoxContextMenu();
+  clearBoxHighlightColor(i);
+};
+window.addEventListener('resize',closeBoxContextMenu);
+window.addEventListener('blur',closeBoxContextMenu);
+buildBoxContextColors();
 document.getElementById('hideHighlights').onclick=()=>{
   highlightsHidden=!highlightsHidden;
   document.body.classList.toggle('highlights-hidden',highlightsHidden);
@@ -2116,7 +2351,7 @@ document.getElementById('yardBtn').onclick=()=>{
   yardBtn.classList.add('active');gridBtn.classList.remove('active');renderAll();
 }
 
-load();renderAll();updateGlowButton();
+load();applyHighlightColor(highlightColor);renderAll();updateGlowButton();
 </script>
 </body>
 </html>
