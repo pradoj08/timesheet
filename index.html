@@ -6042,8 +6042,14 @@ tfoot .lph-target-pill.below-target{background:#fecaca;color:#7f1d1d}
         html = html.replace(
           '  function renderGrid() {',
 `  /* excel-show-train-render-v2 */
+  function inboundTrainValueForRow(row) {
+    const direct = clean(row && row[10]);
+    if (direct) return direct;
+    return (row || []).map(clean).find(value => /^[A-Z][A-Z0-9]{3,9}\\s+\\d{1,3}$/i.test(value)) || "";
+  }
+
   function inboundTrainLabelForRows(rows) {
-    return [...new Set((rows || []).map(row => clean(row && row[10])).filter(Boolean))].join(" + ");
+    return [...new Set((rows || []).map(inboundTrainValueForRow).filter(Boolean))].join(" + ");
   }
 
   function inboundTrainLabelsForView(view) {
@@ -6098,11 +6104,11 @@ tfoot .lph-target-pill.below-target{background:#fecaca;color:#7f1d1d}
         html = html.replace(
           '        const displayText = state.hideTrackIds ? stripBlockTrackIds(text) : text;\n        const group = trackGroups[i] || null;',
 `        const baseDisplayText = state.hideTrackIds ? stripBlockTrackIds(text) : text;
-        const inboundTrain = clean(trackInboundTrains[i]);
+        const group = trackGroups[i] || null;
+        const inboundTrain = inboundTrainLabelForRows(group && group.rows) || clean(trackInboundTrains[i]);
         const displayText = baseDisplayText && document.getElementById("showInboundTrainToggle")?.checked && inboundTrain
           ? baseDisplayText + " (" + inboundTrain + ")"
-          : baseDisplayText;
-        const group = trackGroups[i] || null;`
+          : baseDisplayText;`
         );
       }
       if (html.includes("excel-toolbar-groups")) return html;
@@ -6170,6 +6176,9 @@ tfoot .lph-target-pill.below-target{background:#fecaca;color:#7f1d1d}
     showInboundTrainToggle=showInboundTrainControl.querySelector("input");
     try{showInboundTrainToggle.checked=localStorage.getItem("settegast-show-inbound-train")==="true"}catch(error){}
   }
+  if(typeof state!=="undefined"&&state&&typeof state.showInboundTrain==="boolean"){
+    showInboundTrainToggle.checked=state.showInboundTrain;
+  }
   var yardGrid=document.getElementById("yardGrid");
   var dwellGridHosts=[yardGrid,document.getElementById("blankYardGrid"),document.getElementById("blankYardGridTwo"),document.getElementById("blankYardGridThree")].filter(Boolean);
   function updateDwellToggleLabel(){
@@ -6198,7 +6207,12 @@ tfoot .lph-target-pill.below-target{background:#fecaca;color:#7f1d1d}
     var view=typeof state!=="undefined"&&state?String(state.view||""):"";
     var trackLabels={};
     function cleanTrain(value){return String(value==null?"":value).replace(/\u00a0/g," ").trim()}
-    function trainLabel(rows){return Array.from(new Set((rows||[]).map(function(row){return cleanTrain(row&&row[10])}).filter(Boolean))).join(" + ")}
+    function trainValue(row){
+      var direct=cleanTrain(row&&row[10]);
+      if(direct)return direct;
+      return (row||[]).map(cleanTrain).find(function(value){return /^[A-Z][A-Z0-9]{3,9}\\s+\\d{1,3}$/i.test(value)})||"";
+    }
+    function trainLabel(rows){return Array.from(new Set((rows||[]).map(trainValue).filter(Boolean))).join(" + ")}
     function addLabel(track,label){(trackLabels[track]||(trackLabels[track]=[])).push(label)}
     if(view==="CURRENT RAMP BLOCKING"||view==="FUTURE DWELL IHOSA 2030"){
       computed.groups.forEach(function(group){addLabel(Number(group.track),trainLabel(group.rows))});
@@ -6275,18 +6289,21 @@ tfoot .lph-target-pill.below-target{background:#fecaca;color:#7f1d1d}
     applyInboundTrainVisibility();
   });
   showInboundTrainToggle.addEventListener("change",function(){
-    try{localStorage.setItem("settegast-show-inbound-train",showInboundTrainToggle.checked?"true":"false")}catch(error){}
-    if(typeof renderGrid==="function"){
-      renderGrid();
+    var enabled=!!showInboundTrainToggle.checked;
+    try{localStorage.setItem("settegast-show-inbound-train",enabled?"true":"false")}catch(error){}
+    if(typeof state!=="undefined"&&state){
+      state.showInboundTrain=enabled;
+      if(typeof saveState==="function")saveState();
+    }
+    if(typeof renderAll==="function"){
+      renderAll();
       return;
     }
+    if(typeof renderGrid==="function")renderGrid();
     applyInboundTrainVisibility();
   });
   placeHideTrackIds();
-  if(showInboundTrainToggle.checked&&typeof renderGrid==="function"){
-    renderGrid();
-    placeHideTrackIds();
-  }
+  if(showInboundTrainToggle.checked)applyInboundTrainVisibility();
   if(yardGrid)new MutationObserver(function(){requestAnimationFrame(placeHideTrackIds)}).observe(yardGrid,{childList:true});
   dwellGridHosts.filter(function(host){return host!==yardGrid}).forEach(function(host){new MutationObserver(function(){requestAnimationFrame(applyDwellVisibility)}).observe(host,{childList:true})});
   var secondaryColorHosts=[document.getElementById("blankYardGrid"),document.getElementById("blankYardGridTwo"),document.getElementById("blankYardGridThree")].filter(Boolean);
@@ -7708,7 +7725,8 @@ document.addEventListener("DOMContentLoaded",function(){
     function withExcelInboundGoldHighlight(html) {
       if (!html || typeof html !== "string" || html.includes("excel-inbound-gold-highlight")) return html;
       const toggleMarkup = `
-            <button class="track-id-toggle inbound-gold-toggle" id="openInboundGlowPanel" type="button" title="Customize highlighted block colors">Block Glow</button>
+            <button class="track-id-toggle inbound-gold-toggle" id="openInboundGlowPanel" type="button" aria-pressed="false" title="Toggle block glow. Shift-click or right-click for color settings.">Block Glow Off</button>
+            <button class="track-id-toggle assignment-label-toolbar-toggle" id="assignmentLabelToolbarToggle" type="button" aria-pressed="false" title="Toggle footage + IHOSA/MHOAS block labels">IHOSA / MHOAS Off</button>
             <aside class="inbound-glow-panel" id="inboundGlowPanel" hidden aria-label="Block glow controls">
               <header class="inbound-glow-head" id="inboundGlowDragHandle"><strong>Block Glow</strong><button id="closeInboundGlowPanel" type="button" aria-label="Close">&times;</button></header>
               <div class="inbound-glow-body">
@@ -7716,6 +7734,7 @@ document.addEventListener("DOMContentLoaded",function(){
                 <label class="inbound-glow-control"><span>Glow color</span><input id="inboundGlowColor" type="color" value="#ffd700"></label>
                 <label class="inbound-glow-control inbound-glow-range"><span>Glow brightness</span><input id="inboundGlowBrightness" type="range" min="25" max="175" step="5" value="100"><output id="inboundGlowBrightnessValue">100%</output></label>
                 <label class="inbound-glow-control"><span>Block color</span><input id="inboundBlockColor" type="color" value="#c2410c"></label>
+                <label class="inbound-glow-enable"><input id="assignmentLabelToggle" type="checkbox"><span>Show footage + IHOSA / MHOAS</span></label>
                 <section class="assigned-glow-section"><h4>IHOSA assigned blocks</h4><label class="inbound-glow-control"><span>Block color</span><input id="ihosaBlockColor" type="color" value="#166534"></label><label class="inbound-glow-control"><span>Border / glow</span><input id="ihosaGlowColor" type="color" value="#39ff88"></label></section>
                 <section class="assigned-glow-section"><h4>MHOAS assigned blocks</h4><label class="inbound-glow-control"><span>Block color</span><input id="mhoasBlockColor" type="color" value="#4338ca"></label><label class="inbound-glow-control"><span>Border / glow</span><input id="mhoasGlowColor" type="color" value="#60a5fa"></label></section>
                 <button class="inbound-glow-reset" id="resetInboundGlow" type="button">Reset colors</button>
@@ -7729,21 +7748,23 @@ document.addEventListener("DOMContentLoaded",function(){
         .replace(importButtonPattern, toggleMarkup)
         .replace(trackTogglePattern, (match) => match + "\n" + importButtonMatch[0])
         .replace('className:"cut-cell orange block-reorderable",', 'className:"cut-cell orange block-reorderable" + (inboundTrainTarget === "three" ? " table-three-added-inbound" : ""),')
+        .replace('      return `<option value="${escapeAttr(entry.id)}">${escapeHtml(entry.train)} — ${escapeHtml(fmtInt(entry.footage))} FT (${escapeHtml(context)})</option>`;', '      const normalizedDay = clean(context).toUpperCase();\n      const dayClass = entry.source === "Inbound archive"\n        ? "inbound-day-archived"\n        : normalizedDay === "TODAY"\n          ? "inbound-day-today"\n          : normalizedDay === "TOMORROW"\n            ? "inbound-day-tomorrow"\n            : normalizedDay === "DAY AFTER"\n              ? "inbound-day-after"\n              : "";\n      return `<option class="${dayClass}" value="${escapeAttr(entry.id)}">${escapeHtml(entry.train)} — ${escapeHtml(fmtInt(entry.footage))} FT (${escapeHtml(context)})</option>`;')
         .replace('<button class="danger-menu-action" id="deleteSelectedBlocks" type="button" role="menuitem">Delete selected block(s)</button>', '<button class="assignment-menu-action ihosa-assignment-action" id="assignSelectedToIhosa" type="button" role="menuitem">Assign to IHOSA</button>\n  <button class="assignment-menu-action mhoas-assignment-action" id="assignSelectedToMhoas" type="button" role="menuitem">Assign to MHOAS</button>\n  <button class="assignment-menu-action clear-assignment-action" id="clearSelectedAssignment" type="button" role="menuitem">Clear IHOSA / MHOAS assignment</button>\n  <button class="danger-menu-action" id="deleteSelectedBlocks" type="button" role="menuitem">Delete selected block(s)</button>');
       if (patched === html) return html;
       const patch = `
 <style id="excel-inbound-gold-highlight">
-  .inbound-gold-toggle,#colorTabBtn{min-height:26px!important;border:1px solid #d4a017!important;border-radius:6px!important;background:#fff8d6!important;color:#755300!important;font-size:9px!important;font-weight:950!important;letter-spacing:.045em;text-transform:uppercase;cursor:pointer}
+  .inbound-gold-toggle,.assignment-label-toolbar-toggle,#colorTabBtn{min-height:26px!important;border:1px solid #d4a017!important;border-radius:6px!important;background:#fff8d6!important;color:#755300!important;font-size:9px!important;font-weight:950!important;letter-spacing:.045em;text-transform:uppercase;cursor:pointer}.inbound-gold-toggle[aria-pressed="true"]{border-color:#f2c400!important;background:#7c5500!important;color:#fff!important;box-shadow:0 0 0 1px #ffd84a inset}.assignment-label-toolbar-toggle{border-color:#64748b!important;background:#eef2f7!important;color:#273449!important}.assignment-label-toolbar-toggle[aria-pressed="true"]{border-color:#34d399!important;background:#166534!important;color:#fff!important;box-shadow:0 0 0 1px #6ee7b7 inset}
   .inbound-glow-panel{position:fixed;top:68px;right:20px;z-index:1450;width:min(330px,calc(100vw - 24px));max-height:calc(100vh - 88px);overflow:hidden;border:1px solid #d4a017;border-radius:10px;background:#0b1424;color:#eef5ff;box-shadow:0 18px 48px rgba(2,6,23,.48),0 0 24px rgba(255,205,0,.14)}
   .inbound-glow-panel[hidden]{display:none!important}.inbound-glow-head{min-height:38px;display:flex;align-items:center;gap:8px;padding:7px 8px 7px 12px;background:linear-gradient(90deg,#7c5500,#151f31 70%);cursor:move;user-select:none}.inbound-glow-head strong{flex:1;font-size:11px;letter-spacing:.075em;text-transform:uppercase}.inbound-glow-head button{width:27px;height:27px;border:1px solid rgba(255,255,255,.3);border-radius:6px;background:#101a2c;color:#fff;font-size:18px;line-height:1;cursor:pointer}
   .inbound-glow-body{display:grid;gap:10px;max-height:calc(100vh - 126px);overflow:auto;padding:12px}.inbound-glow-enable,.inbound-glow-control{display:flex;align-items:center;gap:10px;min-height:32px;padding:7px 9px;border:1px solid #334764;border-radius:7px;background:#111d30;font-size:10px;font-weight:850}.inbound-glow-enable input{width:16px;height:16px;accent-color:#f2c400}.inbound-glow-control>span{flex:1}.inbound-glow-control input[type=color]{width:45px;height:27px;padding:2px;border:1px solid #62738c;border-radius:5px;background:#07101f;cursor:pointer}.inbound-glow-range{display:grid;grid-template-columns:88px 1fr 40px}.inbound-glow-range input{width:100%;accent-color:#f2c400}.inbound-glow-range output{text-align:right;color:#ffd84a;font-size:9px}.inbound-glow-reset{height:30px;border:1px solid #d4a017;border-radius:6px;background:#fff3c4;color:#674400;font-size:9px;font-weight:950;text-transform:uppercase;cursor:pointer}
   .assigned-glow-section{display:grid;gap:7px;padding:9px;border:1px solid #405574;border-radius:8px;background:#0c1728}.assigned-glow-section h4{margin:0;color:#dbeafe;font-size:9px;letter-spacing:.07em;text-transform:uppercase}
+  #inboundTrainSource option.inbound-day-today{background:#14532d;color:#dcfce7}#inboundTrainSource option.inbound-day-tomorrow{background:#713f12;color:#fef3c7}#inboundTrainSource option.inbound-day-after{background:#1e3a8a;color:#dbeafe}#inboundTrainSource option.inbound-day-archived{background:#4c1d95;color:#f3e8ff}
   .block-context-menu .assignment-menu-action{width:100%;min-height:29px;padding:5px 9px;border:0;border-bottom:1px solid #d9e1eb;background:#fff;color:#172033;font-size:10px;font-weight:850;text-align:left;cursor:pointer}.block-context-menu .ihosa-assignment-action{color:#166534}.block-context-menu .mhoas-assignment-action{color:#3730a3}.block-context-menu .clear-assignment-action{color:#64748b}
-  body.highlight-inbound-blocks #blankYardGridTwo .cut-cell.table-three-added-inbound{position:relative;z-index:2;border-color:var(--inbound-glow-color,#ffd700)!important;background:var(--inbound-block-color,#c2410c)!important;filter:brightness(var(--inbound-glow-brightness,1));box-shadow:0 0 0 2px var(--inbound-glow-color,#ffd700),0 0 var(--inbound-glow-blur,12px) var(--inbound-glow-spread,4px) var(--inbound-glow-shadow,rgba(255,215,0,.9)),inset 0 0 6px var(--inbound-glow-shadow,rgba(255,215,0,.9))!important;animation:inboundGoldPulse 1.8s ease-in-out infinite alternate}
-  .yard-grid .cut-cell[data-block-assignment="ihosa"]{position:relative;z-index:3;border-color:var(--ihosa-glow-color,#39ff88)!important;background:var(--ihosa-block-color,#166534)!important;box-shadow:0 0 0 2px var(--ihosa-glow-color,#39ff88),0 0 10px 3px var(--ihosa-glow-shadow,rgba(57,255,136,.78))!important}
-  .yard-grid .cut-cell[data-block-assignment="mhoas"]{position:relative;z-index:3;border-color:var(--mhoas-glow-color,#60a5fa)!important;background:var(--mhoas-block-color,#4338ca)!important;box-shadow:0 0 0 2px var(--mhoas-glow-color,#60a5fa),0 0 10px 3px var(--mhoas-glow-shadow,rgba(96,165,250,.78))!important}
+  body.highlight-inbound-blocks #blankYardGridTwo .cut-cell[data-shove-order]{position:relative;z-index:2;border-color:var(--inbound-glow-color,#ffd700)!important;background:var(--inbound-block-color,#c2410c)!important;filter:brightness(var(--inbound-glow-brightness,1));box-shadow:0 0 0 2px var(--inbound-glow-color,#ffd700),0 0 var(--inbound-glow-blur,12px) var(--inbound-glow-spread,4px) var(--inbound-glow-shadow,rgba(255,215,0,.9)),inset 0 0 6px var(--inbound-glow-shadow,rgba(255,215,0,.9))!important;animation:inboundGoldPulse 1.8s ease-in-out infinite alternate}
+  body.highlight-inbound-blocks .yard-grid .cut-cell[data-block-assignment="ihosa"]{position:relative;z-index:3;border-color:var(--ihosa-glow-color,#39ff88)!important;background:var(--ihosa-block-color,#166534)!important;box-shadow:0 0 0 2px var(--ihosa-glow-color,#39ff88),0 0 10px 3px var(--ihosa-glow-shadow,rgba(57,255,136,.78))!important}
+  body.highlight-inbound-blocks .yard-grid .cut-cell[data-block-assignment="mhoas"]{position:relative;z-index:3;border-color:var(--mhoas-glow-color,#60a5fa)!important;background:var(--mhoas-block-color,#4338ca)!important;box-shadow:0 0 0 2px var(--mhoas-glow-color,#60a5fa),0 0 10px 3px var(--mhoas-glow-shadow,rgba(96,165,250,.78))!important}
   @keyframes inboundGoldPulse{from{opacity:.92}to{opacity:1}}
-  @media(prefers-reduced-motion:reduce){body.highlight-inbound-blocks #blankYardGridTwo .cut-cell.table-three-added-inbound{animation:none}}
+  @media(prefers-reduced-motion:reduce){body.highlight-inbound-blocks #blankYardGridTwo .cut-cell[data-shove-order]{animation:none}}
 </style>
 <scr${""}ipt>
 (function(){
@@ -7760,28 +7781,37 @@ document.addEventListener("DOMContentLoaded",function(){
   var ihosaGlowColor=document.getElementById("ihosaGlowColor");
   var mhoasBlockColor=document.getElementById("mhoasBlockColor");
   var mhoasGlowColor=document.getElementById("mhoasGlowColor");
+  var assignmentLabelToggle=document.getElementById("assignmentLabelToggle");
+  var blockGlowToolbarToggle=document.getElementById("openInboundGlowPanel");
+  var assignmentLabelToolbarToggle=document.getElementById("assignmentLabelToolbarToggle");
   var assignmentKey="settegast-excel-block-assignments-v1";
   if(!toggle||!panel)return;
   function hexRgb(hex){var value=String(hex||"").replace("#","");if(value.length!==6)return [255,215,0];return [parseInt(value.slice(0,2),16),parseInt(value.slice(2,4),16),parseInt(value.slice(4,6),16)]}
   function colorShadow(hex,alpha){return "rgba("+hexRgb(hex).join(",")+","+alpha+")"}
-  function currentSettings(){return {glow:glowColor.value,brightness:Number(brightness.value)||100,block:blockColor.value,ihosaBlock:ihosaBlockColor.value,ihosaGlow:ihosaGlowColor.value,mhoasBlock:mhoasBlockColor.value,mhoasGlow:mhoasGlowColor.value}}
+  function currentSettings(){return {glow:glowColor.value,brightness:Number(brightness.value)||100,block:blockColor.value,ihosaBlock:ihosaBlockColor.value,ihosaGlow:ihosaGlowColor.value,mhoasBlock:mhoasBlockColor.value,mhoasGlow:mhoasGlowColor.value,assignmentLabels:!!(assignmentLabelToggle&&assignmentLabelToggle.checked)}}
   function saveSettings(){try{localStorage.setItem(settingsKey,JSON.stringify(currentSettings()))}catch(_){}}
-  function applySettings(settings,save){settings=settings||{};glowColor.value=settings.glow||"#ffd700";brightness.value=String(Math.max(25,Math.min(175,Number(settings.brightness)||100)));blockColor.value=settings.block||"#c2410c";ihosaBlockColor.value=settings.ihosaBlock||"#166534";ihosaGlowColor.value=settings.ihosaGlow||"#39ff88";mhoasBlockColor.value=settings.mhoasBlock||"#4338ca";mhoasGlowColor.value=settings.mhoasGlow||"#60a5fa";var strength=Number(brightness.value)/100;var rgb=hexRgb(glowColor.value);document.body.style.setProperty("--inbound-glow-color",glowColor.value);document.body.style.setProperty("--inbound-block-color",blockColor.value);document.body.style.setProperty("--inbound-glow-brightness",String(.72+strength*.28));document.body.style.setProperty("--inbound-glow-blur",String(Math.round(5+strength*10))+"px");document.body.style.setProperty("--inbound-glow-spread",String(Math.round(1+strength*4))+"px");document.body.style.setProperty("--inbound-glow-shadow","rgba("+rgb.join(",")+","+Math.min(.98,.35+strength*.36)+")");document.body.style.setProperty("--ihosa-block-color",ihosaBlockColor.value);document.body.style.setProperty("--ihosa-glow-color",ihosaGlowColor.value);document.body.style.setProperty("--ihosa-glow-shadow",colorShadow(ihosaGlowColor.value,.78));document.body.style.setProperty("--mhoas-block-color",mhoasBlockColor.value);document.body.style.setProperty("--mhoas-glow-color",mhoasGlowColor.value);document.body.style.setProperty("--mhoas-glow-shadow",colorShadow(mhoasGlowColor.value,.78));brightnessValue.value=Math.round(strength*100)+"%";brightnessValue.textContent=brightnessValue.value;if(save)saveSettings()}
-  function apply(enabled){toggle.checked=enabled;document.body.classList.toggle("highlight-inbound-blocks",enabled);try{localStorage.setItem(key,enabled?"1":"0")}catch(_){}}
+  function updateToolbarButtons(){if(blockGlowToolbarToggle){blockGlowToolbarToggle.setAttribute("aria-pressed",toggle.checked?"true":"false");blockGlowToolbarToggle.textContent=toggle.checked?"Block Glow On":"Block Glow Off"}if(assignmentLabelToolbarToggle){var labelsOn=!!(assignmentLabelToggle&&assignmentLabelToggle.checked);assignmentLabelToolbarToggle.setAttribute("aria-pressed",labelsOn?"true":"false");assignmentLabelToolbarToggle.textContent=labelsOn?"IHOSA / MHOAS On":"IHOSA / MHOAS Off"}}
+  function applySettings(settings,save){settings=settings||{};glowColor.value=settings.glow||"#ffd700";brightness.value=String(Math.max(25,Math.min(175,Number(settings.brightness)||100)));blockColor.value=settings.block||"#c2410c";ihosaBlockColor.value=settings.ihosaBlock||"#166534";ihosaGlowColor.value=settings.ihosaGlow||"#39ff88";mhoasBlockColor.value=settings.mhoasBlock||"#4338ca";mhoasGlowColor.value=settings.mhoasGlow||"#60a5fa";if(assignmentLabelToggle)assignmentLabelToggle.checked=settings.assignmentLabels===true;var strength=Number(brightness.value)/100;var rgb=hexRgb(glowColor.value);document.body.style.setProperty("--inbound-glow-color",glowColor.value);document.body.style.setProperty("--inbound-block-color",blockColor.value);document.body.style.setProperty("--inbound-glow-brightness",String(.72+strength*.28));document.body.style.setProperty("--inbound-glow-blur",String(Math.round(5+strength*10))+"px");document.body.style.setProperty("--inbound-glow-spread",String(Math.round(1+strength*4))+"px");document.body.style.setProperty("--inbound-glow-shadow","rgba("+rgb.join(",")+","+Math.min(.98,.35+strength*.36)+")");document.body.style.setProperty("--ihosa-block-color",ihosaBlockColor.value);document.body.style.setProperty("--ihosa-glow-color",ihosaGlowColor.value);document.body.style.setProperty("--ihosa-glow-shadow",colorShadow(ihosaGlowColor.value,.78));document.body.style.setProperty("--mhoas-block-color",mhoasBlockColor.value);document.body.style.setProperty("--mhoas-glow-color",mhoasGlowColor.value);document.body.style.setProperty("--mhoas-glow-shadow",colorShadow(mhoasGlowColor.value,.78));brightnessValue.value=Math.round(strength*100)+"%";brightnessValue.textContent=brightnessValue.value;updateToolbarButtons();if(save)saveSettings()}
+  function apply(enabled){enabled=!!enabled;toggle.checked=enabled;document.body.classList.toggle("highlight-inbound-blocks",enabled);updateToolbarButtons();try{localStorage.setItem(key,enabled?"1":"0")}catch(_){}}
   var enabled=false;try{enabled=localStorage.getItem(key)==="1"}catch(_){}
   apply(enabled);
   var savedSettings=null;try{savedSettings=JSON.parse(localStorage.getItem(settingsKey)||"null")}catch(_){}applySettings(savedSettings,false);
   toggle.addEventListener("change",function(){apply(toggle.checked)});
+  if(assignmentLabelToggle)assignmentLabelToggle.addEventListener("change",function(){updateToolbarButtons();saveSettings();applyAssignments()});
+  if(assignmentLabelToolbarToggle)assignmentLabelToolbarToggle.addEventListener("click",function(){assignmentLabelToggle.checked=!assignmentLabelToggle.checked;updateToolbarButtons();saveSettings();applyAssignments()});
   [glowColor,brightness,blockColor,ihosaBlockColor,ihosaGlowColor,mhoasBlockColor,mhoasGlowColor].forEach(function(input){input.addEventListener("input",function(){applySettings(currentSettings(),true)})});
-  document.getElementById("resetInboundGlow").addEventListener("click",function(){applySettings({glow:"#ffd700",brightness:100,block:"#c2410c",ihosaBlock:"#166534",ihosaGlow:"#39ff88",mhoasBlock:"#4338ca",mhoasGlow:"#60a5fa"},true)});
-  document.getElementById("openInboundGlowPanel").addEventListener("click",function(){panel.hidden=false});
+  document.getElementById("resetInboundGlow").addEventListener("click",function(){applySettings({glow:"#ffd700",brightness:100,block:"#c2410c",ihosaBlock:"#166534",ihosaGlow:"#39ff88",mhoasBlock:"#4338ca",mhoasGlow:"#60a5fa",assignmentLabels:!!(assignmentLabelToggle&&assignmentLabelToggle.checked)},true)});
+  blockGlowToolbarToggle.addEventListener("click",function(event){if(event.shiftKey){panel.hidden=false;return}apply(!document.body.classList.contains("highlight-inbound-blocks"))});
+  blockGlowToolbarToggle.addEventListener("contextmenu",function(event){event.preventDefault();panel.hidden=false});
   document.getElementById("closeInboundGlowPanel").addEventListener("click",function(){panel.hidden=true});
   try{var position=JSON.parse(localStorage.getItem(positionKey)||"null");if(position&&Number.isFinite(position.left)&&Number.isFinite(position.top)){panel.style.left=Math.max(4,Math.min(position.left,innerWidth-panel.offsetWidth-4))+"px";panel.style.top=Math.max(45,Math.min(position.top,innerHeight-80))+"px";panel.style.right="auto"}}catch(_){}
   document.getElementById("inboundGlowDragHandle").addEventListener("pointerdown",function(event){if(event.target.closest("button"))return;var rect=panel.getBoundingClientRect(),startX=event.clientX,startY=event.clientY;function move(moveEvent){panel.style.left=Math.max(4,Math.min(rect.left+moveEvent.clientX-startX,innerWidth-panel.offsetWidth-4))+"px";panel.style.top=Math.max(45,Math.min(rect.top+moveEvent.clientY-startY,innerHeight-panel.offsetHeight-4))+"px";panel.style.right="auto"}function stop(){document.removeEventListener("pointermove",move);document.removeEventListener("pointerup",stop);var next=panel.getBoundingClientRect();try{localStorage.setItem(positionKey,JSON.stringify({left:Math.round(next.left),top:Math.round(next.top)}))}catch(_){}}document.addEventListener("pointermove",move);document.addEventListener("pointerup",stop)});
   function loadAssignments(){try{var saved=JSON.parse(localStorage.getItem(assignmentKey)||"{}");return saved&&typeof saved==="object"&&!Array.isArray(saved)?saved:{}}catch(_){return {}}}
   var assignments=loadAssignments();
   function assignmentId(cell){var grid=cell&&cell.closest(".yard-grid");return grid&&cell.dataset.blockId?grid.id+"::"+cell.dataset.blockId:""}
-  function applyAssignments(){document.querySelectorAll(".yard-grid .cut-cell[data-block-id]").forEach(function(cell){var value=assignments[assignmentId(cell)]||"";if(cell.dataset.blockAssignment!==value){if(value)cell.dataset.blockAssignment=value;else cell.removeAttribute("data-block-assignment")}})}
+  function restoreAssignmentLabel(cell){if(!Object.prototype.hasOwnProperty.call(cell.dataset,"assignmentOriginalHtml"))return;var original=cell.dataset.assignmentOriginalHtml;if(cell.innerHTML!==original)cell.innerHTML=original;cell.title=cell.dataset.assignmentOriginalTitle||"";delete cell.dataset.assignmentOriginalHtml;delete cell.dataset.assignmentOriginalTitle}
+  function syncAssignmentLabel(cell,value){if(!assignmentLabelToggle||!assignmentLabelToggle.checked||!value){restoreAssignmentLabel(cell);return}if(!Object.prototype.hasOwnProperty.call(cell.dataset,"assignmentOriginalHtml")){cell.dataset.assignmentOriginalHtml=cell.innerHTML;cell.dataset.assignmentOriginalTitle=cell.title||""}var footage=Number(cell.dataset.footage)||0;var expected=footage.toLocaleString("en-US",{maximumFractionDigits:0})+" "+String(value).toUpperCase();if(cell.textContent.trim()!==expected)cell.textContent=expected;cell.title=expected}
+  function applyAssignments(){document.querySelectorAll(".yard-grid .cut-cell[data-block-id]").forEach(function(cell){var value=assignments[assignmentId(cell)]||"";if(cell.dataset.blockAssignment!==value){if(value)cell.dataset.blockAssignment=value;else cell.removeAttribute("data-block-assignment")}syncAssignmentLabel(cell,value)})}
   function saveAssignments(){try{localStorage.setItem(assignmentKey,JSON.stringify(assignments))}catch(_){}applyAssignments()}
   function assignSelected(value){var cells=Array.from(document.querySelectorAll(".yard-grid .cut-cell.block-selected[data-block-id]"));cells.forEach(function(cell){var id=assignmentId(cell);if(!id)return;if(value)assignments[id]=value;else delete assignments[id]});saveAssignments();var menu=document.getElementById("blockContextMenu");if(menu)menu.hidden=true}
   document.getElementById("assignSelectedToIhosa").addEventListener("click",function(){assignSelected("ihosa")});
@@ -7790,7 +7820,7 @@ document.addEventListener("DOMContentLoaded",function(){
   document.addEventListener("contextmenu",function(){requestAnimationFrame(function(){var hasSelection=!!document.querySelector(".yard-grid .cut-cell.block-selected[data-block-id]");["assignSelectedToIhosa","assignSelectedToMhoas","clearSelectedAssignment"].forEach(function(id){var button=document.getElementById(id);if(button)button.hidden=!hasSelection})})});
   new MutationObserver(function(records){if(records.some(function(record){return record.type==="childList"}))requestAnimationFrame(applyAssignments)}).observe(document.body,{childList:true,subtree:true});
   applyAssignments();
-  window.addEventListener("storage",function(event){if(event.key===key)apply(event.newValue==="1");if(event.key===settingsKey){var next=null;try{next=JSON.parse(event.newValue||"null")}catch(_){}applySettings(next,false)}if(event.key===assignmentKey){assignments=loadAssignments();applyAssignments()}});
+  window.addEventListener("storage",function(event){if(event.key===key)apply(event.newValue==="1");if(event.key===settingsKey){var next=null;try{next=JSON.parse(event.newValue||"null")}catch(_){}applySettings(next,false);applyAssignments()}if(event.key===assignmentKey){assignments=loadAssignments();applyAssignments()}});
 })();
 </scr${""}ipt>`;
       const bodyClose = patched.toLowerCase().lastIndexOf("</body>");
@@ -11107,9 +11137,16 @@ const net=getForecastRequestOnHandCount(pool,size)+drayIn-drayOut-getForecastReq
       html = html.replace('aria-label="Cars in yard tracks"', 'aria-label="Cars in Yard and Pierce tracks"');
       html = html.replace(
         '<span class="yard-view-title">YARD VIEW <span class="yard-view-summary" id="yardViewSummary"></span></span>\n      <button class="split-view-close" id="yardViewClose"',
-        '<span class="yard-view-title">YARD / PIERCE <span class="yard-view-summary" id="yardViewSummary"></span></span>\n      <div class="yard-view-display-modes" role="group" aria-label="Yard and Pierce display mode">\n        <button class="yard-view-display-mode active" type="button" data-yard-display="blocks">Blocks</button>\n        <button class="yard-view-display-mode" type="button" data-yard-display="long-short">Long / Short</button>\n        <button class="yard-view-display-mode" type="button" data-yard-display="ss-map">SS Map</button>\n      </div>\n      <button class="split-view-close" id="yardViewClose"'
+        '<span class="yard-view-title">YARD / PIERCE <span class="yard-view-summary" id="yardViewSummary"></span></span>\n      <button class="yard-view-close-primary" id="yardViewClosePrimary" type="button" onclick="closeYardView()">Close Yard / Pierce</button>\n      <div class="yard-view-display-modes" role="group" aria-label="Yard and Pierce display mode">\n        <button class="yard-view-display-mode active" type="button" data-yard-display="blocks">Blocks</button>\n        <button class="yard-view-display-mode" type="button" data-yard-display="long-short">Long / Short</button>\n        <button class="yard-view-display-mode" type="button" data-yard-display="ss-map">SS Map</button>\n      </div>\n      <button class="split-view-close" id="yardViewClose"'
       );
       const css = `<style id="excel-yard-view-table-parity">
+  .yard-view-close-primary {
+    flex:0 0 auto; min-height:25px; margin-left:10px; padding:3px 11px;
+    border:1px solid #fca5a5; border-radius:5px; background:#b91c1c; color:#fff;
+    font:900 10px/1 "Aptos Narrow",Arial,sans-serif; text-transform:uppercase; cursor:pointer;
+  }
+  .yard-view-close-primary:hover,
+  .yard-view-close-primary:focus-visible { background:#dc2626; border-color:#fff; outline:2px solid #fff; outline-offset:1px; }
   .yard-view-display-modes { display:flex; align-items:center; gap:4px; margin-left:auto; }
   .yard-view-display-mode {
     min-height:25px; padding:3px 9px; border:1px solid #53657c; border-radius:5px;

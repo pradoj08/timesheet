@@ -438,6 +438,21 @@
   .yard-view-popup { z-index: 84; width: min(1460px, calc(100vw - 28px)); }
   .yard-view-title { display:flex; align-items:center; justify-content:center; gap:8px; }
   .yard-view-summary { color:#9ed0ff; font-size:10px; letter-spacing:.04em; }
+  .yard-view-close-primary {
+    flex: 0 0 auto;
+    min-height: 25px;
+    margin-left: 10px;
+    padding: 3px 11px;
+    border: 1px solid #fca5a5;
+    border-radius: 5px;
+    background: #b91c1c;
+    color: #fff;
+    font: 900 10px/1 "Aptos Narrow",Arial,sans-serif;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+  .yard-view-close-primary:hover,
+  .yard-view-close-primary:focus-visible { background:#dc2626; border-color:#fff; outline:2px solid #fff; outline-offset:1px; }
   .yard-view-display-modes { display:flex; align-items:center; gap:4px; margin-left:auto; }
   .yard-view-display-mode {
     min-height:25px; padding:3px 9px; border:1px solid #53657c; border-radius:5px;
@@ -1994,6 +2009,10 @@
   }
   .inbound-train-field input:focus,
   .inbound-train-field select:focus { border-color: #4f95ff; box-shadow: 0 0 0 2px rgba(79,149,255,.18); }
+  #inboundTrainSource option.inbound-day-today { background: #14532d; color: #dcfce7; }
+  #inboundTrainSource option.inbound-day-tomorrow { background: #713f12; color: #fef3c7; }
+  #inboundTrainSource option.inbound-day-after { background: #1e3a8a; color: #dbeafe; }
+  #inboundTrainSource option.inbound-day-archived { background: #4c1d95; color: #f3e8ff; }
   .inbound-train-track-list {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -3738,6 +3757,7 @@
   <section class="split-view-popup yard-view-popup" id="yardViewPopup" hidden aria-label="Cars in Yard and Pierce tracks">
     <div class="split-view-titlebar" id="yardViewHandle">
       <span class="yard-view-title">YARD / PIERCE <span class="yard-view-summary" id="yardViewSummary"></span></span>
+      <button class="yard-view-close-primary" id="yardViewClosePrimary" type="button">Close Yard / Pierce</button>
       <div class="yard-view-display-modes" role="group" aria-label="Yard and Pierce display mode">
         <button class="yard-view-display-mode active" type="button" data-yard-display="blocks">Blocks</button>
         <button class="yard-view-display-mode" type="button" data-yard-display="long-short">Long / Short</button>
@@ -5140,8 +5160,14 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     return out;
   }
 
+  function inboundTrainValue(row) {
+    const direct = clean(row && row[10]);
+    if (direct) return direct;
+    return (row || []).map(clean).find(value => /^[A-Z][A-Z0-9]{3,9}\s+\d{1,3}$/i.test(value)) || "";
+  }
+
   function inboundTrainLabel(rows) {
-    return [...new Set((rows || []).map(row => clean(row && row[10])).filter(Boolean))].join(" + ");
+    return [...new Set((rows || []).map(inboundTrainValue).filter(Boolean))].join(" + ");
   }
 
   function inboundTrainLabelsByTrack(view) {
@@ -7813,7 +7839,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         const cls = classifyCell(text, view);
         const group = trackGroups[i] || null;
         const baseDisplayText = blockTextForDisplay(text);
-        const inboundTrain = clean(trackInboundTrains[i]);
+        const inboundTrain = inboundTrainLabel(group && group.rows) || clean(trackInboundTrains[i]);
         const displayText = baseDisplayText && state.showInboundTrain && inboundTrain
           ? `${baseDisplayText} (${inboundTrain})`
           : baseDisplayText;
@@ -7936,7 +7962,17 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     const entries = inboundTrainSources();
     select.innerHTML = '<option value="">Manual entry</option>' + entries.map(entry => {
       const context = entry.source === "Inbound archive" ? "ARCHIVED" : (entry.day || "INBOUNDS");
-      return `<option value="${escapeAttr(entry.id)}">${escapeHtml(entry.train)} — ${escapeHtml(fmtInt(entry.footage))} FT (${escapeHtml(context)})</option>`;
+      const normalizedDay = clean(context).toUpperCase();
+      const dayClass = entry.source === "Inbound archive"
+        ? "inbound-day-archived"
+        : normalizedDay === "TODAY"
+          ? "inbound-day-today"
+          : normalizedDay === "TOMORROW"
+            ? "inbound-day-tomorrow"
+            : normalizedDay === "DAY AFTER"
+              ? "inbound-day-after"
+              : "";
+      return `<option class="${dayClass}" value="${escapeAttr(entry.id)}">${escapeHtml(entry.train)} — ${escapeHtml(fmtInt(entry.footage))} FT (${escapeHtml(context)})</option>`;
     }).join("");
   }
 
@@ -8886,6 +8922,10 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     toggleYardView();
   });
   $("#yardViewClose").addEventListener("click", event => {
+    event.preventDefault();
+    closeYardView();
+  });
+  $("#yardViewClosePrimary").addEventListener("click", event => {
     event.preventDefault();
     closeYardView();
   });
