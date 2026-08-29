@@ -3983,6 +3983,7 @@
   <button class="raw-menu-action" id="viewRawBlock" type="button" role="menuitem">View raw</button>
   <button class="copy-menu-action" id="copySelectedBlocksBtn" type="button" role="menuitem">Copy selected (Ctrl+C)</button>
   <button class="paste-menu-action" id="pasteCopiedBlocksBtn" type="button" role="menuitem">Paste here (Ctrl+V)</button>
+  <button class="copy-menu-action" id="splitSelectedBlockBtn" type="button" role="menuitem">Split block...</button>
   <button class="danger-menu-action" id="clearFinalZoneBtn" type="button" role="menuitem" hidden>Clear Track</button>
   <button class="danger-menu-action" id="deleteSelectedBlocks" type="button" role="menuitem">Delete selected block(s)</button>
 </div>
@@ -7543,6 +7544,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       const rawButton = $("#viewRawBlock");
       const copyButton = $("#copySelectedBlocksBtn");
       const pasteButton = $("#pasteCopiedBlocksBtn");
+      const splitButton = $("#splitSelectedBlockBtn");
       const clearButton = $("#clearFinalZoneBtn");
       const deleteButton = $("#deleteSelectedBlocks");
       rawButton.hidden = true;
@@ -7550,6 +7552,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       pasteButton.hidden = false;
       pasteButton.disabled = !validBlockClipboard(blockClipboard);
       pasteButton.textContent = "Paste Block";
+      splitButton.hidden = true;
       clearButton.hidden = false;
       deleteButton.hidden = true;
       menu.hidden = false;
@@ -7582,6 +7585,13 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     }
     const clearButton = $("#clearFinalZoneBtn");
     if (clearButton) clearButton.hidden = true;
+    const splitButton = $("#splitSelectedBlockBtn");
+    if (splitButton) {
+      const group = grid.id === "yardGrid" && computed
+        ? computed.groups.find(candidate => candidate.blockId === id)
+        : null;
+      splitButton.hidden = !group || Math.round(Number(group.footage) || 0) < 2;
+    }
     const deleteButton = $("#deleteSelectedBlocks");
     if (deleteButton) deleteButton.hidden = false;
     menu.hidden = false;
@@ -8891,6 +8901,12 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     hideBlockContextMenu();
   });
   $("#clearFinalZoneBtn").addEventListener("click", clearFinalZoneTrack);
+  $("#splitSelectedBlockBtn").addEventListener("click", () => {
+    const blockId = blockContextBlockId;
+    const gridId = blockContextGridId;
+    hideBlockContextMenu();
+    if (gridId === "yardGrid" && blockId) openSplitBlockModal(blockId);
+  });
   $("#deleteSelectedBlocks").addEventListener("click", deleteSelectedBlocks);
   $("#closeRawTrack").addEventListener("click", closeRawTrackModal);
   $("#rawTrackModal").addEventListener("click", event => {

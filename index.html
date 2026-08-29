@@ -9664,6 +9664,10 @@ document.addEventListener('click',function(event){
 </body>
 </html>`
     };
+    pages.inVsOutPlanner = {
+      label: "IN vs OUT Planner",
+      html: `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>IN vs OUT Planner</title><style>html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#071426}iframe{display:block;width:100%;height:100%;border:0;background:#071426}</style></head><body><iframe src="in-vs-out-planner-page.html" title="IN vs OUT Planner"></iframe></body></html>`
+    };
     pages.stackingGrid = {
       label: "Stacking Grid",
       html: `<!DOCTYPE html>
@@ -13545,6 +13549,33 @@ body.forecast-excel-view-open{padding-right:320px!important;}
       return html.replace('</head>', css + '</head>');
     }
 
+    function withExcelBlockSplitContextMenu(html) {
+      const marker = 'data-excel-block-split-context-v1';
+      if (html.includes(marker)) return html;
+      let next = html.replace(
+        '<button class="paste-menu-action" id="pasteCopiedBlocksBtn" type="button" role="menuitem">Paste here (Ctrl+V)</button>',
+        '<button class="paste-menu-action" id="pasteCopiedBlocksBtn" type="button" role="menuitem">Paste here (Ctrl+V)</button>' +
+        '<button class="copy-menu-action" id="splitSelectedBlockBtn" type="button" role="menuitem">Split block...</button>'
+      );
+      next = next.replace(
+        'const clearButton = $("#clearFinalZoneBtn");\n      const deleteButton = $("#deleteSelectedBlocks");',
+        'const splitButton = $("#splitSelectedBlockBtn");\n      const clearButton = $("#clearFinalZoneBtn");\n      const deleteButton = $("#deleteSelectedBlocks");'
+      );
+      next = next.replace(
+        'pasteButton.textContent = "Paste Block";\n      clearButton.hidden = false;',
+        'pasteButton.textContent = "Paste Block";\n      splitButton.hidden = true;\n      clearButton.hidden = false;'
+      );
+      next = next.replace(
+        'const clearButton = $("#clearFinalZoneBtn");\n    if (clearButton) clearButton.hidden = true;\n    const deleteButton = $("#deleteSelectedBlocks");',
+        'const clearButton = $("#clearFinalZoneBtn");\n    if (clearButton) clearButton.hidden = true;\n    const splitButton = $("#splitSelectedBlockBtn");\n    if (splitButton) {\n      const group = grid.id === "yardGrid" && computed\n        ? computed.groups.find(candidate => candidate.blockId === id)\n        : null;\n      splitButton.hidden = !group || Math.round(Number(group.footage) || 0) < 2;\n    }\n    const deleteButton = $("#deleteSelectedBlocks");'
+      );
+      next = next.replace(
+        '$("#clearFinalZoneBtn").addEventListener("click", clearFinalZoneTrack);\n  $("#deleteSelectedBlocks").addEventListener("click", deleteSelectedBlocks);',
+        '$("#clearFinalZoneBtn").addEventListener("click", clearFinalZoneTrack);\n  $("#splitSelectedBlockBtn").addEventListener("click", () => {\n    const blockId = blockContextBlockId;\n    const gridId = blockContextGridId;\n    hideBlockContextMenu();\n    if (gridId === "yardGrid" && blockId) openSplitBlockModal(blockId);\n  });\n  $("#deleteSelectedBlocks").addEventListener("click", deleteSelectedBlocks);'
+      );
+      return next.replace('</head>', '<meta ' + marker + ' content="1"></head>');
+    }
+
     function bridgedHtmlForPage(id) {
       if (!bridgedPageHtml.has(id)) {
         let pageHtml = pages[id].html;
@@ -13631,6 +13662,7 @@ body.forecast-excel-view-open{padding-right:320px!important;}
           pageHtml = withExcelArchivePdfReader(pageHtml);
           pageHtml = withExcelInboundOnHandChecks(pageHtml);
           pageHtml = withExcelInboundSequenceCounterColors(pageHtml);
+          pageHtml = withExcelBlockSplitContextMenu(pageHtml);
         }
         if (id === "chassisStatus") {
           pageHtml = withChassisGreenExcelHero(pageHtml);
@@ -13766,7 +13798,7 @@ body.forecast-excel-view-open{padding-right:320px!important;}
       document.querySelectorAll(".workbook-tabs button").forEach((button) => {
         button.classList.toggle("active", button.dataset.page === activePage);
       });
-      if (reportMenuButton) reportMenuButton.classList.toggle("active", ["amReport", "chassisStatus", "settegastMap", "stackingGrid"].includes(activePage));
+      if (reportMenuButton) reportMenuButton.classList.toggle("active", ["amReport", "chassisStatus", "inVsOutPlanner", "settegastMap", "stackingGrid"].includes(activePage));
       if (excelLphMenuButton) excelLphMenuButton.classList.toggle("active", ["excelView", "lphTracker"].includes(activePage));
       if (timesheetMenuButton) timesheetMenuButton.classList.toggle("active", ["timeMd", "idTracker"].includes(activePage));
       if (matrixMenuButton) matrixMenuButton.classList.toggle("active", ["matrix", "matrixWide"].includes(activePage));
@@ -14082,7 +14114,7 @@ body.forecast-excel-view-open{padding-right:320px!important;}
         const menu = document.createElement("div");
         menu.className = "matrix-nav-menu report-nav-menu";
         menu.setAttribute("role", "menu");
-        [["amReport", "AM Report"], ["chassisStatus", "Chassis Forecast"], ["chassisReconciliation", "Chassis Reconciliation"], ["settegastMap", "Settegast Map"], ["stackingGrid", "Stacking Grid"]].forEach(([pageId, label]) => {
+        [["amReport", "AM Report"], ["chassisStatus", "Chassis Forecast"], ["chassisReconciliation", "Chassis Reconciliation"], ["inVsOutPlanner", "IN vs OUT Planner"], ["settegastMap", "Settegast Map"], ["stackingGrid", "Stacking Grid"]].forEach(([pageId, label]) => {
           const option = document.createElement("button");
           option.type = "button";
           option.dataset.page = pageId;
