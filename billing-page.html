@@ -328,6 +328,28 @@
       background: #f2f8f6;
     }
 
+    #operationsTable tbody tr.billing-active-row > td,
+    #operationsTable tbody tr:focus-within > td {
+      position: relative;
+      background: #dbeafe !important;
+      box-shadow: inset 0 3px 0 #168bff, inset 0 -3px 0 #168bff;
+    }
+
+    #operationsTable tbody tr.billing-active-row > td:first-child,
+    #operationsTable tbody tr:focus-within > td:first-child {
+      box-shadow: inset 3px 0 0 #168bff, inset 0 3px 0 #168bff, inset 0 -3px 0 #168bff;
+    }
+
+    #operationsTable tbody tr.billing-active-row > td:last-child,
+    #operationsTable tbody tr:focus-within > td:last-child {
+      box-shadow: inset -3px 0 0 #168bff, inset 0 3px 0 #168bff, inset 0 -3px 0 #168bff;
+    }
+
+    #operationsTable tbody tr.billing-active-row .date-cell,
+    #operationsTable tbody tr:focus-within .date-cell {
+      color: #0b4a86;
+    }
+
     td {
       border-bottom: 1px solid #eff3f7;
       text-align: center;
@@ -2880,6 +2902,22 @@
     window.setTimeout(() => hydrateBillingMoveDetails().catch((error) => console.warn("Billing detail hydration warning", error)), 0);
     hydratePowerBiImport().catch(() => {});
     hydrateAnalyticsFromTimesheetArchive().catch(() => {});
+
+    const activateBillingRow = (target) => {
+      const row = target && target.closest ? target.closest("#operationsTable tbody tr") : null;
+      if (!row) return;
+      const current = els.tableBody.querySelector("tr.billing-active-row");
+      if (current && current !== row) current.classList.remove("billing-active-row");
+      row.classList.add("billing-active-row");
+    };
+    els.tableBody.addEventListener("pointerdown", (event) => activateBillingRow(event.target));
+    els.tableBody.addEventListener("focusin", (event) => activateBillingRow(event.target));
+    document.addEventListener("click", (event) => activateBillingRow(event.target), true);
+    document.addEventListener("pointerdown", (event) => {
+      if (event.target.closest("#operationsTable tbody tr")) return;
+      const current = els.tableBody.querySelector("tr.billing-active-row");
+      if (current) current.classList.remove("billing-active-row");
+    });
 
     els.operationsTab.addEventListener("click", () => setPage("operations"));
     els.analyticsTab.addEventListener("click", () => setPage("analytics"));

@@ -3584,6 +3584,16 @@
       return bodyClose >= 0 ? html.slice(0, bodyClose) + patch + "\n" + html.slice(bodyClose) : html + patch;
     }
 
+    function withBillingActiveRowHighlight(html) {
+      if (!html || typeof html !== "string" || html.includes("billing-active-row-highlight-v1")) return html;
+      const style = `<style id="billing-active-row-highlight-v1">#operationsTable tbody tr.billing-active-row>td,#operationsTable tbody tr:focus-within>td{position:relative;background:#dbeafe!important;box-shadow:inset 0 3px 0 #168bff,inset 0 -3px 0 #168bff}#operationsTable tbody tr.billing-active-row>td:first-child,#operationsTable tbody tr:focus-within>td:first-child{box-shadow:inset 3px 0 0 #168bff,inset 0 3px 0 #168bff,inset 0 -3px 0 #168bff}#operationsTable tbody tr.billing-active-row>td:last-child,#operationsTable tbody tr:focus-within>td:last-child{box-shadow:inset -3px 0 0 #168bff,inset 0 3px 0 #168bff,inset 0 -3px 0 #168bff}#operationsTable tbody tr.billing-active-row .date-cell,#operationsTable tbody tr:focus-within .date-cell{color:#0b4a86}</style>`;
+      const script = `<scr${""}ipt id="billing-active-row-highlight-script-v1">(()=>{const body=document.getElementById("tableBody");if(!body)return;const activate=target=>{const row=target&&target.closest?target.closest("#operationsTable tbody tr"):null;if(!row)return;const current=body.querySelector("tr.billing-active-row");if(current&&current!==row)current.classList.remove("billing-active-row");row.classList.add("billing-active-row")};body.addEventListener("pointerdown",event=>activate(event.target));body.addEventListener("focusin",event=>activate(event.target));document.addEventListener("click",event=>activate(event.target),true);document.addEventListener("pointerdown",event=>{if(event.target.closest("#operationsTable tbody tr"))return;const current=body.querySelector("tr.billing-active-row");if(current)current.classList.remove("billing-active-row")})})();</scr${""}ipt>`;
+      let updated = html;
+      const headClose = updated.toLowerCase().indexOf("</head>");
+      updated = headClose >= 0 ? updated.slice(0, headClose) + style + "\n" + updated.slice(headClose) : style + updated;
+      return updated.replace("</body>", script + "\n</body>");
+    }
+
     function withBillingHeaderRemoved(html) {
       if (!html || typeof html !== "string" || html.includes("billing-month-heading-removal")) return html;
       const patch = `
@@ -13890,6 +13900,7 @@ function duplicateForecastTrainDay(train,day){
         if (id === "timeMd") pageHtml = withTimeMdResponsiveWidth(pageHtml);
         if (id === "timeOff") pageHtml = withTimeOffCurrentRosterSnapshot(withTimeOffCameInActions(withTimeOffMonthlyWeeklyStyle(pageHtml)));
         if (id === "billing") pageHtml = withBillingFlipStackReclassificationV1(withBillingExportDropdownV1(withBillingDuplicateStatusPillsV1(withBillingOperationalLphGuardV1(withBillingMoveDetailsIndexedDbV1(withBillingLiftFolderImportV1(withBillingImportFeedbackV1(withBillingLiftFlipPersistenceV2(withBillingUnifiedDuplicateReview(withBillingExcludeDuplicateRows(withBillingRampDerampMonthlyReview(withBillingRampDerampExcludedFlags(withBillingCountDuplicateRows(withBillingLphTargetPills(withBillingFlipDuplicateFlags(withBillingMonthlyFlipReview(withBillingStackReasonRouting(withBillingCompactDuplicateGroups(withBillingDailyShiftProjection(withBillingPerformanceArchiveIndexedDb(withBillingShiftLpmhGrid(withBillingSummaryExportStyles(withBillingLpmhSourcePair(withBillingHoursColumnOrder(withBillingDisplayFlagsMenu(withBillingPowerBiLiftDeltaFlag(withBillingPowerBiImport(withBillingQuotaSafePersistence(withBillingAnalyticsLiftFallback(withBillingAnalyticsArchiveHydration(withBillingManHoursPrecision(withBillingArchiveIndexedDb(withBillingSplitLiftAndChassisClear(withBillingHeaderRemoved(pageHtml))))))))))))))))))))))))))))))))));
+        if (id === "billing") pageHtml = withBillingActiveRowHighlight(pageHtml);
         if (id === "lphTracker") {
           pageHtml = withLphDefaultExpectedFlips(pageHtml);
           pageHtml = withLphLunchDuringDowntime(pageHtml);
