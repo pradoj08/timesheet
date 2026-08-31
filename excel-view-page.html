@@ -453,7 +453,13 @@
   }
   .yard-view-close-primary:hover,
   .yard-view-close-primary:focus-visible { background:#dc2626; border-color:#fff; outline:2px solid #fff; outline-offset:1px; }
-  .yard-view-display-modes { display:flex; align-items:center; gap:4px; margin-left:auto; }
+  .yard-view-display-modes {
+    display:flex;
+    align-items:center;
+    gap:4px;
+    margin-left:auto;
+    margin-right:36px;
+  }
   .yard-view-display-mode {
     min-height:25px; padding:3px 9px; border:1px solid #53657c; border-radius:5px;
     background:#172235; color:#cbd5e1; font:800 10px/1 "Aptos Narrow",Arial,sans-serif;
@@ -3551,7 +3557,7 @@
   #colorTabModal .color-rule-hint { font-size: 9px; }
   #colorTabModal .color-rule-rows { gap: 6px; }
   #colorTabModal .color-rule-row {
-    grid-template-columns: 126px minmax(160px, 1fr) 30px;
+    grid-template-columns: 126px minmax(160px, 1fr) 68px 68px 30px;
     gap: 6px;
     padding: 6px;
     border: 1px solid #d8e1ec;
@@ -3632,6 +3638,9 @@
     padding: 5px 7px;
     font-size: 10px;
   }
+  #colorTabModal .color-rule-custom-color { display:grid; grid-template-columns:1fr 14px; align-items:center; gap:2px; color:#526174; font-size:8px; font-weight:900; letter-spacing:.04em; text-align:center; text-transform:uppercase; }
+  #colorTabModal .color-rule-custom-color input[type=checkbox] { width:14px; height:14px; margin:0; accent-color:#0f766e; }
+  #colorTabModal .color-rule-custom-color input[type=color] { grid-column:1/-1; width:100%; height:20px; padding:1px; border:1px solid #b8c5d5; border-radius:5px; background:#fff; cursor:pointer; }
   #colorTabModal .color-rule-remove {
     width: 28px;
     height: 28px;
@@ -3654,7 +3663,7 @@
     #colorTabModal .legend-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     #colorTabModal .color-picker-grid { grid-template-columns: minmax(0, 1fr); }
     #colorTabModal .color-picker-options { grid-template-columns: repeat(auto-fill, 22px); }
-    #colorTabModal .color-rule-row { grid-template-columns: 112px minmax(0,1fr) 28px; }
+    #colorTabModal .color-rule-row { grid-template-columns: 112px minmax(0,1fr) 58px 58px 28px; }
     #colorTabModal .grid-typography-row { grid-template-columns: 58px minmax(104px, 1fr) minmax(112px, .8fr) 64px; }
   }
 
@@ -4444,30 +4453,78 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     return { block:"", cars:"", loads:"", mty:"", wt:"", ft:"" };
   }
 
+  function inboundEtaCalendarDate(value) {
+    const match = String(value || "").match(/(?:^|\s)(\d{1,2})\/(\d{1,2})\/(\d{2,4})(?:\s|$)/);
+    if (!match) return null;
+    const month = Number(match[1]);
+    const day = Number(match[2]);
+    let year = Number(match[3]);
+    if (year < 100) year += 2000;
+    const parsed = new Date(year, month - 1, day);
+    if (parsed.getFullYear() !== year || parsed.getMonth() !== month - 1 || parsed.getDate() !== day) return null;
+    return parsed;
+  }
+
+  function inboundDayForEta(eta, fallbackDay = "TODAY", now = new Date()) {
+    const arrival = inboundEtaCalendarDate(eta);
+    if (!arrival) return fallbackDay;
+    const arrivalUtc = Date.UTC(arrival.getFullYear(), arrival.getMonth(), arrival.getDate());
+    const todayUtc = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+    const dayDifference = Math.round((arrivalUtc - todayUtc) / 86400000);
+    if (dayDifference === 0) return "TODAY";
+    if (dayDifference === 1) return "TOMORROW";
+    if (dayDifference === 2) return "DAY AFTER";
+    return "OTHER";
+  }
+
+  function inboundDayHeading(day) {
+    const key = String(day || "").toUpperCase();
+    const offset = {TODAY:0, TOMORROW:1, "DAY AFTER":2}[key];
+    if (offset === undefined) return key || "OTHER";
+    const date = new Date();
+    date.setHours(12, 0, 0, 0);
+    date.setDate(date.getDate() + offset);
+    const label = key === "DAY AFTER" ? "2 DAYS OUT" : key;
+    return `${label} · ${date.toLocaleDateString(undefined, {month:"numeric", day:"numeric"})}`;
+  }
+
+  let inboundDayRolloverTimer = 0;
+  function scheduleInboundDayRollover() {
+    clearTimeout(inboundDayRolloverTimer);
+    const now = new Date();
+    const nextDay = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 1, 0);
+    inboundDayRolloverTimer = setTimeout(() => {
+      renderAll();
+    }, Math.max(1000, nextDay.getTime() - now.getTime()));
+  }
+
   function normalizeInboundPlans(plans) {
-    const validColors = new Set(["green", "red", "black", "blue", "yellow"]);
     const validDays = new Set(["TODAY", "TOMORROW", "DAY AFTER", "OTHER"]);
     const source = Array.isArray(plans) ? plans : defaultInboundPlans();
-    return source.map(plan => ({
-      day: validDays.has(String(plan && plan.day || "").toUpperCase()) ? String(plan.day).toUpperCase() : "TODAY",
-      color: validColors.has(String(plan && plan.color || "")) ? String(plan.color) : "green",
-      tag: String(plan && plan.tag || ""),
-      train: String(plan && plan.train || ""),
-      eta: String(plan && plan.eta || ""),
-      status: String(plan && plan.status || ""),
-      totalFt: String(plan && plan.totalFt || ""),
-      onHandChecked: plan && plan.onHandChecked === true,
-      archivedAt: String(plan && plan.archivedAt || ""),
-      archiveId: String(plan && plan.archiveId || ""),
-      rows: (Array.isArray(plan && plan.rows) && plan.rows.length ? plan.rows : [blankInboundRow()]).map(row => ({
-        block: String(row && row.block || ""),
-        cars: String(row && row.cars || ""),
-        loads: String(row && row.loads || ""),
-        mty: String(row && row.mty || ""),
-        wt: String(row && row.wt || ""),
-        ft: String(row && row.ft || "")
-      }))
-    }));
+    return source.map(plan => {
+      const savedDay = validDays.has(String(plan && plan.day || "").toUpperCase()) ? String(plan.day).toUpperCase() : "TODAY";
+      const day = inboundDayForEta(plan && plan.eta, savedDay);
+      return {
+        day,
+        color: inboundColorForDay(day),
+        tag: String(plan && plan.tag || ""),
+        train: String(plan && plan.train || ""),
+        eta: String(plan && plan.eta || ""),
+        status: String(plan && plan.status || ""),
+        totalFt: String(plan && plan.totalFt || ""),
+        onHandChecked: plan && plan.onHandChecked === true,
+        archivedAt: String(plan && plan.archivedAt || ""),
+        archiveId: String(plan && plan.archiveId || ""),
+        rows: (Array.isArray(plan && plan.rows) && plan.rows.length ? plan.rows : [blankInboundRow()]).map(row => ({
+          block: String(row && row.block || ""),
+          cars: String(row && row.cars || ""),
+          loads: String(row && row.loads || ""),
+          mty: String(row && row.mty || ""),
+          wt: String(row && row.wt || ""),
+          ft: String(row && row.ft || "")
+        }))
+      };
+    });
   }
 
   function normalizeInboundArchive(records) {
@@ -5233,7 +5290,11 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     const source = Array.isArray(rules) ? rules : DEFAULT_COLOR_RULES;
     return source.map(rule => ({
       color: COLOR_CLASSES.includes(rule && rule.color) ? rule.color : "gray",
-      terms: clean(rule && rule.terms)
+      terms: clean(rule && rule.terms),
+      borderEnabled: rule && rule.borderEnabled === true,
+      borderColor: /^#[0-9a-f]{6}$/i.test(clean(rule && rule.borderColor)) ? clean(rule.borderColor) : "#111827",
+      textEnabled: rule && rule.textEnabled === true,
+      textColor: /^#[0-9a-f]{6}$/i.test(clean(rule && rule.textColor)) ? clean(rule.textColor) : "#ffffff"
     })).filter(rule => rule.terms);
   }
 
@@ -5374,6 +5435,19 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     if (!structuralClasses.includes("cut-cell")) structuralClasses.unshift("cut-cell");
     structuralClasses.push(classifyCell(text, "CURRENT RAMP BLOCKING"));
     return [...new Set(structuralClasses)].join(" ");
+  }
+
+  function styleWithCurrentColorRule(text) {
+    const raw = clean(text);
+    const upper = raw.toUpperCase();
+    const rules = normalizeColorRules(state.colorRules);
+    const activeRules = rules.length ? rules : DEFAULT_COLOR_RULES.map(rule => ({...rule}));
+    const match = activeRules.find(rule => ruleMatchesText(rule, raw, upper));
+    if (!match) return "";
+    const styles = [];
+    if (match.borderEnabled) styles.push(`outline:2px solid ${match.borderColor}`, "outline-offset:-2px");
+    if (match.textEnabled) styles.push(`color:${match.textColor}!important`);
+    return styles.join(";");
   }
 
   function publishLiveSnapshot() {
@@ -6215,6 +6289,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     initTodayRosterPopup();
     updateFootageCalcTotals();
     updateCurrentWorkForecast();
+    scheduleInboundDayRollover();
     saveState();
   }
 
@@ -6249,7 +6324,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     const primaryDays = ["TODAY", "TOMORROW", "DAY AFTER"];
     const extraDays = [...new Set(ordered.map(item => item.plan.day).filter(day => !primaryDays.includes(day)))];
     [...primaryDays, ...extraDays].forEach(day => {
-      const label = day === "DAY AFTER" ? "2 DAYS OUT" : day;
+      const label = inboundDayHeading(day);
       parts.push('<button class="inbound-group-label" data-inbound-add-day="' + escapeAttr(day) + '" type="button" title="Add an inbound for ' + escapeAttr(label) + '">' + escapeHtml(label) + '</button>');
       ordered.filter(item => item.plan.day === day).forEach(({plan, index}) => parts.push(renderInboundCard(plan, index)));
     });
@@ -8174,7 +8249,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
           const displayContent = blockContentForDisplay(block.content);
           const displayTitle = state.hideTrackIds ? stripBlockTrackIds(block.title) : block.title;
           const currentClassName = classNameWithCurrentColor(block.className, block.title || textFromCellHtml(`<div>${block.content}</div>`));
-          return `<div class="${escapeAttr(currentClassName)}" data-final-block-id="${escapeAttr(block.id)}" data-footage="${Number(block.footage) || 0}" title="${escapeAttr(displayTitle)}">${displayContent}</div>`;
+          const currentStyle = styleWithCurrentColorRule(block.title || textFromCellHtml(`<div>${block.content}</div>`));
+          return `<div class="${escapeAttr(currentClassName)}"${currentStyle ? ` style="${escapeAttr(currentStyle)}"` : ""} data-final-block-id="${escapeAttr(block.id)}" data-footage="${Number(block.footage) || 0}" title="${escapeAttr(displayTitle)}">${displayContent}</div>`;
         }).join("")
       : '<span class="final-paste-hint">Click here, then press Ctrl+V to paste blocks</span>';
     return `<div class="third-summary-blank third-summary-span final-paste-zone" data-summary-paste-zone="${zone}" tabindex="0" title="Paste copied blocks into ${zone.toUpperCase()} Final"><div class="final-block-list">${content}</div></div>`;
@@ -8237,7 +8313,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
           const displayContent = blockContentForDisplay(block.content);
           const displayTitle = state.hideTrackIds ? stripBlockTrackIds(block.title) : block.title;
           const currentClassName = classNameWithCurrentColor(block.className, block.title || textFromCellHtml(`<div>${block.content}</div>`));
-          cells.push(`<div class="${escapeAttr(currentClassName)}" data-block-id="${escapeAttr(block.id)}" data-track="${track}" data-footage="${Number(block.footage) || 0}"${shoveOrder ? ` data-shove-order="${shoveOrder}"` : ""}${inboundSequence ? ` data-inbound-sequence="${inboundSequence}"` : ""} role="button" aria-selected="false" title="${escapeAttr(displayTitle)}">${displayContent}${shoveOrder ? `<span class="inbound-shove-flag${inboundSequenceClass}" aria-label="Shove ${shoveOrder}, inbound ${inboundSequence || 1}">${shoveOrder}</span>` : ""}${i === 7 && blocks.length > 8 ? `<span class="overflow">+${blocks.length - 8}</span>` : ""}</div>`);
+          const currentStyle = styleWithCurrentColorRule(block.title || textFromCellHtml(`<div>${block.content}</div>`));
+          cells.push(`<div class="${escapeAttr(currentClassName)}"${currentStyle ? ` style="${escapeAttr(currentStyle)}"` : ""} data-block-id="${escapeAttr(block.id)}" data-track="${track}" data-footage="${Number(block.footage) || 0}"${shoveOrder ? ` data-shove-order="${shoveOrder}"` : ""}${inboundSequence ? ` data-inbound-sequence="${inboundSequence}"` : ""} role="button" aria-selected="false" title="${escapeAttr(displayTitle)}">${displayContent}${shoveOrder ? `<span class="inbound-shove-flag${inboundSequenceClass}" aria-label="Shove ${shoveOrder}, inbound ${inboundSequence || 1}">${shoveOrder}</span>` : ""}${i === 7 && blocks.length > 8 ? `<span class="overflow">+${blocks.length - 8}</span>` : ""}</div>`);
         } else {
           cells.push(`<div class="cut-cell empty block-drop-end" data-drop-end-track="${track}" title="Place selected blocks at end of Track ${track}">0</div>`);
         }
@@ -8308,7 +8385,11 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     if (!host) return;
     const rules = Array.isArray(state.colorRules) ? state.colorRules.map(rule => ({
       color: COLOR_CLASSES.includes(rule && rule.color) ? rule.color : "gray",
-      terms: clean(rule && rule.terms)
+      terms: clean(rule && rule.terms),
+      borderEnabled: rule && rule.borderEnabled === true,
+      borderColor: /^#[0-9a-f]{6}$/i.test(clean(rule && rule.borderColor)) ? clean(rule.borderColor) : "#111827",
+      textEnabled: rule && rule.textEnabled === true,
+      textColor: /^#[0-9a-f]{6}$/i.test(clean(rule && rule.textColor)) ? clean(rule.textColor) : "#ffffff"
     })) : DEFAULT_COLOR_RULES.map(rule => ({...rule}));
     state.colorRules = rules.length ? rules : DEFAULT_COLOR_RULES.map(rule => ({...rule}));
     persistColorRules();
@@ -8323,6 +8404,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
           <span class="color-rule-color-chevron" aria-hidden="true">${pickerOpen ? "-" : "+"}</span>
         </button>
         <input class="field" data-color-rule="terms" value="${escapeAttr(rule.terms)}" placeholder="IHOSA, SADS, ZLBHO" aria-label="Comma separated matching terms">
+        <label class="color-rule-custom-color">Border <input type="checkbox" data-color-rule="borderEnabled" ${rule.borderEnabled ? "checked" : ""} aria-label="Use border color"><input type="color" data-color-rule="borderColor" value="${escapeAttr(rule.borderColor)}" aria-label="Border color"></label>
+        <label class="color-rule-custom-color">Text <input type="checkbox" data-color-rule="textEnabled" ${rule.textEnabled ? "checked" : ""} aria-label="Use text color"><input type="color" data-color-rule="textColor" value="${escapeAttr(rule.textColor)}" aria-label="Text color"></label>
         <button class="color-rule-remove" type="button" data-color-rule-remove="${index}" title="Remove rule" aria-label="Remove color rule">&times;</button>
         <div class="color-picker-grid" role="radiogroup" aria-label="Rule color">
           ${COLOR_PALETTE_GROUPS.map(group => `
@@ -9629,7 +9712,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   });
   $("#addColorRuleBtn").addEventListener("click", () => {
     state.colorRules = Array.isArray(state.colorRules) ? state.colorRules : DEFAULT_COLOR_RULES.map(rule => ({...rule}));
-    state.colorRules.push({color:"gray", terms:""});
+    state.colorRules.push({color:"gray", terms:"", borderEnabled:false, borderColor:"#111827", textEnabled:false, textColor:"#ffffff"});
     renderColorRules();
     persistColorRules();
     saveState();
@@ -9668,7 +9751,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     if (!Number.isInteger(index)) return;
     state.colorRules = Array.isArray(state.colorRules) ? state.colorRules : DEFAULT_COLOR_RULES.map(rule => ({...rule}));
     state.colorRules[index] = state.colorRules[index] || {color:"gray", terms:""};
-    state.colorRules[index][field.dataset.colorRule] = field.value;
+    state.colorRules[index][field.dataset.colorRule] = field.type === "checkbox" ? field.checked : field.value;
     renderGrid();
     publishLiveSnapshot();
     persistColorRules();

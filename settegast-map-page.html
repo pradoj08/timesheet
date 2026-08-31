@@ -384,6 +384,12 @@
   <script src="settegast-universal-layout.js"></script>
   <script>
       (() => {
+      const browserStorage = (()=>{try{return window.localStorage;}catch(_){return null;}})();
+      const localStorage = {
+        getItem:key=>{try{return browserStorage?.getItem(key)??null;}catch(_){return null;}},
+        setItem:(key,value)=>{try{browserStorage?.setItem(key,value);return true;}catch(_){return false;}},
+        removeItem:key=>{try{browserStorage?.removeItem(key);return true;}catch(_){return false;}}
+      };
       const universalLayout = window.__CONGLOBAL_SETTEGAST_UNIVERSAL_LAYOUT__ || null;
       const universalLayoutAppliedKey = 'conglobal-settegast-universal-layout-applied-v1';
       const publishedLayoutId = String(universalLayout?.exportedAt || '');

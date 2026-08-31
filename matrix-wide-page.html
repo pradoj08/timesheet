@@ -15001,7 +15001,16 @@ function railCarManifestForTrack(track) {
     type: "lift"
   };
 }
+/* matrix-rail-container-pink-families-v1 */
+function matrixRailContainerFamilyColor(label, fallback) {
+  const value = String(label || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+  if (value.startsWith("ZLBHO")) return "#f472b6";
+  if (value.startsWith("ZPBHO")) return "#db2777";
+  if (value.startsWith("ILBHOX")) return "#f9a8d4";
+  return fallback;
+}
 function drawRailContainer(width, y, color, label, brandSeed = 0, outboundLoad = false, blockedTextOnly = false) {
+  color = matrixRailContainerFamilyColor(label, color);
   const height = 21;
   const left = -width / 2;
   const top = y - height;

@@ -16231,6 +16231,10 @@ function drawMiJackCraneBody(p, craneName, parked, pulse) {
   const top = p.y - 31;
   const bottom = p.y + 27;
   ctx.save();
+  /* matrix-crane-scale-85-v1 */
+  ctx.translate(p.x, p.y);
+  ctx.scale(.85, .85);
+  ctx.translate(-p.x, -p.y);
 
   ctx.fillStyle = "rgba(0, 0, 0, .28)";
   ctx.fillRect(left - 3, bottom + 4, 62, 5);

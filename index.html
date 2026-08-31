@@ -2265,7 +2265,7 @@
     position: static !important;
     display: flex;
     width: 100% !important;
-    height: 585px !important;
+    height: min(1170px, calc(100vh - 16px)) !important;
     max-width: none;
     overflow: hidden;
     border: 1px solid #334155;
@@ -5208,17 +5208,18 @@ tfoot .lph-target-pill.below-target{background:#fecaca;color:#7f1d1d}
   var rosterStorageKey="conglobal-roster-state-v1",rosterAdditionsKey="conglobal-roster-additions-v1",rosterDayIndex=[6,0,1,2,3,4,5];
   var defaultShiftRoster={
     first:[
-      ["Branford Alton","Mon, Tues"],["Castruita Armando","Wed, Thurs"],["Frazer Dacoyea","Mon, Tues"],["Citizen Dante","Thurs, Fri"],
-      ["Towler Demetrius","Thurs, Fri"],["Stewart Dexter","Sat, Sun"],["Gardner Dorrean","Tues, Wed"],["Thomas Henry","Sat, Sun"],
-      ["Brown James","Thurs, Fri"],["Herrera Jose","Sat, Sun"],["Player Keyston","Mon, Sun"],["Hickman Makia","Mon, Sun"],
-      ["Dever Mikey","Tues, Wed"],["Wanza Myles","Mon, Tues"],["Romero Nelson","Tues, Wed"],["McDaniel Charles","Fri, Sat"],
-      ["Nava Ramon","Sat, Sun"],["Tran Tyler","Thurs, Fri"]
+      ["Branford Alton","Mon, Tues"],["Brown James","Thurs, Fri"],["Citizen Dante","Thurs, Fri"],["Davis Ellis","Wed, Thurs"],
+      ["Gardner Dorrean","Tues, Wed"],["Hatton Isaiah","Tues, Wed"],["Herrera Jose","Sat, Sun"],["Hickman Makia","Mon, Sun"],
+      ["Jones Brian","Tues, Wed"],["Marcus Clay","Mon, Sun"],["McDaniel Charles","Thurs, Fri"],["Nava Ramon","Sat, Sun"],
+      ["Player Keyston","Mon, Sun"],["Romero Nelson","Tues, Wed"],["Shelby Jared","Mon, Sun"],["Thomas Henry","Sat, Sun"],
+      ["Tran Tyler","Thurs, Fri"],["Wanza Myles","Mon, Tues"],["Whyte Leslie","Mon, Sun"]
     ],
     second:[
-      ["Carruthers Timothy","Mon, Sun"],["Caceres Virula Victor","Mon, Tues"],["Keme Aweri Jr.","Mon, Tues"],["Hosey Kevin","Mon, Tues"],
-      ["Brown Brandy","Wed, Thurs"],["Mejia Aaron","Thurs, Fri"],["Bookman Derrell","Thurs, Fri"],["Hopkins Alexander","Mon, Sun"],
-      ["Tingle Jason","Sat, Sun"],["Contreras Marco","Sat, Sun"],["Benavides Robert","Wed, Sun"],["Urtado Ernest","Tues, Wed"],
-      ["Johnson Messiah","Tues, Thurs"],["Gilder Rufus II","Tues, Wed"],["Echendu Chimenierm","Wed, Thurs"],["Delgado Jose","Fri, Sat"]
+      ["Benavides Robert","Wed, Sun"],["Bookman Derrell","Thurs, Fri"],["Caceres Virula Victor","Mon, Tues"],["Carruthers Timothy","Fri, Sat"],
+      ["Contreras Marco","Sat, Sun"],["Delgado Jose","Sat, Sun"],["Gilder Rufus II","Wed, Thurs"],["Hosey Kevin","Fri, Sat"],
+      ["Johnson Clifton","Mon, Sun"],["Keme Aweri Jr.","Mon, Tues"],["Kennon James","Wed, Thurs"],["Lavergne Kevin","Mon, Sun"],
+      ["Mejia Aaron","Thurs, Fri"],["Perrault Jamarick","Mon, Tues"],["Tingle Jason","Sat, Sun"],["Upchurch Keith","Mon, Tues"],
+      ["Urtado Ernest","Tues, Wed"],["Hatton Nikolas","Wed, Thurs"],["Davis D'Ellis","Mon, Tues"]
     ]
   };
   function offDaySet(value){
@@ -6298,12 +6299,15 @@ tfoot .lph-target-pill.below-target{background:#fecaca;color:#7f1d1d}
       state.showInboundTrain=enabled;
       if(typeof saveState==="function")saveState();
     }
-    if(typeof renderAll==="function"){
-      renderAll();
-      return;
-    }
-    if(typeof renderGrid==="function")renderGrid();
-    applyInboundTrainVisibility();
+    var trackIdToggle=document.getElementById("hideTrackIdsToggle");
+    if(trackIdToggle)trackIdToggle.dispatchEvent(new Event("change",{bubbles:true}));
+    else if(typeof renderAll==="function")renderAll();
+    else if(typeof renderGrid==="function")renderGrid();
+    requestAnimationFrame(function(){
+      placeHideTrackIds();
+      applyInboundTrainVisibility();
+      requestAnimationFrame(applyInboundTrainVisibility);
+    });
   });
   placeHideTrackIds();
   if(showInboundTrainToggle.checked)applyInboundTrainVisibility();
@@ -7728,12 +7732,13 @@ document.addEventListener("DOMContentLoaded",function(){
     function withExcelInboundGoldHighlight(html) {
       if (!html || typeof html !== "string" || html.includes("excel-inbound-gold-highlight")) return html;
       const toggleMarkup = `
+            <button class="track-id-toggle inbound-gold-toggle inbound-glow-quick-toggle" id="toggleInboundBlockGlow" type="button" aria-pressed="false" title="Turn block glow on or off">Glow Off</button>
             <button class="track-id-toggle inbound-gold-toggle" id="openInboundGlowPanel" type="button" aria-pressed="false" title="Toggle block glow. Shift-click or right-click for color settings.">Block Glow Off</button>
             <button class="track-id-toggle assignment-label-toolbar-toggle" id="assignmentLabelToolbarToggle" type="button" aria-pressed="false" title="Toggle footage + IHOSA/MHOAS block labels">IHOSA / MHOAS Off</button>
             <aside class="inbound-glow-panel" id="inboundGlowPanel" hidden aria-label="Block glow controls">
               <header class="inbound-glow-head" id="inboundGlowDragHandle"><strong>Block Glow</strong><button id="closeInboundGlowPanel" type="button" aria-label="Close">&times;</button></header>
               <div class="inbound-glow-body">
-                <label class="inbound-glow-enable"><input id="highlightInboundBlocksToggle" type="checkbox"><span>Show glow on Table 3 inbounds</span></label>
+                <label class="inbound-glow-enable"><input id="highlightInboundBlocksToggle" type="checkbox"><span>Show glow on highlighted blocks</span></label>
                 <label class="inbound-glow-control"><span>Glow color</span><input id="inboundGlowColor" type="color" value="#ffd700"></label>
                 <label class="inbound-glow-control inbound-glow-range"><span>Glow brightness</span><input id="inboundGlowBrightness" type="range" min="25" max="175" step="5" value="100"><output id="inboundGlowBrightnessValue">100%</output></label>
                 <label class="inbound-glow-control"><span>Block color</span><input id="inboundBlockColor" type="color" value="#c2410c"></label>
@@ -7757,15 +7762,21 @@ document.addEventListener("DOMContentLoaded",function(){
       const patch = `
 <style id="excel-inbound-gold-highlight">
   .inbound-gold-toggle,.assignment-label-toolbar-toggle,#colorTabBtn{min-height:26px!important;border:1px solid #d4a017!important;border-radius:6px!important;background:#fff8d6!important;color:#755300!important;font-size:9px!important;font-weight:950!important;letter-spacing:.045em;text-transform:uppercase;cursor:pointer}.inbound-gold-toggle[aria-pressed="true"]{border-color:#f2c400!important;background:#7c5500!important;color:#fff!important;box-shadow:0 0 0 1px #ffd84a inset}.assignment-label-toolbar-toggle{border-color:#64748b!important;background:#eef2f7!important;color:#273449!important}.assignment-label-toolbar-toggle[aria-pressed="true"]{border-color:#34d399!important;background:#166534!important;color:#fff!important;box-shadow:0 0 0 1px #6ee7b7 inset}
+  .inbound-glow-quick-toggle[aria-pressed="true"]{background:#f2c400!important;color:#281c00!important;box-shadow:0 0 0 1px #8a6500,0 0 10px rgba(242,196,0,.45)!important}
   .inbound-glow-panel{position:fixed;top:68px;right:20px;z-index:1450;width:min(330px,calc(100vw - 24px));max-height:calc(100vh - 88px);overflow:hidden;border:1px solid #d4a017;border-radius:10px;background:#0b1424;color:#eef5ff;box-shadow:0 18px 48px rgba(2,6,23,.48),0 0 24px rgba(255,205,0,.14)}
   .inbound-glow-panel[hidden]{display:none!important}.inbound-glow-head{min-height:38px;display:flex;align-items:center;gap:8px;padding:7px 8px 7px 12px;background:linear-gradient(90deg,#7c5500,#151f31 70%);cursor:move;user-select:none}.inbound-glow-head strong{flex:1;font-size:11px;letter-spacing:.075em;text-transform:uppercase}.inbound-glow-head button{width:27px;height:27px;border:1px solid rgba(255,255,255,.3);border-radius:6px;background:#101a2c;color:#fff;font-size:18px;line-height:1;cursor:pointer}
   .inbound-glow-body{display:grid;gap:10px;max-height:calc(100vh - 126px);overflow:auto;padding:12px}.inbound-glow-enable,.inbound-glow-control{display:flex;align-items:center;gap:10px;min-height:32px;padding:7px 9px;border:1px solid #334764;border-radius:7px;background:#111d30;font-size:10px;font-weight:850}.inbound-glow-enable input{width:16px;height:16px;accent-color:#f2c400}.inbound-glow-control>span{flex:1}.inbound-glow-control input[type=color]{width:45px;height:27px;padding:2px;border:1px solid #62738c;border-radius:5px;background:#07101f;cursor:pointer}.inbound-glow-range{display:grid;grid-template-columns:88px 1fr 40px}.inbound-glow-range input{width:100%;accent-color:#f2c400}.inbound-glow-range output{text-align:right;color:#ffd84a;font-size:9px}.inbound-glow-reset{height:30px;border:1px solid #d4a017;border-radius:6px;background:#fff3c4;color:#674400;font-size:9px;font-weight:950;text-transform:uppercase;cursor:pointer}
   .assigned-glow-section{display:grid;gap:7px;padding:9px;border:1px solid #405574;border-radius:8px;background:#0c1728}.assigned-glow-section h4{margin:0;color:#dbeafe;font-size:9px;letter-spacing:.07em;text-transform:uppercase}
   #inboundTrainSource option.inbound-day-today{background:#14532d;color:#dcfce7}#inboundTrainSource option.inbound-day-tomorrow{background:#713f12;color:#fef3c7}#inboundTrainSource option.inbound-day-after{background:#1e3a8a;color:#dbeafe}#inboundTrainSource option.inbound-day-archived{background:#4c1d95;color:#f3e8ff}
   .block-context-menu .assignment-menu-action{width:100%;min-height:29px;padding:5px 9px;border:0;border-bottom:1px solid #d9e1eb;background:#fff;color:#172033;font-size:10px;font-weight:850;text-align:left;cursor:pointer}.block-context-menu .ihosa-assignment-action{color:#166534}.block-context-menu .mhoas-assignment-action{color:#3730a3}.block-context-menu .clear-assignment-action{color:#64748b}
-  body.highlight-inbound-blocks #blankYardGridTwo .cut-cell[data-shove-order]{position:relative;z-index:2;border-color:var(--inbound-glow-color,#ffd700)!important;background:var(--inbound-block-color,#c2410c)!important;filter:brightness(var(--inbound-glow-brightness,1));box-shadow:0 0 0 2px var(--inbound-glow-color,#ffd700),0 0 var(--inbound-glow-blur,12px) var(--inbound-glow-spread,4px) var(--inbound-glow-shadow,rgba(255,215,0,.9)),inset 0 0 6px var(--inbound-glow-shadow,rgba(255,215,0,.9))!important;animation:inboundGoldPulse 1.8s ease-in-out infinite alternate}
-  body.highlight-inbound-blocks .yard-grid .cut-cell[data-block-assignment="ihosa"]{position:relative;z-index:3;border-color:var(--ihosa-glow-color,#39ff88)!important;background:var(--ihosa-block-color,#166534)!important;box-shadow:0 0 0 2px var(--ihosa-glow-color,#39ff88),0 0 10px 3px var(--ihosa-glow-shadow,rgba(57,255,136,.78))!important}
-  body.highlight-inbound-blocks .yard-grid .cut-cell[data-block-assignment="mhoas"]{position:relative;z-index:3;border-color:var(--mhoas-glow-color,#60a5fa)!important;background:var(--mhoas-block-color,#4338ca)!important;box-shadow:0 0 0 2px var(--mhoas-glow-color,#60a5fa),0 0 10px 3px var(--mhoas-glow-shadow,rgba(96,165,250,.78))!important}
+  body.highlight-inbound-blocks #blankYardGridTwo .cut-cell.table-three-added-inbound{position:relative;z-index:2;border-color:var(--inbound-glow-color,#ffd700)!important;background:var(--inbound-block-color,#c2410c)!important;filter:brightness(var(--inbound-glow-brightness,1));box-shadow:0 0 0 2px var(--inbound-glow-color,#ffd700),0 0 var(--inbound-glow-blur,12px) var(--inbound-glow-spread,4px) var(--inbound-glow-shadow,rgba(255,215,0,.9)),inset 0 0 6px var(--inbound-glow-shadow,rgba(255,215,0,.9))!important;animation:inboundGoldPulse 1.8s ease-in-out infinite alternate}
+  .yard-grid .cut-cell[data-block-assignment="ihosa"]{position:relative;z-index:3;border-color:var(--ihosa-glow-color,#39ff88)!important;background:var(--ihosa-block-color,#166534)!important}
+  .yard-grid .cut-cell[data-block-assignment="mhoas"]{position:relative;z-index:3;border-color:var(--mhoas-glow-color,#60a5fa)!important;background:var(--mhoas-block-color,#4338ca)!important}
+  body.block-glow-enabled .yard-grid .cut-cell[data-block-assignment="ihosa"]{box-shadow:0 0 0 2px var(--ihosa-glow-color,#39ff88),0 0 10px 3px var(--ihosa-glow-shadow,rgba(57,255,136,.78))!important}
+  body.block-glow-enabled .yard-grid .cut-cell[data-block-assignment="mhoas"]{box-shadow:0 0 0 2px var(--mhoas-glow-color,#60a5fa),0 0 10px 3px var(--mhoas-glow-shadow,rgba(96,165,250,.78))!important}
+  body:not(.block-glow-enabled) #yardGrid .cut-cell.block-selected,
+  body:not(.block-glow-enabled) #blankYardGrid .cut-cell.block-selected,
+  body:not(.block-glow-enabled) #blankYardGridTwo .cut-cell.block-selected{box-shadow:none!important;filter:none!important}
   @keyframes inboundGoldPulse{from{opacity:.92}to{opacity:1}}
   @media(prefers-reduced-motion:reduce){body.highlight-inbound-blocks #blankYardGridTwo .cut-cell[data-shove-order]{animation:none}}
 </style>
@@ -7775,6 +7786,7 @@ document.addEventListener("DOMContentLoaded",function(){
   var settingsKey="settegast-excel-inbound-glow-settings-v1";
   var positionKey="settegast-excel-inbound-glow-position-v1";
   var toggle=document.getElementById("highlightInboundBlocksToggle");
+  var quickToggle=document.getElementById("toggleInboundBlockGlow");
   var panel=document.getElementById("inboundGlowPanel");
   var glowColor=document.getElementById("inboundGlowColor");
   var brightness=document.getElementById("inboundGlowBrightness");
@@ -7793,15 +7805,16 @@ document.addEventListener("DOMContentLoaded",function(){
   function colorShadow(hex,alpha){return "rgba("+hexRgb(hex).join(",")+","+alpha+")"}
   function currentSettings(){return {glow:glowColor.value,brightness:Number(brightness.value)||100,block:blockColor.value,ihosaBlock:ihosaBlockColor.value,ihosaGlow:ihosaGlowColor.value,mhoasBlock:mhoasBlockColor.value,mhoasGlow:mhoasGlowColor.value,assignmentLabels:!!(assignmentLabelToggle&&assignmentLabelToggle.checked)}}
   function saveSettings(){try{localStorage.setItem(settingsKey,JSON.stringify(currentSettings()))}catch(_){}}
-  function updateToolbarButtons(){if(blockGlowToolbarToggle){blockGlowToolbarToggle.setAttribute("aria-pressed",toggle.checked?"true":"false");blockGlowToolbarToggle.textContent=toggle.checked?"Block Glow On":"Block Glow Off"}if(assignmentLabelToolbarToggle){var labelsOn=!!(assignmentLabelToggle&&assignmentLabelToggle.checked);assignmentLabelToolbarToggle.setAttribute("aria-pressed",labelsOn?"true":"false");assignmentLabelToolbarToggle.textContent=labelsOn?"IHOSA / MHOAS On":"IHOSA / MHOAS Off"}}
+  function updateToolbarButtons(){if(quickToggle){quickToggle.setAttribute("aria-pressed",toggle.checked?"true":"false");quickToggle.textContent=toggle.checked?"Glow On":"Glow Off"}if(blockGlowToolbarToggle){blockGlowToolbarToggle.setAttribute("aria-pressed",toggle.checked?"true":"false");blockGlowToolbarToggle.textContent=toggle.checked?"Block Glow On":"Block Glow Off"}if(assignmentLabelToolbarToggle){var labelsOn=!!(assignmentLabelToggle&&assignmentLabelToggle.checked);assignmentLabelToolbarToggle.setAttribute("aria-pressed",labelsOn?"true":"false");assignmentLabelToolbarToggle.textContent=labelsOn?"IHOSA / MHOAS On":"IHOSA / MHOAS Off"}}
   function applySettings(settings,save){settings=settings||{};glowColor.value=settings.glow||"#ffd700";brightness.value=String(Math.max(25,Math.min(175,Number(settings.brightness)||100)));blockColor.value=settings.block||"#c2410c";ihosaBlockColor.value=settings.ihosaBlock||"#166534";ihosaGlowColor.value=settings.ihosaGlow||"#39ff88";mhoasBlockColor.value=settings.mhoasBlock||"#4338ca";mhoasGlowColor.value=settings.mhoasGlow||"#60a5fa";if(assignmentLabelToggle)assignmentLabelToggle.checked=settings.assignmentLabels===true;var strength=Number(brightness.value)/100;var rgb=hexRgb(glowColor.value);document.body.style.setProperty("--inbound-glow-color",glowColor.value);document.body.style.setProperty("--inbound-block-color",blockColor.value);document.body.style.setProperty("--inbound-glow-brightness",String(.72+strength*.28));document.body.style.setProperty("--inbound-glow-blur",String(Math.round(5+strength*10))+"px");document.body.style.setProperty("--inbound-glow-spread",String(Math.round(1+strength*4))+"px");document.body.style.setProperty("--inbound-glow-shadow","rgba("+rgb.join(",")+","+Math.min(.98,.35+strength*.36)+")");document.body.style.setProperty("--ihosa-block-color",ihosaBlockColor.value);document.body.style.setProperty("--ihosa-glow-color",ihosaGlowColor.value);document.body.style.setProperty("--ihosa-glow-shadow",colorShadow(ihosaGlowColor.value,.78));document.body.style.setProperty("--mhoas-block-color",mhoasBlockColor.value);document.body.style.setProperty("--mhoas-glow-color",mhoasGlowColor.value);document.body.style.setProperty("--mhoas-glow-shadow",colorShadow(mhoasGlowColor.value,.78));brightnessValue.value=Math.round(strength*100)+"%";brightnessValue.textContent=brightnessValue.value;updateToolbarButtons();if(save)saveSettings()}
-  function apply(enabled){enabled=!!enabled;toggle.checked=enabled;document.body.classList.toggle("highlight-inbound-blocks",enabled);updateToolbarButtons();try{localStorage.setItem(key,enabled?"1":"0")}catch(_){}}
+  function apply(enabled){enabled=!!enabled;toggle.checked=enabled;document.body.classList.toggle("highlight-inbound-blocks",enabled);document.body.classList.toggle("block-glow-enabled",enabled);updateToolbarButtons();try{localStorage.setItem(key,enabled?"1":"0")}catch(_){}}
   var enabled=false;try{enabled=localStorage.getItem(key)==="1"}catch(_){}
   apply(enabled);
   var savedSettings=null;try{savedSettings=JSON.parse(localStorage.getItem(settingsKey)||"null")}catch(_){}applySettings(savedSettings,false);
   toggle.addEventListener("change",function(){apply(toggle.checked)});
   if(assignmentLabelToggle)assignmentLabelToggle.addEventListener("change",function(){updateToolbarButtons();saveSettings();applyAssignments()});
   if(assignmentLabelToolbarToggle)assignmentLabelToolbarToggle.addEventListener("click",function(){assignmentLabelToggle.checked=!assignmentLabelToggle.checked;updateToolbarButtons();saveSettings();applyAssignments()});
+  if(quickToggle)quickToggle.addEventListener("click",function(){apply(!toggle.checked)});
   [glowColor,brightness,blockColor,ihosaBlockColor,ihosaGlowColor,mhoasBlockColor,mhoasGlowColor].forEach(function(input){input.addEventListener("input",function(){applySettings(currentSettings(),true)})});
   document.getElementById("resetInboundGlow").addEventListener("click",function(){applySettings({glow:"#ffd700",brightness:100,block:"#c2410c",ihosaBlock:"#166534",ihosaGlow:"#39ff88",mhoasBlock:"#4338ca",mhoasGlow:"#60a5fa",assignmentLabels:!!(assignmentLabelToggle&&assignmentLabelToggle.checked)},true)});
   blockGlowToolbarToggle.addEventListener("click",function(event){if(event.shiftKey){panel.hidden=false;return}apply(!document.body.classList.contains("highlight-inbound-blocks"))});
@@ -9539,6 +9552,13 @@ document.addEventListener('click',function(event){
       return restored;
     }
 
+    function withMatrixCraneScale85(html) {
+      if (!html || typeof html !== "string" || html.includes("matrix-crane-scale-85-v1")) return html;
+      return html.replace(
+        '  const bottom = p.y + 27;\n  ctx.save();\n\n  ctx.fillStyle = "rgba(0, 0, 0, .28)";',
+        '  const bottom = p.y + 27;\n  ctx.save();\n  /* matrix-crane-scale-85-v1 */\n  ctx.translate(p.x, p.y);\n  ctx.scale(.85, .85);\n  ctx.translate(-p.x, -p.y);\n\n  ctx.fillStyle = "rgba(0, 0, 0, .28)";'
+      );
+    }
     function withMatrixYardCheckedNineDays(html) {
       if (!html || typeof html !== "string" || html.includes("yardHighlightChecked9Days")) return html;
       return html
@@ -9565,6 +9585,13 @@ document.addEventListener('click',function(event){
         );
     }
 
+    function withMatrixRailContainerPinkFamilies(html) {
+      if (!html || typeof html !== "string" || html.includes("matrix-rail-container-pink-families-v1")) return html;
+      return html.replace(
+        'function drawRailContainer(width, y, color, label, brandSeed = 0, outboundLoad = false, blockedTextOnly = false) {\n  const height = 21;',
+        '/* matrix-rail-container-pink-families-v1 */\nfunction matrixRailContainerFamilyColor(label, fallback) {\n  const value = String(label || "").toUpperCase().replace(/[^A-Z0-9]/g, "");\n  if (value.startsWith("ZLBHO")) return "#f472b6";\n  if (value.startsWith("ZPBHO")) return "#db2777";\n  if (value.startsWith("ILBHOX")) return "#f9a8d4";\n  return fallback;\n}\nfunction drawRailContainer(width, y, color, label, brandSeed = 0, outboundLoad = false, blockedTextOnly = false) {\n  color = matrixRailContainerFamilyColor(label, color);\n  const height = 21;'
+      );
+    }
     function withMatrixDirtLotAsChassisLot(html) {
       if (!html || typeof html !== "string" || html.includes("matrix-dirt-lot-chassis-v1")) return html;
       return html
@@ -11154,7 +11181,7 @@ const net=getForecastRequestOnHandCount(pool,size)+drayIn-drayOut-getForecastReq
   }
   .yard-view-close-primary:hover,
   .yard-view-close-primary:focus-visible { background:#dc2626; border-color:#fff; outline:2px solid #fff; outline-offset:1px; }
-  .yard-view-display-modes { display:flex; align-items:center; gap:4px; margin-left:auto; }
+  .yard-view-display-modes { display:flex; align-items:center; gap:4px; margin-left:auto; margin-right:36px; }
   .yard-view-display-mode {
     min-height:25px; padding:3px 9px; border:1px solid #53657c; border-radius:5px;
     background:#172235; color:#cbd5e1; font:800 10px/1 "Aptos Narrow",Arial,sans-serif;
@@ -11797,6 +11824,63 @@ document.getElementById("openYardCheck")?.addEventListener("click", function(){
       return bodyClose >= 0 ? updated.slice(0, bodyClose) + patch + "\n" + updated.slice(bodyClose) : updated + patch;
     }
 
+    function withChassisHgiuDcliAlias(html) {
+      if (!html || typeof html !== "string" || html.includes("chassis-hgiu-dcli-alias-v1")) return html;
+      const functionAnchor = "function normalizeForecastPoolLabel(pool){";
+      const aliasAnchor = '  if(p==="dclk" || p==="dcki")return "dcli";';
+      if (!html.includes(functionAnchor) || !html.includes(aliasAnchor)) return html;
+      html = html.replace(functionAnchor, "/* chassis-hgiu-dcli-alias-v1 */\n" + functionAnchor);
+      return html.replace(aliasAnchor, aliasAnchor + '\n  if(p==="hgiu")return "dcli";');
+    }
+    function withChassisDayTrainOrdering(html) {
+      if (!html || typeof html !== "string" || html.includes("chassis-day-train-order-v1")) return html;
+      const renderAnchor = "function renderForecastStatusCards(visibleUnitsInput){";
+      const helpers = [
+        "/* chassis-day-train-order-v1 */",
+        'const FORECAST_DAY_TRAIN_ORDER_KEY="conglobal-forecast-day-train-order-v1";',
+        'function readForecastDayTrainOrder(){try{const parsed=JSON.parse(localStorage.getItem(FORECAST_DAY_TRAIN_ORDER_KEY)||"{}");return parsed&&typeof parsed==="object"&&!Array.isArray(parsed)?parsed:{}}catch(_){return {}}}',
+        'function writeForecastDayTrainOrder(order){try{localStorage.setItem(FORECAST_DAY_TRAIN_ORDER_KEY,JSON.stringify(order||{}))}catch(_){}}',
+        'function applyForecastDayTrainOrder(day,groups){const saved=readForecastDayTrainOrder();const order=Array.isArray(saved[day])?saved[day]:[];if(!order.length)return groups;const rank=new Map(order.map((train,index)=>[String(train),index]));return groups.map((group,index)=>({group,index})).sort((a,b)=>{const ar=rank.has(String(a.group.train))?rank.get(String(a.group.train)):Number.MAX_SAFE_INTEGER;const br=rank.has(String(b.group.train))?rank.get(String(b.group.train)):Number.MAX_SAFE_INTEGER;return ar-br||a.index-b.index}).map(item=>item.group)}',
+        'function moveForecastTrainWithinDay(train,day,direction){const groups=buildForecastTrainSummaryForUnits(getVisibleForecastUnits()).filter(group=>String(group.day)===String(day));const ordered=applyForecastDayTrainOrder(day,groups);const names=ordered.map(group=>String(group.train));const index=names.indexOf(String(train));const next=index+(direction<0?-1:1);if(index<0||next<0||next>=names.length)return;[names[index],names[next]]=[names[next],names[index]];const saved=readForecastDayTrainOrder();saved[day]=names;writeForecastDayTrainOrder(saved);renderForecastStatusCards();saveForecastState()}',
+        ""
+      ].join("\n");
+      if (!html.includes(renderAnchor)) return html;
+      html = html.replace(renderAnchor, helpers + renderAnchor);
+      html = html.replace('    const dayGroups=byDay[day];', '    const dayGroups=applyForecastDayTrainOrder(day,byDay[day]);');
+      const totalAnchor = '              <div class="forecast-compact-total"><span>Total</span><strong>${g.total}</strong></div>';
+      const orderControls = '              <div class="forecast-train-order-controls" aria-label="Adjust ${escapeHtml(g.train)} order for this day">\n                <button type="button" data-forecast-order-up="${escapeHtml(g.train)}" data-forecast-order-day="${escapeHtml(g.day)}" title="Move up for this day" aria-label="Move ${escapeHtml(g.train)} up">&#9650;</button>\n                <button type="button" data-forecast-order-down="${escapeHtml(g.train)}" data-forecast-order-day="${escapeHtml(g.day)}" title="Move down for this day" aria-label="Move ${escapeHtml(g.train)} down">&#9660;</button>\n              </div>\n' + totalAnchor;
+      html = html.replace(totalAnchor, orderControls);
+      const dragAnchor = '  box.querySelectorAll("[data-forecast-drag-train]").forEach(card=>{';
+      const handlers = '  box.querySelectorAll("[data-forecast-order-up],[data-forecast-order-down]").forEach(button=>{\n    button.onclick=event=>{event.preventDefault();event.stopPropagation();moveForecastTrainWithinDay(button.dataset.forecastOrderUp||button.dataset.forecastOrderDown,button.dataset.forecastOrderDay,button.hasAttribute("data-forecast-order-up")?-1:1)};\n  });\n';
+      html = html.replace(dragAnchor, handlers + dragAnchor);
+      const css = `<style id="chassis-day-train-order-controls">
+#forecastStatusCards .forecast-train-order-controls{display:inline-flex;flex:0 0 auto;gap:3px;margin-left:auto}
+#forecastStatusCards .forecast-train-order-controls button{width:24px;height:24px;padding:0;border:1px solid #526580;border-radius:6px;background:#111f34;color:#dbeafe;font:900 10px/1 Arial,sans-serif;cursor:pointer}
+#forecastStatusCards .forecast-train-order-controls button:hover,#forecastStatusCards .forecast-train-order-controls button:focus-visible{border-color:#fbbf24;color:#fbbf24;outline:none}
+</style>`;
+      return html.replace("</head>", css + "</head>");
+    }
+    function withChassisSimplifiedBottomControls(html) {
+      if (!html || typeof html !== "string" || html.includes("chassis-simplified-bottom-controls-v1")) return html;
+      const marker = '<!-- chassis-simplified-bottom-controls-v1 -->';
+      const textControl = `      <div class="view-slider-card">
+        <label for="textSizeSlider"><span>Table Text</span><strong id="textSizeValue">100%</strong></label>
+        <input id="textSizeSlider" type="range" min="90" max="115" step="5" value="100">
+      </div>
+`;
+      const heightControl = `      <div class="view-slider-card">
+        <label for="forecastStatusHeightSlider"><span>Status Card Height</span><strong id="forecastStatusHeightValue">70%</strong></label>
+        <input id="forecastStatusHeightSlider" type="range" min="30" max="140" step="5" value="70">
+      </div>
+`;
+      html = html.replace("<small>Adjust page width and text size</small>", "<small>Adjust page width</small>" + marker);
+      html = html.replace(textControl, "").replace(heightControl, "");
+      const style = `<style id="chassis-page-fill-right-v1">
+.forecast-bottom-controls{grid-template-columns:minmax(160px,1fr) minmax(190px,245px)!important}
+.forecast-bottom-controls .view-slider-card{grid-column:2}
+</style>`;
+      return html.replace("</head>", style + "</head>");
+    }
     function withChassisGreenExcelHero(html) {
       if (!html || typeof html !== "string" || html.includes('id="chassis-green-excel-hero"')) return html;
       const style = `<style id="chassis-green-excel-hero">
@@ -12908,6 +12992,171 @@ body.forecast-excel-view-open{padding-right:320px!important;}
       return html.replace("</head>", style + "\n</head>");
     }
 
+    function withChassisTracklistReplacementImport(html) {
+      if (!html || typeof html !== "string" || html.includes("forecast-tracklist-replace-import-v1")) return html;
+      const target = "  forecastImportedUnits=[...forecastImportedUnits,...units];";
+      const replacement = `  /* forecast-tracklist-replace-import-v1 */
+  const previousTracklistCount=forecastImportedUnits.filter(unit=>/^Tracklist:/i.test(String(unit?.sourceFile||"").trim())).length;
+  const latestTracklistUnits=new Map();
+  units.forEach((unit,index)=>{
+    const unitKey=String(unit?.unitId||"").replace(/[^A-Z0-9]/gi,"").toUpperCase();
+    latestTracklistUnits.set(unitKey||\`tracklist-row-\${index}\`,unit);
+  });
+  const replacementUnits=[...latestTracklistUnits.values()];
+  forecastImportedUnits=[
+    ...forecastImportedUnits.filter(unit=>!/^Tracklist:/i.test(String(unit?.sourceFile||"").trim())),
+    ...replacementUnits
+  ];`;
+      if (!html.includes(target)) return html;
+      return html.replace(target, replacement);
+    }
+    function withChassisInboundDuplicateAction(html) {
+      if (!html || typeof html !== "string" || html.includes("chassis-inbound-duplicate-action-v1")) return html;
+      const functionAnchor = "function updateForecastTrainDay(train,oldDay,dateValue){";
+      const duplicateFunction = `/* chassis-inbound-duplicate-action-v1 */
+function duplicateForecastTrainDay(train,day){
+  train=String(train||"").trim();
+  day=String(day||"");
+  if(!train||!day)return;
+  const duplicateTrain=\`\${train} 2\`;
+  const alreadyExists=forecastImportedUnits.some(unit=>getForecastTrainGroupName(unit)===duplicateTrain && getForecastUnitDay(unit)===day);
+  if(alreadyExists){
+    if(typeof showArchiveToast==="function")showArchiveToast(\`\${duplicateTrain} already exists.\`);
+    return;
+  }
+  const copiedUnits=forecastImportedUnits
+    .filter(unit=>getForecastTrainGroupName(unit)===train && getForecastUnitDay(unit)===day)
+    .map(unit=>({...unit,trainId:duplicateTrain}));
+  if(!copiedUnits.length)return;
+  forecastImportedUnits=[...forecastImportedUnits,...copiedUnits];
+  saveForecastState();
+  renderForecastImportedUnits();
+  if(typeof renderForecastExcelView==="function")renderForecastExcelView();
+  if(typeof showArchiveToast==="function")showArchiveToast(\`\${duplicateTrain} created with \${copiedUnits.length} units.\`);
+}
+`;
+      if (html.includes(functionAnchor)) html = html.replace(functionAnchor, duplicateFunction + functionAnchor);
+
+      const cancelButton = '                    <button type="button" data-forecast-train-edit-cancel>Cancel</button>';
+      const duplicateButton = cancelButton + '\n                    <button type="button" data-forecast-train-duplicate="${escapeHtml(g.train)}" data-forecast-edit-day="${escapeHtml(g.day)}">Duplicate</button>';
+      if (html.includes(cancelButton)) html = html.replace(cancelButton, duplicateButton);
+
+      const handlerAnchor = '  box.querySelectorAll("[data-forecast-train-edit-hide]").forEach(btn=>{';
+      const duplicateHandler = `  box.querySelectorAll("[data-forecast-train-duplicate]").forEach(btn=>{
+    btn.onclick=event=>{
+      event.preventDefault();
+      event.stopPropagation();
+      duplicateForecastTrainDay(btn.dataset.forecastTrainDuplicate,btn.dataset.forecastEditDay);
+    };
+  });
+`;
+      if (html.includes(handlerAnchor)) html = html.replace(handlerAnchor, duplicateHandler + handlerAnchor);
+
+      const style = `<style id="chassis-inbound-duplicate-action-v1">
+#forecastStatusCards .forecast-train-name-line .forecast-inline-train-editor:not([hidden]){
+  grid-template-columns:minmax(80px,1fr) 46px 56px 72px 34px!important;
+}
+@media(max-width:520px){
+  #forecastStatusCards .forecast-train-name-line .forecast-inline-train-editor:not([hidden]){
+    grid-template-columns:minmax(0,1fr) 46px 56px 72px 34px!important;
+  }
+}
+</style>`;
+      return html.replace("</head>", style + "\n</head>");
+    }
+    function withSharedRosterBaseline20260829(html) {
+      if (!html || typeof html !== "string" || html.includes("shared-roster-baseline-2026-08-29-v1")) return html;
+      const patch = `<meta id="shared-roster-baseline-2026-08-29-v1"><scr${""}ipt>
+(() => {
+  const marker="conglobal-roster-baseline-2026-08-29-v1";
+  if(localStorage.getItem(marker)==="1")return;
+  const row=(name,off,role="")=>({name,role,days:["Mon","Tues","Wed","Thurs","Fri","Sat","Sun"].map(day=>off.includes(day)?"O":"W")});
+  const first=[
+    row("Branford Alton",["Mon","Tues"]),row("Brown James",["Thurs","Fri"],"crane"),row("Citizen Dante",["Thurs","Fri"]),row("Davis Ellis",["Wed","Thurs"]),
+    row("Gardner Dorrean",["Tues","Wed"]),row("Hatton Isaiah",["Tues","Wed"]),row("Herrera Jose",["Sat","Sun"],"side"),row("Hickman Makia",["Mon","Sun"],"everything"),
+    row("Jones Brian",["Tues","Wed"]),row("Marcus Clay",["Mon","Sun"]),row("McDaniel Charles",["Thurs","Fri"],"everything"),row("Nava Ramon",["Sat","Sun"]),
+    row("Player Keyston",["Mon","Sun"],"everything"),row("Romero Nelson",["Tues","Wed"]),row("Shelby Jared",["Mon","Sun"]),row("Thomas Henry",["Sat","Sun"],"crane"),
+    row("Tran Tyler",["Thurs","Fri"]),row("Wanza Myles",["Mon","Tues"]),row("Whyte Leslie",["Mon","Sun"])
+  ];
+  const second=[
+    row("Benavides Robert",["Wed","Sun"],"crane"),row("Bookman Derrell",["Thurs","Fri"]),row("Caceres Virula Victor",["Mon","Tues"]),row("Carruthers Timothy",["Fri","Sat"],"side"),
+    row("Contreras Marco",["Sat","Sun"]),row("Delgado Jose",["Sat","Sun"],"everything"),row("Gilder Rufus II",["Wed","Thurs"]),row("Hosey Kevin",["Fri","Sat"],"crane"),
+    row("Johnson Clifton",["Mon","Sun"]),row("Keme Aweri Jr.",["Mon","Tues"]),row("Kennon James",["Wed","Thurs"]),row("Lavergne Kevin",["Mon","Sun"]),
+    row("Mejia Aaron",["Thurs","Fri"]),row("Perrault Jamarick",["Mon","Tues"]),row("Tingle Jason",["Sat","Sun"],"everything"),row("Upchurch Keith",["Mon","Tues"]),
+    row("Urtado Ernest",["Tues","Wed"]),row("Hatton Nikolas",["Wed","Thurs"]),row("Davis D'Ellis",["Mon","Tues"])
+  ];
+  let state={};
+  try{state=JSON.parse(localStorage.getItem("conglobal-roster-state-v1")||"{}")||{};}catch(_){state={};}
+  state.first=first;state.second=second;
+  localStorage.setItem("conglobal-roster-state-v1",JSON.stringify(state));
+  try{
+    const additions=JSON.parse(localStorage.getItem("conglobal-roster-additions-v1")||"[]");
+    if(Array.isArray(additions))localStorage.setItem("conglobal-roster-additions-v1",JSON.stringify(additions.filter(item=>!["first","second"].includes(item?.shift||"first"))));
+  }catch(_){}
+  localStorage.removeItem("conglobal-current-day-roster-snapshot-v1");
+  localStorage.setItem(marker,"1");
+})();
+</scr${""}ipt>`;
+      return html.replace("</head>", patch + "</head>");
+    }
+    function withExcelInboundDateCycling(html) {
+      if (!html || typeof html !== "string" || html.includes("excel-inbound-date-cycling-v1")) return html;
+      const normalizeAnchor = "  function normalizeInboundPlans(plans) {";
+      const helpers = `  /* excel-inbound-date-cycling-v1 */
+  function inboundEtaCalendarDate(value) {
+    const match = String(value || "").match(/(?:^|\\s)(\\d{1,2})\\/(\\d{1,2})\\/(\\d{2,4})(?:\\s|$)/);
+    if (!match) return null;
+    const month = Number(match[1]);
+    const day = Number(match[2]);
+    let year = Number(match[3]);
+    if (year < 100) year += 2000;
+    const parsed = new Date(year, month - 1, day);
+    if (parsed.getFullYear() !== year || parsed.getMonth() !== month - 1 || parsed.getDate() !== day) return null;
+    return parsed;
+  }
+  function inboundDayForEta(eta, fallbackDay = "TODAY", now = new Date()) {
+    const arrival = inboundEtaCalendarDate(eta);
+    if (!arrival) return fallbackDay;
+    const arrivalUtc = Date.UTC(arrival.getFullYear(), arrival.getMonth(), arrival.getDate());
+    const todayUtc = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+    const dayDifference = Math.round((arrivalUtc - todayUtc) / 86400000);
+    if (dayDifference === 0) return "TODAY";
+    if (dayDifference === 1) return "TOMORROW";
+    if (dayDifference === 2) return "DAY AFTER";
+    return "OTHER";
+  }
+  function inboundDayHeading(day) {
+    const key = String(day || "").toUpperCase();
+    const offset = {TODAY:0, TOMORROW:1, "DAY AFTER":2}[key];
+    if (offset === undefined) return key || "OTHER";
+    const date = new Date();
+    date.setHours(12, 0, 0, 0);
+    date.setDate(date.getDate() + offset);
+    const label = key === "DAY AFTER" ? "2 DAYS OUT" : key;
+    return \`\${label} · \${date.toLocaleDateString(undefined, {month:"numeric", day:"numeric"})}\`;
+  }
+  let inboundDayRolloverTimer = 0;
+  function scheduleInboundDayRollover() {
+    clearTimeout(inboundDayRolloverTimer);
+    const now = new Date();
+    const nextDay = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 1, 0);
+    inboundDayRolloverTimer = setTimeout(() => {
+      renderAll();
+    }, Math.max(1000, nextDay.getTime() - now.getTime()));
+  }
+`;
+      if (!html.includes(normalizeAnchor)) return html;
+      html = html.replace(normalizeAnchor, helpers + normalizeAnchor);
+      const savedDay = 'day: validDays.has(String(plan && plan.day || "").toUpperCase()) ? String(plan.day).toUpperCase() : "TODAY",';
+      const cycledDay = 'day: inboundDayForEta(plan && plan.eta, validDays.has(String(plan && plan.day || "").toUpperCase()) ? String(plan.day).toUpperCase() : "TODAY"),';
+      html = html.replace(savedDay, cycledDay);
+      const savedColor = 'color: validColors.has(String(plan && plan.color || "")) ? String(plan.color) : "green",';
+      const cycledColor = 'color: inboundColorForDay(inboundDayForEta(plan && plan.eta, validDays.has(String(plan && plan.day || "").toUpperCase()) ? String(plan.day).toUpperCase() : "TODAY")),';
+      html = html.replace(savedColor, cycledColor);
+      html = html.replace('const label = day === "DAY AFTER" ? "2 DAYS OUT" : day;', 'const label = inboundDayHeading(day);');
+      html = html.replace('    updateCurrentWorkForecast();\n    saveState();', '    updateCurrentWorkForecast();\n    scheduleInboundDayRollover();\n    saveState();');
+      return html;
+    }
     function withBillingExportDropdownV1(html) {
       if (!html || typeof html !== "string" || html.includes("billing-export-dropdown-v1")) return html;
       const injection = `<meta id="billing-export-dropdown-v1"><scr${""}ipt>
@@ -13581,10 +13830,43 @@ body.forecast-excel-view-open{padding-right:320px!important;}
       return next.replace('</head>', '<meta ' + marker + ' content="1"></head>');
     }
 
+    function withExcelRuleBorderTextColors(html) {
+      const marker = 'data-excel-rule-border-text-colors-v1';
+      if (!html || html.includes(marker)) return html;
+      const patch = `
+<style ${marker}>
+  #colorRuleRows .color-rule-row{grid-template-columns:126px minmax(160px,1fr) 94px 94px 30px!important}
+  .color-rule-extra{display:grid;grid-template-columns:16px 1fr;align-items:center;gap:4px;min-height:29px;padding:3px 5px;border:1px solid #c4cfdd;border-radius:6px;background:#fff;color:#526174;font-size:8px;font-weight:900;letter-spacing:.035em;text-transform:uppercase}
+  .color-rule-extra input[type=checkbox]{width:14px;height:14px;margin:0;accent-color:#0f766e}.color-rule-extra input[type=color]{width:100%;height:22px;padding:1px;border:0;background:transparent;cursor:pointer}
+  .rule-custom-text,.rule-custom-text *{color:var(--rule-text-color)!important}
+  .rule-custom-border::before{content:"";position:absolute;inset:0;border:2px solid var(--rule-border-color);pointer-events:none;z-index:8}
+  @media(max-width:620px){#colorRuleRows .color-rule-row{grid-template-columns:112px minmax(0,1fr) 78px 78px 28px!important}}
+</style>
+<scr${""}ipt>
+(function(){
+  var key="settegast-excel-color-rule-extras-v1",extras=[];
+  try{extras=JSON.parse(localStorage.getItem(key)||"[]");if(!Array.isArray(extras))extras=[]}catch(_){extras=[]}
+  function save(){try{localStorage.setItem(key,JSON.stringify(extras))}catch(_){}}
+  function termsForRules(){try{if(typeof state!=="undefined"&&state&&Array.isArray(state.colorRules))return state.colorRules}catch(_){}return []}
+  function matches(rule,text){var upper=String(text||"").trim().toUpperCase();return String(rule&&rule.terms||"").split(",").some(function(term){var token=term.trim().toUpperCase();if(!token)return false;if(/^[A-Z0-9]{1,4}$/.test(token))return (" "+upper.replace(/[^A-Z0-9]+/g," ")+" ").indexOf(" "+token+" ")>=0;return upper.indexOf(token)>=0})}
+  function ensureControls(){var host=document.getElementById("colorRuleRows");if(!host)return;host.querySelectorAll(".color-rule-row").forEach(function(row,index){if(row.querySelector(".color-rule-extra"))return;var remove=row.querySelector(".color-rule-remove");if(!remove)return;var item=extras[index]||{};var border=document.createElement("label");border.className="color-rule-extra";border.innerHTML='<input type="checkbox" data-rule-extra="borderEnabled" '+(item.borderEnabled?'checked':'')+' aria-label="Use border color"><input type="color" data-rule-extra="borderColor" value="'+(item.borderColor||'#111827')+'" title="Border color" aria-label="Border color">';var text=document.createElement("label");text.className="color-rule-extra";text.innerHTML='<input type="checkbox" data-rule-extra="textEnabled" '+(item.textEnabled?'checked':'')+' aria-label="Use text color"><input type="color" data-rule-extra="textColor" value="'+(item.textColor||'#ffffff')+'" title="Text color" aria-label="Text color">';row.insertBefore(border,remove);row.insertBefore(text,remove)})}
+  function apply(){var rules=termsForRules();document.querySelectorAll(".cut-cell:not(.empty)").forEach(function(cell){cell.classList.remove("rule-custom-text","rule-custom-border");cell.style.removeProperty("--rule-text-color");cell.style.removeProperty("--rule-border-color");var index=rules.findIndex(function(rule){return matches(rule,cell.title||cell.textContent)});if(index<0)return;var item=extras[index]||{};if(item.borderEnabled){cell.style.setProperty("--rule-border-color",item.borderColor||"#111827");cell.classList.add("rule-custom-border")}if(item.textEnabled){cell.style.setProperty("--rule-text-color",item.textColor||"#ffffff");cell.classList.add("rule-custom-text")}})}
+  var queued=false;function refresh(){if(queued)return;queued=true;requestAnimationFrame(function(){queued=false;ensureControls();apply()})}
+  document.addEventListener("input",function(event){var input=event.target.closest&&event.target.closest("[data-rule-extra]");if(!input)return;var row=input.closest(".color-rule-row"),index=Number(row&&row.dataset.ruleIndex);if(!Number.isInteger(index))return;extras[index]=extras[index]||{};extras[index][input.dataset.ruleExtra]=input.type==="checkbox"?input.checked:input.value;save();apply()});
+  document.addEventListener("click",function(event){var remove=event.target.closest&&event.target.closest("[data-color-rule-remove]");if(remove){var row=remove.closest(".color-rule-row"),list=row&&row.parentElement,index=list?Array.prototype.indexOf.call(list.querySelectorAll(".color-rule-row"),row):-1;if(index>=0)extras.splice(index,1);save()}if(event.target.closest&&event.target.closest("#resetColorRulesBtn")){extras=[];save()}},true);
+  document.addEventListener("change",function(event){if(event.target.closest&&event.target.closest("[data-color-rule], [data-color-choice], [data-color-rule-remove]"))setTimeout(refresh,0)});
+  new MutationObserver(refresh).observe(document.body,{childList:true,subtree:true});refresh();
+})();
+</scr${""}ipt>`;
+      return html.replace('</body>', patch + '</body>');
+    }
+
     function bridgedHtmlForPage(id) {
       if (!bridgedPageHtml.has(id)) {
         let pageHtml = pages[id].html;
-        if (id === "matrix" || id === "matrixWide") pageHtml = withMatrixDirtLotAsChassisLot(withMatrixYardCheckedNineDays(pageHtml));
+        if (["amReport", "timeMd", "roster", "timeOff"].includes(id)) pageHtml = withSharedRosterBaseline20260829(pageHtml);
+        if (id === "matrix" || id === "matrixWide") pageHtml = withMatrixRailContainerPinkFamilies(withMatrixDirtLotAsChassisLot(withMatrixYardCheckedNineDays(pageHtml)));
+        if (id === "matrix") pageHtml = withMatrixCraneScale85(pageHtml);
         if (id === "amReport") {
           pageHtml = withAmReportPerformance(pageHtml);
           pageHtml = withAmReportWebsterWeatherSource(pageHtml);
@@ -13636,7 +13918,9 @@ body.forecast-excel-view-open{padding-right:320px!important;}
         if (id === "audits") pageHtml = withAuditsClearKeepsView(pageHtml);
         if (id === "excelView") {
           pageHtml = withExcelInboundPlannerClosedAtBoot(pageHtml);
+          pageHtml = withExcelInboundDateCycling(pageHtml);
           pageHtml = withExcelContrastingBlockColors(pageHtml);
+          pageHtml = withExcelRuleBorderTextColors(pageHtml);
           pageHtml = withExcelDarkerGreyBackground(pageHtml);
           pageHtml = withExcelBlackOperationalHeaders(pageHtml);
           pageHtml = withExcelTableDensityControl(pageHtml);
@@ -13671,6 +13955,9 @@ body.forecast-excel-view-open{padding-right:320px!important;}
         }
         if (id === "chassisStatus") {
           pageHtml = withChassisGreenExcelHero(pageHtml);
+          pageHtml = withChassisHgiuDcliAlias(pageHtml);
+          pageHtml = withChassisDayTrainOrdering(pageHtml);
+          pageHtml = withChassisSimplifiedBottomControls(pageHtml);
           pageHtml = withChassisReconciliationPresentation(pageHtml);
           pageHtml = withChassisNetTextOnePixelLower(pageHtml);
           pageHtml = withChassisScrollablePreviewSections(pageHtml);
@@ -13700,6 +13987,8 @@ body.forecast-excel-view-open{padding-right:320px!important;}
           pageHtml = withChassisExcelControlsViewport(pageHtml);
           pageHtml = withChassisLighterOver50Cells(pageHtml);
           pageHtml = withChassisLoadplanRowAlignment(pageHtml);
+          pageHtml = withChassisTracklistReplacementImport(pageHtml);
+          pageHtml = withChassisInboundDuplicateAction(pageHtml);
         }
         bridgedPageHtml.set(id, withWorkbookSyncBridge(pageHtml));
       }

@@ -4362,6 +4362,10 @@ body.forecast-view .forecast-hero-card {
   margin-top: 18px !important;
   margin-bottom: 0 !important;
   width: 100% !important;
+  grid-template-columns:minmax(160px,1fr) minmax(190px,245px) !important;
+}
+.forecast-bottom-controls .view-slider-card {
+  grid-column:2;
 }
 body.forecast-view .forecast-bottom-controls {
   display: grid !important;
@@ -6371,19 +6375,11 @@ body.forecast-view .forecast-bottom-controls {
 <section class="view-controls-strip forecast-bottom-controls">
       <div class="view-controls-title">
         <span>Bottom View Controls</span>
-        <small>Adjust page width and text size</small>
+        <small>Adjust page width</small>
       </div>
       <div class="view-slider-card">
         <label for="pageWidthSlider"><span>Page Fill</span><strong id="pageWidthValue">90%</strong></label>
         <input id="pageWidthSlider" type="range" min="75" max="100" step="1" value="90">
-      </div>
-      <div class="view-slider-card">
-        <label for="textSizeSlider"><span>Table Text</span><strong id="textSizeValue">100%</strong></label>
-        <input id="textSizeSlider" type="range" min="90" max="115" step="5" value="100">
-      </div>
-      <div class="view-slider-card">
-        <label for="forecastStatusHeightSlider"><span>Status Card Height</span><strong id="forecastStatusHeightValue">70%</strong></label>
-        <input id="forecastStatusHeightSlider" type="range" min="30" max="140" step="5" value="70">
       </div>
     </section>
   </div>
@@ -11424,13 +11420,23 @@ function importForecastTracklistFromModal(){
     if(typeof showArchiveToast==="function")showArchiveToast("No tracklist units detected.");
     return;
   }
-  forecastImportedUnits=[...forecastImportedUnits,...units];
+  const previousTracklistCount=forecastImportedUnits.filter(unit=>/^Tracklist:/i.test(String(unit?.sourceFile||"").trim())).length;
+  const latestTracklistUnits=new Map();
+  units.forEach((unit,index)=>{
+    const unitKey=String(unit?.unitId||"").replace(/[^A-Z0-9]/gi,"").toUpperCase();
+    latestTracklistUnits.set(unitKey||`tracklist-row-${index}`,unit);
+  });
+  const replacementUnits=[...latestTracklistUnits.values()];
+  forecastImportedUnits=[
+    ...forecastImportedUnits.filter(unit=>!/^Tracklist:/i.test(String(unit?.sourceFile||"").trim())),
+    ...replacementUnits
+  ];
   const saved=saveForecastState();
   renderForecastImportedUnits();
   closeForecastTracklistImportModal();
   if(typeof showArchiveToast==="function")showArchiveToast(saved
-    ? `${units.length} tracklist units imported.`
-    : `${units.length} tracklist units imported for this session; browser storage is unavailable.`);
+    ? `${replacementUnits.length} tracklist units imported${previousTracklistCount?` (replaced ${previousTracklistCount} previous).`:"."}`
+    : `${replacementUnits.length} tracklist units imported for this session; browser storage is unavailable.`);
 }
 
 async function importForecastFiles(files){
@@ -12309,6 +12315,26 @@ function renameForecastTrainDay(train,day,newTrain){
   if(typeof renderForecastExcelView==="function")renderForecastExcelView();
   if(typeof showArchiveToast==="function")showArchiveToast(`${train} renamed to ${newTrain}.`);
 }
+function duplicateForecastTrainDay(train,day){
+  train=String(train||"").trim();
+  day=String(day||"");
+  if(!train||!day)return;
+  const duplicateTrain=`${train} 2`;
+  const alreadyExists=forecastImportedUnits.some(unit=>getForecastTrainGroupName(unit)===duplicateTrain && getForecastUnitDay(unit)===day);
+  if(alreadyExists){
+    if(typeof showArchiveToast==="function")showArchiveToast(`${duplicateTrain} already exists.`);
+    return;
+  }
+  const copiedUnits=forecastImportedUnits
+    .filter(unit=>getForecastTrainGroupName(unit)===train && getForecastUnitDay(unit)===day)
+    .map(unit=>({...unit,trainId:duplicateTrain}));
+  if(!copiedUnits.length)return;
+  forecastImportedUnits=[...forecastImportedUnits,...copiedUnits];
+  saveForecastState();
+  renderForecastImportedUnits();
+  if(typeof renderForecastExcelView==="function")renderForecastExcelView();
+  if(typeof showArchiveToast==="function")showArchiveToast(`${duplicateTrain} created with ${copiedUnits.length} units.`);
+}
 function updateForecastTrainDay(train,oldDay,dateValue){
   const d=new Date(`${dateValue}T00:00:00`);
   if(!dateValue || Number.isNaN(d.getTime()))return;
@@ -12645,6 +12671,7 @@ function normalizeForecastPoolLabel(pool){
   if(p==="trgp")return "tgrp";
   if(p==="tgro")return "tgrp";
   if(p==="dclk" || p==="dcki")return "dcli";
+  if(p==="hgiu")return "dcli";
   if(p==="trailers" || p==="trlr")return "trailer";
   return p;
 }
@@ -12877,6 +12904,42 @@ function unitsForForecastGroup(train,day){
   return getVisibleForecastUnits().filter(unit=>getForecastTrainGroupName(unit)===train && getForecastUnitDay(unit)===day);
 }
 
+const FORECAST_DAY_TRAIN_ORDER_KEY="conglobal-forecast-day-train-order-v1";
+function readForecastDayTrainOrder(){
+  try{
+    const parsed=JSON.parse(localStorage.getItem(FORECAST_DAY_TRAIN_ORDER_KEY)||"{}");
+    return parsed&&typeof parsed==="object"&&!Array.isArray(parsed)?parsed:{};
+  }catch(_){return {};}
+}
+function writeForecastDayTrainOrder(order){
+  try{localStorage.setItem(FORECAST_DAY_TRAIN_ORDER_KEY,JSON.stringify(order||{}));}catch(_){}
+}
+function applyForecastDayTrainOrder(day,groups){
+  const saved=readForecastDayTrainOrder();
+  const order=Array.isArray(saved[day])?saved[day]:[];
+  if(!order.length)return groups;
+  const rank=new Map(order.map((train,index)=>[String(train),index]));
+  return groups.map((group,index)=>({group,index})).sort((a,b)=>{
+    const ar=rank.has(String(a.group.train))?rank.get(String(a.group.train)):Number.MAX_SAFE_INTEGER;
+    const br=rank.has(String(b.group.train))?rank.get(String(b.group.train)):Number.MAX_SAFE_INTEGER;
+    return ar-br || a.index-b.index;
+  }).map(item=>item.group);
+}
+function moveForecastTrainWithinDay(train,day,direction){
+  const groups=buildForecastTrainSummaryForUnits(getVisibleForecastUnits()).filter(group=>String(group.day)===String(day));
+  const ordered=applyForecastDayTrainOrder(day,groups);
+  const names=ordered.map(group=>String(group.train));
+  const index=names.indexOf(String(train));
+  const next=index+(direction<0?-1:1);
+  if(index<0 || next<0 || next>=names.length)return;
+  [names[index],names[next]]=[names[next],names[index]];
+  const saved=readForecastDayTrainOrder();
+  saved[day]=names;
+  writeForecastDayTrainOrder(saved);
+  renderForecastStatusCards();
+  saveForecastState();
+}
+
 
 
 function renderForecastStatusCards(visibleUnitsInput){
@@ -12984,7 +13047,7 @@ function renderForecastStatusCards(visibleUnitsInput){
   const usedGoodByPoolSize=new Map();
 
   box.innerHTML=dayKeys.map(day=>{
-    const dayGroups=byDay[day];
+    const dayGroups=applyForecastDayTrainOrder(day,byDay[day]);
     const dayUnitTotal=dayGroups.reduce((total,group)=>total+statusUnitsForGroup(group.train,group.day).length,0);
     return `<section class="forecast-day-section" data-forecast-drop-day="${escapeHtml(day)}">
       <div class="forecast-day-divider">
@@ -13131,6 +13194,7 @@ function renderForecastStatusCards(visibleUnitsInput){
                     <input type="text" value="${escapeHtml(g.train)}" data-forecast-train-edit-input="${escapeHtml(g.train)}" data-forecast-edit-day="${escapeHtml(g.day)}" aria-label="Edit inbound name">
                     <button type="button" data-forecast-train-edit-save="${escapeHtml(g.train)}" data-forecast-edit-day="${escapeHtml(g.day)}">Save</button>
                     <button type="button" data-forecast-train-edit-cancel>Cancel</button>
+                    <button type="button" data-forecast-train-duplicate="${escapeHtml(g.train)}" data-forecast-edit-day="${escapeHtml(g.day)}">Duplicate</button>
                     <button type="button" class="forecast-train-hide-emoji" data-forecast-train-edit-hide="${escapeHtml(g.train)}" data-forecast-edit-day="${escapeHtml(g.day)}" title="Hide this inbound" aria-label="Hide this inbound">🙈</button>
                   </span>
                   ${isDuplicateInbound?`<span class="forecast-duplicate-inbound-flag" title="This inbound appears more than once">Duplicate</span>`:""}
@@ -13142,6 +13206,10 @@ function renderForecastStatusCards(visibleUnitsInput){
                     <button type="button" data-forecast-inline-date-confirm="${escapeHtml(g.train)}" data-forecast-old-day="${escapeHtml(g.day)}">Confirm</button>
                   </span>
                 </span>
+              </div>
+              <div class="forecast-train-order-controls" aria-label="Adjust ${escapeHtml(g.train)} order for this day">
+                <button type="button" data-forecast-order-up="${escapeHtml(g.train)}" data-forecast-order-day="${escapeHtml(g.day)}" title="Move up for this day" aria-label="Move ${escapeHtml(g.train)} up">&#9650;</button>
+                <button type="button" data-forecast-order-down="${escapeHtml(g.train)}" data-forecast-order-day="${escapeHtml(g.day)}" title="Move down for this day" aria-label="Move ${escapeHtml(g.train)} down">&#9660;</button>
               </div>
               <div class="forecast-compact-total"><span>Total</span><strong>${g.total}</strong></div>
             </div>
@@ -13229,6 +13297,13 @@ function renderForecastStatusCards(visibleUnitsInput){
       const trigger=line?.querySelector("[data-forecast-train-edit]");
       if(editor)editor.hidden=true;
       if(trigger)trigger.hidden=false;
+    };
+  });
+  box.querySelectorAll("[data-forecast-train-duplicate]").forEach(btn=>{
+    btn.onclick=event=>{
+      event.preventDefault();
+      event.stopPropagation();
+      duplicateForecastTrainDay(btn.dataset.forecastTrainDuplicate,btn.dataset.forecastEditDay);
     };
   });
   box.querySelectorAll("[data-forecast-train-edit-hide]").forEach(btn=>{
@@ -13456,6 +13531,13 @@ function renderForecastStatusCards(visibleUnitsInput){
       });
       card.classList.add("forecast-card-meta-open");
     });
+  });
+  box.querySelectorAll("[data-forecast-order-up],[data-forecast-order-down]").forEach(button=>{
+    button.onclick=event=>{
+      event.preventDefault();
+      event.stopPropagation();
+      moveForecastTrainWithinDay(button.dataset.forecastOrderUp||button.dataset.forecastOrderDown,button.dataset.forecastOrderDay,button.hasAttribute("data-forecast-order-up")?-1:1);
+    };
   });
   box.querySelectorAll("[data-forecast-drag-train]").forEach(card=>{
     card.addEventListener("dragstart",event=>{
@@ -17021,6 +17103,29 @@ window.addEventListener("DOMContentLoaded",()=>{
 }
 #forecastStatusCards .forecast-compact-total{
   margin: 0 !important;
+}
+#forecastStatusCards .forecast-train-order-controls{
+  display:inline-flex;
+  flex:0 0 auto;
+  gap:3px;
+  margin-left:auto;
+}
+#forecastStatusCards .forecast-train-order-controls button{
+  width:24px;
+  height:24px;
+  padding:0;
+  border:1px solid #526580;
+  border-radius:6px;
+  background:#111f34;
+  color:#dbeafe;
+  font:900 10px/1 Arial,sans-serif;
+  cursor:pointer;
+}
+#forecastStatusCards .forecast-train-order-controls button:hover,
+#forecastStatusCards .forecast-train-order-controls button:focus-visible{
+  border-color:#fbbf24;
+  color:#fbbf24;
+  outline:none;
 }
 #forecastStatusCards .forecast-compact-meta-row{
   margin-top: 0 !important;
@@ -25144,7 +25249,7 @@ body:not(.forecast-view) .app > .hero.clean-hero > .hero-actions{
 }
 #forecastStatusCards .forecast-train-name-line .forecast-inline-train-editor:not([hidden]){
   display:grid!important;
-  grid-template-columns:minmax(145px,1fr) auto auto auto!important;
+  grid-template-columns:minmax(145px,1fr) auto auto auto auto!important;
   width:100%!important;
   min-width:0!important;
   max-width:100%!important;
@@ -25493,7 +25598,7 @@ body:not(.forecast-view) .app > .hero.clean-hero > .hero-actions{
 /* Prevent inbound-name edit controls from colliding with the hide button. */
 #forecastStatusCards .forecast-train-name-line .forecast-inline-train-editor:not([hidden]){
   display:grid!important;
-  grid-template-columns:minmax(110px,1fr) 46px 56px 34px!important;
+  grid-template-columns:minmax(80px,1fr) 46px 56px 72px 34px!important;
   align-items:center!important;
   gap:8px!important;
   width:100%!important;
@@ -25522,7 +25627,7 @@ body:not(.forecast-view) .app > .hero.clean-hero > .hero-actions{
 }
 @media(max-width:520px){
   #forecastStatusCards .forecast-train-name-line .forecast-inline-train-editor:not([hidden]){
-    grid-template-columns:minmax(0,1fr) 46px 56px 34px!important;
+    grid-template-columns:minmax(0,1fr) 46px 56px 72px 34px!important;
   }
 }
 /* Plain inbound train names: remove the dark button/pill background. */
