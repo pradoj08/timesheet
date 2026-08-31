@@ -11847,6 +11847,10 @@ document.getElementById("openYardCheck")?.addEventListener("click", function(){
       if (!html.includes(renderAnchor)) return html;
       html = html.replace(renderAnchor, helpers + renderAnchor);
       html = html.replace('    const dayGroups=byDay[day];', '    const dayGroups=applyForecastDayTrainOrder(day,byDay[day]);');
+      html = html.replace(
+        '  const groups=[...groupMap.values()].sort((a,b)=>compareForecastUnitsByArrival(a.units[0],b.units[0]));',
+        '  /* forecast-excel-follows-card-order-v1 */\n  const sortedGroups=[...groupMap.values()].sort((a,b)=>compareForecastUnitsByArrival(a.units[0],b.units[0]));\n  const groupsByDay=new Map();\n  sortedGroups.forEach(group=>{\n    if(!groupsByDay.has(group.day))groupsByDay.set(group.day,[]);\n    groupsByDay.get(group.day).push(group);\n  });\n  const groups=[...groupsByDay.entries()].flatMap(([day,dayGroups])=>applyForecastDayTrainOrder(day,dayGroups));'
+      );
       const totalAnchor = '              <div class="forecast-compact-total"><span>Total</span><strong>${g.total}</strong></div>';
       const orderControls = '              <div class="forecast-train-order-controls" aria-label="Adjust ${escapeHtml(g.train)} order for this day">\n                <button type="button" data-forecast-order-up="${escapeHtml(g.train)}" data-forecast-order-day="${escapeHtml(g.day)}" title="Move up for this day" aria-label="Move ${escapeHtml(g.train)} up">&#9650;</button>\n                <button type="button" data-forecast-order-down="${escapeHtml(g.train)}" data-forecast-order-day="${escapeHtml(g.day)}" title="Move down for this day" aria-label="Move ${escapeHtml(g.train)} down">&#9660;</button>\n              </div>\n' + totalAnchor;
       html = html.replace(totalAnchor, orderControls);

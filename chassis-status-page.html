@@ -10231,7 +10231,14 @@ function buildForecastExcelTrainRows(units){
     if(!groupMap.has(key))groupMap.set(key,{train,day,units:[]});
     groupMap.get(key).units.push(unit);
   });
-  const groups=[...groupMap.values()].sort((a,b)=>compareForecastUnitsByArrival(a.units[0],b.units[0]));
+  /* forecast-excel-follows-card-order-v1 */
+  const sortedGroups=[...groupMap.values()].sort((a,b)=>compareForecastUnitsByArrival(a.units[0],b.units[0]));
+  const groupsByDay=new Map();
+  sortedGroups.forEach(group=>{
+    if(!groupsByDay.has(group.day))groupsByDay.set(group.day,[]);
+    groupsByDay.get(group.day).push(group);
+  });
+  const groups=[...groupsByDay.entries()].flatMap(([day,dayGroups])=>applyForecastDayTrainOrder(day,dayGroups));
   const rows=groups.flatMap(group=>{
     const arrivalLabel=getForecastExcelArrivalLabel(group.day);
     const groupClass=`excel-arrival-${getForecastExcelArrivalClass(arrivalLabel).replace(/^arrival-/,"")}`;
