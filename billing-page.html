@@ -1129,6 +1129,16 @@
       background: #fff3d6;
     }
 
+    .preview-table tr.duplicate-row > td {
+      background: #fff0a8 !important;
+      box-shadow: inset 0 2px #f59e0b, inset 0 -2px #f59e0b;
+      font-weight: 800;
+    }
+
+    .preview-table tr.duplicate-row > td:first-child {
+      box-shadow: inset 4px 0 #f59e0b, inset 0 2px #f59e0b, inset 0 -2px #f59e0b;
+    }
+
     .preview-table tr.duplicate-review-group td {
       background: #dbeafe;
       color: #17365d;
@@ -3183,7 +3193,7 @@
         importRows(prepared.rows, prepared.details);
         const dayCount = new Set(prepared.rows.map((row) => row.date)).size;
         const suffix = failed.length ? ` Failed: ${failed.join(", ")}` : "";
-        const duplicateNote = prepared.skippedDuplicates ? ` Retained ${prepared.skippedDuplicates} duplicate row${prepared.skippedDuplicates === 1 ? "" : "s"} until manually excluded.` : "";
+        const duplicateNote = prepared.skippedDuplicates ? ` Kept ${prepared.skippedDuplicates} duplicate row${prepared.skippedDuplicates === 1 ? "" : "s"} visible for review without adding duplicate lifts.` : "";
         const uniqueNote = prepared.uniqueMoveRows ? ` Counted ${prepared.uniqueMoveRows} operational row${prepared.uniqueMoveRows === 1 ? "" : "s"}.` : "";
         const persistenceNote = state.persistenceWarning ? " Detailed import history exceeded browser storage; totals were retained." : "";
         showToast(`Imported ${dayCount} day${dayCount === 1 ? "" : "s"} from ${files.length} file${files.length === 1 ? "" : "s"}.${uniqueNote}${duplicateNote}${suffix}${persistenceNote}`);
@@ -4656,26 +4666,11 @@
         flagRail.append(flag);
       }
       const excludedCount = ["ramp", "deramp", "flip"].includes(field) ? excludedUnitCount(key, field) : 0;
-      const flipExcluded = field === "flip" ? excludedFlipStatusCounts(key) : { duplicate: 0, other: 0 };
-      if (field === "flip" && flipExcluded.duplicate > 0) {
-        const flag = document.createElement("span");
-        flag.className = "excluded-investigation-flag";
-        flag.textContent = `${flipExcluded.duplicate} DUPE`;
-        flag.title = `${flipExcluded.duplicate} duplicate flip row${flipExcluded.duplicate === 1 ? " is" : "s are"} excluded and not counted. Click to review.`;
-        flagRail.append(flag);
-      }
-      if (field === "flip" && flipExcluded.other > 0) {
+      if (excludedCount > 0) {
         const flag = document.createElement("span");
         flag.className = "excluded-investigation-flag flip-excluded-flag";
-        flag.textContent = `${flipExcluded.other} EXCL`;
-        flag.title = `${flipExcluded.other} excluded non-duplicate flip row${flipExcluded.other === 1 ? "" : "s"}. Click to review.`;
-        flagRail.append(flag);
-      }
-      if (field !== "flip" && excludedCount > 0) {
-        const flag = document.createElement("span");
-        flag.className = "excluded-investigation-flag";
-        flag.textContent = `${excludedCount} DUPE`;
-        flag.title = `${excludedCount} duplicate ${fieldLabel(field).toLowerCase()} row${excludedCount === 1 ? " is" : "s are"} excluded and not counted. Click to review.`;
+        flag.textContent = `${excludedCount} EXCL`;
+        flag.title = `${excludedCount} excluded ${fieldLabel(field).toLowerCase()} row${excludedCount === 1 ? "" : "s"}. Click to review.`;
         flagRail.append(flag);
       }
       if (flagRail.childElementCount) button.append(flagRail);
@@ -4690,25 +4685,14 @@
       const details = state.moveDetails.filter((detail) =>
         detail.date === date &&
         detail.field === field &&
-        !detail.deleted &&
         normalizeEquipment(detail.equipment || "")
       );
-      const counts = new Map();
-      details.forEach((detail) => {
-        const equipment = normalizeEquipment(detail.equipment || "");
-        const key = `${detail.fileId || detail.source || ""}|${equipment}`;
-        counts.set(key, (counts.get(key) || 0) + 1);
-      });
-      const duplicateKeys = new Set(
-        Array.from(counts.entries()).filter((entry) => entry[1] > 1).map((entry) => entry[0])
-      );
-      return details.filter((detail) =>
-        duplicateKeys.has(`${detail.fileId || detail.source || ""}|${normalizeEquipment(detail.equipment || "")}`)
-      );
+      const duplicateKeys = duplicateEquipmentSet(details);
+      return details.filter((detail) => duplicateKeys.has(duplicateDetailKey(detail)));
     }
 
-    function excludedFlipStatusCounts(date) {
-      const details = getMoveDetails(date, "flip");
+    function excludedMoveStatusCounts(date, field) {
+      const details = getMoveDetails(date, field);
       const counts = new Map();
       details.forEach((detail) => {
         const equipment = normalizeEquipment(detail.equipment || "");
@@ -5342,13 +5326,16 @@
       moveRows.forEach((row) => {
         const source = row.__liftSource || liftSourceKeyFor(row.__field, row.__equipment, row.__source, row.__reason, row.__train);
         const duplicateKey = `${row.date}|${row.__field}|${source}|${row.__equipment}|${row.__train || ""}`;
-        if (counted.has(duplicateKey)) skippedDuplicates += 1;
-        else counted.add(duplicateKey);
-        uniqueMoveRows += 1;
+        const isDuplicate = counted.has(duplicateKey);
+        if (isDuplicate) skippedDuplicates += 1;
+        else {
+          counted.add(duplicateKey);
+          uniqueMoveRows += 1;
+        }
 
         const countKey = `${row.date}|${row.__field}`;
         const existing = counts.get(countKey) || { date: row.date, [row.__field]: 0 };
-        existing[row.__field] += 1;
+        if (!isDuplicate) existing[row.__field] += 1;
         counts.set(countKey, existing);
       });
 
@@ -5435,7 +5422,11 @@
       const details = previewMoveDetails(date, field);
       const activeDetails = details.filter((detail) => !detail.deleted);
       const hasReasons = details.some((detail) => String(detail.reason || "").trim());
-      const duplicateSet = duplicateEquipmentSet(details);
+      const duplicateScope = unifiedDuplicateReview ? details : previewMoveDetails("__duplicates__", "allDuplicates");
+      const duplicateSet = duplicateEquipmentSet(duplicateScope);
+      if (!unifiedDuplicateReview) {
+        duplicateDetailsForCell(date, field).forEach((detail) => duplicateSet.add(duplicateDetailKey(detail)));
+      }
       if (!hasReasons) state.reasonFilter = "all";
       let visibleDetails = details.filter((detail) => {
         if (hasReasons && state.reasonFilter !== "all" && reasonKey(detail.reason) !== state.reasonFilter) return false;
@@ -5448,17 +5439,22 @@
         visibleDetails = visibleDetails.slice().sort((a, b) => {
           const aDuplicate = duplicateSet.has(duplicateDetailKey(a));
           const bDuplicate = duplicateSet.has(duplicateDetailKey(b));
-          return Number(bDuplicate) - Number(aDuplicate);
+          return Number(bDuplicate) - Number(aDuplicate) ||
+            duplicateDetailKey(a).localeCompare(duplicateDetailKey(b), undefined, { numeric: true }) ||
+            String(a.time || "").localeCompare(String(b.time || ""));
         });
       }
       if (unifiedDuplicateReview) {
         const fieldOrder = { ramp: 0, deramp: 1, flip: 2 };
-        visibleDetails = visibleDetails.slice().sort((a, b) =>
-          String(a.date || "").localeCompare(String(b.date || "")) ||
+        visibleDetails = visibleDetails.slice().sort((a, b) => {
+          const duplicateOrder = state.previewDuplicatesFirst
+            ? Number(duplicateSet.has(duplicateDetailKey(b))) - Number(duplicateSet.has(duplicateDetailKey(a)))
+            : 0;
+          return duplicateOrder || String(a.date || "").localeCompare(String(b.date || "")) ||
           (fieldOrder[a.field] ?? 9) - (fieldOrder[b.field] ?? 9) ||
           String(a.equipment || "").localeCompare(String(b.equipment || ""), undefined, { numeric: true }) ||
-          String(a.time || "").localeCompare(String(b.time || ""))
-        );
+          String(a.time || "").localeCompare(String(b.time || ""));
+        });
       }
 
       populateReasonFilter(details);
@@ -5550,6 +5546,22 @@
 
           els.moveModalBody.append(row);
         });
+      }
+
+      if (state.previewDuplicatesFirst && !unifiedDuplicateReview) {
+        const flaggedIds = new Set(duplicateDetailsForCell(date, field).map((detail) => String(detail.id)));
+        const duplicateRows = [];
+        const otherRows = [];
+        Array.from(els.moveModalBody.children).forEach((row) => {
+          const detailId = row.querySelector('input[data-detail-id]')?.dataset.detailId;
+          if (detailId && flaggedIds.has(String(detailId))) {
+            row.classList.add("duplicate-row");
+            duplicateRows.push(row);
+          } else {
+            otherRows.push(row);
+          }
+        });
+        els.moveModalBody.replaceChildren(...duplicateRows, ...otherRows);
       }
 
       const visibleChecks = Array.from(els.moveModalBody.querySelectorAll('input[data-detail-id]'));
@@ -6038,22 +6050,30 @@
       showToast(`${nextDeleted ? "Excluded" : "Included"} ${current?.equipment || "selected unit"}.`);
     }
 
+    function operationalMoveCount(details, field) {
+      const active = details.filter((detail) => !detail.deleted);
+      if (!["ramp", "deramp", "flip"].includes(field)) return active.length;
+      const counted = new Set();
+      active.forEach((detail) => counted.add(duplicateDetailKey(detail)));
+      return counted.size;
+    }
+
     function recalculateAllMoveDetailCounts() {
       const groups = new Map();
       state.moveDetails.forEach((detail) => {
         if (!detail?.date || !detail.field) return;
         const key = `${detail.date}|${detail.field}`;
-        if (!groups.has(key)) groups.set(key, { date: detail.date, field: detail.field, count: 0 });
-        if (!detail.deleted) groups.get(key).count += 1;
+        if (!groups.has(key)) groups.set(key, { date: detail.date, field: detail.field, details: [] });
+        groups.get(key).details.push(detail);
       });
-      groups.forEach(({ date, field, count }) => {
-        state.data[date] = { ...(state.data[date] || {}), [field]: count };
+      groups.forEach(({ date, field, details }) => {
+        state.data[date] = { ...(state.data[date] || {}), [field]: operationalMoveCount(details, field) };
       });
     }
 
     function recalculateMoveCount(date, field) {
       const record = { ...(state.data[date] || {}) };
-      record[field] = activeMoveDetails(date, field).length;
+      record[field] = operationalMoveCount(getMoveDetails(date, field), field);
       state.data[date] = record;
     }
 

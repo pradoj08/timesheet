@@ -7547,12 +7547,68 @@ function renderTimeMap(elId, buckets, opts){`
         .replace("</head>", '<meta name="excel-lph-input-source-ready" content="1">\n</head>');
     }
 
+    function withExcelCurrentWorkTracklistImport(html) {
+      if (!html || typeof html !== "string" || html.includes("excel-current-work-tracklist-import-v1")) return html;
+      const patch = `<style id="excel-current-work-tracklist-import-v1">
+#currentWorkHandle{display:flex!important;align-items:center!important;gap:8px!important}
+#currentWorkHandle>span{flex:1;text-align:center}
+#cwTracklistOpen{height:24px;padding:0 10px;border:1px solid #fef08a;border-radius:5px;background:#facc15;color:#3b2200;font:950 10px/1 Arial,sans-serif;letter-spacing:.04em;text-transform:uppercase;cursor:pointer}
+#cwTracklistOpen:hover,#cwTracklistOpen:focus-visible{background:#fde047;outline:2px solid #fff;outline-offset:1px}
+.cw-tracklist-backdrop{position:fixed;inset:0;z-index:10050;display:flex;align-items:flex-start;justify-content:center;padding:44px 18px 18px;background:rgba(2,6,23,.78);backdrop-filter:blur(5px)}
+.cw-tracklist-backdrop[hidden]{display:none!important}
+.cw-tracklist-dialog{width:min(1180px,calc(100vw - 28px));max-height:calc(100vh - 62px);overflow:auto;border:1px solid #22d3ee;border-radius:16px;background:#071426;color:#fff;box-shadow:0 24px 80px rgba(0,0,0,.58)}
+.cw-tracklist-dialog-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;padding:16px 18px;border-bottom:1px solid #1e3a5f}
+.cw-tracklist-dialog-head h2{margin:2px 0 3px;font-size:25px;line-height:1}.cw-tracklist-dialog-head p{margin:0;color:#a8c4df;font-size:12px;font-weight:800}
+.cw-tracklist-dialog-head button,.cw-tracklist-import{border:1px solid #22d3ee;border-radius:9px;background:#0e7490;color:#fff;padding:9px 15px;font-weight:950;cursor:pointer}
+.cw-tracklist-body{padding:14px 18px 18px}.cw-tracklist-slots{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.cw-tracklist-slot{display:grid;grid-template-rows:auto 118px auto;gap:6px;min-width:0;padding:9px;border:1px solid #294563;border-radius:10px;background:#0b1b31}
+.cw-tracklist-name{width:100%;min-width:0;height:32px;box-sizing:border-box;border:1px solid #3b82f6;border-radius:7px;background:#061124;color:#fff;padding:0 9px;font-weight:950}
+.cw-tracklist-text{width:100%;min-width:0;resize:vertical;box-sizing:border-box;border:1px solid #334b68;border-radius:7px;background:#030b1b;color:#dbeafe;padding:8px;font:700 11px/1.35 Consolas,monospace}
+.cw-tracklist-count{display:flex;align-items:center;justify-content:space-between;color:#9fb7ce;font-size:11px;font-weight:900}.cw-tracklist-count strong{color:#67e8f9;font-size:16px}
+.cw-tracklist-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px;padding-top:12px;border-top:1px solid #1e3a5f}.cw-tracklist-status{color:#a8c4df;font-size:12px;font-weight:900}.cw-tracklist-status.success{color:#6ee7b7}
+@media(max-width:800px){.cw-tracklist-slots{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:520px){.cw-tracklist-slots{grid-template-columns:1fr}}
+</style>
+<scr${""}ipt>(function(){
+  var handle=document.getElementById("currentWorkHandle");
+  if(!handle||document.getElementById("cwTracklistOpen"))return;
+  var closeButton=document.getElementById("currentWorkClose");
+  var openButton=document.createElement("button");
+  openButton.id="cwTracklistOpen";openButton.type="button";openButton.textContent="Paste Tracklists";
+  handle.insertBefore(openButton,closeButton);
+  var modal=document.createElement("div");
+  modal.className="cw-tracklist-backdrop";modal.id="cwTracklistModal";modal.hidden=true;
+  modal.innerHTML='<section class="cw-tracklist-dialog" role="dialog" aria-modal="true" aria-labelledby="cwTracklistTitle"><header class="cw-tracklist-dialog-head"><div><h2 id="cwTracklistTitle">Import inbound tracklists</h2><p>Paste one tracklist per forecast row. Each detected unit becomes one inbound lift.</p></div><button id="cwTracklistClose" type="button">Close</button></header><div class="cw-tracklist-body"><div class="cw-tracklist-slots" id="cwTracklistSlots"></div><footer class="cw-tracklist-footer"><div class="cw-tracklist-status" id="cwTracklistStatus">Paste data to preview the unit counts.</div><button class="cw-tracklist-import" id="cwTracklistImport" type="button">Populate Inbound Counts</button></footer></div></section>';
+  document.body.appendChild(modal);
+  var slots=document.getElementById("cwTracklistSlots"),status=document.getElementById("cwTracklistStatus");
+  function cleanHeader(value){return String(value||"").toUpperCase().replace(/[^A-Z0-9]/g,"")}
+  function countUnits(raw){
+    var text=String(raw||"").trim();if(!text)return 0;
+    var lines=text.split(/\\r?\\n/).map(function(line){return line.trim()}).filter(Boolean),ids=new Set(),headerIndex=-1,unitColumn=-1;
+    lines.some(function(line,index){var cols=line.split(/\\t|\\s{2,}/).map(function(value){return value.trim()});var keys=cols.map(cleanHeader);var found=keys.findIndex(function(key){return /^(UNITID|UNIT|CONTAINERID|VANCONTAINERID|EQUIPMENTID)$/.test(key)});if(found>=0){headerIndex=index;unitColumn=found;return true}return false});
+    if(headerIndex>=0){lines.slice(headerIndex+1).forEach(function(line){var cols=line.split(/\\t|\\s{2,}/).map(function(value){return value.trim()});var value=String(cols[unitColumn]||"").replace(/[^A-Z0-9]/gi,"").toUpperCase();if(/^[A-Z]{4}\\d{5,7}$/.test(value))ids.add(value)});if(ids.size)return ids.size}
+    lines.forEach(function(line){var candidates=line.toUpperCase().match(/\\b[A-Z]{4}\\s*\\d{5,7}\\b/g)||[];if(!candidates.length)return;var value=candidates[0].replace(/\\s/g,"");if(value)ids.add(value)});
+    if(ids.size)return ids.size;
+    return lines.filter(function(line){if(/UNIT\\s*ID|CAR\\s*KIND|TOTAL|TRACKLIST/i.test(line))return false;return /\\b(Q10|Q20|Q40|Q50|Q70|V)\\b/i.test(line)}).length;
+  }
+  function currentIds(){return Array.from(document.querySelectorAll("[data-cw-id]")).map(function(input,index){return String(input.value||"Track "+(index+1)).trim()||"Track "+(index+1)})}
+  function renderSlots(){var ids=currentIds();slots.innerHTML=ids.map(function(name,index){return '<label class="cw-tracklist-slot"><input class="cw-tracklist-name" data-cw-tracklist-name="'+index+'" value="'+name.replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;")+'" aria-label="Inbound name for row '+(index+1)+'"><textarea class="cw-tracklist-text" data-cw-tracklist-text="'+index+'" placeholder="Paste '+name.replace(/&/g,"&amp;").replace(/</g,"&lt;")+' tracklist here"></textarea><span class="cw-tracklist-count">Detected units <strong data-cw-tracklist-count="'+index+'">0</strong></span></label>'}).join("")}
+  function updatePreview(){var total=0,used=0;slots.querySelectorAll("[data-cw-tracklist-text]").forEach(function(area){var count=countUnits(area.value),index=area.dataset.cwTracklistText;var output=slots.querySelector('[data-cw-tracklist-count="'+index+'"]');if(output)output.textContent=String(count);if(area.value.trim()){used+=1;total+=count}});status.className="cw-tracklist-status";status.textContent=used?total+" units detected across "+used+" pasted tracklist"+(used===1?"":"s")+".":"Paste data to preview the unit counts."}
+  function open(){renderSlots();status.className="cw-tracklist-status";status.textContent="Paste data to preview the unit counts.";modal.hidden=false;setTimeout(function(){slots.querySelector("textarea")&&slots.querySelector("textarea").focus()},0)}
+  function close(){modal.hidden=true;openButton.focus()}
+  openButton.addEventListener("click",open);document.getElementById("cwTracklistClose").addEventListener("click",close);modal.addEventListener("click",function(event){if(event.target===modal)close()});slots.addEventListener("input",updatePreview);
+  document.getElementById("cwTracklistImport").addEventListener("click",function(){var imported=0,total=0;slots.querySelectorAll("[data-cw-tracklist-text]").forEach(function(area){if(!area.value.trim())return;var index=Number(area.dataset.cwTracklistText),count=countUnits(area.value),name=slots.querySelector('[data-cw-tracklist-name="'+index+'"]');currentWork.inbound[index]=String(count);if(name&&name.value.trim())currentWork.ids[index]=name.value.trim();imported+=1;total+=count});if(!imported){status.className="cw-tracklist-status";status.textContent="No tracklist data was pasted.";return}saveCurrentWorkState();syncCurrentWorkControls();status.className="cw-tracklist-status success";status.textContent=total+" inbound units populated across "+imported+" row"+(imported===1?"":"s")+"."});
+  document.addEventListener("keydown",function(event){if(event.key==="Escape"&&!modal.hidden)close()});
+})();</scr${""}ipt>`;
+      const bodyClose = html.toLowerCase().lastIndexOf("</body>");
+      return bodyClose >= 0 ? html.slice(0, bodyClose) + patch + "\n" + html.slice(bodyClose) : html + patch;
+    }
+
     function withExcelSecondaryTableClearControls(html) {
       if (!html || typeof html !== "string" || html.includes("excel-secondary-clear-controls")) return html;
       const copyMarkup = `<button class="copy-grid-btn" id="' + id + '" type="button">COPY ABOVE</button><button class="add-inbound-train-btn" data-open-inbound-train="' + target + '" type="button">ADD INBOUND TRAIN</button>`;
       const clearMarkup = `<button class="copy-grid-btn" id="' + id + '" type="button">COPY ABOVE</button><button class="clear-grid-btn" data-clear-secondary-table="' + target + '" type="button">CLEAR TABLE</button><button class="add-inbound-train-btn" data-open-inbound-train="' + target + '" type="button">ADD INBOUND TRAIN</button>`;
       const copyHandler = '    if (e.target.closest("#copyTableTwoToThree")) copyTableTwoToThree();';
-      const clearHandler = copyHandler + '\n    const clearSecondaryTableButton = e.target.closest("[data-clear-secondary-table]");\n    if (clearSecondaryTableButton) {\n      const target = clearSecondaryTableButton.dataset.clearSecondaryTable === "three" ? "three" : "two";\n      const tableNumber = target === "three" ? 3 : 2;\n      if (clearSecondaryTableButton.dataset.confirmClear !== "true") {\n        document.querySelectorAll("[data-clear-secondary-table].is-confirming").forEach(button => {\n          window.clearTimeout(button._clearConfirmTimer);\n          button.removeAttribute("data-confirm-clear");\n          button.classList.remove("is-confirming");\n          button.textContent = "CLEAR TABLE";\n        });\n        clearSecondaryTableButton.dataset.confirmClear = "true";\n        clearSecondaryTableButton.classList.add("is-confirming");\n        clearSecondaryTableButton.textContent = "CONFIRM CLEAR";\n        clearSecondaryTableButton._clearConfirmTimer = window.setTimeout(() => {\n          clearSecondaryTableButton.removeAttribute("data-confirm-clear");\n          clearSecondaryTableButton.classList.remove("is-confirming");\n          clearSecondaryTableButton.textContent = "CLEAR TABLE";\n        }, 5000);\n        return;\n      }\n      window.clearTimeout(clearSecondaryTableButton._clearConfirmTimer);\n      clearSecondaryTableButton.removeAttribute("data-confirm-clear");\n      clearSecondaryTableButton.classList.remove("is-confirming");\n      clearSecondaryTableButton.textContent = "CLEAR TABLE";\n      state[target === "three" ? "secondaryGridThree" : "secondaryGridTwo"] = emptySecondaryModel();\n      renderAll();\n      ssShowToast("Table " + tableNumber + " cleared.");\n      return;\n    }';
+      const clearHandler = copyHandler + '\n    const clearSecondaryTableButton = e.target.closest("[data-clear-secondary-table]");\n    if (clearSecondaryTableButton) {\n      const target = clearSecondaryTableButton.dataset.clearSecondaryTable === "three" ? "three" : "two";\n      const tableNumber = target === "three" ? 3 : 2;\n      if (clearSecondaryTableButton.dataset.confirmClear !== "true") {\n        document.querySelectorAll("[data-clear-secondary-table].is-confirming").forEach(button => {\n          window.clearTimeout(button._clearConfirmTimer);\n          button.removeAttribute("data-confirm-clear");\n          button.classList.remove("is-confirming");\n          button.textContent = "CLEAR TABLE";\n        });\n        clearSecondaryTableButton.dataset.confirmClear = "true";\n        clearSecondaryTableButton.classList.add("is-confirming");\n        clearSecondaryTableButton.textContent = "CONFIRM CLEAR";\n        clearSecondaryTableButton._clearConfirmTimer = window.setTimeout(() => {\n          clearSecondaryTableButton.removeAttribute("data-confirm-clear");\n          clearSecondaryTableButton.classList.remove("is-confirming");\n          clearSecondaryTableButton.textContent = "CLEAR TABLE";\n        }, 5000);\n        return;\n      }\n      window.clearTimeout(clearSecondaryTableButton._clearConfirmTimer);\n      clearSecondaryTableButton.removeAttribute("data-confirm-clear");\n      clearSecondaryTableButton.classList.remove("is-confirming");\n      clearSecondaryTableButton.textContent = "CLEAR TABLE";\n      document.dispatchEvent(new CustomEvent("excel-secondary-table-cleared", { detail: { gridId: target === "three" ? "blankYardGridTwo" : "blankYardGrid" } }));\n      state[target === "three" ? "secondaryGridThree" : "secondaryGridTwo"] = emptySecondaryModel();\n      renderAll();\n      ssShowToast("Table " + tableNumber + " cleared.");\n      return;\n    }';
       let patched = html.replace(copyMarkup, clearMarkup).replace(copyHandler, clearHandler);
       if (patched === html) return html;
       const styles = `
@@ -7839,6 +7895,7 @@ document.addEventListener("DOMContentLoaded",function(){
   function syncAssignmentLabel(cell,value){if(!assignmentLabelToggle||!assignmentLabelToggle.checked||!value){restoreAssignmentLabel(cell);return}if(!Object.prototype.hasOwnProperty.call(cell.dataset,"assignmentOriginalHtml")){cell.dataset.assignmentOriginalHtml=cell.innerHTML;cell.dataset.assignmentOriginalTitle=cell.title||""}var footage=Number(cell.dataset.footage)||0;var expected=footage.toLocaleString("en-US",{maximumFractionDigits:0})+" "+String(value).toUpperCase();if(cell.textContent.trim()!==expected)cell.textContent=expected;cell.title=expected}
   function applyAssignments(){document.querySelectorAll(".yard-grid .cut-cell[data-block-id]").forEach(function(cell){var value=assignments[assignmentId(cell)]||"";if(cell.dataset.blockAssignment!==value){if(value)cell.dataset.blockAssignment=value;else cell.removeAttribute("data-block-assignment")}syncAssignmentLabel(cell,value)})}
   function saveAssignments(){try{localStorage.setItem(assignmentKey,JSON.stringify(assignments))}catch(_){}applyAssignments()}
+  document.addEventListener("excel-secondary-table-cleared",function(event){var gridId=event&&event.detail&&event.detail.gridId;if(!gridId)return;var prefix=gridId+"::";var changed=false;Object.keys(assignments).forEach(function(id){if(id.indexOf(prefix)===0){delete assignments[id];changed=true}});if(changed)saveAssignments()});
   function assignSelected(value){var cells=Array.from(document.querySelectorAll(".yard-grid .cut-cell.block-selected[data-block-id]"));cells.forEach(function(cell){var id=assignmentId(cell);if(!id)return;if(value)assignments[id]=value;else delete assignments[id]});saveAssignments();var menu=document.getElementById("blockContextMenu");if(menu)menu.hidden=true}
   document.getElementById("assignSelectedToIhosa").addEventListener("click",function(){assignSelected("ihosa")});
   document.getElementById("assignSelectedToMhoas").addEventListener("click",function(){assignSelected("mhoas")});
@@ -12184,7 +12241,7 @@ const script = `<style id="billing-unified-duplicate-review-v1">
     let rows = allDetails.filter((detail) => duplicateSet.has(duplicateDetailKey(detail)));
     if (state.reasonFilter !== "all") rows = rows.filter((detail) => reasonKey(detail.reason) === state.reasonFilter);
     if (state.previewFilter === "excluded") rows = rows.filter((detail) => detail.deleted);
-    else rows = rows.filter((detail) => !detail.deleted);
+    else if (state.previewFilter === "included") rows = rows.filter((detail) => !detail.deleted);
     rows.sort((a, b) => String(a.date || "").localeCompare(String(b.date || "")) ||
       (fieldOrder[a.field] ?? 9) - (fieldOrder[b.field] ?? 9) ||
       String(a.equipment || "").localeCompare(String(b.equipment || ""), undefined, { numeric:true }) ||
@@ -13844,6 +13901,113 @@ function duplicateForecastTrainDay(train,day){
       return next.replace('</head>', '<meta ' + marker + ' content="1"></head>');
     }
 
+    function withBillingDuplicateFirstSortFix(html) {
+      if (!html || typeof html !== "string" || html.includes("billing-duplicate-first-sort-v1")) return html;
+      const oldBlock = `      if (state.previewDuplicatesFirst) {
+        visibleDetails = visibleDetails.slice().sort((a, b) => {
+          const aDuplicate = duplicateSet.has(duplicateDetailKey(a));
+          const bDuplicate = duplicateSet.has(duplicateDetailKey(b));
+          return Number(bDuplicate) - Number(aDuplicate);
+        });
+      }
+      if (unifiedDuplicateReview) {
+        const fieldOrder = { ramp: 0, deramp: 1, flip: 2 };
+        visibleDetails = visibleDetails.slice().sort((a, b) =>
+          String(a.date || "").localeCompare(String(b.date || "")) ||
+          (fieldOrder[a.field] ?? 9) - (fieldOrder[b.field] ?? 9) ||
+          String(a.equipment || "").localeCompare(String(b.equipment || ""), undefined, { numeric: true }) ||
+          String(a.time || "").localeCompare(String(b.time || ""))
+        );
+      }`;
+      const newBlock = `      if (state.previewDuplicatesFirst) {
+        visibleDetails = visibleDetails.slice().sort((a, b) => {
+          const aDuplicate = duplicateSet.has(duplicateDetailKey(a));
+          const bDuplicate = duplicateSet.has(duplicateDetailKey(b));
+          return Number(bDuplicate) - Number(aDuplicate) ||
+            duplicateDetailKey(a).localeCompare(duplicateDetailKey(b), undefined, { numeric: true }) ||
+            String(a.time || "").localeCompare(String(b.time || ""));
+        });
+      }
+      if (unifiedDuplicateReview) {
+        const fieldOrder = { ramp: 0, deramp: 1, flip: 2 };
+        visibleDetails = visibleDetails.slice().sort((a, b) => {
+          const duplicateOrder = state.previewDuplicatesFirst
+            ? Number(duplicateSet.has(duplicateDetailKey(b))) - Number(duplicateSet.has(duplicateDetailKey(a)))
+            : 0;
+          return duplicateOrder || String(a.date || "").localeCompare(String(b.date || "")) ||
+          (fieldOrder[a.field] ?? 9) - (fieldOrder[b.field] ?? 9) ||
+          String(a.equipment || "").localeCompare(String(b.equipment || ""), undefined, { numeric: true }) ||
+          String(a.time || "").localeCompare(String(b.time || ""));
+        });
+      }`;
+      const normalized = html.replace(/\r\n/g, "\n");
+      const localDuplicateScope = '      const duplicateSet = duplicateEquipmentSet(details);';
+      const monthlyDuplicateScope = '      const duplicateScope = unifiedDuplicateReview ? details : previewMoveDetails("__duplicates__", "allDuplicates");\n      const duplicateSet = duplicateEquipmentSet(duplicateScope);\n      if (!unifiedDuplicateReview) {\n        duplicateDetailsForCell(date, field).forEach((detail) => duplicateSet.add(duplicateDetailKey(detail)));\n      }';
+      const scoped = normalized.replace(localDuplicateScope, monthlyDuplicateScope);
+      const renderAnchor = '      const visibleChecks = Array.from(els.moveModalBody.querySelectorAll(\'input[data-detail-id]\'));';
+      const enforceRows = `      if (state.previewDuplicatesFirst && !unifiedDuplicateReview) {
+        const flaggedIds = new Set(duplicateDetailsForCell(date, field).map((detail) => String(detail.id)));
+        const duplicateRows = [];
+        const otherRows = [];
+        Array.from(els.moveModalBody.children).forEach((row) => {
+          const detailId = row.querySelector('input[data-detail-id]')?.dataset.detailId;
+          if (detailId && flaggedIds.has(String(detailId))) {
+            row.classList.add("duplicate-row");
+            duplicateRows.push(row);
+          } else {
+            otherRows.push(row);
+          }
+        });
+        els.moveModalBody.replaceChildren(...duplicateRows, ...otherRows);
+      }
+
+`;
+      const highlight = '<style id="billing-duplicate-first-highlight-v1">.preview-table tr.duplicate-row>td{background:#fff0a8!important;box-shadow:inset 0 2px #f59e0b,inset 0 -2px #f59e0b;font-weight:800}.preview-table tr.duplicate-row>td:first-child{box-shadow:inset 4px 0 #f59e0b,inset 0 2px #f59e0b,inset 0 -2px #f59e0b}</style>';
+      const oldBadgeBlock = "      const excludedCount = [\"ramp\", \"deramp\", \"flip\"].includes(field) ? excludedUnitCount(key, field) : 0;\n      const flipExcluded = field === \"flip\" ? excludedFlipStatusCounts(key) : { duplicate: 0, other: 0 };\n      if (field === \"flip\" && flipExcluded.duplicate > 0) {\n        const flag = document.createElement(\"span\");\n        flag.className = \"excluded-investigation-flag\";\n        flag.textContent = `${flipExcluded.duplicate} DUPE`;\n        flag.title = `${flipExcluded.duplicate} duplicate flip row${flipExcluded.duplicate === 1 ? \" is\" : \"s are\"} excluded and not counted. Click to review.`;\n        flagRail.append(flag);\n      }\n      if (field === \"flip\" && flipExcluded.other > 0) {\n        const flag = document.createElement(\"span\");\n        flag.className = \"excluded-investigation-flag flip-excluded-flag\";\n        flag.textContent = `${flipExcluded.other} EXCL`;\n        flag.title = `${flipExcluded.other} excluded non-duplicate flip row${flipExcluded.other === 1 ? \"\" : \"s\"}. Click to review.`;\n        flagRail.append(flag);\n      }\n      if (field !== \"flip\" && excludedCount > 0) {\n        const flag = document.createElement(\"span\");\n        flag.className = \"excluded-investigation-flag\";\n        flag.textContent = `${excludedCount} DUPE`;\n        flag.title = `${excludedCount} duplicate ${fieldLabel(field).toLowerCase()} row${excludedCount === 1 ? \" is\" : \"s are\"} excluded and not counted. Click to review.`;\n        flagRail.append(flag);\n      }\n";
+      const newBadgeBlock = "      const excludedCount = [\"ramp\", \"deramp\", \"flip\"].includes(field) ? excludedUnitCount(key, field) : 0;\n      if (excludedCount > 0) {\n        const flag = document.createElement(\"span\");\n        flag.className = \"excluded-investigation-flag flip-excluded-flag\";\n        flag.textContent = `${excludedCount} EXCL`;\n        flag.title = `${excludedCount} excluded ${fieldLabel(field).toLowerCase()} row${excludedCount === 1 ? \"\" : \"s\"}. Click to review.`;\n        flagRail.append(flag);\n      }\n";
+      const oldDuplicateFunction = "    function duplicateDetailsForCell(date, field) {\n      if (![\"ramp\", \"deramp\", \"flip\"].includes(field)) return [];\n      const details = state.moveDetails.filter((detail) =>\n        detail.date === date &&\n        detail.field === field &&\n        !detail.deleted &&\n        normalizeEquipment(detail.equipment || \"\")\n      );\n      const counts = new Map();\n      details.forEach((detail) => {\n        const equipment = normalizeEquipment(detail.equipment || \"\");\n        const key = `${detail.fileId || detail.source || \"\"}|${equipment}`;\n        counts.set(key, (counts.get(key) || 0) + 1);\n      });\n      const duplicateKeys = new Set(\n        Array.from(counts.entries()).filter((entry) => entry[1] > 1).map((entry) => entry[0])\n      );\n      return details.filter((detail) =>\n        duplicateKeys.has(`${detail.fileId || detail.source || \"\"}|${normalizeEquipment(detail.equipment || \"\")}`)\n      );\n    }\n\n";
+      const newDuplicateFunction = "    function duplicateDetailsForCell(date, field) {\n      if (![\"ramp\", \"deramp\", \"flip\"].includes(field)) return [];\n      const details = state.moveDetails.filter((detail) =>\n        detail.date === date &&\n        detail.field === field &&\n        normalizeEquipment(detail.equipment || \"\")\n      );\n      const duplicateKeys = duplicateEquipmentSet(details);\n      return details.filter((detail) => duplicateKeys.has(duplicateDetailKey(detail)));\n    }\n\n";
+      const oldStatusHead = "    function excludedFlipStatusCounts(date) {\n      const details = getMoveDetails(date, \"flip\");";
+      const newStatusHead = "    function excludedMoveStatusCounts(date, field) {\n      const details = getMoveDetails(date, field);";
+      const countPatch = `<scr${""}ipt id="billing-unique-lift-count-v1">(function(){
+  function operationalCount(details,field){var active=(details||[]).filter(function(detail){return !detail.deleted});if(["ramp","deramp","flip"].indexOf(field)<0)return active.length;var keys=new Set();active.forEach(function(detail){keys.add(duplicateDetailKey(detail))});return keys.size}
+  recalculateMoveCount=function(date,field){var record=Object.assign({},state.data[date]||{});record[field]=operationalCount(getMoveDetails(date,field),field);state.data[date]=record};
+  recalculateAllMoveDetailCounts=function(){var groups=new Map();state.moveDetails.forEach(function(detail){if(!detail||!detail.date||!detail.field)return;var key=detail.date+"|"+detail.field;if(!groups.has(key))groups.set(key,{date:detail.date,field:detail.field,details:[]});groups.get(key).details.push(detail)});groups.forEach(function(group){state.data[group.date]=Object.assign({},state.data[group.date]||{},Object.fromEntries([[group.field,operationalCount(group.details,group.field)]]))})};
+  recalculateAllMoveDetailCounts();try{persist()}catch(_){}try{render()}catch(_){}
+})();</scr${""}ipt>`;
+      const sorted = scoped.replace(oldBlock, newBlock);
+      const enforced = sorted.includes(renderAnchor) ? sorted.replace(renderAnchor, enforceRows + renderAnchor) : sorted;
+      const badgeFixed = enforced.replace(oldBadgeBlock, newBadgeBlock).replace(oldDuplicateFunction, newDuplicateFunction).replace(oldStatusHead, newStatusHead);
+      const counted = badgeFixed.replace("</body>", countPatch + "\n</body>");
+      return counted.replace("</head>", '<meta name="billing-duplicate-first-sort-v1" content="enabled">\n' + highlight + '\n</head>');
+    }
+
+    function withBillingSafeDuplicateGrouping(html) {
+      if (!html || typeof html !== "string" || html.includes("billing-safe-duplicate-grouping-v1")) return html;
+      const patch = `<style id="billing-safe-duplicate-grouping-v1">
+.preview-table tr.safe-duplicate-row>td{background:#fff0a8!important;box-shadow:inset 0 2px #f59e0b,inset 0 -2px #f59e0b;font-weight:800}
+.preview-table tr.safe-duplicate-row>td:first-child{box-shadow:inset 4px 0 #f59e0b,inset 0 2px #f59e0b,inset 0 -2px #f59e0b}
+</style><scr${""}ipt>(function(){
+  function groupRenderedDuplicates(){
+    var button=document.getElementById("duplicatesFirst"),body=document.getElementById("moveModalBody");
+    if(!button||!body||button.getAttribute("aria-pressed")!=="true")return;
+    var rows=Array.from(body.querySelectorAll("tr")).filter(function(row){return row.querySelector("input[data-detail-id]")});
+    var entries=rows.map(function(row){
+      var id=row.querySelector("input[data-detail-id]").dataset.detailId;
+      var detail=(state.moveDetails||[]).find(function(item){return String(item.id)===String(id)});
+      var key=detail?[detail.date||"",detail.field||"",detail.fileId||detail.source||"",normalizeEquipment(detail.equipment||"")].join("|"):"";
+      return{row:row,key:key};
+    });
+    var counts=new Map();entries.forEach(function(entry){if(entry.key)counts.set(entry.key,(counts.get(entry.key)||0)+1)});
+    var duplicate=[],other=[];entries.forEach(function(entry){var isDuplicate=entry.row.classList.contains("duplicate-row")||(entry.key&&(counts.get(entry.key)||0)>1);entry.row.classList.remove("safe-duplicate-row");if(isDuplicate){entry.row.classList.add("safe-duplicate-row");duplicate.push(entry.row)}else other.push(entry.row)});
+    duplicate.concat(other).forEach(function(row){body.appendChild(row)});
+    var scroller=body.closest(".modal-body")||body.closest(".modal-card")||body.parentElement;if(scroller)scroller.scrollTop=0;
+  }
+  document.addEventListener("click",function(event){if(event.target.closest&&event.target.closest("#duplicatesFirst"))setTimeout(groupRenderedDuplicates,30)});
+})();</scr${""}ipt>`;
+      return html.replace("</body>", patch + "\n</body>");
+    }
+
     function withExcelRuleBorderTextColors(html) {
       const marker = 'data-excel-rule-border-text-colors-v1';
       if (!html || html.includes(marker)) return html;
@@ -13900,7 +14064,7 @@ function duplicateForecastTrainDay(train,day){
         if (id === "timeMd") pageHtml = withTimeMdResponsiveWidth(pageHtml);
         if (id === "timeOff") pageHtml = withTimeOffCurrentRosterSnapshot(withTimeOffCameInActions(withTimeOffMonthlyWeeklyStyle(pageHtml)));
         if (id === "billing") pageHtml = withBillingFlipStackReclassificationV1(withBillingExportDropdownV1(withBillingDuplicateStatusPillsV1(withBillingOperationalLphGuardV1(withBillingMoveDetailsIndexedDbV1(withBillingLiftFolderImportV1(withBillingImportFeedbackV1(withBillingLiftFlipPersistenceV2(withBillingUnifiedDuplicateReview(withBillingExcludeDuplicateRows(withBillingRampDerampMonthlyReview(withBillingRampDerampExcludedFlags(withBillingCountDuplicateRows(withBillingLphTargetPills(withBillingFlipDuplicateFlags(withBillingMonthlyFlipReview(withBillingStackReasonRouting(withBillingCompactDuplicateGroups(withBillingDailyShiftProjection(withBillingPerformanceArchiveIndexedDb(withBillingShiftLpmhGrid(withBillingSummaryExportStyles(withBillingLpmhSourcePair(withBillingHoursColumnOrder(withBillingDisplayFlagsMenu(withBillingPowerBiLiftDeltaFlag(withBillingPowerBiImport(withBillingQuotaSafePersistence(withBillingAnalyticsLiftFallback(withBillingAnalyticsArchiveHydration(withBillingManHoursPrecision(withBillingArchiveIndexedDb(withBillingSplitLiftAndChassisClear(withBillingHeaderRemoved(pageHtml))))))))))))))))))))))))))))))))));
-        if (id === "billing") pageHtml = withBillingActiveRowHighlight(pageHtml);
+        if (id === "billing") pageHtml = withBillingSafeDuplicateGrouping(withBillingActiveRowHighlight(pageHtml));
         if (id === "lphTracker") {
           pageHtml = withLphDefaultExpectedFlips(pageHtml);
           pageHtml = withLphLunchDuringDowntime(pageHtml);
@@ -13951,6 +14115,7 @@ function duplicateForecastTrainDay(train,day){
           pageHtml = withExcelArrivalResolution(pageHtml);
           pageHtml = withExcelFutureDwellProjection(pageHtml);
           pageHtml = withExcelLphInputMenuSource(pageHtml);
+          pageHtml = withExcelCurrentWorkTracklistImport(pageHtml);
           pageHtml = withExcelSecondaryTableClearControls(pageHtml);
           pageHtml = withExcelInventoryViewport(pageHtml);
           pageHtml = withExcelInboundTrainPasteImporter(pageHtml);
