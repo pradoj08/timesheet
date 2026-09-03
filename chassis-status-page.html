@@ -7409,7 +7409,7 @@ function cleanImportedNoteValue(value){
 }
 
 function normalizeRows(data,start){if(data.length<2)return[];const headers=data[0].map(h=>normHeader(h));const map=headers.reduce((a,h,i)=>{a[h]=i;return a},{});return data.slice(1).map((row,i)=>{const chassis=pick(row,map,["chassis","chassis #","chassis number","chassis id"],1);const location=pick(row,map,["location","loc","current location","parking location"],2);const pool=pick(row,map,["chas pool","chassis pool","pool"],3);const eventDate=pick(row,map,["event date","event datetime","date"],4);const event=pick(row,map,["event","event type","last event"],5);const kind=pick(row,map,["chas car kind","chas/car kind","chassis car kind","car kind","chas kind","kind","chassis kind","type"],-1);const hc=pick(row,map,["chas hc","hc","chassis hc","hazard class","height code"],-1);const status=pick(row,map,["status","current status"],7);const ce=pick(row,map,["ce","c/e","customer exception","ce flag"],-1);const note=pick(row,map,["note","notes","chassis note"],-1);return{id:start+i+1,chassis:String(chassis||"—"),location:String(location||"—"),pool:String(pool||"—"),eventDate:String(eventDate||"01/01/1900 00:00:00"),event:String(event||"—"),kind:String(kind&&kind!==eventDate?kind:"—"),hc:String(hc&&hc!==eventDate?hc:""),status:String(status||"—"),ce:String(ce||"").toLowerCase().includes("ce")||String(ce||"").toLowerCase()==="yes"||String(ce||"").toLowerCase()==="true",note:cleanImportedNoteValue(note!==eventDate?note:"")}}).filter(r=>r.chassis!=="—")}
-async function importFiles(files){const all=[];importedFileArchives=[];for(const file of [...files]){let dataUrl='';try{dataUrl=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(file)})}catch{}importedFileArchives.push({name:file.name,size:file.size,type:file.type,lastModified:file.lastModified,dataUrl});const buf=await file.arrayBuffer();const wb=XLSX.read(buf,{type:"array",cellDates:false});const sh=wb.Sheets[wb.SheetNames[0]];const data=XLSX.utils.sheet_to_json(sh,{header:1,defval:""}).filter(r=>r.some(Boolean));all.push(...normalizeRows(data,all.length))}tableRows=all.map((r,i)=>({...r,id:i+1,note:cleanImportedNoteValue(r.note)}));query="";filter="all";sortConfig={key:"id",direction:"asc"};$("search").value="";render();queueCloudSave()}
+async function importFiles(files){const all=[];importedFileArchives=[];for(const file of [...files]){let dataUrl='';try{dataUrl=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(file)})}catch{}importedFileArchives.push({name:file.name,size:file.size,type:file.type,lastModified:file.lastModified,dataUrl});const buf=await file.arrayBuffer();const wb=XLSX.read(buf,{type:"array",cellDates:false});const sh=wb.Sheets[wb.SheetNames[0]];const data=XLSX.utils.sheet_to_json(sh,{header:1,defval:""}).filter(r=>r.some(Boolean));all.push(...normalizeRows(data,all.length))}tableRows=all.map((r,i)=>({...r,id:i+1,note:cleanImportedNoteValue(r.note)}));query="";filter="all";sortConfig={key:"daysOld",direction:"desc"};$("search").value="";render();queueCloudSave()}
 function csvEscape(value){
   const s=String(value ?? "");
   return /[",\n\r]/.test(s) ? `"${s.replace(/"/g,'""')}"` : s;
@@ -26520,7 +26520,7 @@ body:not(.forecast-view) .app > .hero.clean-hero > .hero-actions{
   background:#24324b!important;
 }
 #forecastModal .forecast-request-unified-table .forecast-request-segment-start{
-  border-left:2px solid var(--pool-accent)!important;
+  border-left:0!important;
 }
 #forecastModal .forecast-request-unified-table .forecast-request-unified-dcli{
   --pool-accent:#f59e42;
@@ -26583,14 +26583,8 @@ body:not(.forecast-view) .app > .hero.clean-hero > .hero-actions{
   box-shadow:inset 0 3px 0 var(--pool-accent)!important;
 }
 #forecastModal .forecast-request-unified-table .forecast-request-unified-pool::before{
-  content:""!important;
-  display:inline-block!important;
-  width:7px!important;
-  height:7px!important;
-  margin:0 8px 1px 0!important;
-  border-radius:50%!important;
-  background:var(--pool-accent)!important;
-  box-shadow:0 0 10px var(--pool-glow)!important;
+  content:none!important;
+  display:none!important;
 }
 #forecastModal .forecast-request-unified-table .forecast-request-unavailable{
   color:rgba(226,232,240,.30)!important;

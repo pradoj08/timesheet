@@ -990,8 +990,8 @@
     padding-right: 8px;
     text-align: right;
   }
-  .inbound-breakdown tbody tr:nth-child(even) { background: #f5f0e8; }
-  .inbound-breakdown tbody tr:nth-child(odd) { background: #ffffff; }
+  .inbound-breakdown tbody tr.inbound-data-row-even { background: #f5f0e8; }
+  .inbound-breakdown tbody tr.inbound-data-row-odd { background: #ffffff; }
   .inbound-breakdown td:nth-child(6) { background: #fff2b8; }
   .inbound-breakdown-head {
     background: #073b12;
@@ -1023,6 +1023,95 @@
     background: #fee2e2;
     outline: 2px solid #ef4444;
     outline-offset: 1px;
+  }
+  .inbound-insert-divider,
+  .inbound-insert-divider td {
+    height: 0;
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    line-height: 0;
+  }
+  .inbound-insert-divider td { position: relative; }
+  .inbound-insert-actions {
+    position: absolute;
+    top: 50%;
+    left: 3px;
+    right: 33px;
+    z-index: 4;
+    height: 18px;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    opacity: 0;
+    pointer-events: auto;
+    text-align: center;
+  }
+  .inbound-insert-actions::before {
+    content: "";
+    position: absolute;
+    top: 8px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: transparent;
+  }
+  .inbound-insert-divider td:hover .inbound-insert-actions,
+  .inbound-insert-divider td:focus-within .inbound-insert-actions {
+    opacity: 1;
+  }
+  .inbound-insert-divider td:hover .inbound-insert-actions::before,
+  .inbound-insert-divider td:focus-within .inbound-insert-actions::before {
+    background: #0284c7;
+    box-shadow: 0 0 0 2px rgba(56,189,248,.32), 0 0 8px rgba(14,165,233,.9);
+  }
+  .inbound-insert-choice {
+    position: relative;
+    z-index: 1;
+    width: auto !important;
+    height: 18px;
+    padding: 0 8px !important;
+    border: 1px solid #7dd3fc !important;
+    border-radius: 9px;
+    background: #0369a1 !important;
+    color: #ffffff !important;
+    cursor: pointer;
+    font-size: 9px !important;
+    font-weight: 950 !important;
+    line-height: 16px !important;
+  }
+  .inbound-insert-choice:hover,
+  .inbound-insert-choice:focus-visible {
+    background: #075985 !important;
+    outline: 2px solid #38bdf8 !important;
+    outline-offset: 1px;
+  }
+  .inbound-insert-choice-dpu {
+    border-color: #fbbf24 !important;
+    background: #92400e !important;
+  }
+  .inbound-dpu-row td:first-child { padding: 2px 4px !important; }
+  .inbound-dpu-power {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 34px;
+    overflow: hidden;
+    background: linear-gradient(90deg,#f8fafc,#dbeafe,#f8fafc);
+    color: #0f2744;
+    font-size: 10px;
+    font-weight: 950;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+  .inbound-dpu-power img {
+    display: block;
+    width: 92px;
+    height: 30px;
+    object-fit: contain;
   }
   .inbound-card-foot {
     display: flex;
@@ -3873,6 +3962,7 @@
           <div class="dashboard-title-row">
             <div class="panel-title">Nine-Track Ramp Grid</div>
             <button class="btn btn-white btn-small grid-color-tab-btn" id="colorTabBtn" type="button">Color Tab</button>
+            <button class="btn btn-white btn-small" id="removeAllBlockTags" type="button" title="Clear all IHOSA and MHOAS Final assignments">Remove Tags</button>
             <button class="btn btn-white btn-small" id="importFileBtnTop" type="button" onclick="document.getElementById('inventoryFileTop').click()">IMPORT ER</button>
             <div class="panel-subtitle" id="viewDescription"></div>
           </div>
@@ -4451,6 +4541,10 @@ https://github.com/nodeca/pako/blob/main/LICENSE
 
   function blankInboundRow() {
     return { block:"", cars:"", loads:"", mty:"", wt:"", ft:"" };
+  }
+
+  function blankInboundDpuRow() {
+    return { block:"DPU", cars:"", loads:"", mty:"", wt:"", ft:"" };
   }
 
   function inboundEtaCalendarDate(value) {
@@ -6552,7 +6646,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         '<input data-inbound-field="totalFt" value="' + escapeAttr(fmtInt(totalFt)) + '" aria-label="Total footage calculated from all blocks" title="Calculated from all block footage rows" readonly>' +
       '</div>' +
       '<table class="inbound-breakdown"><thead><tr class="inbound-breakdown-head"><th>Block</th><th>Cars</th><th>Loads</th><th>Mty</th><th>Wt</th><th>Ft</th><th class="inbound-row-actions" aria-label="Block actions"></th></tr></thead><tbody>' +
-        plan.rows.map((row, rowIndex) => renderInboundRow(row, index, rowIndex)).join("") +
+        renderInboundRows(plan, index) +
       '</tbody></table>' +
       '<div class="inbound-card-foot"><button class="btn btn-white btn-small" data-inbound-add-row="' + index + '" type="button">Add Block</button><button class="btn btn-white btn-small inbound-archive-toggle' + (archived ? ' archived' : '') + '" data-inbound-archive="' + index + '" type="button" title="' + (archived ? 'Archived &mdash; click to update saved copy' : 'Archive a copy of this inbound') + '">&#10003;</button><button class="btn btn-white btn-small inbound-remove" data-inbound-delete="' + index + '" type="button" title="Remove train">X</button></div>' +
     '</article>';
@@ -6561,7 +6655,19 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   function renderInboundRow(row, trainIndex, rowIndex) {
     const fields = ["block", "cars", "loads", "mty", "wt", "ft"];
     const blockLabel = clean(row && row.block) || "this block";
-    return '<tr data-inbound-row="' + rowIndex + '">' + fields.map(field => '<td><input data-inbound-row-field="' + field + '" value="' + escapeAttr(row[field]) + '" aria-label="' + field + '"></td>').join("") + '<td class="inbound-row-actions"><button class="inbound-row-remove" data-inbound-delete-row="' + trainIndex + ':' + rowIndex + '" type="button" title="Delete block" aria-label="Delete ' + escapeAttr(blockLabel) + '">&times;</button></td></tr>';
+    if (blockLabel.toUpperCase() === "DPU") {
+      return '<tr class="inbound-data-row-' + (rowIndex % 2 ? 'even' : 'odd') + ' inbound-dpu-row" data-inbound-row="' + rowIndex + '"><td colspan="6"><div class="inbound-dpu-power"><img src="assets/union-pacific-locomotive-clean.png" alt="Union Pacific locomotive"><span>DPU &bull; Train Power</span></div></td><td class="inbound-row-actions"><button class="inbound-row-remove" data-inbound-delete-row="' + trainIndex + ':' + rowIndex + '" type="button" title="Delete DPU" aria-label="Delete DPU">&times;</button></td></tr>';
+    }
+    return '<tr class="inbound-data-row-' + (rowIndex % 2 ? 'even' : 'odd') + '" data-inbound-row="' + rowIndex + '">' + fields.map(field => '<td><input data-inbound-row-field="' + field + '" value="' + escapeAttr(row[field]) + '" aria-label="' + field + '"></td>').join("") + '<td class="inbound-row-actions"><button class="inbound-row-remove" data-inbound-delete-row="' + trainIndex + ':' + rowIndex + '" type="button" title="Delete block" aria-label="Delete ' + escapeAttr(blockLabel) + '">&times;</button></td></tr>';
+  }
+
+  function renderInboundRows(plan, trainIndex) {
+    return plan.rows.map((row, rowIndex) => {
+      const rowHtml = renderInboundRow(row, trainIndex, rowIndex);
+      if (rowIndex >= plan.rows.length - 1) return rowHtml;
+      const insertIndex = rowIndex + 1;
+      return rowHtml + '<tr class="inbound-insert-divider"><td colspan="7"><div class="inbound-insert-actions"><button class="inbound-insert-choice" data-inbound-insert-row="' + trainIndex + ':' + insertIndex + '" data-inbound-insert-kind="block" type="button">+ Add Block</button><button class="inbound-insert-choice inbound-insert-choice-dpu" data-inbound-insert-row="' + trainIndex + ':' + insertIndex + '" data-inbound-insert-kind="dpu" type="button">+ Add DPU</button></div></td></tr>';
+    }).join("");
   }
 
   function cloneInboundPlan(plan) {
@@ -7529,6 +7635,46 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     blockPasteTarget = null;
     hideBlockContextMenu();
     renderAll();
+  }
+
+  let removeBlockTagsConfirmTimer = 0;
+  function removeAllBlockTags() {
+    const button = $("#removeAllBlockTags");
+    const assignmentStorageKey = "settegast-excel-block-assignments-v1";
+    let savedAssignments = {};
+    try { savedAssignments = JSON.parse(localStorage.getItem(assignmentStorageKey) || "{}"); } catch (_) {}
+    const assignedCount = savedAssignments && typeof savedAssignments === "object" ? Object.keys(savedAssignments).length : 0;
+    if (button.dataset.confirmRemoveTags !== "true") {
+      button.dataset.confirmRemoveTags = "true";
+      button.textContent = assignedCount ? `Confirm Remove ${assignedCount}` : "No Tags Assigned";
+      button.classList.toggle("btn-danger", assignedCount > 0);
+      clearTimeout(removeBlockTagsConfirmTimer);
+      removeBlockTagsConfirmTimer = window.setTimeout(() => {
+        delete button.dataset.confirmRemoveTags;
+        button.textContent = "Remove Tags";
+        button.classList.remove("btn-danger");
+      }, 4000);
+      return;
+    }
+    clearTimeout(removeBlockTagsConfirmTimer);
+    localStorage.setItem(assignmentStorageKey, "{}");
+    window.dispatchEvent(new StorageEvent("storage", {
+      key: assignmentStorageKey,
+      oldValue: JSON.stringify(savedAssignments || {}),
+      newValue: "{}",
+      storageArea: localStorage,
+      url: location.href
+    }));
+    if (typeof assignments !== "undefined") assignments = {};
+    if (typeof applyAssignments === "function") applyAssignments();
+    document.querySelectorAll('.yard-grid .cut-cell[data-block-assignment]').forEach(cell => cell.removeAttribute("data-block-assignment"));
+    selectedBlockIds.clear();
+    blockPasteTarget = null;
+    button.textContent = "Tags Removed";
+    button.classList.remove("btn-danger");
+    delete button.dataset.confirmRemoveTags;
+    renderAll();
+    window.setTimeout(() => { button.textContent = "Remove Tags"; }, 1400);
   }
 
   function pasteCopiedBlocks(event) {
@@ -8984,6 +9130,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     hideBlockContextMenu();
   });
   $("#clearFinalZoneBtn").addEventListener("click", clearFinalZoneTrack);
+  $("#removeAllBlockTags").addEventListener("click", removeAllBlockTags);
   $("#splitSelectedBlockBtn").addEventListener("click", () => {
     const blockId = blockContextBlockId;
     const gridId = blockContextGridId;
@@ -9123,6 +9270,21 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         plan.rows.push(blankInboundRow());
         renderAll();
       }
+    }
+    const insertRow = e.target.closest("[data-inbound-insert-row]");
+    if (insertRow) {
+      const [planIndex, rowIndex] = String(insertRow.dataset.inboundInsertRow).split(":").map(Number);
+      const plan = state.inboundPlans[planIndex];
+      if (plan && Array.isArray(plan.rows) && Number.isInteger(rowIndex)) {
+        const addDpu = insertRow.dataset.inboundInsertKind === "dpu";
+        plan.rows.splice(Math.max(0, Math.min(rowIndex, plan.rows.length)), 0, addDpu ? blankInboundDpuRow() : blankInboundRow());
+        renderAll();
+        if (!addDpu) requestAnimationFrame(() => {
+          const field = document.querySelector('[data-inbound-index="' + planIndex + '"] [data-inbound-row="' + rowIndex + '"] [data-inbound-row-field="block"]');
+          if (field) field.focus();
+        });
+      }
+      return;
     }
     const deleteRow = e.target.closest("[data-inbound-delete-row]");
     if (deleteRow) {

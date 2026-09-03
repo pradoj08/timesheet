@@ -10981,14 +10981,14 @@ const net=getForecastRequestOnHandCount(pool,size)+drayIn-drayOut-getForecastReq
 #forecastModal .forecast-request-unified-table .forecast-request-shared-size{position:sticky!important;left:0!important;z-index:3!important;width:56px!important;min-width:56px!important;max-width:56px!important;padding-left:10px!important;background:#24324b!important;color:#fff!important;text-align:left!important;font-size:14px!important;font-weight:900!important;border-right:2px solid #64748b!important;box-shadow:3px 0 12px rgba(2,6,23,.26),inset 3px 0 0 #94a3b8!important}
 #forecastModal .forecast-request-unified-table thead .forecast-request-shared-size{z-index:5!important;vertical-align:middle!important;font-size:11px!important;text-transform:uppercase!important;letter-spacing:.08em!important;background:#364764!important;box-shadow:3px 0 12px rgba(2,6,23,.26),inset 0 3px 0 #cbd5e1,inset 3px 0 0 #94a3b8!important}
 #forecastModal .forecast-chassis-request-board .forecast-request-unified-table tbody tr th.forecast-request-size.forecast-request-shared-size{background:#24324b!important}
-#forecastModal .forecast-request-unified-table .forecast-request-segment-start{border-left:2px solid var(--pool-accent)!important}
+#forecastModal .forecast-request-unified-table .forecast-request-segment-start{border-left:0!important}
 #forecastModal .forecast-request-unified-table .forecast-request-unified-dcli{--pool-accent:#f59e42;--pool-cell:rgba(245,158,66,.075);--pool-cell-hover:rgba(245,158,66,.115);--pool-border:rgba(245,158,66,.20);--pool-input-border:rgba(245,158,66,.30);--pool-input-hover:rgba(245,158,66,.62);--pool-focus:rgba(245,158,66,.18);--pool-head-strong:rgba(245,158,66,.28);--pool-head-soft:rgba(245,158,66,.13);--pool-glow:rgba(245,158,66,.42)}
 #forecastModal .forecast-request-unified-table .forecast-request-unified-tgrp{--pool-accent:#2dd4bf;--pool-cell:rgba(45,212,191,.075);--pool-cell-hover:rgba(45,212,191,.115);--pool-border:rgba(45,212,191,.20);--pool-input-border:rgba(45,212,191,.30);--pool-input-hover:rgba(45,212,191,.62);--pool-focus:rgba(45,212,191,.18);--pool-head-strong:rgba(45,212,191,.28);--pool-head-soft:rgba(45,212,191,.13);--pool-glow:rgba(45,212,191,.42)}
 #forecastModal .forecast-request-unified-table .forecast-request-unified-fgcp{--pool-accent:#60a5fa;--pool-cell:rgba(96,165,250,.075);--pool-cell-hover:rgba(96,165,250,.115);--pool-border:rgba(96,165,250,.20);--pool-input-border:rgba(96,165,250,.30);--pool-input-hover:rgba(96,165,250,.62);--pool-focus:rgba(96,165,250,.18);--pool-head-strong:rgba(96,165,250,.28);--pool-head-soft:rgba(96,165,250,.13);--pool-glow:rgba(96,165,250,.42)}
 #forecastModal .forecast-request-unified-table .forecast-request-unified-sncz{--pool-accent:#a78bfa;--pool-cell:rgba(167,139,250,.075);--pool-cell-hover:rgba(167,139,250,.115);--pool-border:rgba(167,139,250,.20);--pool-input-border:rgba(167,139,250,.30);--pool-input-hover:rgba(167,139,250,.62);--pool-focus:rgba(167,139,250,.18);--pool-head-strong:rgba(167,139,250,.28);--pool-head-soft:rgba(167,139,250,.13);--pool-glow:rgba(167,139,250,.42)}
 #forecastModal .forecast-request-unified-table td[class*="forecast-request-unified-"],#forecastModal .forecast-request-unified-table thead tr:nth-child(2) th[class*="forecast-request-unified-"]{background-color:var(--pool-cell)!important;border-color:var(--pool-border)!important}
 #forecastModal .forecast-request-unified-table .forecast-request-unified-pool{position:relative!important;background-color:var(--pool-head-strong)!important;background-image:linear-gradient(180deg,var(--pool-head-strong),var(--pool-head-soft))!important;border-bottom:1px solid var(--pool-border)!important;box-shadow:inset 0 3px 0 var(--pool-accent)!important}
-#forecastModal .forecast-request-unified-table .forecast-request-unified-pool::before{content:""!important;display:inline-block!important;width:7px!important;height:7px!important;margin:0 8px 1px 0!important;border-radius:50%!important;background:var(--pool-accent)!important;box-shadow:0 0 10px var(--pool-glow)!important}
+#forecastModal .forecast-request-unified-table .forecast-request-unified-pool::before{content:none!important;display:none!important}
 #forecastModal .forecast-request-unified-table .forecast-request-unavailable{color:rgba(226,232,240,.30)!important;font-size:14px!important;letter-spacing:.14em!important}
 #forecastModal .forecast-request-unified-table .forecast-request-unavailable span{display:inline-grid!important;place-items:center!important;width:30px!important;height:18px!important;border-radius:999px!important;background-color:var(--pool-cell)!important}
 #forecastModal .forecast-request-unified-table input{width:min(52px,100%)!important;height:29px!important;min-height:29px!important;margin:auto!important;padding:0 3px!important;border:1px solid var(--pool-input-border)!important;border-radius:7px!important;background:rgba(2,6,23,.62)!important;color:#f8fafc!important;font-size:12px!important;font-weight:800!important;text-align:center!important;box-shadow:inset 0 1px 2px rgba(0,0,0,.28)!important;appearance:textfield!important;-moz-appearance:textfield!important}
@@ -13705,6 +13705,20 @@ function duplicateForecastTrainDay(train,day){
       return bodyClose >= 0 ? html.slice(0, bodyClose) + injection + "\n" + html.slice(bodyClose) : html + injection;
     }
 
+    function withExcelRemoveBlockTags(html) {
+      const marker = 'data-excel-remove-block-tags-v1';
+      if (!html || html.includes(marker)) return html;
+      const buttonAnchor = '<button class="btn btn-white btn-small grid-color-tab-btn" id="colorTabBtn" type="button">Color Tab</button>';
+      const functionTarget = '  function pasteCopiedBlocks(event) {';
+      const listenerAnchor = '  $("#clearFinalZoneBtn").addEventListener("click", clearFinalZoneTrack);';
+      if (!html.includes(buttonAnchor) || !html.includes(functionTarget) || !html.includes(listenerAnchor)) return html;
+      const button = buttonAnchor + '\n            <button class="btn btn-white btn-small" id="removeAllBlockTags" type="button" title="Clear all IHOSA and MHOAS Final assignments">Remove Tags</button>';
+      const handler = '  let removeBlockTagsConfirmTimer = 0;\n  function removeAllBlockTags() {\n    const button = $("#removeAllBlockTags");\n    const assignmentStorageKey = "settegast-excel-block-assignments-v1";\n    let savedAssignments = {};\n    try { savedAssignments = JSON.parse(localStorage.getItem(assignmentStorageKey) || "{}"); } catch (_) {}\n    const assignedCount = savedAssignments && typeof savedAssignments === "object" ? Object.keys(savedAssignments).length : 0;\n    if (button.dataset.confirmRemoveTags !== "true") {\n      button.dataset.confirmRemoveTags = "true";\n      button.textContent = assignedCount ? "Confirm Remove " + assignedCount : "No Tags Assigned";\n      button.classList.toggle("btn-danger", assignedCount > 0);\n      clearTimeout(removeBlockTagsConfirmTimer);\n      removeBlockTagsConfirmTimer = window.setTimeout(() => {\n        delete button.dataset.confirmRemoveTags;\n        button.textContent = "Remove Tags";\n        button.classList.remove("btn-danger");\n      }, 4000);\n      return;\n    }\n    clearTimeout(removeBlockTagsConfirmTimer);\n    localStorage.setItem(assignmentStorageKey, "{}");\n    window.dispatchEvent(new StorageEvent("storage", { key: assignmentStorageKey, oldValue: JSON.stringify(savedAssignments || {}), newValue: "{}", storageArea: localStorage, url: location.href }));\n    if (typeof assignments !== "undefined") assignments = {};\n    if (typeof applyAssignments === "function") applyAssignments();\n    document.querySelectorAll(".yard-grid .cut-cell[data-block-assignment]").forEach(cell => cell.removeAttribute("data-block-assignment"));\n    selectedBlockIds.clear();\n    blockPasteTarget = null;\n    button.textContent = "Tags Removed";\n    button.classList.remove("btn-danger");\n    delete button.dataset.confirmRemoveTags;\n    renderAll();\n    window.setTimeout(() => { button.textContent = "Remove Tags"; }, 1400);\n  }\n\n';
+      let next = html.replace(buttonAnchor, button).replace(functionTarget, handler + functionTarget);
+      next = next.replace(listenerAnchor, listenerAnchor + '\n  $("#removeAllBlockTags").addEventListener("click", removeAllBlockTags);');
+      return next.replace('</head>', '<meta ' + marker + ' content="1"></head>');
+    }
+
     function withExcelArchivePdfReader(html) {
       if (!html || typeof html !== "string" || html.includes("excel-archive-pdf-reader-v1")) return html;
       html = html.replace(
@@ -13898,9 +13912,9 @@ function duplicateForecastTrainDay(train,day){
     }
 
     function withStackingGridSmallerSideLoader(html) {
-      const marker = 'data-stacking-grid-smaller-side-loader-v1';
+      const marker = 'data-stacking-grid-smaller-side-loader-v2';
       if (html.includes(marker)) return html;
-      const css = '<style ' + marker + '>.y-front .yard-machine-fixed{width:546px !important;max-height:210px !important}</style>';
+      const css = '<style ' + marker + '>.y-front .yard-machine-fixed{width:464px !important;max-height:179px !important}</style>';
       return html.replace('</head>', css + '</head>');
     }
 
@@ -14038,6 +14052,38 @@ function duplicateForecastTrainDay(train,day){
       return html.replace("</body>", patch + "\n</body>");
     }
 
+    function withExcelInboundBetweenRowInsert(html) {
+      const marker = 'data-excel-inbound-between-row-insert-v1';
+      if (!html || html.includes(marker)) return html;
+      const rowMap = '        plan.rows.map((row, rowIndex) => renderInboundRow(row, index, rowIndex)).join("") +';
+      const rowReturn = '    return \'<tr data-inbound-row="\' + rowIndex + \'">\' + fields.map(field => \'<td><input data-inbound-row-field="\' + field + \'" value="\' + escapeAttr(row[field]) + \'" aria-label="\' + field + \'"></td>\').join("") + \'<td class="inbound-row-actions"><button class="inbound-row-remove" data-inbound-delete-row="\' + trainIndex + \':\' + rowIndex + \'" type="button" title="Delete block" aria-label="Delete \' + escapeAttr(blockLabel) + \'">&times;</button></td></tr>\';\n  }';
+      const rowReplacement = '    return \'<tr class="inbound-data-row-\' + (rowIndex % 2 ? \'even\' : \'odd\') + \'" data-inbound-row="\' + rowIndex + \'">\' + fields.map(field => \'<td><input data-inbound-row-field="\' + field + \'" value="\' + escapeAttr(row[field]) + \'" aria-label="\' + field + \'"></td>\').join("") + \'<td class="inbound-row-actions"><button class="inbound-row-remove" data-inbound-delete-row="\' + trainIndex + \':\' + rowIndex + \'" type="button" title="Delete block" aria-label="Delete \' + escapeAttr(blockLabel) + \'">&times;</button></td></tr>\';\n  }\n\n  function renderInboundRows(plan, trainIndex) {\n    return plan.rows.map((row, rowIndex) => {\n      const rowHtml = renderInboundRow(row, trainIndex, rowIndex);\n      if (rowIndex >= plan.rows.length - 1) return rowHtml;\n      const insertIndex = rowIndex + 1;\n      return rowHtml + \'<tr class="inbound-insert-divider"><td colspan="7"><button class="inbound-insert-row" data-inbound-insert-row="\' + trainIndex + \':\' + insertIndex + \'" type="button" aria-label="Add block between rows \' + (rowIndex + 1) + \' and \' + (rowIndex + 2) + \'"><span>+ Add Block Here</span></button></td></tr>\';\n    }).join("");\n  }';
+      const deleteAnchor = '    const deleteRow = e.target.closest("[data-inbound-delete-row]");';
+      const insertHandler = '    const insertRow = e.target.closest("[data-inbound-insert-row]");\n    if (insertRow) {\n      const [planIndex, rowIndex] = String(insertRow.dataset.inboundInsertRow).split(":").map(Number);\n      const plan = state.inboundPlans[planIndex];\n      if (plan && Array.isArray(plan.rows) && Number.isInteger(rowIndex)) {\n        plan.rows.splice(Math.max(0, Math.min(rowIndex, plan.rows.length)), 0, blankInboundRow());\n        renderAll();\n        requestAnimationFrame(() => {\n          const field = document.querySelector(\'[data-inbound-index="\' + planIndex + \'"] [data-inbound-row="\' + rowIndex + \'"] [data-inbound-row-field="block"]\');\n          if (field) field.focus();\n        });\n      }\n      return;\n    }\n' + deleteAnchor;
+      if (!html.includes(rowMap) || !html.includes(rowReturn) || !html.includes(deleteAnchor)) return html;
+      let next = html.replace(rowMap, '        renderInboundRows(plan, index) +').replace(rowReturn, rowReplacement).replace(deleteAnchor, insertHandler);
+      const css = '<style ' + marker + '>.inbound-breakdown tbody tr.inbound-data-row-even{background:#f5f0e8}.inbound-breakdown tbody tr.inbound-data-row-odd{background:#fff}.inbound-insert-divider,.inbound-insert-divider td{height:0;padding:0!important;border:0!important;background:transparent!important;line-height:0}.inbound-insert-divider td{position:relative}.inbound-insert-row{position:absolute;top:50%;left:3px;right:33px;z-index:4;width:auto!important;height:18px;padding:0!important;transform:translateY(-50%);border:0!important;background:transparent!important;color:transparent!important;cursor:pointer;font-size:9px!important;font-weight:950!important;line-height:18px!important;text-align:center}.inbound-insert-row:before{content:"";position:absolute;top:8px;left:0;right:0;height:2px;background:transparent}.inbound-insert-row:hover,.inbound-insert-row:focus-visible{color:#fff!important;outline:0!important}.inbound-insert-row:hover:before,.inbound-insert-row:focus-visible:before{background:#0284c7;box-shadow:0 0 0 2px rgba(56,189,248,.32),0 0 8px rgba(14,165,233,.9)}.inbound-insert-row span{position:relative;z-index:1;display:inline-block;padding:0 7px;border-radius:9px;background:transparent}.inbound-insert-row:hover span,.inbound-insert-row:focus-visible span{background:#0369a1;box-shadow:0 0 0 1px #7dd3fc}</style>';
+      return next.replace('</head>', css + '</head>');
+    }
+
+    function withExcelInboundDpuInsert(html) {
+      const marker = 'data-excel-inbound-dpu-insert-v1';
+      if (!html || html.includes(marker)) return html;
+      const blankAnchor = '  function blankInboundRow() {\n    return { block:"", cars:"", loads:"", mty:"", wt:"", ft:"" };\n  }';
+      const blankReplacement = blankAnchor + '\n\n  function blankInboundDpuRow() {\n    return { block:"DPU", cars:"", loads:"", mty:"", wt:"", ft:"" };\n  }';
+      const labelAnchor = '    const blockLabel = clean(row && row.block) || "this block";\n    return \'<tr class="inbound-data-row-';
+      const labelReplacement = '    const blockLabel = clean(row && row.block) || "this block";\n    if (blockLabel.toUpperCase() === "DPU") {\n      return \'<tr class="inbound-data-row-\' + (rowIndex % 2 ? \'even\' : \'odd\') + \' inbound-dpu-row" data-inbound-row="\' + rowIndex + \'"><td colspan="6"><div class="inbound-dpu-power"><img src="assets/union-pacific-locomotive-clean.png" alt="Union Pacific locomotive"><span>DPU &bull; Train Power</span></div></td><td class="inbound-row-actions"><button class="inbound-row-remove" data-inbound-delete-row="\' + trainIndex + \':\' + rowIndex + \'" type="button" title="Delete DPU" aria-label="Delete DPU">&times;</button></td></tr>\';\n    }\n    return \'<tr class="inbound-data-row-';
+      const oldDivider = '      return rowHtml + \'<tr class="inbound-insert-divider"><td colspan="7"><button class="inbound-insert-row" data-inbound-insert-row="\' + trainIndex + \':\' + insertIndex + \'" type="button" aria-label="Add block between rows \' + (rowIndex + 1) + \' and \' + (rowIndex + 2) + \'"><span>+ Add Block Here</span></button></td></tr>\';';
+      const newDivider = '      return rowHtml + \'<tr class="inbound-insert-divider"><td colspan="7"><div class="inbound-insert-actions"><button class="inbound-insert-choice" data-inbound-insert-row="\' + trainIndex + \':\' + insertIndex + \'" data-inbound-insert-kind="block" type="button">+ Add Block</button><button class="inbound-insert-choice inbound-insert-choice-dpu" data-inbound-insert-row="\' + trainIndex + \':\' + insertIndex + \'" data-inbound-insert-kind="dpu" type="button">+ Add DPU</button></div></td></tr>\';';
+      const spliceAnchor = '        plan.rows.splice(Math.max(0, Math.min(rowIndex, plan.rows.length)), 0, blankInboundRow());\n        renderAll();\n        requestAnimationFrame(() => {';
+      const spliceReplacement = '        const addDpu = insertRow.dataset.inboundInsertKind === "dpu";\n        plan.rows.splice(Math.max(0, Math.min(rowIndex, plan.rows.length)), 0, addDpu ? blankInboundDpuRow() : blankInboundRow());\n        renderAll();\n        if (!addDpu) requestAnimationFrame(() => {';
+      const anchors = [[blankAnchor, blankReplacement], [labelAnchor, labelReplacement], [oldDivider, newDivider], [spliceAnchor, spliceReplacement]];
+      let next = html;
+      for (const pair of anchors) { if (!next.includes(pair[0])) return html; next = next.replace(pair[0], pair[1]); }
+      const css = '<style ' + marker + '>.inbound-insert-actions{position:absolute;top:50%;left:3px;right:33px;z-index:4;height:18px;transform:translateY(-50%);display:flex;align-items:center;justify-content:center;gap:5px;opacity:0;pointer-events:auto;text-align:center}.inbound-insert-actions:before{content:"";position:absolute;top:8px;left:0;right:0;height:2px;background:transparent}.inbound-insert-divider td:hover .inbound-insert-actions,.inbound-insert-divider td:focus-within .inbound-insert-actions{opacity:1}.inbound-insert-divider td:hover .inbound-insert-actions:before,.inbound-insert-divider td:focus-within .inbound-insert-actions:before{background:#0284c7;box-shadow:0 0 0 2px rgba(56,189,248,.32),0 0 8px rgba(14,165,233,.9)}.inbound-insert-choice{position:relative;z-index:1;width:auto!important;height:18px;padding:0 8px!important;border:1px solid #7dd3fc!important;border-radius:9px;background:#0369a1!important;color:#fff!important;cursor:pointer;font-size:9px!important;font-weight:950!important;line-height:16px!important}.inbound-insert-choice:hover,.inbound-insert-choice:focus-visible{background:#075985!important;outline:2px solid #38bdf8!important;outline-offset:1px}.inbound-insert-choice-dpu{border-color:#fbbf24!important;background:#92400e!important}.inbound-dpu-row td:first-child{padding:2px 4px!important}.inbound-dpu-power{display:flex;align-items:center;justify-content:center;gap:8px;min-height:34px;overflow:hidden;background:linear-gradient(90deg,#f8fafc,#dbeafe,#f8fafc);color:#0f2744;font-size:10px;font-weight:950;letter-spacing:.08em;text-transform:uppercase}.inbound-dpu-power img{display:block;width:92px;height:30px;object-fit:contain}</style>';
+      return next.replace('</head>', css + '</head>');
+    }
+
     function withExcelRuleBorderTextColors(html) {
       const marker = 'data-excel-rule-border-text-colors-v1';
       if (!html || html.includes(marker)) return html;
@@ -14158,10 +14204,12 @@ function duplicateForecastTrainDay(train,day){
           pageHtml = withExcelInboundArchiveSavepoints(pageHtml);
           pageHtml = withExcelMorningMeetingPushFix(pageHtml);
           pageHtml = withExcelAfternoonMeeting(pageHtml);
-          pageHtml = withExcelArchivePdfReader(pageHtml);
+          pageHtml = withExcelRemoveBlockTags(pageHtml);
           pageHtml = withExcelInboundOnHandChecks(pageHtml);
           pageHtml = withExcelInboundSequenceCounterColors(pageHtml);
           pageHtml = withExcelBlockSplitContextMenu(pageHtml);
+          pageHtml = withExcelInboundBetweenRowInsert(pageHtml);
+          pageHtml = withExcelInboundDpuInsert(pageHtml);
         }
         if (id === "chassisStatus") {
           pageHtml = withChassisGreenExcelHero(pageHtml);
@@ -14199,12 +14247,20 @@ function duplicateForecastTrainDay(train,day){
           pageHtml = withChassisLoadplanRowAlignment(pageHtml);
           pageHtml = withChassisTracklistReplacementImport(pageHtml);
           pageHtml = withChassisInboundDuplicateAction(pageHtml);
+          pageHtml = withChassisImportOldestFirst(pageHtml);
         }
         bridgedPageHtml.set(id, withWorkbookSyncBridge(pageHtml));
       }
       return bridgedPageHtml.get(id);
     }
 
+    function withChassisImportOldestFirst(html) {
+      const marker = "chassis-import-oldest-first-v1";
+      if (!html || typeof html !== "string" || html.includes(marker)) return html;
+      const target = 'sortConfig={key:"id",direction:"asc"};$("search").value="";render();queueCloudSave()}';
+      const replacement = 'sortConfig={key:"daysOld",direction:"desc"};$("search").value="";render();queueCloudSave()}/* chassis-import-oldest-first-v1 */';
+      return html.includes(target) ? html.replace(target, replacement) : html;
+    }
     function withExcelBootstrappedColorRules(html, rules) {
       if (!html || !Array.isArray(rules) || !rules.length) return html;
       const serialized = JSON.stringify(rules).replace(/</g, "\\u003c");
