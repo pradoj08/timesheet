@@ -3249,6 +3249,36 @@
     function between(title,next){var from=index(title);if(from<0)return[];var to=lines.length;(next||[]).forEach(function(name){var found=index(name,from+1);if(found>=0&&found<to)to=found});return lines.slice(from+1,to)}
     function valueFor(part,label){for(var i=0;i<part.length;i++){var m=part[i].match(new RegExp("^(.+?)\\\\s+"+label+"$","i"));if(m)return m[1].trim()}return""}
     function numbered(part){return part.map(function(line){var m=line.match(/^([\\d,]+)\\s+(.+)$/);return m?{number:cleanNumber(m[1]),label:m[2].trim()}:null}).filter(Boolean)}
+    /* am-import-flexible-offspot-v1 */
+    function offspotValue(part,label){
+      var labelPattern=new RegExp("\\b"+label+"\\b","i");
+      function extract(text){var match=String(text||"").match(/(-?[\\d,]+(?:\\.\\d+)?)\\s*(?:ft|feet|foot)?/i);if(!match)return"";var number=Number(cleanNumber(match[1]));return Number.isFinite(number)?number.toLocaleString()+" ft":""}
+      for(var i=0;i<part.length;i++){
+        if(!labelPattern.test(part[i]))continue;
+        var same=extract(part[i].replace(labelPattern," "));
+        if(same)return same;
+        var previous=i>0?extract(part[i-1]):"";
+        var next=i+1<part.length?extract(part[i+1]):"";
+        if(previous&&next&&i>1&&/\\b(?:Pierce|Terminal)\\b/i.test(part[i-2]))return next;
+        if(previous)return previous;
+        if(next)return next;
+      }
+      return "";
+    }
+    /* am-import-flexible-stacking-v1 */
+    function numberNearLabel(part,labelPattern){
+      function extract(text){var match=String(text||"").match(/-?[\\d,]+(?:\\.\\d+)?/);return match?cleanNumber(match[0]):""}
+      for(var i=0;i<part.length;i++){
+        if(!labelPattern.test(part[i]))continue;
+        var same=extract(part[i].replace(labelPattern," "));
+        if(same)return same;
+        var previous=i>0?extract(part[i-1]):"";
+        var next=i+1<part.length?extract(part[i+1]):"";
+        if(previous)return previous;
+        if(next)return next;
+      }
+      return "";
+    }
     var dateLine=lines.find(function(line){return /^\\d{1,2}\\/\\d{1,2}\\/\\d{4}$/.test(line)})||"";
     var inboundPrev=numbered(between("Intermodal footage IN previous day",["Intermodal footage OUT previous day"])).filter(function(row){return !/^total$/i.test(row.label)}).slice(0,3);
     var outbound=between("Intermodal footage OUT previous day",["ZPBHO Overview"]), outboundPrev=numbered(outbound).filter(function(row){return !/^total$/i.test(row.label)}).slice(0,3), overview=between("ZPBHO Overview",["Manpower"]), manpower=between("Manpower",["Parking Capacity"]), parking=between("Parking Capacity",["Loadsheet"]), loadsheet=between("Loadsheet",["Lift Volume"]), lift=between("Lift Volume",["Offspot"]), offspot=between("Offspot",["Inbounds"]), inbound=between("Inbounds",["Operational Concerns"]), concerns=between("Operational Concerns",[]);
@@ -3259,13 +3289,13 @@
     var occupied=slotsMatch&&slotsMatch[1]||"", slotCapacity=slotsMatch&&slotsMatch[2]||"";
     var pct=(parking.find(function(x){return /^\\d+(?:\\.\\d+)?%$/.test(x)})||"").replace(/%$/,"");
     if(!pct&&occupied&&slotCapacity){pct=String(Math.round((Number(cleanNumber(occupied))/Number(cleanNumber(slotCapacity)))*100))}
-    var stacked=(parkingText.match(/([\\d,]+)\\s+units stacked/i)||[])[1]||"";
+    var stacked=numberNearLabel(parking,/\\b(?:units?\\s+stack(?:ed|ing)|stack(?:ed|ing)\\s+units?)\\b/i);
     var fields=[
       ["Report date",dateLine,"",false],["Inbound footage 1",inboundPrev[0]&&inboundPrev[0].number,"A6",true],["Inbound train 1",inboundPrev[0]&&inboundPrev[0].label,"B6",true],["Inbound footage 2",inboundPrev[1]&&inboundPrev[1].number,"A7",true],["Inbound train 2",inboundPrev[1]&&inboundPrev[1].label,"B7",true],["Inbound footage 3",inboundPrev[2]&&inboundPrev[2].number,"A8",true],["Inbound train 3",inboundPrev[2]&&inboundPrev[2].label,"B8",true],
       ["Outbound footage 1",outboundPrev[0]&&outboundPrev[0].number,"A12",true],["Outbound train 1",outboundPrev[0]&&outboundPrev[0].label,"B12",true],["Outbound footage 2",outboundPrev[1]&&outboundPrev[1].number,"A13",true],["Outbound train 2",outboundPrev[1]&&outboundPrev[1].label,"B13",true],["Outbound footage 3",outboundPrev[2]&&outboundPrev[2].number,"A14",true],["Outbound train 3",outboundPrev[2]&&outboundPrev[2].label,"B14",true],["UPS count",valueFor(overview,"UPS count"),"A18",true],["Estimated arrival",valueFor(overview,"Estimated arrival time"),"A19",true],["Concerns",valueFor(overview,"Concerns"),"A21",true],
       ["1st shift total",valueFor(firstLines,"total"),"C25",true],["1st shift scheduled",valueFor(firstLines,"scheduled"),"C26",true],["2nd shift total",valueFor(secondLines,"total"),"C28",true],["2nd shift scheduled",valueFor(secondLines,"scheduled"),"C29",true],["Parking capacity",pct,"C32",true],["Occupied slots",cleanNumber(occupied),"C33",true],["Stacked units",cleanNumber(stacked),"C34",true],
       ["Loads",valueFor(loadsheet,"Loads"),"A38",true],["Empties",valueFor(loadsheet,"Empties"),"A39",true],["Loadsheet note",loadsheet.find(function(x){return /loading/i.test(x)})||"","A41",true],["Previous railcar lifts",valueFor(previous,"Railcar Lifts"),"A45",true],["Previous flips",valueFor(previous,"Flips"),"A46",true],["Previous stack / unstack",valueFor(previous,"Stack\\\\/Unstack"),"A47",true],
-      ["Projected ramp",valueFor(projected,"Ramp.*"),"A52",true],["Projected deramp",valueFor(projected,"Deramp.*"),"A53",true],["Projected flip / stack",valueFor(projected,"Flip\\\\/Stack"),"A54",true],["Pierce offspot",valueFor(offspot,"Pierce"),"A58",true],["Terminal offspot",valueFor(offspot,"Terminal"),"A59",true],
+      ["Projected ramp",valueFor(projected,"Ramp.*"),"A52",true],["Projected deramp",valueFor(projected,"Deramp.*"),"A53",true],["Projected flip / stack",numberNearLabel(projected,/\\b(?:flip\\s*\\/\\s*stack|stack\\s*\\/\\s*unstack|flips?\\s*(?:and|&)\\s*stack(?:s|ing)?)\\b/i),"A54",true],["Pierce offspot",offspotValue(offspot,"Pierce"),"A58",true],["Terminal offspot",offspotValue(offspot,"Terminal"),"A59",true],
       ["-24 hour units",ranges[0]&&ranges[0].number,"A64",true],["-24 hour inbounds",ranges[0]&&ranges[0].label,"B64",true],["24-48 hour units",ranges[1]&&ranges[1].number,"A66",true],["24-48 hour inbounds",ranges[1]&&ranges[1].label,"B66",true],["48-72 hour units",ranges[2]&&ranges[2].number,"A68",true],["48-72 hour inbounds",ranges[2]&&ranges[2].label,"B68",true],["Operational concerns",concerns.join(" "),"",false]
     ];
     return fields.filter(function(field){return field[1]!==undefined&&field[1]!==null&&String(field[1]).trim()!==""}).map(function(field){return{label:field[0],value:String(field[1]).trim(),cell:field[2],apply:field[3]}});
