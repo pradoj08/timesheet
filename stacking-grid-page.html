@@ -1489,6 +1489,26 @@ body.two-high #yardView .y-pair{
 }
 #boxContextMenu .context-color:hover,#boxContextMenu .context-color:focus{border-color:#fff;transform:translateY(-1px)}
 #boxContextMenu .context-clear{margin:7px 0 0;color:#f3c8c8;text-align:center}
+/* stacking-grid-drag-multiselect-v1 */
+#remove.delete-confirm{background:#c62828;color:#fff}
+#remove:disabled{opacity:.45;cursor:not-allowed}
+.selection-marquee{position:fixed;z-index:9999;border:2px solid #148cff;background:rgba(20,140,255,.17);pointer-events:none}
+body.multi-selecting .unit,body.multi-selecting .y-half{cursor:crosshair!important;user-select:none}
+.unit.selected,.unit.selected.green{
+  box-sizing:border-box!important;
+  border:4px solid #008cff!important;
+  outline:1px solid #d8f5ff!important;
+  outline-offset:-5px!important;
+  box-shadow:inset 0 0 0 1px #005ca8,0 0 8px rgba(0,140,255,.9)!important;
+}
+.y-half.selected,.y-half.selected.highlighted{
+  box-sizing:border-box!important;
+  border:4px solid #008cff!important;
+  outline:1px solid #d8f5ff!important;
+  outline-offset:-5px!important;
+  box-shadow:inset 0 0 0 1px #005ca8,0 0 8px rgba(0,140,255,.9)!important;
+  z-index:30!important;
+}
 </style>
 </head>
 <body>
@@ -1501,9 +1521,10 @@ body.two-high #yardView .y-pair{
     <button type="button" id="stackHeightToggle" aria-pressed="false">3 HIGH</button>
     <button type="button" id="exportExcel">EXPORT EXCEL</button>
   </div><div class="controls">
-    <label class="mode"><input type="radio" name="mode" value="swap" checked>Swap</label>
-    <label class="mode"><input type="radio" name="mode" value="move">Move</label>
+    <label class="mode" title="Hold Alt while dragging a unit"><input type="radio" name="mode" value="swap" checked>Swap</label>
+    <label class="mode" title="Hold Alt while dragging a unit"><input type="radio" name="mode" value="move">Move</label>
     <button id="edit">Edit</button>
+    <button type="button" id="remove" disabled>Delete</button>
     <button id="undo" disabled>Undo</button>
     <select id="highlightColor" aria-label="Container highlight color" title="Choose a highlight color or turn highlighting off">
       <option value="off">Highlight Off</option>
@@ -1552,6 +1573,10 @@ body.two-high #yardView .y-pair{
 const KEY='track809_dual_view_gold_highlight_v9';
 let state=[{"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "ONEU 422416", "green": false}, {"text": "TRHU 434119", "green": false}, {"text": "FDCU 048270", "green": false}, {"text": "TRHU 764512", "green": false}, {"text": "ONEU 654276", "green": true}, {"text": "TCLU 945071", "green": true}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "NYKU 474373", "green": true}, {"text": "TGBU 439897", "green": false}, {"text": "FDCU 054107", "green": false}, {"text": "FDCU 057164", "green": false}, {"text": "TRHU 660102", "green": false}, {"text": "ONEU 422433", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "ONEU 422408", "green": false}, {"text": "FDCU 064422", "green": false}, {"text": "TEMU 665348", "green": true}, {"text": "NYKU 523613", "green": false}, {"text": "TRHU 689846", "green": false}, {"text": "DRYU 608114", "green": false}, {"text": "TCLU 675901", "green": false}, {"text": "ONEU 094009", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "FFAU 598210", "green": false}, {"text": "FFAU 680398", "green": false}, {"text": "ONEU 643333", "green": false}, {"text": "ONEU 422420", "green": false}, {"text": "", "green": false}, {"text": "UETU 415290", "green": true}, {"text": "TCLU 459570", "green": false}, {"text": "ONEU 422745", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "ONEU 003526", "green": false}, {"text": "ONEU 506781", "green": false}, {"text": "ONEU 751076", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "ONEU 608499", "green": true}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "ONEU 618562", "green": false}, {"text": "ONEU 552391", "green": false}, {"text": "TCLU 628278", "green": true}, {"text": "", "green": false}, {"text": "ONEU 569747", "green": true}, {"text": "TCLU 643791", "green": true}, {"text": "ONEU 090788", "green": true}, {"text": "TCLU 882156", "green": true}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}];
 let selectedIndex=null;
+let selectedIndexes=new Set();
+let multiSelectMode=false;
+let selectionStart=null;
+let selectionMarquee=null;
 let highlightMode=false;
 let highlightsHidden=false;
 const HIGHLIGHT_COLOR_KEY=KEY+'_highlight_color';
@@ -1644,7 +1669,7 @@ function save(){
   localStorage.setItem(ORDER_KEY,'level-major-v3');
 }
 function rememberState(){
-  undoStack.push({state:state.map(item=>({...item})),selectedIndex});
+  undoStack.push({state:state.map(item=>({...item})),selectedIndex,selectedIndexes:[...selectedIndexes]});
   if(undoStack.length>30)undoStack.shift();
   updateUndoButton();
 }
@@ -1657,6 +1682,7 @@ function undoLast(){
   if(!previous)return;
   state=previous.state.map(item=>({...item}));
   selectedIndex=previous.selectedIndex;
+  selectedIndexes=new Set(previous.selectedIndexes||(previous.selectedIndex===null?[]:[previous.selectedIndex]));
   cancelDelete();
   save();
   renderAll();
@@ -1843,7 +1869,7 @@ function exportStackingGridExcel(){
   button.textContent='EXPORTED';
   setTimeout(()=>{button.textContent=previous},1400);
 }
-function renderAll(){renderGrid();renderYard();updateContainerTotal();fitStackingView();}
+function renderAll(){renderGrid();renderYard();updateContainerTotal();fitStackingView();updateDeleteButton();}
 window.addEventListener('resize',fitStackingView,{passive:true});
 
 function tierLabel(index){
@@ -1886,7 +1912,7 @@ function renderGrid(){
         const i=base+(level*BAYS)+bay;
         const d=state[i]||{text:'',green:false};
         const u=document.createElement('div');
-        u.className='unit'+(d.green?' green':'')+(selectedIndex===i?' selected':'');
+        u.className='unit'+(d.green?' green':'')+(selectedIndexes.has(i)?' selected':'');
         u.dataset.i=i;
         applyItemHighlightPalette(u,d);
         u.innerHTML='<button class="label"></button>'+(d.text?`<span class="tier-badge">${tierLabel(i)}</span>`:'');
@@ -1935,13 +1961,13 @@ function renderYard(){
       const bottomRoof=!topRoof && !middleRoof && Boolean(bottom.text);
 
       stacks+=`<div class="y-stack">
-        <div class="y-half top ${top.text?'':'empty'} ${top.green?'highlighted':''} ${selectedIndex===topIndex?'selected':''}" data-i="${topIndex}" ${itemHighlightStyle(top)}>
+        <div class="y-half top ${top.text?'':'empty'} ${top.green?'highlighted':''} ${selectedIndexes.has(topIndex)?'selected':''}" data-i="${topIndex}" ${itemHighlightStyle(top)}>
           ${top.text?`<div class="y-container ${topCls} ${topRoof?'stack-top':''}" data-i="${topIndex}">${top.text}<span class="tier-badge">${tierLabel(topIndex)}</span></div>`:''}
         </div>
-        ${displayLevels===3?`<div class="y-half middle ${middle.text?'':'empty'} ${middle.green?'highlighted':''} ${selectedIndex===middleIndex?'selected':''}" data-i="${middleIndex}" ${itemHighlightStyle(middle)}>
+        ${displayLevels===3?`<div class="y-half middle ${middle.text?'':'empty'} ${middle.green?'highlighted':''} ${selectedIndexes.has(middleIndex)?'selected':''}" data-i="${middleIndex}" ${itemHighlightStyle(middle)}>
           ${middle.text?`<div class="y-container ${middleCls} ${middleRoof?'stack-top':''}" data-i="${middleIndex}">${middle.text}<span class="tier-badge">${tierLabel(middleIndex)}</span></div>`:''}
         </div>`:''}
-        <div class="y-half bottom ${bottom.text?'':'empty'} ${bottom.green?'highlighted':''} ${selectedIndex===bottomIndex?'selected':''}" data-i="${bottomIndex}" ${itemHighlightStyle(bottom)}>
+        <div class="y-half bottom ${bottom.text?'':'empty'} ${bottom.green?'highlighted':''} ${selectedIndexes.has(bottomIndex)?'selected':''}" data-i="${bottomIndex}" ${itemHighlightStyle(bottom)}>
           ${bottom.text?`<div class="y-container ${bottomCls} ${bottomRoof?'stack-top':''}" data-i="${bottomIndex}">${bottom.text}<span class="tier-badge">${tierLabel(bottomIndex)}</span></div>`:''}
         </div>
       </div>`;
@@ -1970,6 +1996,8 @@ function renderYard(){
 function select(i){
   if(selectedIndex!==i)cancelDelete();
   selectedIndex=i;
+  selectedIndexes.clear();
+  selectedIndexes.add(i);
   renderAll();
   updateGlowButton();
 }
@@ -2044,8 +2072,10 @@ function editSelected(){
 function updateDeleteButton(){
   const btn=document.getElementById('remove');
   if(!btn)return;
-  btn.textContent=deleteArmed?'Confirm Delete':'Delete';
+  const count=[...selectedIndexes].filter(i=>state[i]?.text).length;
+  btn.textContent=deleteArmed?`Confirm Delete (${count})`:(count>1?`Delete ${count}`:'Delete');
   btn.classList.toggle('delete-confirm',deleteArmed);
+  btn.disabled=count===0;
 }
 function cancelDelete(){
   deleteArmed=false;
@@ -2054,7 +2084,7 @@ function cancelDelete(){
   updateDeleteButton();
 }
 function armDelete(){
-  if(selectedIndex===null||!state[selectedIndex]?.text)return;
+  if(![...selectedIndexes].some(i=>state[i]?.text))return;
   if(deleteArmed)return;
   deleteArmed=true;
   updateDeleteButton();
@@ -2062,9 +2092,12 @@ function armDelete(){
   deleteTimer=setTimeout(cancelDelete,5000);
 }
 function executeDelete(){
-  if(!deleteArmed||selectedIndex===null||!state[selectedIndex]?.text)return;
+  const targets=[...selectedIndexes].filter(i=>state[i]?.text);
+  if(!deleteArmed||!targets.length)return;
   rememberState();
-  state[selectedIndex]={text:'',green:false};
+  targets.forEach(i=>{state[i]={text:'',green:false}});
+  selectedIndexes.clear();
+  selectedIndex=null;
   cancelDelete();
   save();
   renderAll();
@@ -2113,6 +2146,8 @@ function openBoxContextMenu(i,x,y){
   if(!Number.isInteger(i)||i<0)return;
   contextIndex=i;
   selectedIndex=i;
+  selectedIndexes.clear();
+  selectedIndexes.add(i);
   cancelDelete();
   renderAll();
   const menu=document.getElementById('boxContextMenu');
@@ -2159,6 +2194,37 @@ function makeGhost(text,x,y){
 }
 function clearGhost(){dragGhost?.remove();dragGhost=null;dragIndex=null;document.querySelectorAll('.target').forEach(x=>x.classList.remove('target'))}
 
+function updateMarquee(x,y){
+  if(!selectionStart||!selectionMarquee)return;
+  const left=Math.min(selectionStart.x,x),top=Math.min(selectionStart.y,y);
+  const right=Math.max(selectionStart.x,x),bottom=Math.max(selectionStart.y,y);
+  selectionMarquee.style.left=left+'px';selectionMarquee.style.top=top+'px';
+  selectionMarquee.style.width=(right-left)+'px';selectionMarquee.style.height=(bottom-top)+'px';
+  selectedIndexes.clear();
+  document.querySelectorAll('#gridView .unit, #yardView .y-half').forEach(slot=>{
+    if(!slot.getClientRects().length)return;
+    const r=slot.getBoundingClientRect();
+    if(r.right>=left&&r.left<=right&&r.bottom>=top&&r.top<=bottom){
+      const i=Number(slot.dataset.i);
+      if(Number.isInteger(i)&&state[i]?.text)selectedIndexes.add(i);
+    }
+  });
+  selectedIndex=selectedIndexes.size?[...selectedIndexes][0]:null;
+  document.querySelectorAll('.unit,.y-half').forEach(slot=>slot.classList.toggle('selected',selectedIndexes.has(Number(slot.dataset.i))));
+  updateDeleteButton();
+}
+function engageMultiSelectFromDrag(){
+  if(multiSelectMode)return;
+  multiSelectMode=true;
+  document.body.classList.add('multi-selecting');
+}
+function finishMarquee(){
+  selectionMarquee?.remove();selectionMarquee=null;selectionStart=null;
+  multiSelectMode=false;
+  document.body.classList.remove('multi-selecting');
+  updateDeleteButton();
+}
+
 document.addEventListener('keydown',e=>{
   if(e.key==='Escape'&&document.getElementById('boxContextMenu')?.classList.contains('open')){
     e.preventDefault();
@@ -2172,7 +2238,7 @@ document.addEventListener('keydown',e=>{
     return;
   }
   if(e.key==='Delete'||e.key==='Backspace'){
-    if(selectedIndex!==null&&state[selectedIndex]?.text){
+    if([...selectedIndexes].some(i=>state[i]?.text)){
       e.preventDefault();
       armDelete();
     }
@@ -2199,6 +2265,7 @@ document.addEventListener('click',e=>{
     didDrag=false;
     return;
   }
+  if(multiSelectMode)return;
   const gu=e.target.closest('.unit');
   const yh=e.target.closest('.y-half');
 
@@ -2226,6 +2293,17 @@ document.addEventListener('pointerdown',e=>{
   if(e.button!==undefined&&e.button!==0)return;
   if(e.target.closest('.slot-inline-editor'))return;
   if(highlightMode)return;
+  const selectionSlot=e.target.closest('.unit,.y-half');
+  if(selectionSlot&&(multiSelectMode||!e.altKey)){
+    e.preventDefault();
+    cancelDelete();
+    selectionStart={x:e.clientX,y:e.clientY};
+    selectionMarquee=document.createElement('div');
+    selectionMarquee.className='selection-marquee';
+    document.body.appendChild(selectionMarquee);
+    updateMarquee(e.clientX,e.clientY);
+    return;
+  }
   const gu=e.target.closest('.unit');
   const yc=e.target.closest('.y-container');
 
@@ -2259,6 +2337,15 @@ document.addEventListener('contextmenu',e=>{
   openBoxContextMenu(i,e.clientX,e.clientY);
 });
 document.addEventListener('pointermove',e=>{
+  if(selectionStart){
+    e.preventDefault();
+    if(Math.hypot(e.clientX-selectionStart.x,e.clientY-selectionStart.y)>5){
+      didDrag=true;
+      engageMultiSelectFromDrag();
+    }
+    updateMarquee(e.clientX,e.clientY);
+    return;
+  }
   if(dragIndex===null)return;
   if(!didDrag && Math.hypot(e.clientX-dragStartX,e.clientY-dragStartY)>5){
     didDrag=true;
@@ -2272,6 +2359,7 @@ document.addEventListener('pointermove',e=>{
   if(t)t.classList.add('target');
 },{passive:false});
 document.addEventListener('pointerup',e=>{
+  if(selectionStart){e.preventDefault();finishMarquee();return;}
   if(dragIndex===null)return;
   if(didDrag){
     const t=document.elementFromPoint(e.clientX,e.clientY)?.closest('.unit,.y-half');
@@ -2281,6 +2369,8 @@ document.addEventListener('pointerup',e=>{
 });
 
 document.addEventListener('touchstart',e=>{
+  if(selectionStart)return;
+  if(multiSelectMode)return;
   if(e.target.closest('.slot-inline-editor'))return;
   if(highlightMode)return;
   const gu=e.target.closest('.unit');
@@ -2348,6 +2438,7 @@ document.addEventListener('touchend',e=>{
 },{passive:true});
 
 document.getElementById('edit').onclick=editSelected;
+document.getElementById('remove').onclick=()=>deleteArmed?executeDelete():armDelete();
 document.getElementById('exportExcel').onclick=exportStackingGridExcel;
 document.getElementById('stackHeightToggle').onclick=toggleStackHeight;
 document.getElementById('undo').onclick=undoLast;
