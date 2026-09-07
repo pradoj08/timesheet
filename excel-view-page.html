@@ -2147,6 +2147,15 @@
     font-weight: 800;
   }
   .inbound-train-track.selected span { color: #ffe399; }
+  .inbound-train-track .inbound-space-status { font-size: 13px; font-weight: 950; letter-spacing: .015em; }
+  .inbound-space-status.space-open { color: #5eead4; }
+  .inbound-space-status.space-limited { color: #fde047; }
+  .inbound-space-status.space-tight { color: #fb923c; }
+  .inbound-space-status.space-over { color: #f87171; }
+  .inbound-train-track.selected .inbound-space-status.space-open { color: #99f6e4; }
+  .inbound-train-track.selected .inbound-space-status.space-limited { color: #fef08a; }
+  .inbound-train-track.selected .inbound-space-status.space-tight { color: #fdba74; }
+  .inbound-train-track.selected .inbound-space-status.space-over { color: #fecaca; }
   .inbound-train-order {
     position: absolute;
     top: 50%;
@@ -5420,14 +5429,40 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     }
   }
 
+  function migrateLegacyColorRuleExtras(rules) {
+    const normalized = normalizeColorRules(rules);
+    const migrationKey = "settegast-excel-native-rule-extras-migrated-v1";
+    if (!normalized.length || localStorage.getItem(migrationKey) === "1") return normalized;
+    let extras = [];
+    try { extras = JSON.parse(localStorage.getItem("settegast-excel-color-rule-extras-v1") || "[]"); } catch (_) {}
+    if (!Array.isArray(extras) || !extras.length) return normalized;
+    const migrated = normalized.map((rule, index) => {
+      const extra = extras[index];
+      if (!extra || typeof extra !== "object") return rule;
+      return {
+        ...rule,
+        borderEnabled: extra.borderEnabled === true,
+        borderColor: /^#[0-9a-f]{6}$/i.test(String(extra.borderColor || "")) ? extra.borderColor : rule.borderColor,
+        textEnabled: extra.textEnabled === true,
+        textColor: /^#[0-9a-f]{6}$/i.test(String(extra.textColor || "")) ? extra.textColor : rule.textColor
+      };
+    });
+    localStorage.setItem(migrationKey, "1");
+    return migrated;
+  }
+
   function loadPersistedColorRules() {
     const bootstrapRules = Array.isArray(window.__CONGLOBAL_BOOTSTRAP_COLOR_RULES__)
       ? window.__CONGLOBAL_BOOTSTRAP_COLOR_RULES__.map(rule => ({
           color: COLOR_CLASSES.includes(rule && rule.color) ? rule.color : "gray",
-          terms: String(rule && rule.terms || "").trim()
+          terms: String(rule && rule.terms || "").trim(),
+          borderEnabled: rule && rule.borderEnabled === true,
+          borderColor: /^#[0-9a-f]{6}$/i.test(String(rule && rule.borderColor || "")) ? String(rule.borderColor) : "#111827",
+          textEnabled: rule && rule.textEnabled === true,
+          textColor: /^#[0-9a-f]{6}$/i.test(String(rule && rule.textColor || "")) ? String(rule.textColor) : "#ffffff"
         })).filter(rule => rule.terms)
       : [];
-    if (bootstrapRules.length) return bootstrapRules;
+    if (bootstrapRules.length) return migrateLegacyColorRuleExtras(bootstrapRules);
     let selected = null;
     let selectedAt = -1;
     [COLOR_RULES_STORAGE_KEY, COLOR_RULES_LEGACY_STORAGE_KEY].forEach((key, keyIndex) => {
@@ -5443,7 +5478,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         } catch (error) {}
       });
     });
-    return selected;
+    return selected ? migrateLegacyColorRuleExtras(selected) : selected;
   }
 
   function persistColorRules() {
@@ -7863,16 +7898,6 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     selectedBlockGridId = "";
     renderAll();
   }
-  .inbound-train-track .inbound-space-status { font-size: 13px; font-weight: 950; letter-spacing: .015em; }
-  .inbound-space-status.space-open { color: #5eead4; }
-  .inbound-space-status.space-limited { color: #fde047; }
-  .inbound-space-status.space-tight { color: #fb923c; }
-  .inbound-space-status.space-over { color: #f87171; }
-  .inbound-train-track.selected .inbound-space-status.space-open { color: #99f6e4; }
-  .inbound-train-track.selected .inbound-space-status.space-limited { color: #fef08a; }
-  .inbound-train-track.selected .inbound-space-status.space-tight { color: #fdba74; }
-  .inbound-train-track.selected .inbound-space-status.space-over { color: #fecaca; }
-
   function consolidateSelectedPrimaryBlocks(label) {
     if (!computed || selectedBlockIds.size < 2) return false;
     const selected = computed.groups.filter(group => selectedBlockIds.has(group.blockId));

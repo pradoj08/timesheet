@@ -11234,6 +11234,14 @@ function inferForecastPoolFromKnownTracklistShipper(){
   const hit=candidates.find(([needle])=>text.includes(needle));
   return hit ? hit[1] : "";
 }
+function normalizeForecastTracklistConsigneeCandidate(value){
+  const candidate=String(value||"").replace(/\s+/g," ").trim();
+  if(!candidate)return "";
+  const compact=candidate.toUpperCase().replace(/[^A-Z0-9]/g,"");
+  // These are operating/status values in the visible tracklist, not customers.
+  if(/^(LOADED|EMPTY|LOAD|RAILCAR|RAILCARPENGRND|PENGRND|GROUND|GRND|NONE|NA|0)$/.test(compact))return "";
+  return candidate;
+}
 function parseForecastTracklistVisibleRow(line){
   const text=String(line||"").replace(/\u2002|\u2003|\u2009|\u00a0/g," ").trim();
   const tokens=text.split(/\s+/).filter(Boolean);
@@ -11340,7 +11348,9 @@ function parseForecastTracklistText(raw,inboundName,etaDay,etaHour){
       type=visibleRow.type||type;
       priority=visibleRow.priority||priority;
       statusText=visibleRow.statusText||statusText;
-      destination=visibleRow.type||destination;
+      // Preserve a real header/sequence destination.  The visible row's Type
+      // column is frequently "Loaded", which must never become a consignee.
+      destination=destination||normalizeForecastTracklistConsigneeCandidate(visibleRow.type);
     }
 
     if(!unitId && !headers.length)unitId=cols[1]||"";
@@ -11356,7 +11366,7 @@ function parseForecastTracklistText(raw,inboundName,etaDay,etaHour){
     if(!/^[A-Z]{3,5}\s*\d{3,8}$/i.test(unitId))return;
     const cleanUnit=normalizeForecastTracklistUnitId(unitId);
     const carKindRule=forecastPoolByCarKindRule(carType,cleanUnit);
-    const consignee=(destination||type) ? String(destination||type).replace(/\s+/g," ").trim().toUpperCase() : "BLANK";
+    const consignee=destination ? String(destination).replace(/\s+/g," ").trim().toUpperCase() : "BLANK";
     const directPool=inferForecastPoolFromTracklistText(chassisText,sizeText,carType,aarKind,trimmed);
     const knownShipperPool=inferForecastPoolFromKnownTracklistShipper(consignee,type,destination,trimmed);
     const bankPool=forecastPoolForConsignee(consignee) || forecastPoolForConsignee(type) || forecastPoolForConsignee(destination);
@@ -13666,7 +13676,7 @@ function isForecastPoolUnresolved(unit){
   const status=String(unit.status||"");
   const pool=String(normalizeForecastPoolLabel(unit.pool)||"").trim();
   const demandLabel=typeof getForecastUnitPoolSizeLabel==="function" ? getForecastUnitPoolSizeLabel(unit) : "";
-  return !pool || status==="Needs Pool Mapping" || status==="Pool Blank" || /^UNKNOWN/i.test(demandLabel) || /Needs Rule/i.test(demandLabel);
+  return !pool || status==="Needs Pool Mapping" || status==="Pool Blank" || /^UNKNOWN\b/i.test(demandLabel) || /Needs Rule/i.test(demandLabel);
 }
 function getForecastUnknownPoolUnits(){
   return getVisibleForecastUnits().filter(isForecastPoolUnresolved);

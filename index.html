@@ -9904,8 +9904,12 @@ document.addEventListener('click',function(event){
 </html>`
     };
     pages.inVsOutPlanner = {
-      label: "IN vs OUT Planner",
-      html: `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>IN vs OUT Planner</title><style>html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#071426}iframe{display:block;width:100%;height:100%;border:0;background:#071426}</style></head><body><iframe src="in-vs-out-planner-page.html" title="IN vs OUT Planner"></iframe></body></html>`
+      label: "In v Out Forecaster",
+      html: `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>In v Out Forecaster</title><style>html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#071426}iframe{display:block;width:100%;height:100%;border:0;background:#071426}</style></head><body><iframe src="in-vs-out-planner-page.html" title="In v Out Forecaster"></iframe></body></html>`
+    };
+    pages.importTrackList = {
+      label: "Import Track List",
+      html: `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Import Track List</title><style>html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#050b18}iframe{display:block;width:100%;height:100%;border:0;background:#050b18}</style></head><body><iframe src="import-track-list-page.html" title="Import Track List"></iframe></body></html>`
     };
     pages.stackingGrid = {
       label: "Stacking Grid",
@@ -13223,6 +13227,33 @@ body.forecast-excel-view-open{padding-right:320px!important;}
       if (!html.includes(target)) return html;
       return html.replace(target, replacement);
     }
+    function withChassisTracklistParserAuditFix(html) {
+      const marker = "chassis-tracklist-parser-audit-fix-v1";
+      if (!html || typeof html !== "string" || html.includes(marker)) return html;
+      const shipperAnchor = 'function parseForecastTracklistVisibleRow(line){';
+      const shipperHelper = `/* ${marker} */
+function normalizeForecastTracklistConsigneeCandidate(value){
+  const candidate=String(value||"").replace(/\\s+/g," ").trim();
+  if(!candidate)return "";
+  const compact=candidate.toUpperCase().replace(/[^A-Z0-9]/g,"");
+  if(/^(LOADED|EMPTY|LOAD|RAILCAR|RAILCARPENGRND|PENGRND|GROUND|GRND|NONE|NA|0)$/.test(compact))return "";
+  return candidate;
+}
+`;
+      if (!html.includes(shipperAnchor)) return html;
+      html = html.replace(shipperAnchor, shipperHelper + shipperAnchor);
+      html = html.replace(
+        '      destination=visibleRow.type||destination;',
+        '      destination=destination||normalizeForecastTracklistConsigneeCandidate(visibleRow.type);'
+      );
+      html = html.replace(
+        '    const consignee=(destination||type) ? String(destination||type).replace(/\\s+/g," ").trim().toUpperCase() : "BLANK";',
+        '    const consignee=destination ? String(destination).replace(/\\s+/g," ").trim().toUpperCase() : "BLANK";'
+      );
+      html = html.split('^UNKNOWN' + String.fromCharCode(8) + '/i').join('^UNKNOWN\\b/i');
+      return html;
+    }
+
     function withChassisInboundDuplicateAction(html) {
       if (!html || typeof html !== "string" || html.includes("chassis-inbound-duplicate-action-v1")) return html;
       const functionAnchor = "function updateForecastTrainDay(train,oldDay,dateValue){";
@@ -14196,6 +14227,21 @@ function duplicateForecastTrainDay(train,day){
       return next.replace('</head>', css + '</head>');
     }
 
+    function withExcelNativeRuleBorderFix(html) {
+      const marker = 'data-excel-native-rule-border-fix-v1';
+      if (!html || html.includes(marker)) return html;
+      const oldBootstrap = '          color: COLOR_CLASSES.includes(rule && rule.color) ? rule.color : "gray",\n          terms: String(rule && rule.terms || "").trim()\n        })).filter(rule => rule.terms)';
+      const newBootstrap = '          color: COLOR_CLASSES.includes(rule && rule.color) ? rule.color : "gray",\n          terms: String(rule && rule.terms || "").trim(),\n          borderEnabled: rule && rule.borderEnabled === true,\n          borderColor: /^#[0-9a-f]{6}$/i.test(String(rule && rule.borderColor || "")) ? String(rule.borderColor) : "#111827",\n          textEnabled: rule && rule.textEnabled === true,\n          textColor: /^#[0-9a-f]{6}$/i.test(String(rule && rule.textColor || "")) ? String(rule.textColor) : "#ffffff"\n        })).filter(rule => rule.terms)';
+      const loadAnchor = '  function loadPersistedColorRules() {';
+      const migration = '  function migrateLegacyColorRuleExtras(rules) {\n    const normalized = normalizeColorRules(rules);\n    const migrationKey = "settegast-excel-native-rule-extras-migrated-v1";\n    if (!normalized.length || localStorage.getItem(migrationKey) === "1") return normalized;\n    let extras = [];\n    try { extras = JSON.parse(localStorage.getItem("settegast-excel-color-rule-extras-v1") || "[]"); } catch (_) {}\n    if (!Array.isArray(extras) || !extras.length) return normalized;\n    const migrated = normalized.map((rule, index) => {\n      const extra = extras[index];\n      if (!extra || typeof extra !== "object") return rule;\n      return { ...rule, borderEnabled: extra.borderEnabled === true, borderColor: /^#[0-9a-f]{6}$/i.test(String(extra.borderColor || "")) ? extra.borderColor : rule.borderColor, textEnabled: extra.textEnabled === true, textColor: /^#[0-9a-f]{6}$/i.test(String(extra.textColor || "")) ? extra.textColor : rule.textColor };\n    });\n    localStorage.setItem(migrationKey, "1");\n    return migrated;\n  }\n\n';
+      const selectedAnchor = '    return selected;\n  }\n\n  function persistColorRules() {';
+      if (!html.includes(oldBootstrap) || !html.includes(loadAnchor) || !html.includes('    if (bootstrapRules.length) return bootstrapRules;') || !html.includes(selectedAnchor)) return html;
+      let next = html.replace(oldBootstrap, newBootstrap).replace(loadAnchor, migration + loadAnchor);
+      next = next.replace('    if (bootstrapRules.length) return bootstrapRules;', '    if (bootstrapRules.length) return migrateLegacyColorRuleExtras(bootstrapRules);');
+      next = next.replace(selectedAnchor, '    return selected ? migrateLegacyColorRuleExtras(selected) : selected;\n  }\n\n  function persistColorRules() {');
+      return next.replace('</head>', '<meta ' + marker + ' content="1"></head>');
+    }
+
     function withExcelRuleBorderTextColors(html) {
       const marker = 'data-excel-rule-border-text-colors-v1';
       if (!html || html.includes(marker)) return html;
@@ -14287,7 +14333,7 @@ function duplicateForecastTrainDay(train,day){
           pageHtml = withExcelInboundPlannerClosedAtBoot(pageHtml);
           pageHtml = withExcelInboundDateCycling(pageHtml);
           pageHtml = withExcelContrastingBlockColors(pageHtml);
-          pageHtml = withExcelRuleBorderTextColors(pageHtml);
+          pageHtml = withExcelNativeRuleBorderFix(pageHtml);
           pageHtml = withExcelDarkerGreyBackground(pageHtml);
           pageHtml = withExcelBlackOperationalHeaders(pageHtml);
           pageHtml = withExcelTableDensityControl(pageHtml);
@@ -14361,6 +14407,7 @@ function duplicateForecastTrainDay(train,day){
           pageHtml = withChassisLighterOver50Cells(pageHtml);
           pageHtml = withChassisLoadplanRowAlignment(pageHtml);
           pageHtml = withChassisTracklistReplacementImport(pageHtml);
+          pageHtml = withChassisTracklistParserAuditFix(pageHtml);
           pageHtml = withChassisInboundDuplicateAction(pageHtml);
           pageHtml = withChassisImportOldestFirst(pageHtml);
         }
@@ -14419,9 +14466,17 @@ function duplicateForecastTrainDay(train,day){
         const rules = rows.map((row) => {
           const selected = row.querySelector("[data-color-choice].selected");
           const terms = row.querySelector('[data-color-rule="terms"]');
+          const borderEnabled = row.querySelector('[data-color-rule="borderEnabled"]');
+          const borderColor = row.querySelector('[data-color-rule="borderColor"]');
+          const textEnabled = row.querySelector('[data-color-rule="textEnabled"]');
+          const textColor = row.querySelector('[data-color-rule="textColor"]');
           return {
             color: String(selected && selected.dataset.colorChoice || "gray"),
-            terms: String(terms && terms.value || "").trim()
+            terms: String(terms && terms.value || "").trim(),
+            borderEnabled: Boolean(borderEnabled && borderEnabled.checked),
+            borderColor: String(borderColor && borderColor.value || "#111827"),
+            textEnabled: Boolean(textEnabled && textEnabled.checked),
+            textColor: String(textColor && textColor.value || "#ffffff")
           };
         }).filter((rule) => rule.terms);
         if (rules.length) saveExcelColorRulesToWorkbook(rules);
@@ -14473,7 +14528,7 @@ function duplicateForecastTrainDay(train,day){
       document.querySelectorAll(".workbook-tabs button").forEach((button) => {
         button.classList.toggle("active", button.dataset.page === activePage);
       });
-      if (reportMenuButton) reportMenuButton.classList.toggle("active", ["amReport", "chassisStatus", "inVsOutPlanner", "settegastMap", "stackingGrid"].includes(activePage));
+      if (reportMenuButton) reportMenuButton.classList.toggle("active", ["amReport", "chassisStatus", "inVsOutPlanner", "importTrackList", "settegastMap", "stackingGrid"].includes(activePage));
       if (excelLphMenuButton) excelLphMenuButton.classList.toggle("active", ["excelView", "lphTracker"].includes(activePage));
       if (timesheetMenuButton) timesheetMenuButton.classList.toggle("active", ["timeMd", "idTracker"].includes(activePage));
       if (matrixMenuButton) matrixMenuButton.classList.toggle("active", ["matrix", "matrixWide"].includes(activePage));
@@ -14789,7 +14844,7 @@ function duplicateForecastTrainDay(train,day){
         const menu = document.createElement("div");
         menu.className = "matrix-nav-menu report-nav-menu";
         menu.setAttribute("role", "menu");
-        [["amReport", "AM Report"], ["chassisStatus", "Chassis Forecast"], ["chassisReconciliation", "Chassis Reconciliation"], ["inVsOutPlanner", "IN vs OUT Planner"], ["settegastMap", "Settegast Map"], ["stackingGrid", "Stacking Grid"]].forEach(([pageId, label]) => {
+        [["amReport", "AM Report"], ["chassisStatus", "Chassis Forecast"], ["chassisReconciliation", "Chassis Reconciliation"], ["inVsOutPlanner", "In v Out Forecaster"], ["importTrackList", "Import Track List"], ["settegastMap", "Settegast Map"], ["stackingGrid", "Stacking Grid"]].forEach(([pageId, label]) => {
           const option = document.createElement("button");
           option.type = "button";
           option.dataset.page = pageId;
