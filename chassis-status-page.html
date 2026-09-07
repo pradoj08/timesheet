@@ -25286,6 +25286,42 @@ body:not(.forecast-view) .app > .hero.clean-hero > .hero-actions{
   width:28px!important;
   min-width:28px!important;
 }
+/* Clean two-row inbound-name editor. */
+#forecastStatusCards .forecast-train-name-line .forecast-inline-train-editor:not([hidden]){
+  grid-template-columns:repeat(3,minmax(0,1fr)) 32px!important;
+  gap:6px!important;
+  padding:5px!important;
+  border:1px solid rgba(96,165,250,.28)!important;
+  border-radius:10px!important;
+  background:rgba(15,23,42,.38)!important;
+}
+#forecastStatusCards .forecast-train-name-line .forecast-inline-train-editor input{
+  grid-column:1 / -1!important;
+  height:30px!important;
+}
+#forecastStatusCards .forecast-train-name-line .forecast-inline-train-editor button{
+  width:100%!important;
+  min-height:28px!important;
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  padding:4px 7px!important;
+}
+#forecastStatusCards .forecast-train-name-line .forecast-inline-train-editor .forecast-train-hide-emoji{
+  width:32px!important;
+  min-width:32px!important;
+}
+#forecastStatusCards .forecast-compact-train-head:has(.forecast-inline-train-editor:not([hidden])){
+  grid-template-columns:minmax(0,1fr)!important;
+}
+#forecastStatusCards .forecast-compact-train-head:has(.forecast-inline-train-editor:not([hidden])) .forecast-train-order-controls,
+#forecastStatusCards .forecast-compact-train-head:has(.forecast-inline-train-editor:not([hidden])) .forecast-compact-total{
+  display:none!important;
+}
+#forecastStatusCards .forecast-compact-train-main:has(.forecast-inline-train-editor:not([hidden])){
+  grid-template-columns:minmax(0,1fr)!important;
+  width:100%!important;
+}
 #forecastStatusCards .forecast-compact-eta-wrap{
   grid-column:1!important;
   justify-self:start!important;

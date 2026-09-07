@@ -2146,7 +2146,6 @@
     font-size: 9px;
     font-weight: 800;
   }
-  .inbound-train-track.selected span { color: #ffe399; }
   .inbound-train-track .inbound-space-status { font-size: 13px; font-weight: 950; letter-spacing: .015em; }
   .inbound-space-status.space-open { color: #5eead4; }
   .inbound-space-status.space-limited { color: #fde047; }
@@ -2156,6 +2155,7 @@
   .inbound-train-track.selected .inbound-space-status.space-limited { color: #fef08a; }
   .inbound-train-track.selected .inbound-space-status.space-tight { color: #fdba74; }
   .inbound-train-track.selected .inbound-space-status.space-over { color: #fecaca; }
+  .inbound-train-track.selected span { color: #ffe399; }
   .inbound-train-order {
     position: absolute;
     top: 50%;
@@ -3545,7 +3545,11 @@
     user-select: none;
   }
   .inbound-popup-title { font-size: 13px; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; }
+  .inbound-popup-head > div { min-width: 0; display: flex; align-items: center; gap: 8px; }
   .inbound-popup-sub { margin-top: 2px; color: #aebdd0; font-size: 10px; font-weight: 700; }
+  .inbound-day-heading-toggle { margin-top:0; padding:3px 8px; border:1px solid #64748b; border-radius:5px; background:#18263a; color:#dce8f7; font-size:9px; font-weight:900; letter-spacing:.04em; text-transform:uppercase; white-space:nowrap; cursor:pointer; }
+  .inbound-day-heading-toggle[aria-pressed="true"] { border-color:#38bdf8; background:#075985; color:#fff; }
+  #inboundPanel.hide-inbound-day-headings .inbound-group-label { display:none; }
   .inbound-popup-close {
     min-width: 112px;
     height: 30px;
@@ -3582,6 +3586,33 @@
     cursor: nwse-resize;
     background: linear-gradient(135deg, transparent 0 43%, #64748b 44% 51%, transparent 52% 62%, #64748b 63% 70%, transparent 71%);
     opacity: .9;
+  }
+
+  /* Dock Inbounds beside the ramp tables instead of covering them. */
+  .main:has(.workspace.has-inbound) { max-width: none; padding-left: 8px; padding-right: 8px; }
+  .workspace.has-inbound {
+    grid-template-columns: clamp(330px, 24vw, 390px) minmax(0, 1fr) !important;
+    gap: 10px !important;
+  }
+  .workspace.has-inbound .inbound-panel {
+    position: sticky !important;
+    top: 8px !important;
+    left: auto !important;
+    right: auto !important;
+    width: 100% !important;
+    height: calc(100vh - 16px) !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    max-height: none !important;
+    align-self: start !important;
+    z-index: 12 !important;
+    box-shadow: 0 8px 24px rgba(15,23,42,.20) !important;
+  }
+  .workspace.has-inbound .inbound-popup-head { cursor: default !important; }
+  .workspace.has-inbound .inbound-popup-resize-grip { display: none !important; }
+  @media (max-width: 900px) {
+    .workspace.has-inbound { grid-template-columns: minmax(0,1fr) !important; }
+    .workspace.has-inbound .inbound-panel { position: relative !important; top: auto !important; height: min(620px, calc(100vh - 90px)) !important; }
   }
   #toggleInboundPlanner.active,
   #toggleInboundPlanner[aria-pressed="true"] {
@@ -3990,7 +4021,7 @@
         <header class="inbound-popup-head" id="inboundPopupDragHandle">
           <div>
             <div class="inbound-popup-title">Inbounds</div>
-            <div class="inbound-popup-sub">Expected trains and block breakdowns</div>
+            <button class="inbound-day-heading-toggle" id="toggleInboundDayHeadings" type="button" aria-pressed="true">Date Headers On</button>
           </div>
           <button class="inbound-popup-close" id="closeInboundPlanner" type="button" aria-label="Hide Inbounds">Hide Inbounds</button>
         </header>
@@ -4321,6 +4352,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   const SAMPLE_SOURCE = "RAMP OVERVIEW SETTEGAST (6).csv";
   const STORAGE_KEY = "rampBlockingControl.v2";
   const TABLE_STATE_UPDATED_AT_KEY = "rampBlockingControl.v2.updatedAt";
+  const GRID_TYPOGRAPHY_STORAGE_KEY = "settegast-excel-grid-typography-v1";
   const RAMP_TABLES_STORAGE_KEY = "rampBlockingControl.tables.v1";
   const COLOR_RULES_STORAGE_KEY = "rampBlockingControl.colorRules.v2";
   const COLOR_RULES_LEGACY_STORAGE_KEY = "rampBlockingControl.colorRules.v1";
@@ -4778,6 +4810,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   function loadState() {
     const persistedColorRules = loadPersistedColorRules();
     const persistedRampTables = loadPersistedRampTables();
+    const persistedGridTypography = loadPersistedGridTypography();
     try {
       const saved = loadPersistedTableState();
       if (saved && Array.isArray(saved.rows)) {
@@ -4799,13 +4832,16 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         } else {
           merged.colorRules = savedColorRules;
         }
-        return applyGridDisplayBaseline(applyColorKeyBaseline(merged, saved), saved);
+        const restored = applyGridDisplayBaseline(applyColorKeyBaseline(merged, saved), saved);
+        if (persistedGridTypography) restored.gridTypography = persistedGridTypography;
+        return restored;
       }
     } catch (error) {}
     const fallback = applyPersistedRampTables(defaultState(), persistedRampTables);
     fallback.inboundPlans = normalizeInboundPlans(fallback.inboundPlans);
     fallback.inboundArchive = [];
     fallback.gridTypography = normalizeGridTypography(fallback.gridTypography);
+    if (persistedGridTypography) fallback.gridTypography = persistedGridTypography;
     fallback.tableDensity = normalizeTableDensity(fallback.tableDensity);
     if (persistedColorRules) fallback.colorRules = persistedColorRules;
     return fallback;
@@ -4844,6 +4880,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         } catch (error) {}
       });
       persistColorRules();
+      persistGridTypography();
       if (window.parent && window.parent !== window) {
         window.parent.postMessage({
           type: "conglobal-excel-table-state-save",
@@ -5169,7 +5206,9 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       const days = Number(row[8]) || 0;
       const hours = Number(row[9]) || 0;
       const manualSegment = clean(row[MANUAL_BLOCK_SEGMENT_INDEX]);
-      const key = `${track}|${status}|${days}|${hours}|${manualSegment}`;
+      const key = manualSegment
+        ? `${track}|manual|${manualSegment}`
+        : `${track}|${status}|${days}|${hours}|`;
       if (!active || active.key !== key) {
         active = {key, blockId:`block-${groups.length}`, track, status, days, hours, rows: [], sourceIndexes: []};
         groups.push(active);
@@ -5442,6 +5481,23 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     return candidates;
   }
 
+  function loadPersistedGridTypography() {
+    for (const store of storageCandidates()) {
+      try {
+        const saved = JSON.parse(store.getItem(GRID_TYPOGRAPHY_STORAGE_KEY) || "null");
+        if (saved && typeof saved === "object" && !Array.isArray(saved)) return normalizeGridTypography(saved);
+      } catch (error) {}
+    }
+    return null;
+  }
+
+  function persistGridTypography() {
+    const typography = normalizeGridTypography(state.gridTypography);
+    storageCandidates().forEach(store => {
+      try { store.setItem(GRID_TYPOGRAPHY_STORAGE_KEY, JSON.stringify(typography)); } catch (error) {}
+    });
+  }
+
   function parsePersistedColorRules(raw) {
     if (!raw) return null;
     try {
@@ -5607,7 +5663,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     const match = activeRules.find(rule => ruleMatchesText(rule, raw, upper));
     if (!match) return "";
     const styles = [];
-    if (match.borderEnabled) styles.push(`outline:2px solid ${match.borderColor}`, "outline-offset:-2px");
+    if (match.borderEnabled) styles.push(`border:2px solid ${match.borderColor}!important`, `box-shadow:inset 0 0 0 2px ${match.borderColor}!important`, "box-sizing:border-box");
     if (match.textEnabled) styles.push(`color:${match.textColor}!important`);
     return styles.join(";");
   }
@@ -6459,12 +6515,25 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     return {"TODAY":0, "TOMORROW":1, "DAY AFTER":2, "OTHER":3}[day] ?? 9;
   }
 
+  const INBOUND_DAY_HEADINGS_KEY = "settegast-excel-inbound-day-headings-v1";
+  function inboundDayHeadingsVisible() {
+    try { return localStorage.getItem(INBOUND_DAY_HEADINGS_KEY) !== "0"; } catch (_) { return true; }
+  }
+  function syncInboundDayHeadings() {
+    const visible = inboundDayHeadingsVisible();
+    const panel = $("#inboundPanel");
+    const button = $("#toggleInboundDayHeadings");
+    if (panel) panel.classList.toggle("hide-inbound-day-headings", !visible);
+    if (button) { button.setAttribute("aria-pressed", visible ? "true" : "false"); button.textContent = visible ? "Date Headers On" : "Date Headers Off"; }
+  }
+
   function renderInboundPlanner() {
     const workspace = $("#excelWorkspace");
     const panel = $("#inboundPanel");
     const host = $("#inboundPlannerList");
     const toggle = $("#toggleInboundPlanner");
     if (!workspace || !panel || !host) return;
+    syncInboundDayHeadings();
     state.inboundPlans = normalizeInboundPlans(state.inboundPlans);
     state.inboundPlans.forEach(syncInboundTotalFt);
     const visible = state.inboundPlannerVisible !== false;
@@ -8223,6 +8292,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       for (let i=0;i<8;i++) {
         const text = values[i] || "";
         const cls = classifyCell(text, view);
+        const ruleStyle = view === "CURRENT RAMP BLOCKING" ? styleWithCurrentColorRule(text) : "";
         const group = trackGroups[i] || null;
         const baseDisplayText = blockTextForDisplay(text);
         const inboundTrain = inboundTrainLabel(group && group.rows) || clean(trackInboundTrains[i]);
@@ -8235,7 +8305,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         const moveAttrs = group
           ? `data-block-id="${escapeAttr(group.blockId)}" data-track="${track}" data-footage="${Number(group.footage) || 0}" role="button" aria-selected="false"`
           : (!text && blockReorderingAvailable() ? `data-drop-end-track="${track}"` : "");
-        cells.push(`<div class="cut-cell ${cls}${interactiveClass}" ${moveAttrs} title="${escapeHtml(displayText || (blockReorderingAvailable() ? "Place selected blocks at end of Track " + track : ""))}">
+        cells.push(`<div class="cut-cell ${cls}${interactiveClass}" ${moveAttrs} style="${escapeAttr(ruleStyle)}" title="${escapeHtml(displayText || (blockReorderingAvailable() ? "Place selected blocks at end of Track " + track : ""))}">
           ${displayText ? escapeHtml(displayText) : (text ? "" : "0")}
           ${i===7 && overflow ? `<span class="overflow">+${overflow}</span>` : ""}
         </div>`);
@@ -9391,6 +9461,11 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     if (e.target.closest("#toggleInboundPlanner")) {
       state.inboundPlannerVisible = state.inboundPlannerVisible === false;
       renderAll();
+      return;
+    }
+    if (e.target.closest("#toggleInboundDayHeadings")) {
+      try { localStorage.setItem(INBOUND_DAY_HEADINGS_KEY, inboundDayHeadingsVisible() ? "0" : "1"); } catch (_) {}
+      syncInboundDayHeadings();
       return;
     }
     const onHandToggle = e.target.closest("[data-inbound-on-hand-index]");
