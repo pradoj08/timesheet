@@ -3587,6 +3587,31 @@
     color: #172033;
   }
 
+  /* Keep the inbound planner in the document flow so it shifts the ramp tables right. */
+  .workspace.has-inbound {
+    grid-template-columns: minmax(330px, 390px) minmax(0, 1fr) !important;
+  }
+  .workspace.has-inbound .inbound-panel {
+    position: sticky !important;
+    top: 12px !important;
+    left: auto !important;
+    width: auto !important;
+    height: calc(100vh - 110px) !important;
+    max-width: none !important;
+    max-height: none !important;
+    align-self: start;
+  }
+  .workspace.has-inbound .inbound-popup-head { cursor: default; }
+  .workspace.has-inbound .inbound-popup-resize-grip { display: none; }
+  @media (max-width: 1180px) {
+    .workspace.has-inbound { grid-template-columns: minmax(0, 1fr) !important; }
+    .workspace.has-inbound .inbound-panel {
+      position: relative !important;
+      top: auto !important;
+      height: min(620px, calc(100vh - 105px)) !important;
+    }
+  }
+
 
 
   /* Compact movable Color Key panel. */

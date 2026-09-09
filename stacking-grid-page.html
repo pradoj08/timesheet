@@ -48,7 +48,7 @@ button,.mode{border:0;border-radius:8px;padding:10px 12px;font-weight:900;font-s
 }
 .row-edge-controls button:active{transform:translateY(1px)}
 .yardgrid{grid-column:2;grid-row:2;background:#c9cccb;padding:8px 0 8px 8px;display:grid;grid-template-columns:repeat(7,190px);gap:1px 8px}
-.rowlabels{grid-column:3;grid-row:2;background:#111820;padding:8px 0;display:grid!important;gap:0;overflow:hidden}
+.rowlabels{grid-column:3;grid-row:2;background:#111820;padding:8px 0;display:grid!important;column-gap:0;row-gap:1px;overflow:hidden}
 .rowlabels div{background:#111820;color:#fff;border:1px solid #30383d;border-left:0;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:10px;height:42px;align-self:start;white-space:nowrap}
 .unit{height:42px;position:relative;background:#fafafa;border:1px solid #aeb4b7;display:flex;min-width:0}
 .unit.green{background:#83dc8e}
@@ -1510,6 +1510,16 @@ body.multi-selecting .unit,body.multi-selecting .y-half{cursor:crosshair!importa
   z-index:30!important;
 }
 </style>
+<style id="stacking-grid-pages-v1">
+.stack-page-tabs{display:inline-flex;align-items:center;gap:4px;padding:3px;border:1px solid #3c4b59;border-radius:9px;background:#0a1118}
+.stack-page-tabs span{padding:0 5px;color:#9fb0c2;font-size:9px;font-weight:1000;letter-spacing:.08em}
+.stack-page-btn{min-width:38px!important;min-height:30px!important;padding:4px 8px!important;border-radius:6px!important;background:#202c37!important;color:#dce7f2!important}
+.stack-page-btn.active{background:#fbbf24!important;border-color:#ffd45e!important;color:#111827!important;box-shadow:0 0 0 1px rgba(255,255,255,.22) inset!important}
+.pool-import-modal{position:fixed;inset:0;z-index:1000;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(3,8,15,.78);backdrop-filter:blur(5px)}
+.pool-import-modal.open{display:flex}.pool-import-card{width:min(980px,96vw);max-height:90vh;overflow:auto;border:1px solid #52677d;border-radius:17px;background:#111b26;color:#f8fafc;box-shadow:0 30px 90px rgba(0,0,0,.55)}.pool-import-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:15px 17px;border-bottom:1px solid #334557}.pool-import-head h2{margin:0;font-size:18px}.pool-import-head p{margin:4px 0 0;color:#aebed0;font-size:11px}.pool-import-close{min-width:38px!important;padding:5px!important}.pool-import-body{padding:15px}.pool-import-body textarea{width:100%;height:330px;resize:vertical;padding:11px;border:1px solid #40556d;border-radius:10px;background:#050b12;color:#eef7ff;font:700 12px/1.35 Consolas,monospace;white-space:pre}.pool-import-result{margin-top:10px;min-height:44px;padding:10px 12px;border:1px solid #334a60;border-radius:10px;background:#0a131d;color:#b8c7d8;font-size:11px}.pool-import-result.good{border-color:#278764;color:#a7f3d0}.pool-import-result.warn{border-color:#b7791f;color:#fde68a}.pool-import-legend{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}.pool-import-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 8px;border:1px solid #40546a;border-radius:999px;background:#182432;font-size:10px}.pool-import-chip i{width:13px;height:13px;border-radius:3px;background:var(--chip)}.pool-import-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
+.pool-color-key{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:10px;min-height:48px;padding:8px 16px;border-bottom:1px solid #2f3d4b;background:#0b1219}.pool-color-key[hidden]{display:none}.pool-color-key>strong{color:#fff;font-size:12px;letter-spacing:.11em}.pool-color-key-item{display:inline-flex;align-items:center;gap:7px;padding:6px 10px;border:1px solid #496078;border-radius:999px;background:#17222d;color:#fff;font-size:11px;font-weight:800;letter-spacing:.02em}.pool-color-key-item i{width:18px;height:18px;flex:none;border:1px solid rgba(255,255,255,.6);border-radius:4px;background:var(--key-color)}
+.pool-import-missing{display:none;margin-top:10px;border:1px solid #7f3448;border-radius:10px;overflow:hidden}.pool-import-missing.open{display:block}.pool-import-missing h3{margin:0;padding:8px 10px;background:#421827;color:#fecdd3;font-size:11px;letter-spacing:.06em}.pool-import-missing-list{max-height:170px;overflow:auto;background:#120c12}.pool-import-missing-row{display:grid;grid-template-columns:minmax(130px,.8fr) minmax(100px,.6fr) minmax(180px,1fr);gap:8px;padding:7px 10px;border-top:1px solid #3c2530;color:#f4dce3;font-size:10px}.pool-import-missing-row b{color:#fff}.pool-import-missing-empty{padding:9px 10px;color:#a7f3d0;background:#0c241d;font-size:10px}
+</style>
 </head>
 <body>
 <header>
@@ -1518,6 +1528,8 @@ body.multi-selecting .unit,body.multi-selecting .y-half{cursor:crosshair!importa
     <button class="viewbtn active" id="gridBtn">GRID VIEW</button>
     <button class="viewbtn" id="yardBtn">YARD VIEW</button>
     <div class="container-counter" aria-live="polite">CONTAINERS <strong id="containerTotal">0</strong></div>
+    <div class="stack-page-tabs" id="stackPageTabs" aria-label="Stacking grid pages"><span>PAGE</span><button type="button" class="stack-page-btn" data-stack-page="1">B</button><button type="button" class="stack-page-btn" data-stack-page="2">D</button><button type="button" class="stack-page-btn" data-stack-page="3">J</button><button type="button" class="stack-page-btn" data-stack-page="4">S</button></div>
+    <button type="button" id="poolImportBtn">PASTE POOL LIST</button>
     <button type="button" id="stackHeightToggle" aria-pressed="false">3 HIGH</button>
     <button type="button" id="exportExcel">EXPORT EXCEL</button>
   </div><div class="controls">
@@ -1539,6 +1551,7 @@ body.multi-selecting .unit,body.multi-selecting .y-half{cursor:crosshair!importa
     </select><button id="hideHighlights">Hide Highlights</button>
   </div></div>
 </header>
+<div class="pool-color-key" id="poolColorKey" aria-label="Pool and length color key"></div>
 
 <div id="gridView">
   <div class="viewport">
@@ -1568,10 +1581,21 @@ body.multi-selecting .unit,body.multi-selecting .y-half{cursor:crosshair!importa
   <div class="context-colors" id="contextColors"></div>
   <button type="button" class="context-clear" id="contextClearColor" role="menuitem">Remove Color</button>
 </div>
+<div class="pool-import-modal" id="poolImportModal" aria-hidden="true">
+  <section class="pool-import-card" role="dialog" aria-modal="true" aria-labelledby="poolImportTitle">
+    <header class="pool-import-head"><div><h2 id="poolImportTitle">Paste Pool / Length List</h2><p>Matches equipment across all four stacking-grid pages. It changes color only; positions stay intact.</p></div><button type="button" class="pool-import-close" id="poolImportClose" aria-label="Close">X</button></header>
+    <div class="pool-import-body"><textarea id="poolImportText" placeholder="Paste the Equipment / Pool / Length report here..."></textarea><div class="pool-import-result" id="poolImportResult">Waiting for data.</div><div class="pool-import-legend" id="poolImportLegend"></div><section class="pool-import-missing" id="poolImportMissing"><h3 id="poolImportMissingTitle">UNITS NOT FOUND</h3><div class="pool-import-missing-list" id="poolImportMissingList"></div></section><div class="pool-import-actions"><button type="button" id="poolImportClear">REMOVE IMPORT COLORS</button><button type="button" id="poolImportApply">PARSE &amp; COLOR MATCHES</button></div></div>
+  </section>
+</div>
 
 <script>
 const KEY='track809_dual_view_gold_highlight_v9';
 let state=[{"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "ONEU 422416", "green": false}, {"text": "TRHU 434119", "green": false}, {"text": "FDCU 048270", "green": false}, {"text": "TRHU 764512", "green": false}, {"text": "ONEU 654276", "green": true}, {"text": "TCLU 945071", "green": true}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "NYKU 474373", "green": true}, {"text": "TGBU 439897", "green": false}, {"text": "FDCU 054107", "green": false}, {"text": "FDCU 057164", "green": false}, {"text": "TRHU 660102", "green": false}, {"text": "ONEU 422433", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "ONEU 422408", "green": false}, {"text": "FDCU 064422", "green": false}, {"text": "TEMU 665348", "green": true}, {"text": "NYKU 523613", "green": false}, {"text": "TRHU 689846", "green": false}, {"text": "DRYU 608114", "green": false}, {"text": "TCLU 675901", "green": false}, {"text": "ONEU 094009", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "FFAU 598210", "green": false}, {"text": "FFAU 680398", "green": false}, {"text": "ONEU 643333", "green": false}, {"text": "ONEU 422420", "green": false}, {"text": "", "green": false}, {"text": "UETU 415290", "green": true}, {"text": "TCLU 459570", "green": false}, {"text": "ONEU 422745", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "ONEU 003526", "green": false}, {"text": "ONEU 506781", "green": false}, {"text": "ONEU 751076", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "ONEU 608499", "green": true}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "ONEU 618562", "green": false}, {"text": "ONEU 552391", "green": false}, {"text": "TCLU 628278", "green": true}, {"text": "", "green": false}, {"text": "ONEU 569747", "green": true}, {"text": "TCLU 643791", "green": true}, {"text": "ONEU 090788", "green": true}, {"text": "TCLU 882156", "green": true}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}, {"text": "", "green": false}];
+const INITIAL_PAGE_STATE=state.map(item=>({...item}));
+const STACK_PAGE_COUNT=4;
+const STACK_ACTIVE_PAGE_KEY=KEY+'_active_page';
+let activeStackPage=Math.min(STACK_PAGE_COUNT,Math.max(1,Number(localStorage.getItem(STACK_ACTIVE_PAGE_KEY))||1));
+function stackPageKey(page=activeStackPage){return page===1?KEY:`${KEY}_page_${page}`}
 let selectedIndex=null;
 let selectedIndexes=new Set();
 let multiSelectMode=false;
@@ -1590,6 +1614,12 @@ const HIGHLIGHT_PALETTES={
   blue:{fill:'#185b91',grid:'#287fbd',border:'#68b8ef',text:'#fff',yardText:'#fff',glow:'rgba(104,184,239,.30)'},
   brown:{fill:'#653f2b',grid:'#83553b',border:'#bd8a67',text:'#fff',yardText:'#fff',glow:'rgba(189,138,103,.30)'}
 };
+const POOL_IMPORT_COLORS={
+  'FGCP 20':'blue','FGCP 40':'green','FGCP 45':'pink',
+  'DCLP 20':'purple','DCLP 40':'red','DCLP 45':'pink',
+  'TGRP 20':'orange','TGRP 40':'brown','TGRP 45':'gold'
+};
+const POOL_IMPORT_ASSIGNMENTS_KEY=KEY+'_pool_import_assignments_v1';
 let highlightColor=localStorage.getItem(HIGHLIGHT_COLOR_KEY)||'gold';
 let dragIndex=null;
 let dragStartX=0;
@@ -1664,7 +1694,7 @@ function repairBayMajorThreeMigration(items){
   return repaired;
 }
 function save(){
-  localStorage.setItem(KEY,JSON.stringify(state));
+  localStorage.setItem(stackPageKey(),JSON.stringify(state));
   localStorage.setItem(LEVEL_KEY,String(LEVELS));
   localStorage.setItem(ORDER_KEY,'level-major-v3');
 }
@@ -1680,7 +1710,12 @@ function updateUndoButton(){
 function undoLast(){
   const previous=undoStack.pop();
   if(!previous)return;
-  state=previous.state.map(item=>({...item}));
+  if(previous.pageStates){
+    Object.entries(previous.pageStates).forEach(([page,items])=>localStorage.setItem(stackPageKey(Number(page)),JSON.stringify(items)));
+    state=(previous.pageStates[activeStackPage]||previous.state||[]).map(item=>({...item}));
+  }else{
+    state=previous.state.map(item=>({...item}));
+  }
   selectedIndex=previous.selectedIndex;
   selectedIndexes=new Set(previous.selectedIndexes||(previous.selectedIndex===null?[]:[previous.selectedIndex]));
   cancelDelete();
@@ -1689,8 +1724,9 @@ function undoLast(){
   updateUndoButton();
 }
 function load(){
+  state=(activeStackPage===1?INITIAL_PAGE_STATE:Array.from({length:INITIAL_PAGE_STATE.length},()=>({text:'',green:false}))).map(item=>({...item}));
   try{
-    const s=JSON.parse(localStorage.getItem(KEY));
+    const s=JSON.parse(localStorage.getItem(stackPageKey()));
     if(Array.isArray(s))state=s;
   }catch(e){}
   if(localStorage.getItem(LEVEL_KEY)!==String(LEVELS)){
@@ -1708,6 +1744,157 @@ function load(){
     green:Boolean(item?.green),
     highlightColor:item?.green&&HIGHLIGHT_PALETTES[item?.highlightColor]?item.highlightColor:(item?.green?'gold':undefined)
   }));
+  const reapplied=applySavedPoolAssignments(state);
+  state=reapplied.items;
+  if(reapplied.changed)save();
+}
+function updateStackPageTabs(){
+  const pageNames=['','B','D','J','S'];
+  document.querySelectorAll('[data-stack-page]').forEach(button=>{
+    const selected=Number(button.dataset.stackPage)===activeStackPage;
+    button.classList.toggle('active',selected);
+    button.setAttribute('aria-pressed',selected?'true':'false');
+    const pageName=pageNames[Number(button.dataset.stackPage)]||button.dataset.stackPage;
+    button.title=selected?`Stacking grid ${pageName} (current)`:`Open stacking grid ${pageName}`;
+  });
+}
+function switchStackPage(page){
+  const next=Math.min(STACK_PAGE_COUNT,Math.max(1,Number(page)||1));
+  if(next===activeStackPage)return;
+  save();
+  activeStackPage=next;
+  localStorage.setItem(STACK_ACTIVE_PAGE_KEY,String(activeStackPage));
+  selectedIndex=null;selectedIndexes.clear();selectionStart=null;undoStack=[];cancelDelete();closeBoxContextMenu();
+  load();updateStackPageTabs();updateUndoButton();renderAll();
+}
+function normalizePoolImportEquipment(value){
+  const compact=String(value||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+  const match=compact.match(/^([A-Z]{3,5})(\d{3,8})$/);
+  return match?match[1]+match[2]:'';
+}
+function normalizeImportedPool(value){
+  const pool=String(value||'').trim().toUpperCase().replace(/[^A-Z0-9]/g,'');
+  if(pool==='DCLI')return 'DCLP';
+  if(pool==='TRGP')return 'TGRP';
+  return pool;
+}
+function parseStackingPoolReport(raw){
+  const lines=String(raw||'').replace(/\u00a0/g,' ').split(/\r?\n/);
+  const rows=[];let pendingEquipment='';
+  lines.forEach(line=>{
+    const trimmed=String(line||'').trim();if(!trimmed)return;
+    const onlyEquipment=normalizePoolImportEquipment(trimmed);
+    if(onlyEquipment&&/^[A-Z]{3,5}\s*\d{3,8}$/i.test(trimmed)){pendingEquipment=onlyEquipment;return}
+    const cols=String(line).split('\t');
+    let equipment=pendingEquipment,start=0;
+    if(!equipment&&cols.length>1){const joined=normalizePoolImportEquipment(`${cols[0]||''}${cols[1]||''}`);if(joined){equipment=joined;start=2}}
+    if(!equipment)return;
+    const data=cols.slice(start);if(data.length<5)return;
+    const location=String(data[0]||'').trim();
+    const chassisPool=normalizeImportedPool(data[1]);
+    const equipmentPool=normalizeImportedPool(data[2]);
+    const length=Number(String(data[4]||'').match(/20|40|45|53/)?.[0]||0);
+    const pool=equipmentPool||chassisPool;
+    if(!pool||!length)return;
+    rows.push({equipment,pool,length,category:`${pool} ${length}`,location});pendingEquipment='';
+  });
+  const unique=new Map();rows.forEach(row=>unique.set(row.equipment,row));return [...unique.values()];
+}
+function poolImportColorFor(category){
+  if(POOL_IMPORT_COLORS[category])return POOL_IMPORT_COLORS[category];
+  const pool=String(category||'').split(' ')[0];
+  return ({FGCP:'blue',DCLP:'red',TGRP:'orange',SNCZ:'purple'})[pool]||'gold';
+}
+function readSavedPoolAssignments(){
+  try{
+    const saved=JSON.parse(localStorage.getItem(POOL_IMPORT_ASSIGNMENTS_KEY));
+    if(saved&&typeof saved==='object'&&!Array.isArray(saved))return saved;
+  }catch(e){}
+  return{};
+}
+function savePoolAssignments(rows){
+  const assignments={};
+  rows.forEach(row=>{assignments[row.equipment]={pool:row.pool,length:row.length,category:row.category,location:row.location||''}});
+  localStorage.setItem(POOL_IMPORT_ASSIGNMENTS_KEY,JSON.stringify(assignments));
+  return assignments;
+}
+function applySavedPoolAssignments(items,assignments=readSavedPoolAssignments()){
+  let changed=false;
+  const mapped=items.map(item=>{
+    const equipment=normalizePoolImportEquipment(item?.text),row=assignments[equipment];
+    if(!row)return item;
+    const color=poolImportColorFor(row.category);
+    if(item.green&&item.highlightColor===color&&item.poolImportCategory===row.category&&item.poolImportPool===row.pool&&Number(item.poolImportLength)===Number(row.length))return item;
+    changed=true;
+    return{...item,green:true,highlightColor:color,poolImportCategory:row.category,poolImportPool:row.pool,poolImportLength:row.length};
+  });
+  return{items:mapped,changed};
+}
+function renderPoolImportLegend(rows){
+  const counts={};rows.forEach(row=>counts[row.category]=(counts[row.category]||0)+1);
+  document.getElementById('poolImportLegend').innerHTML=Object.entries(counts).sort().map(([category,count])=>{const color=poolImportColorFor(category),hex=HIGHLIGHT_PALETTES[color]?.grid||'#c79a24';return `<span class="pool-import-chip" style="--chip:${hex}"><i></i>${category} <b>${count}</b></span>`}).join('');
+}
+function renderPoolColorKey(){
+  const key=document.getElementById('poolColorKey');if(!key)return;
+  const visibleCategories=[...new Set(state.filter(item=>item?.green&&item?.poolImportCategory).map(item=>item.poolImportCategory))].sort();
+  key.hidden=!visibleCategories.length;
+  key.innerHTML=visibleCategories.length?'<strong>POOL COLOR KEY</strong>'+visibleCategories.map(category=>{const color=poolImportColorFor(category),hex=HIGHLIGHT_PALETTES[color]?.grid||'#c79a24';return `<span class="pool-color-key-item" style="--key-color:${hex}"><i></i>${category}</span>`}).join(''):'';
+}
+function escapePoolImportText(value){return String(value||'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]))}
+function renderPoolImportMissing(rows,parsedCount){
+  const section=document.getElementById('poolImportMissing'),list=document.getElementById('poolImportMissingList'),title=document.getElementById('poolImportMissingTitle');
+  section.classList.add('open');title.textContent=`UNITS NOT FOUND (${rows.length})`;
+  list.innerHTML=rows.length?rows.map(row=>`<div class="pool-import-missing-row"><b>${escapePoolImportText(row.equipment.replace(/^([A-Z]{3,5})(\d+)$/,'$1 $2'))}</b><span>${escapePoolImportText(row.category)}</span><span>${escapePoolImportText(row.location||'Location not supplied')}</span></div>`).join(''):`<div class="pool-import-missing-empty">${parsedCount?'Every imported unit was found on one of the four pages.':'No valid report units were parsed.'}</div>`;
+}
+function openPoolImport(){
+  const modal=document.getElementById('poolImportModal');modal.classList.add('open');modal.setAttribute('aria-hidden','false');setTimeout(()=>document.getElementById('poolImportText').focus(),30);
+}
+function closePoolImport(){
+  const modal=document.getElementById('poolImportModal');modal.classList.remove('open');modal.setAttribute('aria-hidden','true');
+}
+function readStackPageState(page){
+  if(page===activeStackPage)return state.map(item=>({...item}));
+  const fallback=page===1?INITIAL_PAGE_STATE:Array.from({length:INITIAL_PAGE_STATE.length},()=>({text:'',green:false}));
+  try{const saved=JSON.parse(localStorage.getItem(stackPageKey(page)));if(Array.isArray(saved))return saved.map(item=>({...item}))}catch(e){}
+  return fallback.map(item=>({...item}));
+}
+function rememberAllStackPages(pageStates){
+  undoStack.push({state:state.map(item=>({...item})),selectedIndex,selectedIndexes:[...selectedIndexes],pageStates:Object.fromEntries(Object.entries(pageStates).map(([page,items])=>[page,items.map(item=>({...item}))]))});
+  if(undoStack.length>30)undoStack.shift();updateUndoButton();
+}
+function applyStackingPoolReport(){
+  const rows=parseStackingPoolReport(document.getElementById('poolImportText').value);
+  if(rows.length)savePoolAssignments(rows);
+  const byEquipment=new Map(rows.map(row=>[row.equipment,row])),pageStates={},updatedStates={},matchedEquipment=new Set();let matched=0,pagesMatched=0;
+  for(let page=1;page<=STACK_PAGE_COUNT;page++){
+    const items=readStackPageState(page);pageStates[page]=items;let pageCount=0;
+    updatedStates[page]=items.map(item=>{const equipment=normalizePoolImportEquipment(item?.text),row=byEquipment.get(equipment);if(!row)return item;matched+=1;pageCount+=1;matchedEquipment.add(equipment);const color=poolImportColorFor(row.category);return{...item,green:true,highlightColor:color,poolImportCategory:row.category,poolImportPool:row.pool,poolImportLength:row.length}});
+    if(pageCount)pagesMatched+=1;
+  }
+  if(matched){
+    rememberAllStackPages(pageStates);
+    for(let page=1;page<=STACK_PAGE_COUNT;page++)localStorage.setItem(stackPageKey(page),JSON.stringify(updatedStates[page]));
+    state=updatedStates[activeStackPage].map(item=>({...item}));save();
+  }
+  updateUndoButton();renderAll();renderPoolImportLegend(rows);
+  const result=document.getElementById('poolImportResult'),missingRows=rows.filter(row=>!matchedEquipment.has(row.equipment)),unmatched=missingRows.length;
+  result.className='pool-import-result '+(matched?'good':'warn');
+  result.textContent=!rows.length?'No valid Equipment / Eqmt Pool ID / Length rows were detected.':`${rows.length} report units parsed · ${matched} grid containers colored across ${pagesMatched} of 4 pages · ${unmatched} report units not found on any page.`;
+  renderPoolImportMissing(missingRows,rows.length);
+}
+function clearStackingPoolColors(){
+  const pageStates={},updatedStates={};let affected=0,pagesAffected=0;
+  for(let page=1;page<=STACK_PAGE_COUNT;page++){
+    const items=readStackPageState(page);pageStates[page]=items;let pageCount=0;
+    updatedStates[page]=items.map(item=>{if(!item?.poolImportCategory)return item;affected+=1;pageCount+=1;const next={...item,green:false};delete next.highlightColor;delete next.poolImportCategory;delete next.poolImportPool;delete next.poolImportLength;return next});
+    if(pageCount)pagesAffected+=1;
+  }
+  localStorage.removeItem(POOL_IMPORT_ASSIGNMENTS_KEY);
+  if(!affected)return;
+  rememberAllStackPages(pageStates);
+  for(let page=1;page<=STACK_PAGE_COUNT;page++)localStorage.setItem(stackPageKey(page),JSON.stringify(updatedStates[page]));
+  state=updatedStates[activeStackPage].map(item=>({...item}));save();renderAll();updateUndoButton();
+  const result=document.getElementById('poolImportResult');result.className='pool-import-result good';result.textContent=`Removed ${affected} imported pool colors across ${pagesAffected} of 4 pages.`;
 }
 function rowsCount(){return Math.ceil(state.length/ROW_SIZE)}
 function blankRow(){return Array.from({length:ROW_SIZE},()=>({text:'',green:false}))}
@@ -1794,44 +1981,68 @@ function excelCell(value,style='Text',type='String',mergeAcross=0){
   const merge=mergeAcross?` ss:MergeAcross="${mergeAcross}"`:'';
   return `<Cell ss:StyleID="${style}"${merge}><Data ss:Type="${type}">${excelXmlEscape(value)}</Data></Cell>`;
 }
+function excelHighlightStyle(item){
+  if(!item?.green)return item?.text?'Occupied':'Blank';
+  const color=HIGHLIGHT_PALETTES[item.highlightColor]?item.highlightColor:'gold';
+  return `Pool_${color}`;
+}
+function tierLabelForItems(items,index,activeLevels){
+  const rowBase=Math.floor(index/ROW_SIZE)*ROW_SIZE;
+  const bay=(index-rowBase)%BAYS;
+  const occupied=activeLevels.map(level=>rowBase+(level*BAYS)+bay).filter(levelIndex=>String(items[levelIndex]?.text||'').trim());
+  const position=occupied.indexOf(index);
+  if(position<0)return'';
+  if(occupied.length===1)return'B';
+  if(occupied.length===2)return position===0?'T':'B';
+  return position===0?'T':position===1?'M':'B';
+}
 function exportStackingGridExcel(){
-  const rows=rowsCount();
-  const total=state.reduce((count,item)=>count+(String(item&&item.text||'').trim()?1:0),0);
-  const layoutRows=[];
+  save();
+  const pageNames=['','B','D','J','S'];
+  const activeLevels=activeLevelIndexes();
   const excelGridColumnCount=(BAYS*2)+2;
   const bayHeaderCells=Array.from({length:BAYS},(_,bay)=>excelCell(`BAY ${BAYS-bay}`,'Header')+excelCell('','VSpacer')).join('');
-  layoutRows.push(`<Row ss:Height="24">${excelCell('SETTEGAST STACKING GRID','Title','String',excelGridColumnCount-1)}</Row>`);
-  layoutRows.push(`<Row ss:Height="18">${excelCell('Track 809/808','Subtitle','String',(BAYS*2)-1)}${excelCell('Containers','Header')}${excelCell(total,'Total','Number')}</Row>`);
-  layoutRows.push(`<Row ss:Height="18">${excelCell('BACK FENCE','Fence','String',excelGridColumnCount-1)}</Row>`);
-  layoutRows.push(`<Row ss:Height="18">${bayHeaderCells}${excelCell('ROW','Header')}${excelCell('LEVEL','Header')}</Row>`);
-  for(let row=0;row<rows;row++){
-    for(let level=0;level<LEVELS;level++){
-      const cells=[];
-      for(let bay=0;bay<BAYS;bay++){
-        const item=state[(row*ROW_SIZE)+(level*BAYS)+bay]||{text:'',green:false};
-        cells.push(excelCell(item.text||'',item.text?(item.green?'Gold':'Occupied'):'Blank'));
-        cells.push(excelCell('','VSpacer'));
-      }
-      cells.push(excelCell(rows-row,'Center','Number'),excelCell(`LEVEL ${LEVELS-level}`,'Center'));
-      layoutRows.push(`<Row ss:Height="18">${cells.join('')}</Row>`);
-    }
-    if(row<rows-1)layoutRows.push(`<Row ss:Height="8">${excelCell('','Spacer','String',excelGridColumnCount-1)}</Row>`);
-  }
-  layoutRows.push(`<Row ss:Height="18">${excelCell('FRONT - [BOWL]','Fence','String',excelGridColumnCount-1)}</Row>`);
-
   const manifestRows=[];
-  manifestRows.push(`<Row ss:Height="24">${excelCell('CONTAINER MANIFEST','Title','String',5)}</Row>`);
-  manifestRows.push(`<Row ss:Height="18">${['ROW','BAY','LEVEL','STACK POSITION','CONTAINER','GOLD HIGHLIGHT'].map(value=>excelCell(value,'Header')).join('')}</Row>`);
-  for(let row=0;row<rows;row++){
-    for(let bay=0;bay<BAYS;bay++){
-      for(let level=0;level<LEVELS;level++){
-        const index=(row*ROW_SIZE)+(level*BAYS)+bay;
-        const item=state[index]||{text:'',green:false};
-        if(!String(item.text||'').trim())continue;
-        manifestRows.push(`<Row ss:Height="18">${excelCell(rows-row,'Center','Number')}${excelCell(BAYS-bay,'Center','Number')}${excelCell(LEVELS-level,'Center','Number')}${excelCell(tierLabel(index),'Center')}${excelCell(item.text,item.green?'Gold':'Occupied')}${excelCell(item.green?'YES':'NO',item.green?'Gold':'Center')}</Row>`);
-      }
+  manifestRows.push(`<Row ss:Height="24">${excelCell('CONTAINER MANIFEST','Title','String',7)}</Row>`);
+  manifestRows.push(`<Row ss:Height="18">${['PAGE','ROW','BAY','LEVEL','STACK POSITION','CONTAINER','POOL / LENGTH','HIGHLIGHT'].map(value=>excelCell(value,'Header')).join('')}</Row>`);
+  const worksheets=[];
+  for(let page=1;page<=STACK_PAGE_COUNT;page++){
+    const items=readStackPageState(page);
+    const rows=Math.max(1,Math.ceil(items.length/ROW_SIZE));
+    const total=items.reduce((count,item)=>count+(String(item?.text||'').trim()?1:0),0);
+    const visibleCategories=[...new Set(items.filter(item=>item?.green&&item?.poolImportCategory).map(item=>item.poolImportCategory))].sort();
+    const layoutRows=[];
+    layoutRows.push(`<Row ss:Height="24">${excelCell(`SETTEGAST STACKING GRID - ${pageNames[page]}`,'Title','String',excelGridColumnCount-1)}</Row>`);
+    layoutRows.push(`<Row ss:Height="18">${excelCell(`${displayLevels} HIGH · Track 809/808`,'Subtitle','String',(BAYS*2)-1)}${excelCell('Containers','Header')}${excelCell(total,'Total','Number')}</Row>`);
+    layoutRows.push(`<Row ss:Height="18">${excelCell('POOL COLOR KEY','Header','String',excelGridColumnCount-1)}</Row>`);
+    if(visibleCategories.length){
+      visibleCategories.forEach(category=>layoutRows.push(`<Row ss:Height="18">${excelCell(category,`Pool_${poolImportColorFor(category)}`,'String',excelGridColumnCount-1)}</Row>`));
+    }else{
+      layoutRows.push(`<Row ss:Height="18">${excelCell('No imported pool highlights on this page','Center','String',excelGridColumnCount-1)}</Row>`);
     }
+    layoutRows.push(`<Row ss:Height="18">${excelCell('BACK FENCE','Fence','String',excelGridColumnCount-1)}</Row>`);
+    layoutRows.push(`<Row ss:Height="18">${bayHeaderCells}${excelCell('ROW','Header')}${excelCell('LEVEL','Header')}</Row>`);
+    for(let row=0;row<rows;row++){
+      activeLevels.forEach((level,levelPosition)=>{
+        const cells=[];
+        for(let bay=0;bay<BAYS;bay++){
+          const index=(row*ROW_SIZE)+(level*BAYS)+bay;
+          const item=items[index]||{text:'',green:false};
+          cells.push(excelCell(item.text||'',excelHighlightStyle(item)));
+          cells.push(excelCell('','VSpacer'));
+          if(String(item.text||'').trim())manifestRows.push(`<Row ss:Height="18">${excelCell(pageNames[page],'Center')}${excelCell(rows-row,'Center','Number')}${excelCell(BAYS-bay,'Center','Number')}${excelCell(displayLevels-levelPosition,'Center','Number')}${excelCell(tierLabelForItems(items,index,activeLevels),'Center')}${excelCell(item.text,excelHighlightStyle(item))}${excelCell(item.poolImportCategory||'','Center')}${excelCell(item.green?'YES':'NO',item.green?excelHighlightStyle(item):'Center')}</Row>`);
+        }
+        cells.push(excelCell(rows-row,'Center','Number'),excelCell(`LEVEL ${displayLevels-levelPosition}`,'Center'));
+        layoutRows.push(`<Row ss:Height="18">${cells.join('')}</Row>`);
+      });
+      if(row<rows-1)layoutRows.push(`<Row ss:Height="8">${excelCell('','Spacer','String',excelGridColumnCount-1)}</Row>`);
+    }
+    layoutRows.push(`<Row ss:Height="18">${excelCell('FRONT - [BOWL]','Fence','String',excelGridColumnCount-1)}</Row>`);
+    const freezeRow=visibleCategories.length?5+visibleCategories.length:6;
+    worksheets.push(`<Worksheet ss:Name="${pageNames[page]}"><Table>${Array.from({length:BAYS},()=>'<Column ss:Width="84"/><Column ss:Width="8"/>').join('')}<Column ss:Width="40"/><Column ss:Width="54"/>${layoutRows.join('')}</Table><WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel"><DoNotDisplayGridlines/><Zoom>90</Zoom><FreezePanes/><FrozenNoSplit/><SplitHorizontal>${freezeRow}</SplitHorizontal><TopRowBottomPane>${freezeRow}</TopRowBottomPane><ProtectObjects>False</ProtectObjects><ProtectScenarios>False</ProtectScenarios></WorksheetOptions></Worksheet>`);
   }
+
+  const poolStyles=Object.entries(HIGHLIGHT_PALETTES).map(([name,palette])=>`<Style ss:ID="Pool_${name}"><Alignment ss:Horizontal="Left" ss:Vertical="Center" ss:Indent="1"/><Font ss:Bold="1" ss:Color="${palette.text==='#111'?'#111111':'#FFFFFF'}"/><Interior ss:Color="${palette.grid.toUpperCase()}" ss:Pattern="Solid"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="${palette.border.toUpperCase()}"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="2" ss:Color="${palette.border.toUpperCase()}"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="2" ss:Color="${palette.border.toUpperCase()}"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="${palette.border.toUpperCase()}"/></Borders></Style>`).join('');
 
   const workbook=`<?xml version="1.0"?><?mso-application progid="Excel.Sheet"?>
 <Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
@@ -1845,13 +2056,14 @@ function exportStackingGridExcel(){
 <Style ss:ID="Center"><Alignment ss:Horizontal="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/></Borders></Style>
 <Style ss:ID="Occupied"><Alignment ss:Horizontal="Left" ss:Vertical="Center" ss:Indent="1"/><Font ss:Bold="1"/><Interior ss:Color="#E7ECF1" ss:Pattern="Solid"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#AEB6BC"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="3" ss:Color="#AEB6BC"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="3" ss:Color="#AEB6BC"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#AEB6BC"/></Borders></Style>
 <Style ss:ID="Gold"><Alignment ss:Horizontal="Left" ss:Vertical="Center" ss:Indent="1"/><Font ss:Bold="1"/><Interior ss:Color="#D4A51E" ss:Pattern="Solid"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#AEB6BC"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="3" ss:Color="#AEB6BC"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="3" ss:Color="#AEB6BC"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#AEB6BC"/></Borders></Style>
+${poolStyles}
 <Style ss:ID="Blank"><Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#AEB6BC"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="3" ss:Color="#AEB6BC"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="3" ss:Color="#AEB6BC"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#AEB6BC"/></Borders></Style>
 <Style ss:ID="Fence"><Alignment ss:Horizontal="Center"/><Font ss:Bold="1" ss:Color="#FFFFFF"/><Interior ss:Color="#111820" ss:Pattern="Solid"/></Style>
 <Style ss:ID="Spacer"><Interior ss:Color="#B8BEC2" ss:Pattern="Solid"/></Style>
 <Style ss:ID="VSpacer"><Interior ss:Color="#AEB6BC" ss:Pattern="Solid"/></Style>
 </Styles>
-<Worksheet ss:Name="Stacking Grid"><Table>${Array.from({length:BAYS},()=>'<Column ss:Width="84"/><Column ss:Width="8"/>').join('')}<Column ss:Width="40"/><Column ss:Width="54"/>${layoutRows.join('')}</Table><WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel"><DoNotDisplayGridlines/><Zoom>90</Zoom><FreezePanes/><FrozenNoSplit/><SplitHorizontal>4</SplitHorizontal><TopRowBottomPane>4</TopRowBottomPane><ProtectObjects>False</ProtectObjects><ProtectScenarios>False</ProtectScenarios></WorksheetOptions></Worksheet>
-<Worksheet ss:Name="Container Manifest"><Table><Column ss:Width="36"/><Column ss:Width="36"/><Column ss:Width="42"/><Column ss:Width="76"/><Column ss:Width="96"/><Column ss:Width="76"/>${manifestRows.join('')}</Table><WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel"><DoNotDisplayGridlines/><Zoom>90</Zoom><FreezePanes/><FrozenNoSplit/><SplitHorizontal>2</SplitHorizontal><TopRowBottomPane>2</TopRowBottomPane><ProtectObjects>False</ProtectObjects><ProtectScenarios>False</ProtectScenarios></WorksheetOptions></Worksheet>
+${worksheets.join('')}
+<Worksheet ss:Name="Container Manifest"><Table><Column ss:Width="38"/><Column ss:Width="36"/><Column ss:Width="36"/><Column ss:Width="42"/><Column ss:Width="76"/><Column ss:Width="104"/><Column ss:Width="82"/><Column ss:Width="66"/>${manifestRows.join('')}</Table><WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel"><DoNotDisplayGridlines/><Zoom>90</Zoom><FreezePanes/><FrozenNoSplit/><SplitHorizontal>2</SplitHorizontal><TopRowBottomPane>2</TopRowBottomPane><ProtectObjects>False</ProtectObjects><ProtectScenarios>False</ProtectScenarios></WorksheetOptions></Worksheet>
 </Workbook>`;
   const blob=new Blob(['\ufeff',workbook],{type:'application/vnd.ms-excel'});
   const url=URL.createObjectURL(blob);
@@ -1869,7 +2081,7 @@ function exportStackingGridExcel(){
   button.textContent='EXPORTED';
   setTimeout(()=>{button.textContent=previous},1400);
 }
-function renderAll(){renderGrid();renderYard();updateContainerTotal();fitStackingView();updateDeleteButton();}
+function renderAll(){renderGrid();renderYard();renderPoolColorKey();updateContainerTotal();fitStackingView();updateDeleteButton();}
 window.addEventListener('resize',fitStackingView,{passive:true});
 
 function tierLabel(index){
@@ -2226,6 +2438,9 @@ function finishMarquee(){
 }
 
 document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'&&document.getElementById('poolImportModal')?.classList.contains('open')){
+    e.preventDefault();closePoolImport();return;
+  }
   if(e.key==='Escape'&&document.getElementById('boxContextMenu')?.classList.contains('open')){
     e.preventDefault();
     closeBoxContextMenu();
@@ -2470,6 +2685,12 @@ document.getElementById('topAddRow').onclick=addTopRow;
 document.getElementById('topRemoveRow').onclick=removeTopRow;
 document.getElementById('bottomAddRow').onclick=addBottomRow;
 document.getElementById('bottomRemoveRow').onclick=removeBottomRow;
+document.getElementById('stackPageTabs').addEventListener('click',event=>{const button=event.target.closest('[data-stack-page]');if(button)switchStackPage(button.dataset.stackPage)});
+document.getElementById('poolImportBtn').onclick=openPoolImport;
+document.getElementById('poolImportClose').onclick=closePoolImport;
+document.getElementById('poolImportApply').onclick=applyStackingPoolReport;
+document.getElementById('poolImportClear').onclick=clearStackingPoolColors;
+document.getElementById('poolImportModal').addEventListener('click',event=>{if(event.target===event.currentTarget)closePoolImport()});
 
 document.getElementById('gridBtn').onclick=()=>{
   document.getElementById('gridView').style.display='block';
@@ -2482,7 +2703,7 @@ document.getElementById('yardBtn').onclick=()=>{
   yardBtn.classList.add('active');gridBtn.classList.remove('active');renderAll();
 }
 
-load();applyHighlightColor(highlightColor);updateStackHeightToggle();renderAll();updateGlowButton();
+load();applyHighlightColor(highlightColor);updateStackHeightToggle();updateStackPageTabs();renderPoolColorKey();renderAll();updateGlowButton();
 </script>
 </body>
 </html>

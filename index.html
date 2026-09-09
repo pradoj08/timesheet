@@ -13254,6 +13254,18 @@ function normalizeForecastTracklistConsigneeCandidate(value){
       return html;
     }
 
+    function withExcelInboundDockedLayout(html) {
+      if (!html || typeof html !== "string" || html.includes("excel-inbound-docked-layout-v1")) return html;
+      return html.replace(/<\/head>/i, `<style id="excel-inbound-docked-layout-v1">
+.workspace.has-inbound{grid-template-columns:minmax(330px,390px) minmax(0,1fr)!important}
+.workspace.has-inbound .inbound-panel{position:sticky!important;top:12px!important;left:auto!important;width:auto!important;height:calc(100vh - 110px)!important;max-width:none!important;max-height:none!important;align-self:start}
+.workspace.has-inbound .inbound-popup-head{cursor:default}
+.workspace.has-inbound .inbound-popup-resize-grip{display:none}
+@media(max-width:1180px){.workspace.has-inbound{grid-template-columns:minmax(0,1fr)!important}.workspace.has-inbound .inbound-panel{position:relative!important;top:auto!important;height:min(620px,calc(100vh - 105px))!important}}
+</style>
+</head>`);
+    }
+
     function withChassisInboundDuplicateAction(html) {
       if (!html || typeof html !== "string" || html.includes("chassis-inbound-duplicate-action-v1")) return html;
       const functionAnchor = "function updateForecastTrainDay(train,oldDay,dateValue){";
@@ -14331,6 +14343,7 @@ function duplicateForecastTrainDay(train,day){
         if (id === "audits") pageHtml = withAuditsClearKeepsView(pageHtml);
         if (id === "excelView") {
           pageHtml = withExcelInboundPlannerClosedAtBoot(pageHtml);
+          pageHtml = withExcelInboundDockedLayout(pageHtml);
           pageHtml = withExcelInboundDateCycling(pageHtml);
           pageHtml = withExcelContrastingBlockColors(pageHtml);
           pageHtml = withExcelNativeRuleBorderFix(pageHtml);
