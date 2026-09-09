@@ -10301,7 +10301,7 @@ function buildForecastExcelShortageNotes(rows){
     ["TGRP","45",3,"TRAC"],["TGRP","40",15,"TRAC"],
     ["FGCP","45",3,"FLEXI"],["FGCP","40",15,"FLEXI"],["FGCP","20",10,"FLEXI"],
     ["SNCZ","53",15,"SNCZ"],["SNBZ","40",5,"SNBZ"],
-    ["DCLI","53",15,"DCLI"],["DCLI","40",15,"DCLP"],["DCLI","20",15,"DCLI/DCLP"]
+    ["DCLI","53",15,"DCLI"],["DCLI","40",15,"DCLP"],["DCLI","20",15,"DCLP"]
   ];
   return checks.flatMap(([pool,size,limit,label])=>{
     const row=byKey.get(`${pool}|${size}`);
