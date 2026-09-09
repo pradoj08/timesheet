@@ -9911,6 +9911,10 @@ document.addEventListener('click',function(event){
       label: "Import Track List",
       html: `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Import Track List</title><style>html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#050b18}iframe{display:block;width:100%;height:100%;border:0;background:#050b18}</style></head><body><iframe src="import-track-list-page.html" title="Import Track List"></iframe></body></html>`
     };
+    pages.observations = {
+      label: "Observations",
+      html: `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Observations</title><style>html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#dfe3e7}iframe{display:block;width:100%;height:100%;border:0;background:#dfe3e7}</style></head><body><iframe src="observations-page.html" title="Observations"></iframe></body></html>`
+    };
     pages.stackingGrid = {
       label: "Stacking Grid",
       html: `<!DOCTYPE html>
@@ -14541,7 +14545,7 @@ function duplicateForecastTrainDay(train,day){
       document.querySelectorAll(".workbook-tabs button").forEach((button) => {
         button.classList.toggle("active", button.dataset.page === activePage);
       });
-      if (reportMenuButton) reportMenuButton.classList.toggle("active", ["amReport", "chassisStatus", "inVsOutPlanner", "importTrackList", "settegastMap", "stackingGrid"].includes(activePage));
+      if (reportMenuButton) reportMenuButton.classList.toggle("active", ["amReport", "chassisStatus", "inVsOutPlanner", "importTrackList", "observations", "settegastMap", "stackingGrid"].includes(activePage));
       if (excelLphMenuButton) excelLphMenuButton.classList.toggle("active", ["excelView", "lphTracker"].includes(activePage));
       if (timesheetMenuButton) timesheetMenuButton.classList.toggle("active", ["timeMd", "idTracker"].includes(activePage));
       if (matrixMenuButton) matrixMenuButton.classList.toggle("active", ["matrix", "matrixWide"].includes(activePage));
@@ -14857,7 +14861,7 @@ function duplicateForecastTrainDay(train,day){
         const menu = document.createElement("div");
         menu.className = "matrix-nav-menu report-nav-menu";
         menu.setAttribute("role", "menu");
-        [["amReport", "AM Report"], ["chassisStatus", "Chassis Forecast"], ["chassisReconciliation", "Chassis Reconciliation"], ["inVsOutPlanner", "In v Out Forecaster"], ["importTrackList", "Import Track List"], ["settegastMap", "Settegast Map"], ["stackingGrid", "Stacking Grid"]].forEach(([pageId, label]) => {
+        [["amReport", "AM Report"], ["chassisStatus", "Chassis Forecast"], ["chassisReconciliation", "Chassis Reconciliation"], ["inVsOutPlanner", "In v Out Forecaster"], ["importTrackList", "Import Track List"], ["observations", "Observations"], ["settegastMap", "Settegast Map"], ["stackingGrid", "Stacking Grid"]].forEach(([pageId, label]) => {
           const option = document.createElement("button");
           option.type = "button";
           option.dataset.page = pageId;

@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Observations</title>
+<style>
+  :root{--ink:#171717;--accent:#f12b13;--paper:#f7f6f5;--line:#242424;--muted:#5b4d47}
+  *{box-sizing:border-box}
+  body{margin:0;background:#dfe3e7;color:var(--ink);font-family:Arial,Helvetica,sans-serif}
+  button,input,textarea{font:inherit}
+  .toolbar{position:sticky;top:0;z-index:3;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:10px 18px;background:#101820;color:#fff;border-bottom:3px solid var(--accent)}
+  .toolbar strong{font-size:14px;letter-spacing:.08em;text-transform:uppercase}
+  .toolbar span{color:#cbd5df;font-size:11px;font-weight:700}
+  .toolbar button{min-height:32px;padding:6px 14px;border:1px solid #fff;border-radius:5px;background:#fff;color:#101820;font-weight:900;cursor:pointer}
+  .page{width:min(1000px,calc(100% - 32px));min-height:1180px;margin:24px auto;padding:48px 50px;background:var(--paper);box-shadow:0 16px 45px rgba(15,23,42,.22)}
+  .eyebrow{width:100%;border:0;background:transparent;color:var(--accent);font-size:17px;font-weight:900;letter-spacing:.28em;text-transform:uppercase;outline:none}
+  .score-head{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:30px;align-items:end;padding:10px 0 17px;border-bottom:2px solid var(--line)}
+  .name{width:100%;height:74px;padding:5px 0 7px;border:0;background:transparent;color:var(--ink);font-size:58px;font-weight:950;line-height:1.08;outline:none}
+  .month-block{display:grid;gap:2px;padding-bottom:3px}
+  .month,.range{width:100%;padding:3px 0;border:0;background:transparent;color:var(--ink);font-weight:950;line-height:1.15;outline:none}
+  .month{height:44px;font-size:30px}.range{height:28px;color:#493d38;font-size:16px;letter-spacing:.14em;text-transform:uppercase}
+  .rows{display:grid}
+  .metric{display:grid;grid-template-columns:minmax(300px,1.2fr) minmax(175px,.58fr) minmax(260px,.82fr);align-items:center;min-height:178px;border-bottom:2px solid var(--line)}
+  .metric>div{min-width:0;padding:14px 24px}
+  .metric>div:first-child{padding-left:2px}
+  .metric>div+div{border-left:2px solid var(--line)}
+  .num{display:block;width:60px;margin-bottom:10px;border:0;background:transparent;color:#4f403a;font-size:14px;font-weight:900;letter-spacing:.16em;outline:none}
+  .metric-name{display:block;width:100%;height:72px;padding:3px 0;border:0;background:transparent;color:var(--ink);font-size:29px;font-weight:950;line-height:1.04;text-transform:uppercase;resize:none;overflow:hidden;outline:none}
+  .score{display:flex;align-items:flex-end;justify-content:center;gap:13px;min-width:0}
+  .current{flex:0 0 82px;width:82px;height:76px;padding:0;border:0;background:transparent;color:var(--accent);font-size:72px;font-weight:950;line-height:1;text-align:center;outline:none}
+  .score-target{display:flex;align-items:baseline;gap:7px;margin-bottom:7px;white-space:nowrap}
+  .of{font-size:21px;font-weight:950;line-height:1}
+  .target{width:58px;padding:0;border:0;background:transparent;color:#3a3532;font-size:28px;font-weight:950;line-height:1;text-align:left;outline:none}
+  .current::-webkit-inner-spin-button,.current::-webkit-outer-spin-button,.target::-webkit-inner-spin-button,.target::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+  .current,.target{-moz-appearance:textfield}
+  .last-label{display:block;margin-bottom:5px;color:#51433d;font-size:15px;font-weight:900;letter-spacing:.17em;text-transform:uppercase}
+  .last-date{display:block;width:100%;height:64px;padding:2px 0;border:0;background:transparent;color:var(--ink);font-size:25px;font-weight:950;line-height:1.04;resize:none;overflow:hidden;outline:none}
+  .metric.is-zero .last-label,.metric.is-zero .last-date{visibility:hidden;pointer-events:none}
+  input:hover,input:focus,textarea:hover,textarea:focus{background:#fff4d7;box-shadow:0 0 0 2px #f4b400;border-radius:3px}
+  .footer{display:flex;align-items:center;justify-content:space-between;gap:20px;margin-top:36px;padding:22px 28px;background:var(--accent);color:#fff;font-weight:950;text-transform:uppercase}
+  .footer-total{font-size:31px}.footer-status{min-width:250px;color:#fff;font-size:17px;font-weight:950;letter-spacing:.12em;text-align:right;text-transform:uppercase}
+  .saved{color:#9ff0b5!important}
+  body.print-preview{background:#fff}
+  body.print-preview .toolbar{display:none}
+  body.print-preview .page{margin:0 auto;box-shadow:none}
+  @media(max-width:900px){.page{width:calc(100% - 16px);padding:36px 28px}.metric{grid-template-columns:minmax(260px,1fr) 170px minmax(230px,.8fr)}.metric-name{font-size:25px}.last-date{font-size:22px}}
+  @media(max-width:760px){.page{width:100%;margin:0;padding:28px 20px;min-height:100vh}.score-head{grid-template-columns:1fr}.name{height:60px;font-size:42px}.metric{grid-template-columns:1fr;gap:0;padding:16px 0}.metric>div{padding:10px 2px}.metric>div+div{border-left:0}.metric-name,.last-date{height:auto;min-height:54px}.footer{align-items:flex-start;flex-direction:column}.footer-status{text-align:left}.toolbar span{display:none}}
+  @page{size:letter portrait;margin:0}
+  @media print{
+    html,body{width:750px;margin:0;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .toolbar{display:none}
+    .page{width:1000px!important;min-height:1180px!important;margin:0!important;padding:48px 50px!important;zoom:.75;box-shadow:none!important}
+    .score-head{grid-template-columns:minmax(0,1fr) 330px!important;gap:30px!important}
+    .name{height:74px!important;font-size:58px!important}
+    .metric{grid-template-columns:minmax(300px,1.2fr) minmax(175px,.58fr) minmax(260px,.82fr)!important;min-height:178px!important;padding:0!important}
+    .metric>div{padding:14px 24px!important}
+    .metric>div:first-child{padding-left:2px!important}
+    .metric>div+div{border-left:2px solid var(--line)!important}
+    .metric-name{height:72px!important;font-size:29px!important}
+    .last-date{height:64px!important;font-size:25px!important}
+    .footer{align-items:center!important;flex-direction:row!important}
+    .footer-status{text-align:right!important}
+    input:hover,input:focus,textarea:hover,textarea:focus{background:transparent!important;box-shadow:none!important}
+  }
+</style>
+</head>
+<body>
+<header class="toolbar"><div><strong>Observations</strong><span id="saveStatus"> — Edit any field. Changes save automatically.</span></div><button id="printPage" type="button">Print</button></header>
+<main class="page">
+  <input class="eyebrow" data-field="eyebrow" value="MONTHLY SAFETY SCORECARD" aria-label="Scorecard title">
+  <section class="score-head">
+    <input class="name" data-field="name" value="Jacob Prado" aria-label="Employee name">
+    <div class="month-block"><input class="month" data-field="month" value="September 2026" aria-label="Month"><input class="range" data-field="range" value="SEP 1 – SEP 30" aria-label="Date range"></div>
+  </section>
+  <section class="rows" id="metricRows"></section>
+  <footer class="footer"><div class="footer-total"><span id="completionTotal">30</span> COMPLETIONS THIS MONTH</div><div class="footer-status" id="targetStatus">TARGETS NOT MET</div></footer>
+</main>
+<script>
+const STORAGE_KEY='conglobal-observations-scorecard-v1';
+const defaults={eyebrow:'MONTHLY SAFETY SCORECARD',name:'Jacob Prado',month:'September 2026',range:'SEP 1 – SEP 30',metrics:[
+  {number:'01',name:'SAFETY OBSERVATIONS',current:14,target:12,date:'September 8, 2026'},
+  {number:'02',name:'SECUREMENT',current:6,target:6,date:'September 5, 2026'},
+  {number:'03',name:'PUC LINE',current:3,target:4,date:'September 2, 2026'},
+  {number:'04',name:'BOOT',current:5,target:5,date:'September 7, 2026'},
+  {number:'05',name:'MONTHLY TRAININGS',current:2,target:2,date:'September 1, 2026'}
+]};
+function readState(){try{const saved=JSON.parse(localStorage.getItem(STORAGE_KEY));if(saved&&Array.isArray(saved.metrics))return{...defaults,...saved,metrics:defaults.metrics.map((row,index)=>({...row,...(saved.metrics[index]||{})}))}}catch(_){}return JSON.parse(JSON.stringify(defaults))}
+let state=readState();
+function escapeHtml(value){return String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]))}
+function renderRows(){document.getElementById('metricRows').innerHTML=state.metrics.map((row,index)=>`<article class="metric${Number(row.current)||0?'':' is-zero'}" data-index="${index}"><div><input class="num" data-metric-field="number" value="${escapeHtml(row.number)}" aria-label="Section number"><textarea class="metric-name" data-metric-field="name" rows="2" aria-label="Metric name">${escapeHtml(row.name)}</textarea></div><div class="score"><input class="current" data-metric-field="current" type="number" min="0" value="${Number(row.current)||0}" aria-label="Completed"><span class="score-target"><span class="of">of</span><input class="target" data-metric-field="target" type="number" min="0" value="${Number(row.target)||0}" aria-label="Target"></span></div><div><span class="last-label">Last Completed</span><textarea class="last-date" data-metric-field="date" rows="2" aria-label="Last completed date">${escapeHtml(row.date)}</textarea></div></article>`).join('');updateTotals()}
+function updateTotals(){const total=state.metrics.reduce((sum,row)=>sum+(Number(row.current)||0),0),allMet=state.metrics.every(row=>(Number(row.current)||0)>=(Number(row.target)||0));document.getElementById('completionTotal').textContent=total;document.getElementById('targetStatus').textContent=allMet?'ALL TARGETS MET':'TARGETS NOT MET';document.querySelectorAll('.metric[data-index]').forEach(metric=>metric.classList.toggle('is-zero',!(Number(state.metrics[Number(metric.dataset.index)]?.current)||0)))}
+let saveTimer=0;
+function save(){localStorage.setItem(STORAGE_KEY,JSON.stringify(state));const status=document.getElementById('saveStatus');status.textContent=' — Saved locally';status.classList.add('saved');clearTimeout(saveTimer);saveTimer=setTimeout(()=>{status.textContent=' — Edit any field. Changes save automatically.';status.classList.remove('saved')},1600)}
+document.querySelectorAll('[data-field]').forEach(input=>{input.value=state[input.dataset.field]??input.value;input.addEventListener('input',()=>{state[input.dataset.field]=input.value;save()})});
+document.getElementById('metricRows').addEventListener('input',event=>{const input=event.target.closest('[data-metric-field]');if(!input)return;const index=Number(input.closest('[data-index]').dataset.index),field=input.dataset.metricField;state.metrics[index][field]=input.type==='number'?Math.max(0,Number(input.value)||0):input.value;updateTotals();save()});
+function printObservations(){
+  const status=document.getElementById('saveStatus');
+  save();
+  const url=new URL(location.href);
+  url.searchParams.set('print','1');
+  const popup=window.open(url.href,'conglobal-observations-print','popup,width=1080,height=900,resizable=yes,scrollbars=yes');
+  if(popup){status.textContent=' — Opening print view…';return}
+  status.textContent=' — Pop-up blocked. Printing this view…';
+  window.focus();
+  window.print();
+}
+document.getElementById('printPage').addEventListener('click',printObservations);
+renderRows();
+if(new URLSearchParams(location.search).get('print')==='1'){
+  document.body.classList.add('print-preview');
+  window.addEventListener('load',()=>setTimeout(()=>{window.focus();window.print()},250),{once:true});
+  window.addEventListener('afterprint',()=>window.close(),{once:true});
+}
+</script>
+</body>
+</html>
