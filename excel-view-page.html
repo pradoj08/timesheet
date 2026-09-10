@@ -3547,13 +3547,16 @@
   .inbound-popup-title { font-size: 13px; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; }
   .inbound-popup-sub { margin-top: 2px; color: #aebdd0; font-size: 10px; font-weight: 700; }
   .inbound-popup-close {
-    width: 28px;
-    height: 28px;
+    min-width: 112px;
+    height: 30px;
     border: 1px solid #53647a;
     border-radius: 5px;
     background: transparent;
     color: #fff;
-    font-size: 18px;
+    padding: 0 10px;
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: .03em;
     line-height: 1;
     cursor: pointer;
   }
@@ -3989,7 +3992,7 @@
             <div class="inbound-popup-title">Inbounds</div>
             <div class="inbound-popup-sub">Expected trains and block breakdowns</div>
           </div>
-          <button class="inbound-popup-close" id="closeInboundPlanner" type="button" aria-label="Close Inbounds">&times;</button>
+          <button class="inbound-popup-close" id="closeInboundPlanner" type="button" aria-label="Hide Inbounds">Hide Inbounds</button>
         </header>
         <div class="inbound-body" id="inboundPlannerList"></div>
         <div class="inbound-popup-resize-grip" id="inboundPopupResizeGrip" title="Drag to resize" aria-label="Resize Inbounds"></div>
