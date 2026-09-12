@@ -7559,6 +7559,12 @@ function scenarioSourceClass(key) {
   if (value.includes("ihosa") || value.includes("mhoas") || value === "coh") return "load";
   return "lift";
 }
+function scenarioAssignmentContainerColor(key, fallback = "") {
+  const value = String(key || "").toLowerCase();
+  if (value.includes("ihosa")) return "#22c55e";
+  if (value.includes("mhoas")) return "#3b82f6";
+  return fallback;
+}
 function liftSourceBannerLabel(key, label) {
   const value = String(key || "").trim().toLowerCase();
   const fixed = {
@@ -7650,7 +7656,7 @@ function buildScenarioEvents(payload) {
   return events.map((event, index) => ({
     ...event,
     sequence: index,
-    containerColor: containerColorForIndex(index)
+    containerColor: scenarioAssignmentContainerColor(event.key, containerColorForIndex(index))
   }));
 }
 function scenarioTrainSourceKey(event) {
@@ -8926,8 +8932,9 @@ function stageScenarioTrainConsists() {
       const carIndex = Math.floor(slot / 2);
       const tier = slot % 2 === 1 ? "top" : "bottom";
       const outboundLoad = scenarioSourceClass(event.key) === "load";
+      const assignmentColor = scenarioAssignmentContainerColor(event.key);
       const containerColor = outboundLoad
-        ? SCENARIO_OUTBOUND_CONTAINER_COLORS[Number(event.sequence || 0) % SCENARIO_OUTBOUND_CONTAINER_COLORS.length]
+        ? (assignmentColor || SCENARIO_OUTBOUND_CONTAINER_COLORS[Number(event.sequence || 0) % SCENARIO_OUTBOUND_CONTAINER_COLORS.length])
         : (event.containerColor || containerColorForIndex(containerId - 1));
       const x = railCarCenterX(track, carIndex, Math.max(1, Number(train.carCount) || 1));
       const outboundStaging = scenarioOutboundZoneSpot(Number(event.sequence || 0));

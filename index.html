@@ -9865,6 +9865,23 @@ document.addEventListener('click',function(event){
         );
     }
 
+    function withMatrixAssignmentContainerColors(html) {
+      if (!html || typeof html !== "string" || html.includes("matrix-assignment-container-colors-v1")) return html;
+      let next = html.replace(
+        'function liftSourceBannerLabel(key, label) {',
+        '/* matrix-assignment-container-colors-v1 */\nfunction scenarioAssignmentContainerColor(key, fallback = "") {\n  const value = String(key || "").toLowerCase();\n  if (value.includes("ihosa")) return "#22c55e";\n  if (value.includes("mhoas")) return "#3b82f6";\n  return fallback;\n}\nfunction liftSourceBannerLabel(key, label) {'
+      );
+      next = next.replace(
+        '    containerColor: containerColorForIndex(index)\n  }));',
+        '    containerColor: scenarioAssignmentContainerColor(event.key, containerColorForIndex(index))\n  }));'
+      );
+      next = next.replace(
+        '      const outboundLoad = scenarioSourceClass(event.key) === "load";\n      const containerColor = outboundLoad\n        ? SCENARIO_OUTBOUND_CONTAINER_COLORS[Number(event.sequence || 0) % SCENARIO_OUTBOUND_CONTAINER_COLORS.length]',
+        '      const outboundLoad = scenarioSourceClass(event.key) === "load";\n      const assignmentColor = scenarioAssignmentContainerColor(event.key);\n      const containerColor = outboundLoad\n        ? (assignmentColor || SCENARIO_OUTBOUND_CONTAINER_COLORS[Number(event.sequence || 0) % SCENARIO_OUTBOUND_CONTAINER_COLORS.length])'
+      );
+      return next;
+    }
+
     function withMatrixRailContainerPinkFamilies(html) {
       if (!html || typeof html !== "string" || html.includes("matrix-rail-container-pink-families-v1")) return html;
       return html.replace(
@@ -12173,6 +12190,11 @@ document.getElementById("openYardCheck")?.addEventListener("click", function(){
 </style>`;
       return html.replace("</head>", style + "</head>");
     }
+    function withChassisNetFontWeight(html) {
+      if (!html || typeof html !== "string" || html.includes("chassis-net-font-weight-v1")) return html;
+      return html.replace("</head>", '<style id="chassis-net-font-weight-v1">.forecast-net-positive,.forecast-net-negative{font-weight:900!important}</style></head>');
+    }
+
     function withChassisGreenExcelHero(html) {
       if (!html || typeof html !== "string" || html.includes('id="chassis-green-excel-hero"')) return html;
       const style = `<style id="chassis-green-excel-hero">
@@ -14149,6 +14171,17 @@ function duplicateForecastTrainDay(train,day){
       return html.replace('</head>', css + '</head>');
     }
 
+    function withExcelEmptyRowPasteContext(html) {
+      if (!html || typeof html !== "string" || html.includes("excel-empty-row-paste-context-v1")) return html;
+      const functionStart = html.indexOf("function openBlockContextMenu(event) {");
+      if (functionStart < 0) return html;
+      const blockAnchor = '    const block = event.target.closest(".cut-cell[data-block-id]");';
+      const insertAt = html.indexOf(blockAnchor, functionStart);
+      if (insertAt < 0) return html;
+      const branch = '    /* excel-empty-row-paste-context-v1 */\n    const emptyRowCell = event.target.closest(".cut-cell.block-drop-end:not([data-block-id]), .track-remaining.block-drop-end");\n    if (emptyRowCell && emptyRowCell.closest(".yard-grid") === grid && TRACKS.includes(Number(emptyRowCell.dataset.track || emptyRowCell.dataset.dropEndTrack))) {\n      event.preventDefault();\n      setBlockPasteTarget(event);\n      selectedBlockIds.clear();selectedBlockGridId = "";syncBlockSelectionUi();\n      const menu = $("#blockContextMenu");\n      $("#viewRawBlock").hidden = true;$("#copySelectedBlocksBtn").hidden = true;\n      const pasteButton = $("#pasteCopiedBlocksBtn");pasteButton.hidden = false;pasteButton.disabled = !validBlockClipboard(blockClipboard);pasteButton.textContent = "Paste Blocks";\n      const splitButton = $("#splitSelectedBlockBtn");if (splitButton) splitButton.hidden = true;\n      const ihosa = $("#consolidateSelectedToIhosa"),mhoas = $("#consolidateSelectedToMhoas");if (ihosa) ihosa.hidden = true;if (mhoas) mhoas.hidden = true;\n      $("#clearFinalZoneBtn").hidden = true;$("#deleteSelectedBlocks").hidden = true;\n      menu.hidden = false;positionBlockContextMenu(menu, event);return;\n    }\n';
+      return html.slice(0, insertAt) + branch + html.slice(insertAt);
+    }
+
     function withExcelBlockSplitContextMenu(html) {
       const marker = 'data-excel-block-split-context-v1';
       if (html.includes(marker)) return html;
@@ -14387,7 +14420,7 @@ function duplicateForecastTrainDay(train,day){
       if (!bridgedPageHtml.has(id)) {
         let pageHtml = pages[id].html;
         if (["amReport", "timeMd", "roster", "timeOff"].includes(id)) pageHtml = withSharedRosterBaseline20260829(pageHtml);
-        if (id === "matrix" || id === "matrixWide") pageHtml = withMatrixRailContainerPinkFamilies(withMatrixDirtLotAsChassisLot(withMatrixYardCheckedNineDays(pageHtml)));
+        if (id === "matrix" || id === "matrixWide") pageHtml = withMatrixAssignmentContainerColors(withMatrixRailContainerPinkFamilies(withMatrixDirtLotAsChassisLot(withMatrixYardCheckedNineDays(pageHtml))));
         if (id === "matrix") pageHtml = withMatrixCraneScale85(pageHtml);
         if (id === "amReport") {
           pageHtml = withAmReportPerformance(pageHtml);
@@ -14484,6 +14517,7 @@ function duplicateForecastTrainDay(train,day){
           pageHtml = withExcelInboundOnHandChecks(pageHtml);
           pageHtml = withExcelInboundSequenceCounterColors(pageHtml);
           pageHtml = withExcelBlockSplitContextMenu(pageHtml);
+          pageHtml = withExcelEmptyRowPasteContext(pageHtml);
           pageHtml = withExcelInboundBetweenRowInsert(pageHtml);
           pageHtml = withExcelInboundDpuInsert(pageHtml);
         }
@@ -14517,6 +14551,7 @@ function duplicateForecastTrainDay(train,day){
           pageHtml = withChassisUnplannedPersistence(pageHtml);
           pageHtml = withChassisUnplannedRequestColumn(pageHtml);
           pageHtml = withChassisSplitTableTextSliders(pageHtml);
+          pageHtml = withChassisNetFontWeight(pageHtml);
           pageHtml = withChassisUnplannedColumnTypography(pageHtml);
           pageHtml = withChassisExcelControlsViewport(pageHtml);
           pageHtml = withChassisLighterOver50Cells(pageHtml);

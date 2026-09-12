@@ -7919,6 +7919,29 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       positionBlockContextMenu(menu, event);
       return;
     }
+    const emptyRowCell = event.target.closest(".cut-cell.block-drop-end:not([data-block-id]), .track-remaining.block-drop-end");
+    if (emptyRowCell && emptyRowCell.closest(".yard-grid") === grid && TRACKS.includes(Number(emptyRowCell.dataset.track || emptyRowCell.dataset.dropEndTrack))) {
+      event.preventDefault();
+      setBlockPasteTarget(event);
+      selectedBlockIds.clear();
+      selectedBlockGridId = "";
+      syncBlockSelectionUi();
+      const menu = $("#blockContextMenu");
+      $("#viewRawBlock").hidden = true;
+      $("#copySelectedBlocksBtn").hidden = true;
+      const pasteButton = $("#pasteCopiedBlocksBtn");
+      pasteButton.hidden = false;
+      pasteButton.disabled = !validBlockClipboard(blockClipboard);
+      pasteButton.textContent = "Paste Blocks";
+      $("#splitSelectedBlockBtn").hidden = true;
+      $("#consolidateSelectedToIhosa")?.setAttribute("hidden", "");
+      $("#consolidateSelectedToMhoas")?.setAttribute("hidden", "");
+      $("#clearFinalZoneBtn").hidden = true;
+      $("#deleteSelectedBlocks").hidden = true;
+      menu.hidden = false;
+      positionBlockContextMenu(menu, event);
+      return;
+    }
     const block = event.target.closest(".cut-cell[data-block-id]");
     if (!block) return;
     event.preventDefault();
