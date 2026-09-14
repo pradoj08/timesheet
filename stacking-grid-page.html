@@ -38,6 +38,9 @@ button,.mode{border:0;border-radius:8px;padding:10px 12px;font-weight:900;font-s
 }
 .row-edge-controls.top{grid-column:2;grid-row:1}
 .row-edge-controls.bottom{grid-column:2;grid-row:3}
+.column-edge-controls{grid-column:2;grid-row:1;align-self:center;justify-self:start;z-index:3;display:flex;align-items:center;gap:4px;padding:2px 5px;background:#111820;color:#dbe7f1;font-size:9px;font-weight:1000;letter-spacing:.06em}
+.column-edge-controls button{min-width:42px;height:28px;padding:0;border:2px solid #d9dfe2;border-radius:5px;background:#fff;color:#101820;font-size:19px;line-height:1;font-weight:900;box-shadow:0 2px 4px #0005;cursor:pointer}
+.column-edge-controls button.confirming{min-width:72px;border-color:#ef4444;background:#7f1d1d;color:#fff;font-size:9px}
 .row-edge-controls button{
   min-width:0;
   height:28px;
@@ -1529,6 +1532,9 @@ body.multi-selecting .unit,body.multi-selecting .y-half{cursor:crosshair!importa
   z-index:30!important;
 }
 .unit-search-wrap{position:relative;display:inline-flex;align-items:center}.unit-search-input{width:160px;min-height:32px;padding:6px 9px;border:1px solid #405161;border-radius:7px;background:#050b12;color:#fff;font:800 10px/1.2 Consolas,monospace;text-transform:uppercase}.unit-search-input:focus{outline:2px solid #38bdf8}.unit-search-results{position:fixed;z-index:1100;width:min(440px,calc(100vw - 16px));max-height:360px;overflow:auto;padding:7px;border:1px solid #52677d;border-radius:11px;background:#0b141e;color:#f8fafc;box-shadow:0 18px 50px rgba(0,0,0,.55)}.unit-search-results[hidden]{display:none}.unit-search-result{display:grid;width:100%;grid-template-columns:minmax(0,1fr) auto;gap:8px;padding:8px 9px!important;border:0!important;border-bottom:1px solid #26384a!important;border-radius:5px!important;background:#111d29!important;color:#fff!important;text-align:left}.unit-search-result strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.unit-search-result span{color:#9fb2c5;font-size:9px}.unit-search-empty{padding:14px;color:#fca5a5;font-size:11px;font-weight:900;text-align:center}.paid-swing-badge{position:absolute;z-index:8;right:4px;top:50%;display:inline-flex;width:18px;height:18px;align-items:center;justify-content:center;padding:0;border:1px solid rgba(255,255,255,.72);border-radius:50%;color:#fff!important;transform:translateY(-50%);font:900 12px/1 "Segoe UI Symbol","Arial Unicode MS",Arial,sans-serif;text-align:center;text-shadow:0 1px 1px #0008;box-shadow:0 1px 4px #0009,inset 0 1px rgba(255,255,255,.25);pointer-events:none}.paid-swing-badge.match{background:#16824b}.paid-swing-badge.missing{background:#c8323b}.y-container .paid-swing-badge{right:5px;top:50%}
+.grid-size-control{display:inline-flex;min-height:32px;align-items:center;gap:7px;padding:4px 9px;border:1px solid #52677d;border-radius:8px;background:#0d151c;color:#dce7f2;font-size:9px;font-weight:1000;letter-spacing:.05em;white-space:nowrap;box-shadow:0 2px 7px #0005}.grid-size-control input{width:130px;accent-color:#fbbf24;cursor:pointer}.grid-size-control output{min-width:38px;color:#fff;font-size:10px;text-align:right}
+.unit.search-found,.y-container.search-found{z-index:45!important;overflow:visible!important;outline:4px solid #ffea00!important;box-shadow:0 0 0 3px #111,0 0 18px 8px rgba(255,234,0,.9)!important}.unit.search-found::before,.y-container.search-found::before{content:"➜";position:absolute;z-index:60;left:-42px;top:50%;display:flex;width:36px;height:36px;align-items:center;justify-content:center;border:2px solid #111;border-radius:50%;background:#ffea00;color:#111;transform:translateY(-50%);font:1000 27px/1 Arial,sans-serif;text-shadow:none;box-shadow:0 2px 8px #0009;pointer-events:none;animation:searchPointerPulse .7s ease-in-out infinite alternate}@keyframes searchPointerPulse{from{transform:translate(-3px,-50%)}to{transform:translate(3px,-50%)}}
+.duplicate-unit-badge{position:absolute;z-index:12;left:4px;top:50%;display:inline-flex;width:19px;height:19px;align-items:center;justify-content:center;border:1px solid #f5e9ff;border-radius:50%;background:#4c1d95;color:#fff;transform:translateY(-50%);font:1000 11px/1 Arial,sans-serif;box-shadow:0 1px 5px #0009;pointer-events:none}.unit.duplicate-unit{background:#7e22ce!important;border-color:#d8b4fe!important;box-shadow:inset 0 0 0 2px #a855f7!important}.unit.duplicate-unit .label{padding-left:29px!important;color:#fff!important;text-shadow:0 1px 2px #2e1065!important}.y-container.duplicate-unit{padding-left:29px!important;background:repeating-linear-gradient(90deg,rgba(255,255,255,.09) 0 3px,rgba(0,0,0,.09) 3px 7px),#7e22ce!important;border-color:#d8b4fe!important;color:#fff!important;box-shadow:inset 0 0 0 2px #a855f7,0 3px 7px #0008!important}.y-container .duplicate-unit-badge{left:5px;top:50%}
 </style>
 <style id="stacking-grid-pages-v1">
 .stack-page-tabs{display:inline-flex;align-items:center;gap:4px;padding:3px;border:1px solid #3c4b59;border-radius:9px;background:#0a1118}
@@ -1551,6 +1557,7 @@ body.multi-selecting .unit,body.multi-selecting .y-half{cursor:crosshair!importa
     </div>
     <div class="container-counter" aria-live="polite">CONTAINERS <strong id="containerTotal">0</strong></div>
     <div class="stack-page-tabs" id="stackPageTabs" aria-label="Stacking grid pages"><span>PAGE</span><button type="button" class="stack-page-btn" data-stack-page="1">B</button><button type="button" class="stack-page-btn" data-stack-page="2">D</button><button type="button" class="stack-page-btn" data-stack-page="3">J</button><button type="button" class="stack-page-btn" data-stack-page="4">S</button></div>
+    <label class="grid-size-control" for="gridSizeSlider">GRID SIZE <input id="gridSizeSlider" type="range" min="60" max="140" step="5" value="100"><output id="gridSizeValue" for="gridSizeSlider">100%</output></label>
     <button type="button" id="poolImportBtn">PASTE</button>
     <button type="button" id="paidSwingsBtn">PAID SWINGS</button>
     <div class="unit-search-wrap"><input class="unit-search-input" id="unitSearchInput" type="search" autocomplete="off" placeholder="SEARCH ALL PAGES" aria-label="Search units across all stacking grid pages"><div class="unit-search-results" id="unitSearchResults" hidden></div></div>
@@ -1592,6 +1599,7 @@ body.multi-selecting .unit,body.multi-selecting .y-half{cursor:crosshair!importa
         <button type="button" id="topAddRow" title="Add row at top" aria-label="Add row at top">+</button>
         <button type="button" id="topRemoveRow" title="Remove top row" aria-label="Remove top row">−</button>
       </div>
+      <div class="column-edge-controls" aria-label="Adjust grid columns"><span>COLS</span><button type="button" id="addColumn" title="Add a column on the left" aria-label="Add a column on the left">+</button><button type="button" id="removeColumn" title="Remove the left column" aria-label="Remove the left column">−</button></div>
       <div class="yardgrid" id="grid"></div>
       <div class="rowlabels" id="labels"></div>
       <div class="crane editable-layout-label" data-layout-label="crane" title="Click to edit this page label">CRANE
@@ -1612,9 +1620,9 @@ PAD</div>
   <div class="context-colors" id="contextColors"></div>
   <button type="button" class="context-clear" id="contextClearColor" role="menuitem">Remove Color</button>
   <section class="context-closest" id="contextClosestMatch" hidden>
-    <div class="context-title">Closest Pool List match</div>
+    <div class="context-title">Closest Pasted Input</div>
     <div class="context-match-card" id="contextClosestMatchCard"></div>
-    <button type="button" class="context-swap-match" id="contextSwapClosest" role="menuitem">Swap for closest match</button>
+    <button type="button" class="context-swap-match" id="contextSwapClosest" role="menuitem">Replace with closest match</button>
   </section>
 </div>
 <div class="pool-import-modal" id="poolImportModal" aria-hidden="true">
@@ -1638,20 +1646,26 @@ const STACK_PAGE_COUNT=4;
 const STACK_ACTIVE_PAGE_KEY=KEY+'_active_page';
 let activeStackPage=Math.min(STACK_PAGE_COUNT,Math.max(1,Number(localStorage.getItem(STACK_ACTIVE_PAGE_KEY))||1));
 function stackPageKey(page=activeStackPage){return page===1?KEY:`${KEY}_page_${page}`}
+const STACK_SIZE_KEY=KEY+'_size_percent';
+let stackingSizePercent=Math.min(140,Math.max(60,Number(localStorage.getItem(STACK_SIZE_KEY))||100));
 const PAID_SWINGS_KEY=KEY+'_paid_swings_v1';
 function normalizeGridUnit(value){return String(value||'').toUpperCase().replace(/[^A-Z0-9]/g,'')}
-function gridUnitNumber(value){const match=normalizeGridUnit(value).match(/(\d{5,8})$/);return match?match[1]:''}
+function gridUnitNumber(value){const match=normalizeGridUnit(value).match(/(\d{2,8})$/);return match?match[1]:''}
 function readPaidSwings(){
   try{const saved=JSON.parse(localStorage.getItem(PAID_SWINGS_KEY)||'[]');return new Set(Array.isArray(saved)?saved:[])}catch(_){return new Set()}
 }
 let paidSwingUnits=readPaidSwings();
+let duplicateUnitKeys=new Set();
+let unitSearchPointer=null;
+function isUnitSearchPointer(index){return !!unitSearchPointer&&unitSearchPointer.page===activeStackPage&&unitSearchPointer.index===index}
+function revealUnitSearchPointer(){requestAnimationFrame(()=>document.querySelector('.search-found')?.scrollIntoView({behavior:'smooth',block:'center',inline:'center'}))}
 function parsePaidSwingUnits(raw){
   const units=new Set();
   const text=String(raw||'').toUpperCase();
-  (text.match(/\b[A-Z]{3,5}[\s-]*\d{5,8}\b/g)||[]).forEach(value=>units.add(normalizeGridUnit(value)));
+  (text.match(/\b[A-Z]{3,5}[\s-]*\d{2,8}\b/g)||[]).forEach(value=>units.add(normalizeGridUnit(value)));
   text.split(/\r?\n/).forEach(line=>{
     const trimmed=line.trim();
-    if(/^\d{5,8}$/.test(trimmed))units.add(trimmed);
+    if(/^\d{2,8}$/.test(trimmed))units.add(trimmed);
   });
   return units;
 }
@@ -1659,6 +1673,16 @@ function paidSwingCell(row,names){
   const normalized=Object.fromEntries(Object.entries(row||{}).map(([key,value])=>[String(key).toLowerCase().replace(/[^a-z0-9]/g,''),value]));
   for(const name of names){const value=normalized[String(name).toLowerCase().replace(/[^a-z0-9]/g,'')];if(value!==undefined&&String(value).trim())return value}
   return'';
+}
+function paidSwingUnitsFromRow(row){
+  const found=new Set(),values=Object.values(row||{}).map(value=>String(value||'').trim());
+  const equipment=paidSwingCell(row,['Equipment ID','Equipment','Container ID','Unit ID','Equipment Initial Number']);
+  if(equipment){const key=normalizeGridUnit(equipment);if(key)found.add(key)}
+  values.forEach((value,index)=>{
+    if(/^[A-Z]{3}[UJZ][\s-]*\d{2,8}$/i.test(value))found.add(normalizeGridUnit(value));
+    if(/^[A-Z]{3}[UJZ]$/i.test(value)&&/^\d{2,8}$/.test(values[index+1]||''))found.add(normalizeGridUnit(value+values[index+1]));
+  });
+  return found;
 }
 async function importPaidSwingsFiles(fileList){
   const files=Array.from(fileList||[]),units=new Set(),result=document.getElementById('paidSwingsResult');
@@ -1671,12 +1695,11 @@ async function importPaidSwingsFiles(fileList){
       workbook.SheetNames.forEach(sheetName=>{
         const rows=XLSX.utils.sheet_to_json(workbook.Sheets[sheetName],{defval:'',raw:false});
         rows.forEach(row=>{
-          const equipment=paidSwingCell(row,['Equipment ID','Equipment','Container ID','Unit ID']);
-          const key=normalizeGridUnit(equipment);if(key)units.add(key);
+          paidSwingUnitsFromRow(row).forEach(key=>units.add(key));
         });
       });
     }
-    if(!units.size)throw new Error('No Equipment ID, Equipment, Container ID, or Unit ID column was found.');
+    if(!units.size)throw new Error('No equipment units were found in the selected workbook.');
     paidSwingUnits=units;localStorage.setItem(PAID_SWINGS_KEY,JSON.stringify([...paidSwingUnits]));renderAll();updatePaidSwingsResult();
   }catch(error){console.error('Paid swings import failed',error);result.className='pool-import-result warn';result.textContent=`Import failed: ${error.message||error}`}
   finally{document.getElementById('paidSwingsFile').value=''}
@@ -1711,7 +1734,7 @@ function positionUnitSearchResults(){
 function renderUnitSearch(){
   const input=document.getElementById('unitSearchInput'),results=document.getElementById('unitSearchResults');
   const raw=String(input.value||'').trim(),query=normalizeGridUnit(raw);
-  if(!raw){results.hidden=true;results.innerHTML='';return}
+  if(!raw){results.hidden=true;results.innerHTML='';if(unitSearchPointer){unitSearchPointer=null;renderAll()}return}
   const matches=allStackingUnits().filter(item=>normalizeGridUnit(item.text).includes(query)||item.text.toUpperCase().includes(raw.toUpperCase())).slice(0,40);
   results.innerHTML=matches.length?matches.map(item=>`<button type="button" class="unit-search-result" data-search-page="${item.page}" data-search-index="${item.index}"><strong>${escapeStackToolText(item.text)}</strong><span>PAGE ${item.pageName} · ROW ${item.row} · BAY ${item.bay} · LEVEL ${item.level}</span></button>`).join(''):`<div class="unit-search-empty">NO MATCHES ACROSS PAGES B, D, J, OR S</div>`;
   results.hidden=false;requestAnimationFrame(positionUnitSearchResults);
@@ -1776,6 +1799,7 @@ let selectedIndexes=new Set();
 let multiSelectMode=false;
 let selectionStart=null;
 let selectionMarquee=null;
+let copiedSelection=null;
 let highlightMode=false;
 let highlightsHidden=false;
 const HIGHLIGHT_COLOR_KEY=KEY+'_highlight_color';
@@ -1831,9 +1855,10 @@ function itemHighlightStyle(item){
   return `style="--stack-highlight-fill:${palette.fill};--stack-highlight-grid:${palette.grid};--stack-highlight-border:${palette.border};--stack-highlight-text:${palette.text};--stack-highlight-yard-text:${palette.yardText};--stack-highlight-glow:${palette.glow}"`;
 }
 
-const BAYS=7;
+const BAYS_KEY=KEY+'_columns_v1';
+let BAYS=Math.min(12,Math.max(2,Number(localStorage.getItem(BAYS_KEY))||7));
 const LEVELS=3;
-const ROW_SIZE=BAYS*LEVELS;
+let ROW_SIZE=BAYS*LEVELS;
 const LEVEL_KEY=KEY+'_levels';
 const ORDER_KEY=KEY+'_three_level_order';
 const DISPLAY_LEVEL_KEY=KEY+'_display_levels';
@@ -1949,7 +1974,7 @@ function switchStackPage(page){
 }
 function normalizePoolImportEquipment(value){
   const compact=String(value||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
-  const match=compact.match(/^([A-Z]{3,5})(\d{3,8})$/);
+  const match=compact.match(/^([A-Z]{3,5})(\d{2,8})$/);
   return match?match[1]+match[2]:'';
 }
 function normalizeImportedPool(value){
@@ -1964,7 +1989,7 @@ function parseStackingPoolReport(raw){
   lines.forEach(line=>{
     const trimmed=String(line||'').trim();if(!trimmed)return;
     const onlyEquipment=normalizePoolImportEquipment(trimmed);
-    if(onlyEquipment&&/^[A-Z]{3,5}\s*\d{3,8}$/i.test(trimmed)){pendingEquipment=onlyEquipment;return}
+    if(onlyEquipment&&/^[A-Z]{3,5}\s*\d{2,8}$/i.test(trimmed)){pendingEquipment=onlyEquipment;return}
     const cols=String(line).split('\t');
     let equipment=pendingEquipment,start=0;
     if(!equipment&&cols.length>1){const joined=normalizePoolImportEquipment(`${cols[0]||''}${cols[1]||''}`);if(joined){equipment=joined;start=2}}
@@ -2079,6 +2104,35 @@ function clearStackingPoolColors(){
 }
 function rowsCount(){return Math.ceil(state.length/ROW_SIZE)}
 function blankRow(){return Array.from({length:ROW_SIZE},()=>({text:'',green:false}))}
+function resizeStackColumns(items,oldBays,newBays){
+  const oldRowSize=oldBays*LEVELS,rows=Math.max(1,Math.ceil(items.length/oldRowSize)),resized=[];
+  const added=Math.max(0,newBays-oldBays),removed=Math.max(0,oldBays-newBays);
+  for(let row=0;row<rows;row++)for(let level=0;level<LEVELS;level++)for(let bay=0;bay<newBays;bay++){
+    const oldBay=newBays>oldBays?bay-added:bay+removed;
+    resized.push(oldBay>=0&&oldBay<oldBays?(items[(row*oldRowSize)+(level*oldBays)+oldBay]||{text:'',green:false}):{text:'',green:false});
+  }
+  return resized;
+}
+function refreshDuplicateUnitKeys(){const counts=new Map();for(let page=1;page<=STACK_PAGE_COUNT;page++)readStackPageState(page).forEach(item=>{const unit=normalizeGridUnit(item?.text);if(unit)counts.set(unit,(counts.get(unit)||0)+1)});duplicateUnitKeys=new Set([...counts].filter(([,count])=>count>1).map(([unit])=>unit))}
+function isDuplicateUnit(text){const unit=normalizeGridUnit(text);return Boolean(unit&&duplicateUnitKeys.has(unit))}
+function duplicateUnitBadge(text){return isDuplicateUnit(text)?'<span class="duplicate-unit-badge" title="Duplicate unit" aria-label="Duplicate unit">D</span>':''}
+let removeColumnArmed=false,removeColumnTimer=0;
+function resetRemoveColumn(){removeColumnArmed=false;clearTimeout(removeColumnTimer);const button=document.getElementById('removeColumn');if(button){button.textContent='−';button.classList.remove('confirming');button.title='Remove the left column'}}
+function resizeAllStackPages(nextBays){
+  const oldBays=BAYS,next=Math.min(12,Math.max(2,nextBays));if(next===oldBays)return;
+  const pageStates={};for(let page=1;page<=STACK_PAGE_COUNT;page++)pageStates[page]=readStackPageState(page);
+  BAYS=next;ROW_SIZE=BAYS*LEVELS;localStorage.setItem(BAYS_KEY,String(BAYS));
+  for(let page=1;page<=STACK_PAGE_COUNT;page++)localStorage.setItem(stackPageKey(page),JSON.stringify(resizeStackColumns(pageStates[page],oldBays,BAYS)));
+  state=JSON.parse(localStorage.getItem(stackPageKey(activeStackPage))||'[]');selectedIndex=null;selectedIndexes.clear();undoStack=[];resetRemoveColumn();save();renderAll();updateUndoButton();
+}
+function addStackColumn(){resizeAllStackPages(BAYS+1)}
+function removeStackColumn(){
+  if(BAYS<=2)return;
+  const occupied=[];
+  for(let page=1;page<=STACK_PAGE_COUNT;page++){const items=readStackPageState(page),oldRowSize=BAYS*LEVELS,rows=Math.ceil(items.length/oldRowSize);for(let row=0;row<rows;row++)for(let level=0;level<LEVELS;level++){const item=items[(row*oldRowSize)+(level*BAYS)];if(String(item?.text||'').trim())occupied.push(item.text)}}
+  if(occupied.length&&!removeColumnArmed){removeColumnArmed=true;const button=document.getElementById('removeColumn');button.textContent='CONFIRM −';button.classList.add('confirming');button.title=`Remove column containing ${occupied.length} unit${occupied.length===1?'':'s'}`;removeColumnTimer=setTimeout(resetRemoveColumn,3500);return}
+  resizeAllStackPages(BAYS-1);
+}
 function addTopRow(){
   rememberState();
   state=[...blankRow(),...state];
@@ -2120,7 +2174,11 @@ function fitStackingView(){
     document.body.scrollLeft=0;
     const header=document.querySelector('header');
     const headerHeight=header&&getComputedStyle(header).display!=='none'?header.getBoundingClientRect().height:0;
-    const availableHeight=Math.max(1,window.innerHeight-headerHeight);
+    const poolKey=document.getElementById('poolColorKey');
+    const poolKeyHeight=poolKey&&getComputedStyle(poolKey).display!=='none'?poolKey.getBoundingClientRect().height:0;
+    // The grid starts below both the toolbar and the pool key. Reserving only
+    // the toolbar height made the bottom fence controls fall below the viewport.
+    const availableHeight=Math.max(1,window.innerHeight-headerHeight-poolKeyHeight);
     const gridView=document.getElementById('gridView');
     const yardView=document.getElementById('yardView');
     const gridVisible=getComputedStyle(gridView).display!=='none';
@@ -2135,16 +2193,25 @@ function fitStackingView(){
       viewport.scrollTop=0;
       viewport.scrollLeft=0;
     }
-    if(viewport)viewport.style.height=availableHeight+'px';
+    if(viewport){viewport.style.height=availableHeight+'px';viewport.style.overflow='auto'}
     canvas.style.zoom='1';
     canvas.style.margin='0';
     const naturalWidth=Math.max(canvas.scrollWidth,canvas.offsetWidth,1);
     const naturalHeight=Math.max(canvas.scrollHeight,canvas.offsetHeight,1);
     const availableWidth=Math.max(1,(viewport||host).clientWidth);
-    const scale=Math.min(1,availableWidth/naturalWidth,availableHeight/naturalHeight);
+    const autoScale=Math.min(1,availableWidth/naturalWidth,availableHeight/naturalHeight);
+    const scale=Math.max(.25,Math.min(1.4,autoScale*(stackingSizePercent/100)));
     canvas.style.zoom=String(scale);
     canvas.style.marginLeft=Math.max(0,(availableWidth-(naturalWidth*scale))/2)+'px';
   });
+}
+function setStackingSize(value){
+  stackingSizePercent=Math.min(140,Math.max(60,Number(value)||100));
+  localStorage.setItem(STACK_SIZE_KEY,String(stackingSizePercent));
+  const slider=document.getElementById('gridSizeSlider'),output=document.getElementById('gridSizeValue');
+  if(slider)slider.value=String(stackingSizePercent);
+  if(output)output.textContent=stackingSizePercent+'%';
+  fitStackingView();
 }
 function updateContainerTotal(){
   const total=state.reduce((count,item)=>count+(String(item&&item.text||'').trim()?1:0),0);
@@ -2326,7 +2393,7 @@ async function importStackingGridExcel(file){
   }catch(error){console.error('Stacking Grid import failed',error);button.textContent='IMPORT FAILED';button.title=String(error.message||error);setTimeout(()=>{button.textContent='IMPORT GRID'},2500)}
   finally{document.getElementById('importGridFile').value=''}
 }
-function renderAll(){renderGrid();renderYard();applyPageLayoutLabels();renderPoolColorKey();updateContainerTotal();fitStackingView();updateDeleteButton();}
+function renderAll(){refreshDuplicateUnitKeys();renderGrid();renderYard();applyPageLayoutLabels();renderPoolColorKey();updateContainerTotal();fitStackingView();updateDeleteButton();}
 window.addEventListener('resize',fitStackingView,{passive:true});
 
 function tierLabel(index){
@@ -2347,8 +2414,22 @@ function tierLabel(index){
 function renderGrid(){
   const grid=document.getElementById('grid');
   const labels=document.getElementById('labels');
+  const sheet=grid.closest('.sheet');
   grid.innerHTML='';
   labels.innerHTML='';
+  const gridWidth=(BAYS*190)+((BAYS-1)*8)+8;
+  if(sheet){
+    const sheetWidth=gridWidth+242;
+    sheet.style.setProperty('width',sheetWidth+'px','important');
+    sheet.style.setProperty('min-width',sheetWidth+'px','important');
+    sheet.style.setProperty('max-width',sheetWidth+'px','important');
+    sheet.style.setProperty('grid-template-columns',`86px ${gridWidth}px 56px 92px`,'important');
+  }
+  grid.style.setProperty('width',gridWidth+'px','important');
+  grid.style.setProperty('min-width',gridWidth+'px','important');
+  grid.style.setProperty('max-width',gridWidth+'px','important');
+  document.querySelectorAll('#gridView .back,#gridView .front').forEach(element=>element.style.setProperty('width',gridWidth+'px','important'));
+  grid.style.gridTemplateColumns=`repeat(${BAYS},190px)`;
 
   const rows=rowsCount();
   const activeLevels=activeLevelIndexes();
@@ -2360,7 +2441,7 @@ function renderGrid(){
   labels.style.gridTemplateRows=tracks.join(' ');
 
   // IMPORTANT:
-  // State is stored by level across each seven-bay row:
+  // State is stored by level across each variable-width bay row:
   // [all LEVEL 1 bays, all LEVEL 2 bays, all LEVEL 3 bays].
   for(let r=0;r<rows;r++){
     const base=r*ROW_SIZE;
@@ -2369,10 +2450,10 @@ function renderGrid(){
         const i=base+(level*BAYS)+bay;
         const d=state[i]||{text:'',green:false};
         const u=document.createElement('div');
-        u.className='unit'+(d.green?' green':'')+(selectedIndexes.has(i)?' selected':'');
+        u.className='unit'+(d.green?' green':'')+(selectedIndexes.has(i)?' selected':'')+(isDuplicateUnit(d.text)?' duplicate-unit':'')+(isUnitSearchPointer(i)?' search-found':'');
         u.dataset.i=i;
         applyItemHighlightPalette(u,d);
-        u.innerHTML='<button class="label"></button>'+(d.text?`<span class="tier-badge">${tierLabel(i)}</span>${paidSwingBadge(d.text)}`:'');
+        u.innerHTML='<button class="label"></button>'+(d.text?`${duplicateUnitBadge(d.text)}<span class="tier-badge">${tierLabel(i)}</span>${paidSwingBadge(d.text)}`:'');
         u.querySelector('.label').textContent=d.text||'';
         grid.appendChild(u);
       }
@@ -2419,13 +2500,13 @@ function renderYard(){
 
       stacks+=`<div class="y-stack">
         <div class="y-half top ${top.text?'':'empty'} ${top.green?'highlighted':''} ${selectedIndexes.has(topIndex)?'selected':''}" data-i="${topIndex}" ${itemHighlightStyle(top)}>
-          ${top.text?`<div class="y-container ${topCls} ${topRoof?'stack-top':''}" data-i="${topIndex}">${top.text}<span class="tier-badge">${tierLabel(topIndex)}</span>${paidSwingBadge(top.text)}</div>`:''}
+          ${top.text?`<div class="y-container ${topCls} ${topRoof?'stack-top':''} ${isDuplicateUnit(top.text)?'duplicate-unit':''} ${isUnitSearchPointer(topIndex)?'search-found':''}" data-i="${topIndex}">${top.text}${duplicateUnitBadge(top.text)}<span class="tier-badge">${tierLabel(topIndex)}</span>${paidSwingBadge(top.text)}</div>`:''}
         </div>
         ${displayLevels===3?`<div class="y-half middle ${middle.text?'':'empty'} ${middle.green?'highlighted':''} ${selectedIndexes.has(middleIndex)?'selected':''}" data-i="${middleIndex}" ${itemHighlightStyle(middle)}>
-          ${middle.text?`<div class="y-container ${middleCls} ${middleRoof?'stack-top':''}" data-i="${middleIndex}">${middle.text}<span class="tier-badge">${tierLabel(middleIndex)}</span>${paidSwingBadge(middle.text)}</div>`:''}
+          ${middle.text?`<div class="y-container ${middleCls} ${middleRoof?'stack-top':''} ${isDuplicateUnit(middle.text)?'duplicate-unit':''} ${isUnitSearchPointer(middleIndex)?'search-found':''}" data-i="${middleIndex}">${middle.text}${duplicateUnitBadge(middle.text)}<span class="tier-badge">${tierLabel(middleIndex)}</span>${paidSwingBadge(middle.text)}</div>`:''}
         </div>`:''}
         <div class="y-half bottom ${bottom.text?'':'empty'} ${bottom.green?'highlighted':''} ${selectedIndexes.has(bottomIndex)?'selected':''}" data-i="${bottomIndex}" ${itemHighlightStyle(bottom)}>
-          ${bottom.text?`<div class="y-container ${bottomCls} ${bottomRoof?'stack-top':''}" data-i="${bottomIndex}">${bottom.text}<span class="tier-badge">${tierLabel(bottomIndex)}</span>${paidSwingBadge(bottom.text)}</div>`:''}
+          ${bottom.text?`<div class="y-container ${bottomCls} ${bottomRoof?'stack-top':''} ${isDuplicateUnit(bottom.text)?'duplicate-unit':''} ${isUnitSearchPointer(bottomIndex)?'search-found':''}" data-i="${bottomIndex}">${bottom.text}${duplicateUnitBadge(bottom.text)}<span class="tier-badge">${tierLabel(bottomIndex)}</span>${paidSwingBadge(bottom.text)}</div>`:''}
         </div>
       </div>`;
     }
@@ -2450,6 +2531,7 @@ function renderYard(){
     <div class="y-right">${labs}${machineLabels}</div>
     <div class="y-front editable-layout-label" data-layout-label="front" title="Click to edit this page label">FRONT — [BOWL]</div>
   </div>`;
+  const yardMap=panel.querySelector('.y-map');if(yardMap)yardMap.style.gridTemplateColumns=`repeat(${BAYS},190px)`;
 }
 function select(i){
   if(selectedIndex!==i)cancelDelete();
@@ -2618,8 +2700,8 @@ function gridPoolEquipmentKeys(){
 function closestPoolMatchForItem(item){
   if(!item||item.poolImportCategory||!String(item.text||'').trim())return null;
   const current=normalizePoolImportEquipment(item.text);if(!current)return null;
-  const assignments=readSavedPoolAssignments(),used=gridPoolEquipmentKeys();
-  const candidates=Object.keys(assignments).filter(key=>key!==current&&!used.has(key));
+  const assignments=readSavedPoolAssignments();
+  const candidates=Object.keys(assignments).filter(key=>key!==current);
   if(!candidates.length)return null;
   candidates.sort((a,b)=>{
     const prefixA=(a.match(/^[A-Z]+/)||[''])[0],prefixB=(b.match(/^[A-Z]+/)||[''])[0],currentPrefix=(current.match(/^[A-Z]+/)||[''])[0];
@@ -2634,7 +2716,7 @@ function updateContextClosestMatch(i){
   contextClosestMatchKey=match?.equipment||'';section.hidden=!match;
   if(!match)return;
   card.innerHTML=`<strong>${escapePoolImportText(displayPoolEquipment(match.equipment))}</strong><span>${escapePoolImportText(match.category||'Pool unavailable')}${match.location?` · ${escapePoolImportText(match.location)}`:''}</span>`;
-  document.getElementById('contextSwapClosest').innerHTML=`<span>SWAP FOR</span><strong>${escapePoolImportText(displayPoolEquipment(match.equipment))}</strong>`;
+  document.getElementById('contextSwapClosest').innerHTML=`<span>REPLACE WITH</span><strong>${escapePoolImportText(displayPoolEquipment(match.equipment))}</strong>`;
 }
 function swapForClosestPoolMatch(i,equipment){
   const assignment=readSavedPoolAssignments()[equipment];
@@ -2761,6 +2843,29 @@ function finishMarquee(){
   document.body.classList.remove('multi-selecting');
   updateDeleteButton();
 }
+function gridPosition(index){const row=Math.floor(index/ROW_SIZE),within=index%ROW_SIZE;return{row,level:Math.floor(within/BAYS),bay:within%BAYS}}
+function copySelectedUnits(){
+  const indexes=[...selectedIndexes].filter(index=>String(state[index]?.text||'').trim());
+  if(!indexes.length){showTransferMessage('Copy: drag-select one or more units first');return false}
+  const positions=indexes.map(index=>({index,...gridPosition(index)}));
+  const minRow=Math.min(...positions.map(item=>item.row)),minLevel=Math.min(...positions.map(item=>item.level)),minBay=Math.min(...positions.map(item=>item.bay));
+  copiedSelection=positions.map(position=>({row:position.row-minRow,level:position.level-minLevel,bay:position.bay-minBay,item:{...state[position.index]}}));
+  showTransferMessage(`Copied ${copiedSelection.length} unit${copiedSelection.length===1?'':'s'} · click a destination and press Ctrl+V`);
+  return true;
+}
+function pasteCopiedUnits(){
+  if(!copiedSelection?.length){showTransferMessage('Nothing copied yet');return false}
+  if(!Number.isInteger(selectedIndex)){showTransferMessage('Click the top-left destination slot, then press Ctrl+V');return false}
+  const anchor=gridPosition(selectedIndex),rows=rowsCount(),targets=[];
+  for(const copied of copiedSelection){
+    const row=anchor.row+copied.row,level=anchor.level+copied.level,bay=anchor.bay+copied.bay;
+    if(row<0||row>=rows||level<0||level>=LEVELS||bay<0||bay>=BAYS){showTransferMessage('Paste does not fit in the grid');return false}
+    const index=(row*ROW_SIZE)+(level*BAYS)+bay;targets.push({index,item:{...copied.item}});
+  }
+  const occupied=targets.filter(target=>String(state[target.index]?.text||'').trim());
+  if(occupied.length){showTransferMessage(`Paste blocked: ${occupied.length} destination slot${occupied.length===1?' is':'s are'} occupied`);return false}
+  rememberState();targets.forEach(target=>{state[target.index]=target.item});selectedIndexes=new Set(targets.map(target=>target.index));selectedIndex=targets[0]?.index??null;save();renderAll();showTransferMessage(`Pasted ${targets.length} copied unit${targets.length===1?'':'s'}`);return true;
+}
 
 document.addEventListener('keydown',e=>{
   if(e.key==='Escape'&&document.getElementById('paidSwingsModal')?.classList.contains('open')){
@@ -2775,6 +2880,13 @@ document.addEventListener('keydown',e=>{
     return;
   }
   if(e.target.closest('input,textarea,select,[contenteditable="true"]'))return;
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='c'){
+    if(copySelectedUnits())e.preventDefault();
+    return;
+  }
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='v'){
+    e.preventDefault();pasteCopiedUnits();return;
+  }
   if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){
     e.preventDefault();
     undoLast();
@@ -2819,7 +2931,7 @@ document.addEventListener('click',e=>{
     if(highlightMode){
       toggleGoldHighlight(i);
     }else{
-      selectOrCreate(i);
+      if(copiedSelection?.length&&!String(state[i]?.text||'').trim())select(i);else selectOrCreate(i);
     }
     return;
   }
@@ -2829,7 +2941,7 @@ document.addEventListener('click',e=>{
     if(highlightMode){
       toggleGoldHighlight(i);
     }else{
-      selectOrCreate(i);
+      if(copiedSelection?.length&&!String(state[i]?.text||'').trim())select(i);else selectOrCreate(i);
     }
   }
 });
@@ -2994,6 +3106,8 @@ document.getElementById('exportExcel').onclick=exportStackingGridExcel;
 document.getElementById('importGrid').onclick=()=>document.getElementById('importGridFile').click();
 document.getElementById('importGridFile').onchange=event=>importStackingGridExcel(event.target.files[0]);
 document.getElementById('stackHeightToggle').onclick=toggleStackHeight;
+document.getElementById('gridSizeSlider').oninput=event=>setStackingSize(event.target.value);
+setStackingSize(stackingSizePercent);
 document.getElementById('transferControls').addEventListener('click',e=>{
   const button=e.target.closest('[data-transfer-mode]');
   if(button)setTransferMode(transferMode===button.dataset.transferMode?'':button.dataset.transferMode);
@@ -3032,6 +3146,8 @@ document.getElementById('topAddRow').onclick=addTopRow;
 document.getElementById('topRemoveRow').onclick=removeTopRow;
 document.getElementById('bottomAddRow').onclick=addBottomRow;
 document.getElementById('bottomRemoveRow').onclick=removeBottomRow;
+document.getElementById('addColumn').onclick=addStackColumn;
+document.getElementById('removeColumn').onclick=removeStackColumn;
 document.getElementById('stackPageTabs').addEventListener('click',event=>{const button=event.target.closest('[data-stack-page]');if(button)switchStackPage(button.dataset.stackPage)});
 document.getElementById('poolImportBtn').onclick=openPoolImport;
 document.getElementById('poolImportClose').onclick=closePoolImport;
@@ -3048,8 +3164,10 @@ document.getElementById('unitSearchInput').addEventListener('input',renderUnitSe
 document.getElementById('unitSearchInput').addEventListener('focus',renderUnitSearch);
 document.getElementById('unitSearchResults').addEventListener('click',event=>{
   const button=event.target.closest('[data-search-page]');if(!button)return;
-  switchStackPage(Number(button.dataset.searchPage));
-  select(Number(button.dataset.searchIndex));
+  unitSearchPointer={page:Number(button.dataset.searchPage),index:Number(button.dataset.searchIndex)};
+  switchStackPage(unitSearchPointer.page);
+  select(unitSearchPointer.index);
+  revealUnitSearchPointer();
   document.getElementById('unitSearchResults').hidden=true;
 });
 document.addEventListener('click',event=>{if(!event.target.closest('.unit-search-wrap'))document.getElementById('unitSearchResults').hidden=true});
