@@ -775,7 +775,7 @@
   .timeline-lift-chart::before {
     content: "20 lift target";
     position: absolute;
-    left: 10px;
+    right: 10px;
     top: 6px;
     z-index: 4;
     color: rgba(250, 204, 21, .9);
@@ -841,6 +841,13 @@
     font: 900 11px Consolas, "Courier New", monospace;
     text-shadow: 0 1px 4px rgba(0,0,0,.86);
     white-space: nowrap;
+    padding: 1px 3px;
+    border-radius: 3px;
+    background: rgba(5, 10, 16, .9);
+  }
+  .timeline-lift-point.high span {
+    top: 10px;
+    bottom: auto;
   }
   .timeline-lift-columns {
     position: absolute;
@@ -2842,10 +2849,11 @@ const RAIL_DISPLAY_REFERENCE_FT = 2750;
 const RAIL_DISPLAY_REFERENCE_CARS = 16;
 const RAIL_DISPLAY_SCALE = RAIL_DISPLAY_REFERENCE_CARS / (RAIL_DISPLAY_REFERENCE_FT / RAIL_CAR_REAL_FT);
 const RAMP_BLOCKING_LIVE_STORAGE_KEY = "rampBlockingLive.v1";
+/* matrix-excel-color-palette-v1 */
 const RAMP_BLOCKING_COLORS = Object.freeze({
-  orange: "#f59e0b", blue: "#60a5fa", green: "#4ade80", black: "#181a1f",
-  darkgreen: "#276b3a", darkred: "#a61919", purple: "#8b5cf6", pink: "#ec6f9e",
-  yellow: "#facc15", red: "#ef4444", gray: "#94a3b8"
+  black:"#111827",darkred:"#7f1d1d",purple:"#7e22ce",darkgreen:"#166534",orange:"#c2410c",blue:"#1d4ed8",pink:"#be185d",green:"#15803d",red:"#b91c1c",yellow:"#a16207",gray:"#334155",
+  navy:"#172554",cyan:"#0e7490",teal:"#0f766e",lime:"#4d7c0f",gold:"#a16207",amber:"#b45309",coral:"#be3e1d",rose:"#be123c",magenta:"#a21caf",violet:"#6d28d9",indigo:"#4338ca",sky:"#0369a1",slate:"#334155",white:"#64748b",rainbow:"#7e22ce",sunset:"#c2410c",ocean:"#0f766e",fire:"#991b1b",grape:"#581c87",forest:"#166534",ice:"#1e3a8a",steel:"#1f2937",midnight:"#0f172a",copper:"#9a3412",aurora:"#0f766e",storm:"#475569",desert:"#d97706",terminal:"#065f46",zebra:"#334155",
+  "mint-gradient":"#10b981","lavender-gradient":"#8b5cf6","solid-black":"#050505","solid-charcoal":"#1f2937","solid-slate":"#475569","solid-navy":"#172554","solid-blue":"#1d4ed8","solid-sky":"#0369a1","solid-cyan":"#0e7490","solid-teal":"#0f766e","solid-green":"#15803d","solid-lime":"#4d7c0f","solid-gold":"#a16207","solid-yellow":"#eab308","solid-orange":"#c2410c","solid-red":"#dc2626","solid-crimson":"#be123c","solid-magenta":"#a21caf","solid-purple":"#6d28d9","solid-brown":"#7c2d12","solid-maroon":"#7f1d1d","solid-wine":"#881337","solid-forest":"#166534","solid-mint":"#34d399","solid-aqua":"#06b6d4","solid-royal":"#2563eb","solid-indigo":"#4338ca","solid-violet":"#7c3aed","solid-rose":"#e11d48","solid-copper":"#b45309","solid-sand":"#d6b881","solid-cream":"#fef3c7"
 });
 const RAIL_CAR_WIDTH = 54;
 const RAIL_CAR_SPACING = 56;
@@ -19345,7 +19353,7 @@ function renderMatrixTimeline() {
     + areaSegments.join("")
     + (line ? '<path class="lift-line" d="' + line + '"></path>' : '');
   chartPoints.innerHTML = points.filter(point => point.value > 0).map(point => {
-    return '<i class="timeline-lift-point ' + point.tone + '" style="--x:' + point.x.toFixed(3) + '%;--y:' + point.y.toFixed(2) + '%"><span>' + Math.round(point.value) + '</span></i>';
+    return '<i class="timeline-lift-point ' + point.tone + (point.y < 26 ? ' high' : '') + '" style="--x:' + point.x.toFixed(3) + '%;--y:' + point.y.toFixed(2) + '%"><span>' + Math.round(point.value) + '</span></i>';
   }).join("");
 
   hours.innerHTML = buckets.map((bucket, index) => {

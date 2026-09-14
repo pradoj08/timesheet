@@ -3627,11 +3627,22 @@
       return html.replace("</body>", bridge + "\n</body>");
     }
 
+    function parsePerformancePageSource(sourceNode) {
+      if (!sourceNode) throw new Error("Performance source is missing");
+      const raw = sourceNode.textContent || "";
+      try {
+        return JSON.parse(raw);
+      } catch (originalError) {
+        const repaired = raw.replace(/[\u0000-\u001f]/g, (character) => JSON.stringify(character).slice(1, -1));
+        return JSON.parse(repaired);
+      }
+    }
+
     function ensurePerformancePage() {
       if (els.performanceFrame.srcdoc) return;
       const sourceNode = document.querySelector("#performancePageSource");
       try {
-        els.performanceFrame.srcdoc = withPerformanceArchiveIndexedDb(JSON.parse(sourceNode.textContent || '""'));
+        els.performanceFrame.srcdoc = withPerformanceArchiveIndexedDb(parsePerformancePageSource(sourceNode));
       } catch (error) {
         els.performanceFrame.srcdoc = "<p>Performance view could not be loaded.</p>";
       }

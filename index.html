@@ -4440,6 +4440,21 @@ tfoot .lph-target-pill.below-target{background:#fecaca;color:#7f1d1d}
       return headClose >= 0 ? updated.slice(0, headClose) + marker + "\n" + updated.slice(headClose) : marker + updated;
     }
 
+    function withBillingPerformanceSourceRecovery(html, performanceHtml) {
+      if (!html || typeof html !== "string" || html.includes("conglobal-billing-performance-source-recovery-v1")) return html;
+      if (typeof performanceHtml === "string" && performanceHtml) {
+        const encodedPerformance = JSON.stringify(performanceHtml).replace(/<\/script/gi, "<\\/script");
+        html = html.replace(/(<script id="performancePageSource" type="application\/json">)[\s\S]*?(<\/script>)/, "$1" + encodedPerformance + "$2");
+      }
+      const helper = '    /* conglobal-billing-performance-source-recovery-v1 */\n    function parsePerformancePageSource(sourceNode) {\n      if (!sourceNode) throw new Error("Performance source is missing");\n      const raw = sourceNode.textContent || "";\n      try {\n        return JSON.parse(raw);\n      } catch (originalError) {\n        const repaired = raw.replace(/[\\u0000-\\u001f]/g, (character) => JSON.stringify(character).slice(1, -1));\n        return JSON.parse(repaired);\n      }\n    }\n\n';
+      return html
+        .replace('    function ensurePerformancePage() {', helper + '    function ensurePerformancePage() {')
+        .replace(
+          "withPerformanceArchiveIndexedDb(JSON.parse(sourceNode.textContent || '\"\"'))",
+          "withPerformanceArchiveIndexedDb(parsePerformancePageSource(sourceNode))"
+        );
+    }
+
     function withBillingPerformanceArchiveIndexedDb(html) {
       if (!html || typeof html !== "string" || html.includes("conglobal-billing-performance-archive-indexeddb-v1")) return html;
       const marker = '<meta name="conglobal-billing-performance-archive-indexeddb-v1" content="enabled">';
@@ -9865,6 +9880,31 @@ document.addEventListener('click',function(event){
         );
     }
 
+    function withMatrixLiftTimelineLabels(html) {
+      if (!html || typeof html !== "string" || html.includes("matrix-lift-timeline-labels-v1")) return html;
+      let next = html.replace(
+        '.timeline-lift-chart::before {\n    content: "20 lift target";',
+        '/* matrix-lift-timeline-labels-v1 */\n  .timeline-lift-chart::before {\n    content: "20 lift target";'
+      ).replace(
+        '    left: 10px;\n    top: 6px;\n    z-index: 4;\n    color: rgba(250, 204, 21, .9);',
+        '    right: 10px;\n    top: 6px;\n    z-index: 4;\n    color: rgba(250, 204, 21, .9);'
+      ).replace(
+        '    white-space: nowrap;\n  }\n  .timeline-lift-columns {',
+        '    white-space: nowrap;\n    padding: 1px 3px;\n    border-radius: 3px;\n    background: rgba(5, 10, 16, .9);\n  }\n  .timeline-lift-point.high span {\n    top: 10px;\n    bottom: auto;\n  }\n  .timeline-lift-columns {'
+      );
+      return next.replace(
+        "return '<i class=\"timeline-lift-point ' + point.tone + '\" style=\"--x:' + point.x.toFixed(3) + '%;--y:' + point.y.toFixed(2) + '%\"><span>' + Math.round(point.value) + '</span></i>';",
+        "return '<i class=\"timeline-lift-point ' + point.tone + (point.y < 26 ? ' high' : '') + '\" style=\"--x:' + point.x.toFixed(3) + '%;--y:' + point.y.toFixed(2) + '%\"><span>' + Math.round(point.value) + '</span></i>';"
+      );
+    }
+
+    function withMatrixExcelColorPalette(html) {
+      if (!html || typeof html !== "string" || html.includes("matrix-excel-color-palette-v1")) return html;
+      const before = 'const RAMP_BLOCKING_COLORS = Object.freeze({\n  orange: "#f59e0b", blue: "#60a5fa", green: "#4ade80", black: "#181a1f",\n  darkgreen: "#276b3a", darkred: "#a61919", purple: "#8b5cf6", pink: "#ec6f9e",\n  yellow: "#facc15", red: "#ef4444", gray: "#94a3b8"\n});';
+      const after = '/* matrix-excel-color-palette-v1 */\nconst RAMP_BLOCKING_COLORS = Object.freeze({\n  black:"#111827",darkred:"#7f1d1d",purple:"#7e22ce",darkgreen:"#166534",orange:"#c2410c",blue:"#1d4ed8",pink:"#be185d",green:"#15803d",red:"#b91c1c",yellow:"#a16207",gray:"#334155",\n  navy:"#172554",cyan:"#0e7490",teal:"#0f766e",lime:"#4d7c0f",gold:"#a16207",amber:"#b45309",coral:"#be3e1d",rose:"#be123c",magenta:"#a21caf",violet:"#6d28d9",indigo:"#4338ca",sky:"#0369a1",slate:"#334155",white:"#64748b",rainbow:"#7e22ce",sunset:"#c2410c",ocean:"#0f766e",fire:"#991b1b",grape:"#581c87",forest:"#166534",ice:"#1e3a8a",steel:"#1f2937",midnight:"#0f172a",copper:"#9a3412",aurora:"#0f766e",storm:"#475569",desert:"#d97706",terminal:"#065f46",zebra:"#334155",\n  "mint-gradient":"#10b981","lavender-gradient":"#8b5cf6","solid-black":"#050505","solid-charcoal":"#1f2937","solid-slate":"#475569","solid-navy":"#172554","solid-blue":"#1d4ed8","solid-sky":"#0369a1","solid-cyan":"#0e7490","solid-teal":"#0f766e","solid-green":"#15803d","solid-lime":"#4d7c0f","solid-gold":"#a16207","solid-yellow":"#eab308","solid-orange":"#c2410c","solid-red":"#dc2626","solid-crimson":"#be123c","solid-magenta":"#a21caf","solid-purple":"#6d28d9","solid-brown":"#7c2d12","solid-maroon":"#7f1d1d","solid-wine":"#881337","solid-forest":"#166534","solid-mint":"#34d399","solid-aqua":"#06b6d4","solid-royal":"#2563eb","solid-indigo":"#4338ca","solid-violet":"#7c3aed","solid-rose":"#e11d48","solid-copper":"#b45309","solid-sand":"#d6b881","solid-cream":"#fef3c7"\n});';
+      return html.replace(before, after);
+    }
+
     function withMatrixAssignmentContainerColors(html) {
       if (!html || typeof html !== "string" || html.includes("matrix-assignment-container-colors-v1")) return html;
       let next = html.replace(
@@ -14420,7 +14460,7 @@ function duplicateForecastTrainDay(train,day){
       if (!bridgedPageHtml.has(id)) {
         let pageHtml = pages[id].html;
         if (["amReport", "timeMd", "roster", "timeOff"].includes(id)) pageHtml = withSharedRosterBaseline20260829(pageHtml);
-        if (id === "matrix" || id === "matrixWide") pageHtml = withMatrixAssignmentContainerColors(withMatrixRailContainerPinkFamilies(withMatrixDirtLotAsChassisLot(withMatrixYardCheckedNineDays(pageHtml))));
+        if (id === "matrix" || id === "matrixWide") pageHtml = withMatrixAssignmentContainerColors(withMatrixRailContainerPinkFamilies(withMatrixDirtLotAsChassisLot(withMatrixYardCheckedNineDays(withMatrixLiftTimelineLabels(withMatrixExcelColorPalette(pageHtml))))));
         if (id === "matrix") pageHtml = withMatrixCraneScale85(pageHtml);
         if (id === "amReport") {
           pageHtml = withAmReportPerformance(pageHtml);
@@ -14441,7 +14481,7 @@ function duplicateForecastTrainDay(train,day){
         if (id === "timeMd") pageHtml = withTimeMdResponsiveWidth(pageHtml);
         if (id === "timeOff") pageHtml = withTimeOffCurrentRosterSnapshot(withTimeOffCameInActions(withTimeOffMonthlyWeeklyStyle(pageHtml)));
         if (id === "billing") pageHtml = withBillingFlipStackReclassificationV1(withBillingExportDropdownV1(withBillingDuplicateStatusPillsV1(withBillingOperationalLphGuardV1(withBillingMoveDetailsIndexedDbV1(withBillingLiftFolderImportV1(withBillingImportFeedbackV1(withBillingLiftFlipPersistenceV2(withBillingUnifiedDuplicateReview(withBillingExcludeDuplicateRows(withBillingRampDerampMonthlyReview(withBillingRampDerampExcludedFlags(withBillingCountDuplicateRows(withBillingLphTargetPills(withBillingFlipDuplicateFlags(withBillingMonthlyFlipReview(withBillingStackReasonRouting(withBillingCompactDuplicateGroups(withBillingDailyShiftProjection(withBillingPerformanceArchiveIndexedDb(withBillingShiftLpmhGrid(withBillingSummaryExportStyles(withBillingLpmhSourcePair(withBillingHoursColumnOrder(withBillingDisplayFlagsMenu(withBillingPowerBiLiftDeltaFlag(withBillingPowerBiImport(withBillingQuotaSafePersistence(withBillingAnalyticsLiftFallback(withBillingAnalyticsArchiveHydration(withBillingManHoursPrecision(withBillingArchiveIndexedDb(withBillingSplitLiftAndChassisClear(withBillingHeaderRemoved(pageHtml))))))))))))))))))))))))))))))))));
-        if (id === "billing") pageHtml = withBillingSafeDuplicateGrouping(withBillingActiveRowHighlight(pageHtml));
+        if (id === "billing") pageHtml = withBillingPerformanceSourceRecovery(withBillingSafeDuplicateGrouping(withBillingActiveRowHighlight(pageHtml)), pages.performance.html);
         if (id === "lphTracker") {
           pageHtml = withLphDefaultExpectedFlips(pageHtml);
           pageHtml = withLphLunchDuringDowntime(pageHtml);
