@@ -4156,6 +4156,7 @@
   <button class="copy-menu-action" id="splitSelectedBlockBtn" type="button" role="menuitem">Split block...</button>
   <button class="copy-menu-action" id="consolidateSelectedToIhosa" type="button" role="menuitem">Consolidate to IHOSA</button>
   <button class="copy-menu-action" id="consolidateSelectedToMhoas" type="button" role="menuitem">Consolidate to MHOAS</button>
+  <button class="copy-menu-action" id="consolidateSelectedToSs" type="button" role="menuitem">Consolidate to SS</button>
   <button class="danger-menu-action" id="clearFinalZoneBtn" type="button" role="menuitem" hidden>Clear Track</button>
   <button class="danger-menu-action" id="deleteSelectedBlocks" type="button" role="menuitem">Delete selected block(s)</button>
 </div>
@@ -7913,6 +7914,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       splitButton.hidden = true;
       $("#consolidateSelectedToIhosa").hidden = true;
       $("#consolidateSelectedToMhoas").hidden = true;
+      $("#consolidateSelectedToSs").hidden = true;
       clearButton.hidden = false;
       deleteButton.hidden = true;
       menu.hidden = false;
@@ -7936,6 +7938,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       $("#splitSelectedBlockBtn").hidden = true;
       $("#consolidateSelectedToIhosa")?.setAttribute("hidden", "");
       $("#consolidateSelectedToMhoas")?.setAttribute("hidden", "");
+      $("#consolidateSelectedToSs")?.setAttribute("hidden", "");
       $("#clearFinalZoneBtn").hidden = true;
       $("#deleteSelectedBlocks").hidden = true;
       menu.hidden = false;
@@ -7977,6 +7980,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     }
     $("#consolidateSelectedToIhosa").hidden = selectedBlockIds.size < 2;
     $("#consolidateSelectedToMhoas").hidden = selectedBlockIds.size < 2;
+    $("#consolidateSelectedToSs").hidden = selectedBlockIds.size < 2;
     const deleteButton = $("#deleteSelectedBlocks");
     if (deleteButton) deleteButton.hidden = false;
     menu.hidden = false;
@@ -8083,7 +8087,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     const insertAt = Math.min(selected[0].index, destination.length);
     destination.splice(insertAt, 0, normalizeSecondaryBlock({
       id:"", footage:total,
-      className:`cut-cell ${label === "IHOSA" ? "green" : "blue"} block-reorderable`,
+      className:`cut-cell ${label === "IHOSA" ? "green" : label === "MHOAS" ? "blue" : "purple"} block-reorderable`,
       content:`${fmtInt(total)} ${label} [${targetTrack}]`,
       title:`${fmtInt(total)} ${label} [${targetTrack}]`, sourceRows
     }, targetTrack));
@@ -9392,6 +9396,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   $("#deleteSelectedBlocks").addEventListener("click", deleteSelectedBlocks);
   $("#consolidateSelectedToIhosa").addEventListener("click", () => consolidateSelectedBlocks("IHOSA"));
   $("#consolidateSelectedToMhoas").addEventListener("click", () => consolidateSelectedBlocks("MHOAS"));
+  $("#consolidateSelectedToSs").addEventListener("click", () => consolidateSelectedBlocks("SS"));
   $("#closeRawTrack").addEventListener("click", closeRawTrackModal);
   $("#rawTrackModal").addEventListener("click", event => {
     if (event.target === $("#rawTrackModal")) closeRawTrackModal();

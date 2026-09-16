@@ -7916,6 +7916,26 @@ document.addEventListener("DOMContentLoaded",function(){
       return patched.replace(listenerAnchor, listenerAnchor + "\n  $(\"#consolidateSelectedToIhosa\").addEventListener(\"click\", () => consolidateSelectedBlocks(\"IHOSA\"));\n  $(\"#consolidateSelectedToMhoas\").addEventListener(\"click\", () => consolidateSelectedBlocks(\"MHOAS\"));\n  document.addEventListener(\"contextmenu\", () => requestAnimationFrame(() => { const hidden = selectedBlockIds.size < 2; $(\"#consolidateSelectedToIhosa\").hidden = hidden; $(\"#consolidateSelectedToMhoas\").hidden = hidden; }));");
     }
 
+    function withExcelConsolidateToSs(html) {
+      const marker = "excel-consolidate-to-ss-v1";
+      if (!html || typeof html !== "string" || html.includes(marker)) return html;
+      let updated = html;
+      updated = updated.replace(
+        '<button class="copy-menu-action" id="consolidateSelectedToMhoas" type="button" role="menuitem">Consolidate to MHOAS</button>',
+        '<button class="copy-menu-action" id="consolidateSelectedToMhoas" type="button" role="menuitem">Consolidate to MHOAS</button>\n  <button class="copy-menu-action" id="consolidateSelectedToSs" type="button" role="menuitem">Consolidate to SS</button>'
+      );
+      updated = updated
+        .replaceAll('$("#consolidateSelectedToMhoas").hidden = true;', '$("#consolidateSelectedToMhoas").hidden = true;\n      $("#consolidateSelectedToSs").hidden = true;')
+        .replaceAll('$("#consolidateSelectedToMhoas")?.setAttribute("hidden", "");', '$("#consolidateSelectedToMhoas")?.setAttribute("hidden", "");\n      $("#consolidateSelectedToSs")?.setAttribute("hidden", "");')
+        .replace('$("#consolidateSelectedToMhoas").hidden = selectedBlockIds.size < 2;', '$("#consolidateSelectedToMhoas").hidden = selectedBlockIds.size < 2;\n    $("#consolidateSelectedToSs").hidden = selectedBlockIds.size < 2;')
+        .replace('className:`cut-cell ${label === "IHOSA" ? "green" : "blue"} block-reorderable`,', 'className:`cut-cell ${label === "IHOSA" ? "green" : label === "MHOAS" ? "blue" : "purple"} block-reorderable`,')
+        .replace('$("#consolidateSelectedToMhoas").addEventListener("click", () => consolidateSelectedBlocks("MHOAS"));', '$("#consolidateSelectedToMhoas").addEventListener("click", () => consolidateSelectedBlocks("MHOAS"));\n  $("#consolidateSelectedToSs").addEventListener("click", () => consolidateSelectedBlocks("SS"));')
+        .replace('const ihosa = $("#consolidateSelectedToIhosa"),mhoas = $("#consolidateSelectedToMhoas");if (ihosa) ihosa.hidden = true;if (mhoas) mhoas.hidden = true;', 'const ihosa = $("#consolidateSelectedToIhosa"),mhoas = $("#consolidateSelectedToMhoas"),ss = $("#consolidateSelectedToSs");if (ihosa) ihosa.hidden = true;if (mhoas) mhoas.hidden = true;if (ss) ss.hidden = true;')
+        .replace('const ihosa = $("#consolidateSelectedToIhosa"),mhoas = $("#consolidateSelectedToMhoas");if(ihosa) ihosa.hidden = true;if(mhoas) mhoas.hidden = true;', 'const ihosa = $("#consolidateSelectedToIhosa"),mhoas = $("#consolidateSelectedToMhoas"),ss = $("#consolidateSelectedToSs");if(ihosa) ihosa.hidden = true;if(mhoas) mhoas.hidden = true;if(ss) ss.hidden = true;');
+      if (updated === html) return html;
+      return updated.replace("</head>", '<meta name="' + marker + '" content="enabled">\n</head>');
+    }
+
     function withExcelInboundGoldHighlight(html) {
       if (!html || typeof html !== "string" || html.includes("excel-inbound-gold-highlight")) return html;
       const toggleMarkup = `
@@ -13404,6 +13424,22 @@ function normalizeForecastTracklistConsigneeCandidate(value){
 </head>`);
     }
 
+    function withChassisDuplicateNameNormalization(html) {
+      const marker = "chassis-duplicate-name-normalization-v1";
+      if (!html || typeof html !== "string" || html.includes(marker)) return html;
+      let updated = html
+        .replace(
+          '    const key=String(group.train||"").trim().toUpperCase();',
+          '    const key=String(group.train||"").normalize("NFKC").toUpperCase().replace(/[\s\u200B-\u200D\uFEFF]+/g,"").replace(/[^A-Z0-9]/g,"");'
+        )
+        .replace(
+          '          const isDuplicateInbound=(inboundNameCounts.get(String(g.train||"").trim().toUpperCase())||0)>1;',
+          '          const isDuplicateInbound=(inboundNameCounts.get(String(g.train||"").normalize("NFKC").toUpperCase().replace(/[\s\u200B-\u200D\uFEFF]+/g,"").replace(/[^A-Z0-9]/g,""))||0)>1;'
+        );
+      if (updated === html) return html;
+      return updated.replace("</head>", '<meta name="' + marker + '" content="enabled">\n</head>');
+    }
+
     function withChassisInboundDuplicateAction(html) {
       if (!html || typeof html !== "string" || html.includes("chassis-inbound-duplicate-action-v1")) return html;
       const functionAnchor = "function updateForecastTrainDay(train,oldDay,dateValue){";
@@ -14558,6 +14594,7 @@ function duplicateForecastTrainDay(train,day){
           pageHtml = withExcelInboundSequenceCounterColors(pageHtml);
           pageHtml = withExcelBlockSplitContextMenu(pageHtml);
           pageHtml = withExcelEmptyRowPasteContext(pageHtml);
+          pageHtml = withExcelConsolidateToSs(pageHtml);
           pageHtml = withExcelInboundBetweenRowInsert(pageHtml);
           pageHtml = withExcelInboundDpuInsert(pageHtml);
         }
@@ -14599,6 +14636,7 @@ function duplicateForecastTrainDay(train,day){
           pageHtml = withChassisTracklistReplacementImport(pageHtml);
           pageHtml = withChassisTracklistParserAuditFix(pageHtml);
           pageHtml = withChassisInboundDuplicateAction(pageHtml);
+          pageHtml = withChassisDuplicateNameNormalization(pageHtml);
           pageHtml = withChassisImportOldestFirst(pageHtml);
           pageHtml = withChassisCleanInboundNameEditor(pageHtml);
         }

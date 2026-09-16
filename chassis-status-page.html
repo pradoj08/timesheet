@@ -12974,8 +12974,13 @@ function renderForecastStatusCards(visibleUnitsInput){
   });
   const statusUnitsForGroup=(train,day)=>statusUnitsByGroup.get(getForecastTrainDayKey(train,day))||[];
   const selectedText=getForecastSelectedDayText();
+  const normalizeDuplicateTrainName=value=>String(value||"")
+    .normalize("NFKC")
+    .toUpperCase()
+    .replace(/[\s\u200B-\u200D\uFEFF]+/g,"")
+    .replace(/[^A-Z0-9]/g,"");
   const inboundNameCounts=groups.reduce((counts,group)=>{
-    const key=String(group.train||"").trim().toUpperCase();
+    const key=normalizeDuplicateTrainName(group.train);
     if(key)counts.set(key,(counts.get(key)||0)+1);
     return counts;
   },new Map());
@@ -13104,7 +13109,7 @@ function renderForecastStatusCards(visibleUnitsInput){
           const hours=[...g.hours].sort((a,b)=>Number(a)-Number(b)).join(", ") || "—";
           const isNoTrain=g.train===getForecastNoTrainName();
           const isHighVolume=Number(g.total)>60;
-          const isDuplicateInbound=(inboundNameCounts.get(String(g.train||"").trim().toUpperCase())||0)>1;
+          const isDuplicateInbound=(inboundNameCounts.get(normalizeDuplicateTrainName(g.train))||0)>1;
 
           const itemDetails=mixKeys.map(key=>{
             const mixCount=Number(mix[key]||0);
