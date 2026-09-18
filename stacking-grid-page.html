@@ -460,31 +460,58 @@ button,.mode{border:0;border-radius:8px;padding:10px 12px;font-weight:900;font-s
 }
 
 
-/* Single-line top toolbar */
+/* Compact Excel-style ribbon: grouped controls wrap instead of scrolling sideways. */
 header{
-  padding:8px 12px !important;
+  padding:6px 10px 7px !important;
 }
 .single-toolbar{
   display:flex;
+  width:100%;
   align-items:center;
-  gap:7px;
-  overflow-x:auto;
-  overflow-y:hidden;
-  white-space:nowrap;
-  -webkit-overflow-scrolling:touch;
+  gap:4px;
+  flex-wrap:wrap;
+  overflow:visible;
+  white-space:normal;
 }
 .single-toolbar .viewbar,
 .single-toolbar .controls{
-  display:flex;
-  align-items:center;
-  gap:6px;
-  margin:0 !important;
-  overflow:visible !important;
-  flex:none;
+  display:contents;
 }
+.toolbar-group{
+  position:relative;
+  display:flex;
+  min-width:0;
+  align-items:center;
+  gap:3px;
+  flex-wrap:wrap;
+  padding:3px;
+  border:1px solid #3b4a58;
+  border-radius:7px;
+  background:linear-gradient(180deg,#1d2934,#111a23);
+  box-shadow:inset 0 1px rgba(255,255,255,.035);
+}
+.toolbar-group::after{display:none}
+.toolbar-group.grow{flex:0 1 auto}
+.toolbar-group.compact{flex:0 1 auto}
 .single-toolbar button,
-.single-toolbar .mode{
-  flex:none;
+.single-toolbar .mode,
+.single-toolbar select{
+  flex:0 0 auto;
+  min-height:29px;
+}
+.single-toolbar .grid-size-control{min-height:29px;flex:0 1 auto;padding:3px 6px;gap:5px}
+.single-toolbar .grid-size-control input{width:clamp(70px,8vw,105px)}
+.single-toolbar .unit-search-wrap{flex:0 1 150px}
+.single-toolbar .unit-search-input{width:150px;min-width:120px;min-height:29px}
+.single-toolbar .transfer-controls{flex:0 1 auto}
+.single-toolbar .container-counter{min-height:29px;padding:4px 8px}
+.single-toolbar .container-counter strong{font-size:17px}
+.single-toolbar .stack-page-btn{min-height:27px!important;min-width:33px!important}
+.single-toolbar button,.single-toolbar select{padding-top:6px!important;padding-bottom:6px!important}
+@media(max-width:900px){
+  header{padding:5px 6px 6px!important}
+  .toolbar-group{flex:0 1 auto}
+  .single-toolbar button,.single-toolbar select{padding-left:8px!important;padding-right:8px!important}
 }
 .container-counter{
   flex:none;
@@ -1474,7 +1501,7 @@ body.two-high #yardView .y-pair{
   position:fixed;
   z-index:10000;
   display:none;
-  width:190px;
+  width:230px;
   padding:8px;
   border:1px solid #526374;
   border-radius:7px;
@@ -1498,6 +1525,11 @@ body.two-high #yardView .y-pair{
 }
 #boxContextMenu .context-color:hover,#boxContextMenu .context-color:focus{border-color:#fff;transform:translateY(-1px)}
 #boxContextMenu .context-clear{margin:7px 0 0;color:#f3c8c8;text-align:center}
+#boxContextMenu .context-parsed{margin:0 0 8px;padding:8px;border:1px solid #37536b;border-radius:7px;background:#0a2438}
+#boxContextMenu .context-parsed[hidden]{display:none}
+#boxContextMenu .context-parsed-grid{display:grid;grid-template-columns:auto minmax(0,1fr);gap:5px 9px;font:800 10px/1.2 system-ui,sans-serif}
+#boxContextMenu .context-parsed-grid span{color:#8fa8bb;font-size:8px;letter-spacing:.08em;text-transform:uppercase}
+#boxContextMenu .context-parsed-grid strong{overflow:hidden;color:#fff;text-align:right;text-overflow:ellipsis;white-space:nowrap}
 #boxContextMenu .context-closest{margin-top:8px;padding-top:8px;border-top:1px solid #405161}
 #boxContextMenu .context-closest[hidden]{display:none}
 #boxContextMenu .context-match-card{margin-bottom:7px;padding:7px;border:1px solid #36546e;border-radius:6px;background:#0a2438;color:#dff3ff;font:800 10px/1.25 system-ui,sans-serif}
@@ -1544,7 +1576,8 @@ body.multi-selecting .unit,body.multi-selecting .y-half{cursor:crosshair!importa
 .stack-zoom{display:inline-flex;align-items:center;gap:5px;padding:3px 7px;border:1px solid #3c4b59;border-radius:8px;background:#0a1118;color:#dce7f2;font-size:9px;font-weight:900}.stack-zoom input{width:82px;height:18px;accent-color:#fbbf24}.stack-zoom output{min-width:31px;text-align:right}
 .pool-import-modal{position:fixed;inset:0;z-index:1000;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(3,8,15,.78);backdrop-filter:blur(5px)}
 .pool-import-modal.open{display:flex}.pool-import-card{width:min(980px,96vw);max-height:90vh;overflow:auto;border:1px solid #52677d;border-radius:17px;background:#111b26;color:#f8fafc;box-shadow:0 30px 90px rgba(0,0,0,.55)}.pool-import-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:15px 17px;border-bottom:1px solid #334557}.pool-import-head h2{margin:0;font-size:18px}.pool-import-head p{margin:4px 0 0;color:#aebed0;font-size:11px}.pool-import-close{min-width:38px!important;padding:5px!important}.pool-import-body{padding:15px}.pool-import-body textarea{width:100%;height:330px;resize:vertical;padding:11px;border:1px solid #40556d;border-radius:10px;background:#050b12;color:#eef7ff;font:700 12px/1.35 Consolas,monospace;white-space:pre}.pool-import-result{margin-top:10px;min-height:44px;padding:10px 12px;border:1px solid #334a60;border-radius:10px;background:#0a131d;color:#b8c7d8;font-size:11px}.pool-import-result.good{border-color:#278764;color:#a7f3d0}.pool-import-result.warn{border-color:#b7791f;color:#fde68a}.pool-import-legend{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}.pool-import-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 8px;border:1px solid #40546a;border-radius:999px;background:#182432;font-size:10px}.pool-import-chip i{width:13px;height:13px;border-radius:3px;background:var(--chip)}.pool-import-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
-.pool-color-key{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:10px;min-height:48px;padding:8px 16px;border-bottom:1px solid #2f3d4b;background:#0b1219}.pool-color-key[hidden]{display:none}.pool-color-key>strong{color:#fff;font-size:12px;letter-spacing:.11em}.pool-color-key-item{display:inline-flex;align-items:center;gap:7px;padding:6px 10px;border:1px solid #496078;border-radius:999px;background:#17222d;color:#fff;font-size:11px;font-weight:800;letter-spacing:.02em}.pool-color-key-item i{width:18px;height:18px;flex:none;border:1px solid rgba(255,255,255,.6);border-radius:4px;background:var(--key-color)}
+.pool-key-bar{display:flex;min-height:48px;align-items:center;justify-content:space-between;gap:14px;padding:6px clamp(32px,8vw,150px);border-bottom:1px solid #2f3d4b;background:#0b1219}.pool-key-bar .container-counter{margin-right:auto}.pool-color-key{display:flex;min-width:0;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:10px;margin-left:auto}.pool-color-key[hidden]{display:none}.pool-color-key>strong{color:#fff;font-size:12px;letter-spacing:.11em}.pool-color-key-item{display:inline-flex;align-items:center;gap:7px;padding:6px 10px;border:1px solid #496078;border-radius:999px;background:#17222d;color:#fff;font-size:11px;font-weight:800;letter-spacing:.02em}.pool-color-key-item i{width:18px;height:18px;flex:none;border:1px solid rgba(255,255,255,.6);border-radius:4px;background:var(--key-color)}
+@media(max-width:760px){.pool-key-bar{align-items:flex-start;flex-direction:column}.pool-color-key{width:100%;justify-content:flex-end}}
 .pool-import-missing{display:none;margin-top:10px;border:1px solid #7f3448;border-radius:10px;overflow:hidden}.pool-import-missing.open{display:block}.pool-import-missing h3{margin:0;padding:8px 10px;background:#421827;color:#fecdd3;font-size:11px;letter-spacing:.06em}.pool-import-missing-list{max-height:170px;overflow:auto;background:#120c12}.pool-import-missing-row{display:grid;grid-template-columns:minmax(130px,.8fr) minmax(100px,.6fr) minmax(180px,1fr);gap:8px;padding:7px 10px;border-top:1px solid #3c2530;color:#f4dce3;font-size:10px}.pool-import-missing-row b{color:#fff}.pool-import-missing-empty{padding:9px 10px;color:#a7f3d0;background:#0c241d;font-size:10px}
 .wheel-target-modal{inset:0!important;display:none!important;padding:0!important;background:transparent!important;backdrop-filter:none!important;pointer-events:none}.wheel-target-modal.open{display:block!important}.wheel-target-card{position:fixed;top:72px;right:14px;width:min(296px,calc(100vw - 14px));max-height:min(88vh,702px);overflow:hidden!important;border-radius:9px!important;pointer-events:auto}.wheel-target-card .pool-import-head{min-height:34px;padding:5px 7px 5px 10px;cursor:move;user-select:none}.wheel-target-card .pool-import-head h2{font-size:12px}.wheel-target-card .pool-import-close{min-width:27px!important;min-height:27px!important;padding:2px!important;border-radius:6px!important}.wheel-target-card .pool-import-body{max-height:calc(min(88vh,702px) - 35px);overflow:auto;padding:6px}.wheel-target-toolbar{display:flex;align-items:center;justify-content:space-between;gap:4px;margin-bottom:5px;padding:0 1px}.wheel-target-toolbar>strong{font-size:8px}.wheel-target-sort{display:inline-flex;gap:2px;padding:1px;border:1px solid #35495c;border-radius:6px;background:#09121b}.wheel-target-sort button{min-height:22px!important;padding:2px 5px!important;border-radius:5px!important;font-size:8px!important}.wheel-target-sort button.active{border-color:#fbbf24!important;background:#fbbf24!important;color:#111827!important}.wheel-target-list{display:grid;gap:3px;min-height:38px}.wheel-target-row{display:grid;grid-template-columns:14px 160px 28px 34px 20px;align-items:start;gap:4px;min-height:32px;padding:3px 4px;border:1px solid #2d4254;border-radius:6px;background:#0a151f;color:#f8fafc;cursor:grab}.wheel-target-row:active{cursor:grabbing}.wheel-target-row.dragging{opacity:.45}.wheel-target-row.missing{border-color:#7f3448}.wheel-target-handle{padding-top:6px;color:#7890a3;font-size:12px;text-align:center}.wheel-target-unit-wrap{display:grid;width:160px;gap:3px}.wheel-target-unit-line{display:grid;grid-template-columns:136px 20px;gap:4px}.wheel-target-unit{width:136px;min-width:0;min-height:24px!important;padding:2px 4px!important;border:0!important;border-radius:4px!important}.wheel-target-unit strong{display:block;overflow:hidden;font:900 12px/1.15 Consolas,monospace;letter-spacing:.01em;text-overflow:ellipsis;white-space:nowrap}.wheel-note-toggle{min-width:20px!important;min-height:24px!important;padding:0!important;border:1px solid #486176!important;border-radius:4px!important;background:#172636!important;color:#b9d0e3!important;font-size:13px!important}.wheel-note-input{width:160px;height:23px;padding:3px 5px;border:1px solid #4c657a;border-radius:4px;background:#050b12;color:#f8fafc;font:700 9px Consolas,monospace}.wheel-flip-status{display:flex;width:26px;height:24px;align-items:center;justify-content:center;padding:0;border:0;border-radius:5px;background:#263644;color:#aebdca;font-size:11px;font-weight:950}.wheel-flip-status.match{background:#12603f;color:#c8ffe5}.wheel-flip-status.missing{background:#702331;color:#ffd4da}.wheel-target-moves{display:flex;width:32px;height:24px;align-items:center;justify-content:center;padding:0;border:1px solid #45627a;border-radius:5px;background:#142536;color:#fff;font-size:0;font-weight:950}.wheel-target-moves strong{font-size:12px}.wheel-target-remove{min-width:20px!important;min-height:20px!important;margin-top:2px;padding:0!important;border:0!important;border-radius:50%!important;background:#5a1f2a!important;color:#fecdd3!important;font-size:11px!important}.wheel-target-empty{padding:12px;border:1px dashed #40546a;border-radius:6px;color:#9cb0c2;font-size:9px;font-weight:800;text-align:center}.wheel-target-open{border-color:#c28b18!important;background:#3a2a09!important;color:#fde68a!important}
 .unit.wheel-target,.unit.wheel-target.green{background:#facc15!important;border-color:#fff1a6!important;box-shadow:inset 0 0 0 2px #a16207,0 0 8px rgba(250,204,21,.8)!important}.unit.wheel-target .label,.unit.wheel-target .tier-badge,.y-half.wheel-target .y-container,.y-half.wheel-target .tier-badge{color:#111!important;-webkit-text-fill-color:#111!important;text-shadow:none!important}.y-half.wheel-target .y-container{background:#facc15!important;border-color:#fff1a6!important;box-shadow:inset 0 0 0 2px #a16207,0 0 8px rgba(250,204,21,.8)!important}
@@ -1554,30 +1587,39 @@ body.multi-selecting .unit,body.multi-selecting .y-half{cursor:crosshair!importa
 <header>
 
   <div class="single-toolbar"><div class="viewbar">
+    <div class="toolbar-group compact" data-group-label="View">
     <div class="view-toggle-split" role="group" aria-label="Stacking grid view">
       <button class="viewbtn active" id="gridBtn" type="button" aria-pressed="true">GRID</button>
       <button class="viewbtn" id="yardBtn" type="button" aria-pressed="false">YARD</button>
     </div>
-    <div class="container-counter" aria-live="polite">CONTAINERS <strong id="containerTotal">0</strong></div>
     <div class="stack-page-tabs" id="stackPageTabs" aria-label="Stacking grid pages"><span>PAGE</span><button type="button" class="stack-page-btn" data-stack-page="1">B</button><button type="button" class="stack-page-btn" data-stack-page="2">D</button><button type="button" class="stack-page-btn" data-stack-page="3">J</button><button type="button" class="stack-page-btn" data-stack-page="4">S</button></div>
+    </div>
+    <div class="toolbar-group grow" data-group-label="Find &amp; Layout">
     <label class="grid-size-control" for="gridSizeSlider">GRID SIZE <input id="gridSizeSlider" type="range" min="60" max="140" step="5" value="100"><output id="gridSizeValue" for="gridSizeSlider">100%</output></label>
-    <button type="button" id="poolImportBtn">PASTE</button>
-    <button type="button" id="paidSwingsBtn">PAID SWINGS</button>
-    <button type="button" class="wheel-target-open" id="wheelTargetBtn">UNSTACK ORDER <span id="wheelTargetCount">0</span></button>
     <div class="unit-search-wrap"><input class="unit-search-input" id="unitSearchInput" type="search" autocomplete="off" placeholder="SEARCH ALL PAGES" aria-label="Search units across all stacking grid pages"><div class="unit-search-results" id="unitSearchResults" hidden></div></div>
     <button type="button" id="stackHeightToggle" aria-pressed="false">3 HIGH</button>
-    <input type="file" id="importGridFile" accept=".xls,.xml" hidden>
-    <button type="button" id="importGrid">IMPORT GRID</button>
-    <button type="button" id="exportExcel">EXPORT EXCEL</button>
-  </div><div class="controls">
-    <div class="transfer-controls" id="transferControls" aria-label="Block transfer mode">
-      <button type="button" class="transfer-mode-btn active" data-transfer-mode="swap" aria-pressed="true">SWAP BLOCKS</button>
-      <button type="button" class="transfer-mode-btn" data-transfer-mode="move" aria-pressed="false">MOVE BLOCK</button>
-      <span class="transfer-mode-help" id="transferModeHelp">Drag onto another block to swap positions</span>
     </div>
+    <div class="toolbar-group compact" data-group-label="Data &amp; Workflow">
+    <button type="button" id="poolImportBtn">PASTE</button>
+    <button type="button" id="paidSwingsBtn">PAID</button>
+    <button type="button" class="wheel-target-open" id="wheelTargetBtn">ORDER <span id="wheelTargetCount">0</span></button>
+    <input type="file" id="importGridFile" accept=".xls,.xml" hidden>
+    <button type="button" id="importGrid">IMPORT</button>
+    <button type="button" id="exportExcel">EXPORT</button>
+    </div>
+  </div><div class="controls">
+    <div class="toolbar-group grow" data-group-label="Block Movement">
+    <div class="transfer-controls" id="transferControls" aria-label="Block transfer mode">
+      <button type="button" class="transfer-mode-btn active" data-transfer-mode="swap" aria-pressed="true">SWAP</button>
+      <button type="button" class="transfer-mode-btn" data-transfer-mode="move" aria-pressed="false">MOVE</button>
+    </div>
+    </div>
+    <div class="toolbar-group compact" data-group-label="Edit">
     <button id="edit">Edit</button>
     <button type="button" id="remove" disabled>Delete</button>
     <button id="undo" disabled>Undo</button>
+    </div>
+    <div class="toolbar-group grow" data-group-label="Highlights">
     <select id="highlightColor" aria-label="Container highlight color" title="Choose a highlight color or turn highlighting off">
       <option value="off">Highlight Off</option>
       <option value="gold">Gold Highlight</option>
@@ -1589,9 +1631,13 @@ body.multi-selecting .unit,body.multi-selecting .y-half{cursor:crosshair!importa
       <option value="blue">Blue Highlight</option>
       <option value="brown">Brown Highlight</option>
     </select><button id="hideHighlights">Hide Highlights</button>
+    </div>
   </div></div>
 </header>
-<div class="pool-color-key" id="poolColorKey" aria-label="Pool and length color key"></div>
+<div class="pool-key-bar" id="poolKeyBar">
+  <div class="container-counter" aria-live="polite">CONTAINERS <strong id="containerTotal">0</strong></div>
+  <div class="pool-color-key" id="poolColorKey" aria-label="Pool and length color key"></div>
+</div>
 
 <div id="gridView">
   <div class="viewport">
@@ -1619,6 +1665,10 @@ PAD</div>
 
 <div id="yardView"></div>
 <div id="boxContextMenu" role="menu" aria-label="Box actions">
+  <section class="context-parsed" id="contextParsedInfo" hidden>
+    <div class="context-title">Parsed Paste Information</div>
+    <div class="context-parsed-grid" id="contextParsedInfoGrid"></div>
+  </section>
   <button type="button" id="contextEditText" role="menuitem">Edit Text</button>
   <div class="context-title">Change box color</div>
   <div class="context-colors" id="contextColors"></div>
@@ -1645,7 +1695,7 @@ PAD</div>
 <div class="pool-import-modal wheel-target-modal" id="wheelTargetModal" aria-hidden="true">
   <section class="pool-import-card wheel-target-card" id="wheelTargetCard" role="dialog" aria-modal="false" aria-labelledby="wheelTargetTitle">
     <header class="pool-import-head" id="wheelTargetDragHandle"><div><h2 id="wheelTargetTitle">UNSTACK ORDER</h2></div><button type="button" class="pool-import-close" id="wheelTargetClose" aria-label="Close">X</button></header>
-    <div class="pool-import-body"><div class="wheel-target-toolbar"><strong id="wheelTargetSummary">0 TARGETS</strong><div class="wheel-target-sort" role="group" aria-label="Wheel list order"><button type="button" id="wheelSortFewest">FEWEST</button><button type="button" id="wheelSortCustom">CUSTOM</button></div></div><div class="wheel-target-list" id="wheelTargetList"></div></div>
+    <div class="pool-import-body"><div class="wheel-target-toolbar"><strong id="wheelTargetSummary">0 TARGETS</strong><div class="wheel-target-sort" role="group" aria-label="Order list controls"><button type="button" id="wheelHighlightToggle" aria-pressed="true">HIDE HIGHLIGHT</button><button type="button" id="wheelSortFewest">FEWEST</button><button type="button" id="wheelSortCustom">CUSTOM</button></div></div><div class="wheel-target-list" id="wheelTargetList"></div></div>
   </section>
 </div>
 
@@ -1848,9 +1898,11 @@ let contextClosestMatchKey='';
 const WHEEL_TARGET_KEY=KEY+'_wheel_targets_v1';
 const WHEEL_TARGET_SORT_KEY=KEY+'_wheel_target_sort_v1';
 const WHEEL_TARGET_NOTES_KEY=KEY+'_wheel_target_notes_v1';
+const WHEEL_TARGET_HIGHLIGHT_KEY=KEY+'_wheel_target_highlight_visible_v1';
 let wheelTargets=readWheelTargets();
 let wheelTargetSort=localStorage.getItem(WHEEL_TARGET_SORT_KEY)==='custom'?'custom':'fewest';
 let wheelTargetNotes=readWheelTargetNotes();
+let wheelTargetHighlightsVisible=localStorage.getItem(WHEEL_TARGET_HIGHLIGHT_KEY)!=='false';
 const wheelNoteOpen=new Set(Object.keys(wheelTargetNotes).filter(unit=>wheelTargetNotes[unit]));
 let wheelDraggedUnit='';
 
@@ -2094,7 +2146,19 @@ function saveWheelTargets(){
   localStorage.setItem(WHEEL_TARGET_KEY,JSON.stringify(wheelTargets));
   const count=document.getElementById('wheelTargetCount');if(count)count.textContent=String(wheelTargets.length);
 }
-function isWheelTargetText(value){return wheelTargets.includes(normalizeGridUnit(value))}
+function isWheelTargetText(value){return wheelTargetHighlightsVisible&&wheelTargets.includes(normalizeGridUnit(value))}
+function updateWheelTargetHighlightToggle(){
+  const button=document.getElementById('wheelHighlightToggle');if(!button)return;
+  button.textContent=wheelTargetHighlightsVisible?'HIDE HIGHLIGHT':'SHOW HIGHLIGHT';
+  button.classList.toggle('active',wheelTargetHighlightsVisible);
+  button.setAttribute('aria-pressed',wheelTargetHighlightsVisible?'true':'false');
+}
+function toggleWheelTargetHighlights(){
+  wheelTargetHighlightsVisible=!wheelTargetHighlightsVisible;
+  localStorage.setItem(WHEEL_TARGET_HIGHLIGHT_KEY,String(wheelTargetHighlightsVisible));
+  updateWheelTargetHighlightToggle();
+  renderAll();
+}
 function findWheelTarget(unit){
   const normalized=normalizeGridUnit(unit);
   for(let page=1;page<=STACK_PAGE_COUNT;page++){
@@ -2128,6 +2192,7 @@ function renderWheelTargetList(){
   const list=document.getElementById('wheelTargetList'),summary=document.getElementById('wheelTargetSummary');if(!list)return;
   const pageNames=['','B','D','J','S'];let details=wheelTargetDetails();
   if(wheelTargetSort==='fewest')details.sort((a,b)=>(a.index<0)-(b.index<0)||a.moves-b.moves||a.order-b.order);
+  updateWheelTargetHighlightToggle();
   document.getElementById('wheelSortFewest')?.classList.toggle('active',wheelTargetSort==='fewest');
   document.getElementById('wheelSortCustom')?.classList.toggle('active',wheelTargetSort==='custom');
   if(summary)summary.textContent=`${details.length} TARGET${details.length===1?'':'S'}`;
@@ -2265,7 +2330,7 @@ function fitStackingView(){
     document.body.scrollLeft=0;
     const header=document.querySelector('header');
     const headerHeight=header&&getComputedStyle(header).display!=='none'?header.getBoundingClientRect().height:0;
-    const poolKey=document.getElementById('poolColorKey');
+    const poolKey=document.getElementById('poolKeyBar');
     const poolKeyHeight=poolKey&&getComputedStyle(poolKey).display!=='none'?poolKey.getBoundingClientRect().height:0;
     // The grid starts below both the toolbar and the pool key. Reserving only
     // the toolbar height made the bottom fence controls fall below the viewport.
@@ -2652,7 +2717,19 @@ function beginInlineEdit(i){
     const text=input.value.trim().toUpperCase();
     if(text===previous){renderAll();return;}
     rememberState();
-    state[i]={...(state[i]||{}),text,green:state[i]?.green||false};
+    const previousEquipment=normalizePoolImportEquipment(previous);
+    const nextEquipment=normalizePoolImportEquipment(text);
+    let next={...(state[i]||{}),text};
+    if(previousEquipment!==nextEquipment){
+      next.green=false;
+      delete next.highlightColor;
+      delete next.manualHighlight;
+      delete next.poolImportCategory;
+      delete next.poolImportPool;
+      delete next.poolImportLength;
+    }
+    next=applySavedPoolAssignments([next]).items[0];
+    state[i]=next;
     save();
     renderAll();
   };
@@ -2802,6 +2879,23 @@ function closestPoolMatchForItem(item){
   const equipment=candidates[0];return{equipment,...assignments[equipment],distance:poolMatchDistance(current,equipment)};
 }
 function displayPoolEquipment(value){return String(value||'').replace(/^([A-Z]{3,5})(\d+)$/,'$1 $2')}
+function updateContextParsedInfo(i){
+  const section=document.getElementById('contextParsedInfo'),grid=document.getElementById('contextParsedInfoGrid'),item=state[i];
+  if(!section||!grid)return;
+  const equipment=normalizePoolImportEquipment(item?.text),saved=equipment?readSavedPoolAssignments()[equipment]:null;
+  const category=saved?.category||item?.poolImportCategory||'';
+  if(!equipment){section.hidden=true;grid.innerHTML='';return}
+  if(!category){
+    section.hidden=false;
+    grid.innerHTML=`<span>Unit</span><strong>${escapePoolImportText(displayPoolEquipment(equipment))}</strong><span>Paste Match</span><strong>Not found</strong>`;
+    return;
+  }
+  const pool=saved?.pool||item?.poolImportPool||String(category).split(/\s+/)[0]||'—';
+  const length=Number(saved?.length||item?.poolImportLength||String(category).match(/20|40|45|53/)?.[0]||0);
+  const location=String(saved?.location||'').trim()||'Not supplied';
+  section.hidden=false;
+  grid.innerHTML=`<span>Unit</span><strong>${escapePoolImportText(displayPoolEquipment(equipment))}</strong><span>Location</span><strong title="${escapePoolImportText(location)}">${escapePoolImportText(location)}</strong><span>Pool</span><strong>${escapePoolImportText(pool)}</strong><span>Length</span><strong>${length?`${length} FT`:'Unknown'}</strong><span>Color Type</span><strong>${escapePoolImportText(category)}</strong>`;
+}
 function updateContextClosestMatch(i){
   const section=document.getElementById('contextClosestMatch'),card=document.getElementById('contextClosestMatchCard'),match=closestPoolMatchForItem(state[i]);
   contextClosestMatchKey=match?.equipment||'';section.hidden=!match;
@@ -2832,6 +2926,7 @@ function openBoxContextMenu(i,x,y){
   renderAll();
   const menu=document.getElementById('boxContextMenu');
   if(!menu)return;
+  updateContextParsedInfo(i);
   updateContextClosestMatch(i);
   const wheelButton=document.getElementById('contextWheelTarget'),wheelUnit=normalizeGridUnit(state[i]?.text);
   wheelButton.hidden=!wheelUnit;
@@ -3289,6 +3384,7 @@ document.getElementById('wheelTargetList').addEventListener('click',event=>{
   const toggle=event.target.closest('[data-wheel-note-toggle]');if(toggle){const unit=toggle.dataset.wheelNoteToggle;if(wheelNoteOpen.has(unit))wheelNoteOpen.delete(unit);else wheelNoteOpen.add(unit);renderWheelTargetList();document.querySelector(`[data-wheel-note="${unit}"]`)?.focus();return}
   const open=event.target.closest('[data-wheel-open]');if(open)openWheelTargetUnit(open.dataset.wheelOpen);
 });
+document.getElementById('wheelHighlightToggle').onclick=toggleWheelTargetHighlights;
 document.getElementById('wheelTargetList').addEventListener('input',event=>{
   const input=event.target.closest('[data-wheel-note]');if(!input)return;
   const unit=input.dataset.wheelNote,note=input.value.trimStart();
