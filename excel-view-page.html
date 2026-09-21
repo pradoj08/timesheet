@@ -4157,6 +4157,7 @@
   <button class="copy-menu-action" id="consolidateSelectedToIhosa" type="button" role="menuitem">Consolidate to IHOSA</button>
   <button class="copy-menu-action" id="consolidateSelectedToMhoas" type="button" role="menuitem">Consolidate to MHOAS</button>
   <button class="copy-menu-action" id="consolidateSelectedToSs" type="button" role="menuitem">Consolidate to SS</button>
+  <button class="copy-menu-action" id="consolidateSelectedToPierce" type="button" role="menuitem">Consolidate to PIERCE</button>
   <button class="danger-menu-action" id="clearFinalZoneBtn" type="button" role="menuitem" hidden>Clear Track</button>
   <button class="danger-menu-action" id="deleteSelectedBlocks" type="button" role="menuitem">Delete selected block(s)</button>
 </div>
@@ -4789,6 +4790,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     return target;
   }
 
+  let persistedTableStateSavedAt = 0;
   function loadPersistedTableState() {
     let selected = null;
     let selectedAt = -1;
@@ -4805,6 +4807,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         }
       } catch (error) {}
     });
+    persistedTableStateSavedAt = selectedAt;
     return selected;
   }
 
@@ -4815,7 +4818,10 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     try {
       const saved = loadPersistedTableState();
       if (saved && Array.isArray(saved.rows)) {
-        const merged = applyPersistedRampTables({ ...defaultState(), ...saved }, persistedRampTables);
+        const newerTables = persistedRampTables && (Date.parse(persistedRampTables.updatedAt || "") || 0) > persistedTableStateSavedAt;
+        const merged = newerTables
+          ? applyPersistedRampTables({ ...defaultState(), ...saved }, persistedRampTables)
+          : { ...defaultState(), ...saved };
         if (!merged.dwellOverrides || typeof merged.dwellOverrides !== "object" || Array.isArray(merged.dwellOverrides)) {
           merged.dwellOverrides = {};
         }
@@ -4853,6 +4859,58 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     if (!button) return;
     button.disabled = excelViewUndoStack.length === 0;
     button.textContent = excelViewUndoStack.length ? `Undo (${excelViewUndoStack.length})` : "Undo";
+  }
+
+  // Keep a recoverable copy when the duplicated localStorage table payloads exceed quota.
+  const ER_RECOVERY_DB = "conglobal-excel-er-recovery-v1";
+  let erRecoveryPending = true;
+  let erRecoveryWrite = Promise.resolve();
+  function openErRecoveryDb() {
+    return new Promise((resolve, reject) => {
+      if (!window.indexedDB) return reject(new Error("IndexedDB is unavailable"));
+      const request = indexedDB.open(ER_RECOVERY_DB, 1);
+      request.onupgradeneeded = () => request.result.createObjectStore("snapshots");
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error || new Error("ER recovery database could not open"));
+    });
+  }
+  async function writeErRecoverySnapshot(serialized) {
+    erRecoveryWrite = erRecoveryWrite.catch(() => {}).then(async () => {
+      const db = await openErRecoveryDb();
+      try {
+        await new Promise((resolve, reject) => {
+          const transaction = db.transaction("snapshots", "readwrite");
+          transaction.objectStore("snapshots").put({ updatedAt: new Date().toISOString(), state: serialized }, "latest");
+          transaction.oncomplete = resolve;
+          transaction.onerror = () => reject(transaction.error || new Error("ER recovery save failed"));
+          transaction.onabort = () => reject(transaction.error || new Error("ER recovery save aborted"));
+        });
+      } finally { db.close(); }
+    });
+    return erRecoveryWrite;
+  }
+  async function restoreErRecoverySnapshot() {
+    try {
+      const db = await openErRecoveryDb();
+      let snapshot;
+      try {
+        snapshot = await new Promise((resolve, reject) => {
+          const transaction = db.transaction("snapshots", "readonly");
+          const request = transaction.objectStore("snapshots").get("latest");
+          request.onsuccess = () => resolve(request.result);
+          request.onerror = () => reject(request.error || new Error("ER recovery read failed"));
+        });
+      } finally { db.close(); }
+      if (!snapshot || (Date.parse(snapshot.updatedAt || "") || 0) <= persistedTableStateSavedAt) return;
+      const recovered = JSON.parse(snapshot.state);
+      if (!recovered || !Array.isArray(recovered.rows)) return;
+      state = { ...defaultState(), ...recovered };
+      selectedBlockIds.clear();
+      selectedBlockGridId = "";
+      renderAll();
+    } catch (error) {
+      console.warn("ER recovery copy could not be read.", error);
+    } finally { erRecoveryPending = false; }
   }
 
   function saveState() {
@@ -4894,6 +4952,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       // The dashboard still works when a browser blocks local file storage.
     }
     lastCommittedExcelViewState = serialized;
+    if (changed && !erRecoveryPending) void writeErRecoverySnapshot(serialized).catch(error => console.warn("ER recovery save failed.", error));
     updateExcelViewUndoButton();
   }
 
@@ -7915,6 +7974,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       $("#consolidateSelectedToIhosa").hidden = true;
       $("#consolidateSelectedToMhoas").hidden = true;
       $("#consolidateSelectedToSs").hidden = true;
+      $("#consolidateSelectedToPierce").hidden = true;
       clearButton.hidden = false;
       deleteButton.hidden = true;
       menu.hidden = false;
@@ -7939,6 +7999,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       $("#consolidateSelectedToIhosa")?.setAttribute("hidden", "");
       $("#consolidateSelectedToMhoas")?.setAttribute("hidden", "");
       $("#consolidateSelectedToSs")?.setAttribute("hidden", "");
+      $("#consolidateSelectedToPierce")?.setAttribute("hidden", "");
       $("#clearFinalZoneBtn").hidden = true;
       $("#deleteSelectedBlocks").hidden = true;
       menu.hidden = false;
@@ -7978,9 +8039,10 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         : null;
       splitButton.hidden = !group || Math.round(Number(group.footage) || 0) < 2;
     }
-    $("#consolidateSelectedToIhosa").hidden = selectedBlockIds.size < 2;
-    $("#consolidateSelectedToMhoas").hidden = selectedBlockIds.size < 2;
-    $("#consolidateSelectedToSs").hidden = selectedBlockIds.size < 2;
+    $("#consolidateSelectedToIhosa").hidden = !selectedBlockIds.size;
+    $("#consolidateSelectedToMhoas").hidden = !selectedBlockIds.size;
+    $("#consolidateSelectedToSs").hidden = !selectedBlockIds.size;
+    $("#consolidateSelectedToPierce").hidden = !selectedBlockIds.size;
     const deleteButton = $("#deleteSelectedBlocks");
     if (deleteButton) deleteButton.hidden = false;
     menu.hidden = false;
@@ -8023,9 +8085,9 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     renderAll();
   }
   function consolidateSelectedPrimaryBlocks(label) {
-    if (!computed || selectedBlockIds.size < 2) return false;
+    if (!computed || !selectedBlockIds.size) return false;
     const selected = computed.groups.filter(group => selectedBlockIds.has(group.blockId));
-    if (selected.length < 2) return false;
+    if (!selected.length) return false;
     const targetTrack = Number(selected[0].track);
     const stamp = `manual-consolidate-${label.toLowerCase()}-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
     const mergedRows = [];
@@ -8066,7 +8128,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   }
 
   function consolidateSelectedSecondaryBlocks(gridId, label) {
-    if (selectedBlockIds.size < 2) return false;
+    if (!selectedBlockIds.size) return false;
     const model = state[secondaryGridStateKey(gridId)];
     if (!validSecondaryModel(model)) return false;
     const selected = [];
@@ -8075,7 +8137,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         if (selectedBlockIds.has(String(block.id))) selected.push({block, track, index});
       });
     });
-    if (selected.length < 2) return false;
+    if (!selected.length) return false;
     const targetTrack = Number(selected[0].track);
     const total = selected.reduce((sum, item) => sum + (Number(item.block.footage) || 0), 0);
     const sourceRows = selected.flatMap(item => Array.isArray(item.block.sourceRows) ? item.block.sourceRows.map(row => row.slice()) : []);
@@ -8087,7 +8149,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     const insertAt = Math.min(selected[0].index, destination.length);
     destination.splice(insertAt, 0, normalizeSecondaryBlock({
       id:"", footage:total,
-      className:`cut-cell ${label === "IHOSA" ? "green" : label === "MHOAS" ? "blue" : "purple"} block-reorderable`,
+      className:`cut-cell ${label === "IHOSA" ? "green" : label === "MHOAS" ? "blue" : label === "PIERCE" ? "pink" : "purple"} block-reorderable`,
       content:`${fmtInt(total)} ${label} [${targetTrack}]`,
       title:`${fmtInt(total)} ${label} [${targetTrack}]`, sourceRows
     }, targetTrack));
@@ -9294,6 +9356,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       document.dispatchEvent(new CustomEvent("excel-er-imported", {detail:{fileName:file.name,rowCount:parsed.rows.length}}));
       state.sourceName=`${file.name}${parsed.sheet ? ` \u00B7 ${parsed.sheet}` : ""}`;
       renderAll();
+      await writeErRecoverySnapshot(JSON.stringify(state));
       ssShowToast(`${parsed.rows.length} car rows imported from ${file.name}${parsed.sheet ? ` (${parsed.sheet})` : ""}.`);
     } catch (error) {
       ssShowToast(error && error.message ? error.message : "The file could not be processed.", true);
@@ -9397,6 +9460,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   $("#consolidateSelectedToIhosa").addEventListener("click", () => consolidateSelectedBlocks("IHOSA"));
   $("#consolidateSelectedToMhoas").addEventListener("click", () => consolidateSelectedBlocks("MHOAS"));
   $("#consolidateSelectedToSs").addEventListener("click", () => consolidateSelectedBlocks("SS"));
+  $("#consolidateSelectedToPierce").addEventListener("click", () => consolidateSelectedBlocks("PIERCE"));
   $("#closeRawTrack").addEventListener("click", closeRawTrackModal);
   $("#rawTrackModal").addEventListener("click", event => {
     if (event.target === $("#rawTrackModal")) closeRawTrackModal();
@@ -10347,6 +10411,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   excelViewHistoryReady = true;
   lastCommittedExcelViewState = JSON.stringify(state);
   updateExcelViewUndoButton();
+  void restoreErRecoverySnapshot();
 })();
 
 

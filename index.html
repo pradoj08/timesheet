@@ -1256,11 +1256,17 @@
         setWorkbookSupabaseStatus("Newer cloud data found. Refreshing this workbook...", "warn");
         const row = await fetchWorkbookSupabaseState(config);
         if (!row || !row.state) return false;
-        applyWorkbookStorageState(row.state);
+        const reconciled = mergeNewestExcelTableState(row.state);
+        applyWorkbookStorageState(reconciled.state);
         workbookSupabaseLastSeenRevision = workbookSupabaseRevision(row);
-        workbookSupabaseLocalDirty = false;
+        workbookSupabaseLocalDirty = reconciled.keptLocal;
         refreshActiveWorkbookPageFromStorage();
-        setWorkbookSupabaseStatus("Synced newer cloud data at " + new Date().toLocaleTimeString() + " (" + reason + ").", "good");
+        if (reconciled.keptLocal) {
+          setWorkbookSupabaseStatus("Kept newer local Excel data while applying cloud changes. Saving the merged copy...", "warn");
+          await saveWorkbookSupabaseNow("newer-local-excel-tables", { skipPreflight: true });
+        } else {
+          setWorkbookSupabaseStatus("Synced newer cloud data at " + new Date().toLocaleTimeString() + " (" + reason + ").", "good");
+        }
         return true;
       } catch (error) {
         setWorkbookSupabaseStatus("Cloud temporarily unavailable: " + (error.message || "connection failed"), "bad");
@@ -7936,6 +7942,62 @@ document.addEventListener("DOMContentLoaded",function(){
       return updated.replace("</head>", '<meta name="' + marker + '" content="enabled">\n</head>');
     }
 
+    function withExcelSingleBlockConsolidation(html) {
+      const marker = "excel-single-block-consolidation-v1";
+      if (!html || typeof html !== "string" || html.includes(marker)) return html;
+      let updated = html.replaceAll("selectedBlockIds.size < 2", "!selectedBlockIds.size")
+        .replaceAll("selected.length < 2", "!selected.length");
+      if (updated === html) return html;
+      return updated.replace("</head>", '<meta name="' + marker + '" content="enabled">\n</head>');
+    }
+
+    function withExcelPierceConsolidation(html) {
+      const marker = "excel-pierce-consolidation-v1";
+      if (!html || typeof html !== "string" || html.includes(marker)) return html;
+      const ssButton = '<button class="copy-menu-action" id="consolidateSelectedToSs" type="button" role="menuitem">Consolidate to SS</button>';
+      const pierceButton = '<button class="copy-menu-action" id="consolidateSelectedToPierce" type="button" role="menuitem">Consolidate to PIERCE</button>';
+      if (!html.includes(ssButton) || !html.includes('consolidateSelectedBlocks("SS")')) return html;
+      let updated = html.replace(ssButton, ssButton + '\n  ' + pierceButton)
+        .replace('label === "MHOAS" ? "blue" : "purple"', 'label === "MHOAS" ? "blue" : label === "PIERCE" ? "pink" : "purple"')
+        .replace('$("#consolidateSelectedToSs").addEventListener("click", () => consolidateSelectedBlocks("SS"));', '$("#consolidateSelectedToSs").addEventListener("click", () => consolidateSelectedBlocks("SS"));\n  $("#consolidateSelectedToPierce").addEventListener("click", () => consolidateSelectedBlocks("PIERCE"));');
+      const visibility = '  document.addEventListener("contextmenu", () => requestAnimationFrame(() => { const pierce = $("#consolidateSelectedToPierce"); const ss = $("#consolidateSelectedToSs"); if (pierce && ss) pierce.hidden = ss.hidden; }));';
+      updated = updated.replace('$("#consolidateSelectedToPierce").addEventListener("click", () => consolidateSelectedBlocks("PIERCE"));', '$("#consolidateSelectedToPierce").addEventListener("click", () => consolidateSelectedBlocks("PIERCE"));\n' + visibility);
+      return updated.replace("</head>", '<meta name="' + marker + '" content="enabled">\n</head>');
+    }
+
+    function withExcelNewestErRestore(html) {
+      const marker = "excel-newest-er-restore-v1";
+      if (!html || typeof html !== "string" || html.includes(marker)) return html;
+      const loadAnchor = "  function loadPersistedTableState() {";
+      const returnAnchor = "    return selected;\n  }\n\n  function loadState() {";
+      const mergeAnchor = "        const merged = applyPersistedRampTables({ ...defaultState(), ...saved }, persistedRampTables);";
+      if (!html.includes(loadAnchor) || !html.includes(returnAnchor) || !html.includes(mergeAnchor)) return html;
+      let updated = html.replace(loadAnchor, "  let persistedTableStateSavedAt = 0;\n" + loadAnchor)
+        .replace(returnAnchor, "    persistedTableStateSavedAt = selectedAt;\n" + returnAnchor)
+        .replace(mergeAnchor, "        const newerTables = persistedRampTables && (Date.parse(persistedRampTables.updatedAt || \"\") || 0) > persistedTableStateSavedAt;\n        const merged = newerTables\n          ? applyPersistedRampTables({ ...defaultState(), ...saved }, persistedRampTables)\n          : { ...defaultState(), ...saved };");
+      return updated.replace("</head>", '<meta name="' + marker + '" content="enabled">\n</head>');
+    }
+
+    function withExcelErRecovery(html) {
+      const marker = "excel-er-recovery-v1";
+      if (!html || typeof html !== "string" || html.includes(marker)) return html;
+      const recoveryCode = "  // Keep a recoverable copy when the duplicated localStorage table payloads exceed quota.\n  const ER_RECOVERY_DB = \"conglobal-excel-er-recovery-v1\";\n  let erRecoveryPending = true;\n  let erRecoveryWrite = Promise.resolve();\n  function openErRecoveryDb() {\n    return new Promise((resolve, reject) => {\n      if (!window.indexedDB) return reject(new Error(\"IndexedDB is unavailable\"));\n      const request = indexedDB.open(ER_RECOVERY_DB, 1);\n      request.onupgradeneeded = () => request.result.createObjectStore(\"snapshots\");\n      request.onsuccess = () => resolve(request.result);\n      request.onerror = () => reject(request.error || new Error(\"ER recovery database could not open\"));\n    });\n  }\n  async function writeErRecoverySnapshot(serialized) {\n    erRecoveryWrite = erRecoveryWrite.catch(() => {}).then(async () => {\n      const db = await openErRecoveryDb();\n      try {\n        await new Promise((resolve, reject) => {\n          const transaction = db.transaction(\"snapshots\", \"readwrite\");\n          transaction.objectStore(\"snapshots\").put({ updatedAt: new Date().toISOString(), state: serialized }, \"latest\");\n          transaction.oncomplete = resolve;\n          transaction.onerror = () => reject(transaction.error || new Error(\"ER recovery save failed\"));\n          transaction.onabort = () => reject(transaction.error || new Error(\"ER recovery save aborted\"));\n        });\n      } finally { db.close(); }\n    });\n    return erRecoveryWrite;\n  }\n  async function restoreErRecoverySnapshot() {\n    try {\n      const db = await openErRecoveryDb();\n      let snapshot;\n      try {\n        snapshot = await new Promise((resolve, reject) => {\n          const transaction = db.transaction(\"snapshots\", \"readonly\");\n          const request = transaction.objectStore(\"snapshots\").get(\"latest\");\n          request.onsuccess = () => resolve(request.result);\n          request.onerror = () => reject(request.error || new Error(\"ER recovery read failed\"));\n        });\n      } finally { db.close(); }\n      if (!snapshot || (Date.parse(snapshot.updatedAt || \"\") || 0) <= persistedTableStateSavedAt) return;\n      const recovered = JSON.parse(snapshot.state);\n      if (!recovered || !Array.isArray(recovered.rows)) return;\n      state = { ...defaultState(), ...recovered };\n      selectedBlockIds.clear();\n      selectedBlockGridId = \"\";\n      renderAll();\n    } catch (error) {\n      console.warn(\"ER recovery copy could not be read.\", error);\n    } finally { erRecoveryPending = false; }\n  }\n\n";
+      const saveAnchor = "  function saveState() {";
+      const committedAnchor = "    lastCommittedExcelViewState = serialized;\n    updateExcelViewUndoButton();";
+      const importStart = html.indexOf('  $("#inventoryFileTop").addEventListener("change", async e => {');
+      const endAnchor = "  lastCommittedExcelViewState = JSON.stringify(state);\n  updateExcelViewUndoButton();\n})();";
+      if (!html.includes(saveAnchor) || !html.includes(committedAnchor) || importStart < 0 || !html.includes(endAnchor)) return html;
+      let updated = html.replace(saveAnchor, recoveryCode + saveAnchor)
+        .replace(committedAnchor, "    lastCommittedExcelViewState = serialized;\n    if (changed && !erRecoveryPending) void writeErRecoverySnapshot(serialized).catch(error => console.warn(\"ER recovery save failed.\", error));\n    updateExcelViewUndoButton();")
+        .replace(endAnchor, "  lastCommittedExcelViewState = JSON.stringify(state);\n  updateExcelViewUndoButton();\n  void restoreErRecoverySnapshot();\n})();");
+      const importEnd = updated.indexOf('  function selectGridView(view) {', importStart);
+      if (importEnd < 0) return html;
+      const importCode = updated.slice(importStart, importEnd).replace('      renderAll();\n      ssShowToast(', '      renderAll();\n      await writeErRecoverySnapshot(JSON.stringify(state));\n      ssShowToast(');
+      if (!importCode.includes('await writeErRecoverySnapshot(JSON.stringify(state));')) return html;
+      updated = updated.slice(0, importStart) + importCode + updated.slice(importEnd);
+      return updated.replace("</head>", '<meta name="' + marker + '" content="enabled">\n</head>');
+    }
+
     function withExcelInboundGoldHighlight(html) {
       if (!html || typeof html !== "string" || html.includes("excel-inbound-gold-highlight")) return html;
       const toggleMarkup = `
@@ -14595,6 +14657,10 @@ function duplicateForecastTrainDay(train,day){
           pageHtml = withExcelBlockSplitContextMenu(pageHtml);
           pageHtml = withExcelEmptyRowPasteContext(pageHtml);
           pageHtml = withExcelConsolidateToSs(pageHtml);
+          pageHtml = withExcelSingleBlockConsolidation(pageHtml);
+          pageHtml = withExcelPierceConsolidation(pageHtml);
+          pageHtml = withExcelNewestErRestore(pageHtml);
+          pageHtml = withExcelErRecovery(pageHtml);
           pageHtml = withExcelInboundBetweenRowInsert(pageHtml);
           pageHtml = withExcelInboundDpuInsert(pageHtml);
         }
