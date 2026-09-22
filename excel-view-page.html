@@ -4901,13 +4901,17 @@ https://github.com/nodeca/pako/blob/main/LICENSE
           request.onerror = () => reject(request.error || new Error("ER recovery read failed"));
         });
       } finally { db.close(); }
-      if (!snapshot || (Date.parse(snapshot.updatedAt || "") || 0) <= persistedTableStateSavedAt) return;
+      if (!snapshot) return;
       const recovered = JSON.parse(snapshot.state);
       if (!recovered || !Array.isArray(recovered.rows)) return;
+      if (recovered.sourceName === state.sourceName && JSON.stringify(recovered.rows) === JSON.stringify(state.rows)) return;
+      const recoveryAt = Date.parse(snapshot.updatedAt || "") || 0;
+      if (recoveryAt <= persistedTableStateSavedAt && recovered.sourceName === state.sourceName) return;
       state = { ...defaultState(), ...recovered };
       selectedBlockIds.clear();
       selectedBlockGridId = "";
       renderAll();
+      ssShowToast(`Restored ${recovered.rows.length} ER rows from ${recovered.sourceName || "the latest import"}.`);
     } catch (error) {
       console.warn("ER recovery copy could not be read.", error);
     } finally { erRecoveryPending = false; }
@@ -7942,11 +7946,29 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     blockContextBlockId = "";
   }
   function positionBlockContextMenu(menu, event) {
+    // The Excel iframe grows taller than the visible workbook viewport.
+    // Keep the menu inside the portion of that iframe the user can actually see.
+    let visibleLeft = 0;
+    let visibleTop = 0;
+    let visibleRight = window.innerWidth;
+    let visibleBottom = window.innerHeight;
+    try {
+      const frameRect = window.frameElement && window.frameElement.getBoundingClientRect();
+      if (frameRect && window.parent !== window) {
+        visibleLeft = Math.max(0, -frameRect.left);
+        visibleTop = Math.max(0, -frameRect.top);
+        visibleRight = Math.min(visibleRight, window.parent.innerWidth - frameRect.left);
+        visibleBottom = Math.min(visibleBottom, window.parent.innerHeight - frameRect.top);
+      }
+    } catch (_) {}
+    menu.style.maxHeight = `${Math.max(80, visibleBottom - visibleTop - 12)}px`;
+    menu.style.overflowY = "auto";
+    menu.style.overscrollBehavior = "contain";
     const rect = menu.getBoundingClientRect();
     const menuWidth = rect.width || 180;
     const menuHeight = rect.height || 96;
-    menu.style.left = `${Math.max(6, Math.min(window.innerWidth - menuWidth - 6, event.clientX))}px`;
-    menu.style.top = `${Math.max(6, Math.min(window.innerHeight - menuHeight - 6, event.clientY))}px`;
+    menu.style.left = `${Math.max(visibleLeft + 6, Math.min(visibleRight - menuWidth - 6, event.clientX))}px`;
+    menu.style.top = `${Math.max(visibleTop + 6, Math.min(visibleBottom - menuHeight - 6, event.clientY))}px`;
   }
   function openBlockContextMenu(event) {
     const grid = event.currentTarget;

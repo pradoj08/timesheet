@@ -26737,5 +26737,139 @@ body #forecastExcelView .forecast-excel-block.request .forecast-excel-table tbod
   border-bottom: 1px solid #334155 !important;
 }
 </style>
+<style id="chassis-day-date-editor-v1-styles">
+#forecastDateToolbar{display:flex;align-items:center;gap:8px;margin:0 0 10px}
+#forecastDateToolbar button,#forecastStatusCards .forecast-day-edit{border:1px solid #64748b;border-radius:6px;background:#253247;color:#f8fafc;padding:5px 9px;font:800 11px/1.2 Arial,sans-serif;cursor:pointer}
+#forecastDateToolbar button:hover,#forecastStatusCards .forecast-day-edit:hover{background:#334766}
+#forecastDateToolbar input,#forecastStatusCards .forecast-day-date-input{width:145px;max-width:100%;border:1px solid #64748b;border-radius:6px;background:#f8fafc;color:#172033;padding:4px 6px;font:700 12px Arial,sans-serif}
+#forecastDateToolbar [hidden],#forecastStatusCards [hidden]{display:none!important}
+#forecastStatusCards .forecast-day-divider>div:first-child{display:flex;align-items:center;gap:8px;min-width:0}
+#forecastStatusCards .forecast-day-edit{flex:none;padding:3px 6px;font-size:10px}
+#forecastStatusCards .forecast-day-section.forecast-manual-empty .forecast-status-cards-grid{min-height:45px;display:flex;align-items:center;color:#94a3b8;font:700 11px Arial,sans-serif}
+</style>
+<script id="chassis-day-date-editor-v1">
+(function(){
+  const key="conglobal-chassis-manual-forecast-days-v1";
+  function readDays(){try{return [...new Set((JSON.parse(localStorage.getItem(key)||"[]")||[]).filter(day=>/^\d{4}-\d{2}-\d{2}$/.test(day)))];}catch(_){return [];}}
+  function writeDays(days){localStorage.setItem(key,JSON.stringify([...new Set(days)].sort()));}
+  function dateFromInput(value){
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(value))return null;
+    const [year,month,day]=value.split("-").map(Number);
+    const date=new Date(year,month-1,day);
+    return date.getFullYear()===year&&date.getMonth()===month-1&&date.getDate()===day?date:null;
+  }
+  const originalDate=forecastDateFromEtaDay;
+  forecastDateFromEtaDay=function(day){return dateFromInput(String(day||""))||originalDate(day);};
+  const originalAvailableDays=getForecastAvailableDays;
+  getForecastAvailableDays=function(){
+    return [...new Set([...originalAvailableDays(),...readDays()])].sort((a,b)=>forecastDaySortValue(a)-forecastDaySortValue(b)||String(a).localeCompare(String(b)));
+  };
+  updateForecastTrainDay=function(train,oldDay,dateValue){if(dateFromInput(dateValue))moveForecastTrainToDay(train,oldDay,dateValue);};
+  const originalArchiveSnapshot=getForecastRuntimeState;
+  getForecastRuntimeState=function(){return {...originalArchiveSnapshot(),manualDays:readDays()};};
+  const originalArchiveRestore=applyForecastRuntimeState;
+  applyForecastRuntimeState=function(state){
+    if(Array.isArray(state&&state.manualDays))writeDays(state.manualDays.filter(day=>dateFromInput(day)));
+    return originalArchiveRestore(state);
+  };
+  function refreshDates(){updateForecastDayFilterOptions();renderForecastStatusCards();}
+  function changeDay(oldDay,newDay){
+    if(!dateFromInput(newDay)||oldDay===newDay)return;
+    const oldGroups=buildForecastTrainSummaryForUnits(forecastImportedUnits).filter(group=>String(group.day)===oldDay);
+    forecastImportedUnits=forecastImportedUnits.map(unit=>getForecastUnitDay(unit)===oldDay?{...unit,etaDay:newDay}:unit);
+    const days=readDays().filter(day=>day!==oldDay);
+    if(!days.includes(newDay))days.push(newDay);
+    writeDays(days);
+    if(forecastSelectedDays.size){forecastSelectedDays.delete(oldDay);forecastSelectedDays.add(newDay);}
+    oldGroups.forEach(group=>{
+      const oldKey=getForecastTrainDayKey(group.train,oldDay);
+      if(forecastHiddenTrainDays.has(oldKey)){
+        forecastHiddenTrainDays.delete(oldKey);
+        forecastHiddenTrainDays.add(getForecastTrainDayKey(group.train,newDay));
+      }
+    });
+    const order=readForecastDayTrainOrder();
+    if(Array.isArray(order[oldDay])){
+      order[newDay]=[...(order[newDay]||[]),...order[oldDay]].filter((train,index,list)=>list.indexOf(train)===index);
+      delete order[oldDay];
+      writeForecastDayTrainOrder(order);
+    }
+    saveForecastState();
+    renderForecastImportedUnits();
+    if(typeof renderForecastExcelView==="function")renderForecastExcelView();
+  }
+  const originalRender=renderForecastStatusCards;
+  renderForecastStatusCards=function(...args){
+    originalRender(...args);
+    const box=document.getElementById("forecastStatusCards");
+    if(!box)return;
+    const selected=getForecastSelectedDayFilter();
+    readDays().forEach(day=>{
+      if([...box.querySelectorAll(".forecast-day-section")].some(section=>section.dataset.forecastDropDay===day))return;
+      const section=document.createElement("section");
+      section.className="forecast-day-section forecast-manual-empty";
+      section.dataset.forecastDropDay=day;
+      section.innerHTML='<div class="forecast-day-divider"><div><strong></strong></div><div class="forecast-day-unit-total"><span>Total Units</span><strong>0</strong></div></div><div class="forecast-status-cards-grid">No trains on this date yet.</div>';
+      section.querySelector(".forecast-day-divider strong").textContent=getForecastEtaDayDetail(day);
+      section.style.display=selected==="all"||selected.includes(day)?"":"none";
+      section.addEventListener("dragover",event=>{
+        event.preventDefault();
+        event.dataTransfer.dropEffect="move";
+        section.classList.add("forecast-inbound-drop-target");
+      });
+      section.addEventListener("dragleave",event=>{
+        if(!section.contains(event.relatedTarget))section.classList.remove("forecast-inbound-drop-target");
+      });
+      section.addEventListener("drop",event=>{
+        event.preventDefault();
+        section.classList.remove("forecast-inbound-drop-target");
+        let payload=null;
+        try{payload=JSON.parse(event.dataTransfer.getData("application/json"));}catch(_){}
+        if(!payload){
+          const [train,fromDay]=String(event.dataTransfer.getData("text/plain")||"").split("|");
+          payload={train,day:fromDay};
+        }
+        moveForecastTrainToDay(payload.train,payload.day,day);
+      });
+      box.appendChild(section);
+    });
+    if(readDays().length)box.querySelector(".forecast-status-empty")?.remove();
+    [...box.querySelectorAll(".forecast-day-section")].sort((a,b)=>forecastDaySortValue(a.dataset.forecastDropDay)-forecastDaySortValue(b.dataset.forecastDropDay)).forEach(section=>box.appendChild(section));
+    box.querySelectorAll(".forecast-day-section").forEach(section=>{
+      const head=section.querySelector(".forecast-day-divider>div:first-child");
+      if(!head||head.querySelector(".forecast-day-edit"))return;
+      const button=document.createElement("button");
+      button.type="button";button.className="forecast-day-edit";button.textContent="Edit";
+      button.setAttribute("aria-label","Change date "+section.querySelector("strong")?.textContent);
+      const input=document.createElement("input");
+      input.type="date";input.className="forecast-day-date-input";input.hidden=true;
+      input.value=forecastDateInputValueFromEtaDay(section.dataset.forecastDropDay);
+      button.onclick=()=>{input.hidden=false;button.hidden=true;input.focus();try{input.showPicker?.();}catch(_){}};
+      input.onchange=()=>{if(input.value)changeDay(section.dataset.forecastDropDay,input.value);};
+      input.onkeydown=event=>{if(event.key==="Escape"){input.hidden=true;button.hidden=false;}};
+      head.append(button,input);
+    });
+  };
+  const box=document.getElementById("forecastStatusCards");
+  if(box){
+    const toolbar=document.createElement("div");toolbar.id="forecastDateToolbar";
+    toolbar.innerHTML='<button type="button" id="forecastAddDateBtn">+ Add Date</button><input type="date" id="forecastAddDateInput" aria-label="New forecast date" hidden>';
+    box.before(toolbar);
+    const button=toolbar.querySelector("button"),input=toolbar.querySelector("input");
+    button.onclick=()=>{input.hidden=false;input.focus();try{input.showPicker?.();}catch(_){}};
+    input.onchange=()=>{
+      if(!dateFromInput(input.value))return;
+      const days=readDays();
+      if(!days.includes(input.value))days.push(input.value);
+      writeDays(days);
+      if(forecastSelectedDays.size)forecastSelectedDays.add(input.value);
+      input.hidden=true;input.value="";
+      saveForecastState();refreshDates();
+    };
+    input.onkeydown=event=>{if(event.key==="Escape"){input.hidden=true;input.value="";}};
+  }
+  refreshDates();
+})();
+</script>
 </body>
 </html>
