@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta data-excel-block-split-context-v1 content="all-tables">
 <title>Settegast Forecastor</title>
 <style>
   :root {
@@ -4584,6 +4585,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   let excelViewApplyingUndo = false;
   let lastCommittedExcelViewState = JSON.stringify(state);
   let splitBlockTargetId = "";
+  let splitBlockTargetGridId = "";
   let inboundArchiveSort = "newest";
   let inboundArchiveFilter = "all";
   let inboundArchivePreviewId = "";
@@ -7452,12 +7454,44 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   }
 
   function splitBlockGroupLabel(group) {
-    const display = stripBlockTrackIds(group && (group.display || group.baseDisplay) || "");
+    const display = stripBlockTrackIds(group && (group.display || group.baseDisplay || group.title || textFromCellHtml(`<div>${group.content || ""}</div>`)) || "");
     return display.replace(/^\s*\d[\d,]*(?:\.\d+)?\s+/, "").trim() || "Yard block";
   }
 
+  function splitBlockTarget() {
+    if (!splitBlockTargetId || !splitBlockTargetGridId) return null;
+    if (splitBlockTargetGridId === "yardGrid") {
+      const group = computed && computed.groups.find(item => item.blockId === splitBlockTargetId);
+      return group ? { gridId:splitBlockTargetGridId, group } : null;
+    }
+    const model = state[secondaryGridStateKey(splitBlockTargetGridId)];
+    if (!validSecondaryModel(model)) return null;
+    for (const track of TRACKS) {
+      const blocks = Array.isArray(model.tracks[track]) ? model.tracks[track] : [];
+      const index = blocks.findIndex(block => String(block && block.id) === splitBlockTargetId);
+      if (index >= 0) return { gridId:splitBlockTargetGridId, model, track, index, group:blocks[index] };
+    }
+    return null;
+  }
+
+  function splitBlockFootage(gridId, blockId) {
+    if (gridId === "yardGrid") {
+      const group = computed && computed.groups.find(item => item.blockId === blockId);
+      return group ? Number(group.footage) || 0 : 0;
+    }
+    const model = state[secondaryGridStateKey(gridId)];
+    if (!validSecondaryModel(model)) return 0;
+    for (const track of TRACKS) {
+      const block = (Array.isArray(model.tracks[track]) ? model.tracks[track] : [])
+        .find(item => String(item && item.id) === String(blockId));
+      if (block) return Number(block.footage) || 0;
+    }
+    return 0;
+  }
+
   function updateSplitBlockValues() {
-    const group = computed && computed.groups.find(item => item.blockId === splitBlockTargetId);
+    const target = splitBlockTarget();
+    const group = target && target.group;
     if (!group) return;
     const total = Math.max(0, Number(group.footage) || 0);
     const first = Math.max(1, Math.min(Math.floor(total) - 1, Number($("#splitBlockRange").value) || 1));
@@ -7465,12 +7499,13 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     $("#splitBlockSecond").textContent = fmtInt(total - first);
   }
 
-  function openSplitBlockModal(blockId) {
-    if (!blockReorderingAvailable() || !computed) return;
-    const group = computed.groups.find(item => item.blockId === blockId);
-    const total = group ? Number(group.footage) || 0 : 0;
-    if (!group || total < 2) return;
+  function openSplitBlockModal(gridId, blockId) {
+    splitBlockTargetGridId = gridId;
     splitBlockTargetId = blockId;
+    const target = splitBlockTarget();
+    const group = target && target.group;
+    const total = group ? Number(group.footage) || 0 : 0;
+    if (!group || total < 2) { splitBlockTargetGridId = "";splitBlockTargetId = "";return; }
     const first = Math.max(1, Math.floor(total / 2));
     const range = $("#splitBlockRange");
     range.min = "1";
@@ -7488,6 +7523,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
 
   function closeSplitBlockModal() {
     splitBlockTargetId = "";
+    splitBlockTargetGridId = "";
     const modal = $("#splitBlockModal");
     modal.classList.remove("open");
     modal.hidden = true;
@@ -7543,10 +7579,49 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     return true;
   }
 
+  function splitSecondaryBlock(target, firstFootage) {
+    if (!target || !target.model || !target.group) return false;
+    const original = target.group;
+    const total = Number(original.footage) || 0;
+    const first = Math.max(1, Math.min(Math.floor(total) - 1, Number(firstFootage) || 1));
+    if (total < 2 || first >= total) return false;
+    const second = total - first;
+    const stamp = `manual-secondary-split-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const replaceFootage = (value, footage) => String(value || "").replace(/\d[\d,]*(?:\.\d+)?/, fmtInt(footage));
+    const splitRows = (Array.isArray(original.sourceRows) ? original.sourceRows : []).reduce((parts, source) => {
+      const row = Array.isArray(source) ? source.slice() : [];
+      const footage = Math.max(0, Number(row[4]) || 0);
+      if (parts.remaining > 0 && footage > parts.remaining) {
+        const firstRow = row.slice(),secondRow = row.slice();
+        firstRow[4] = parts.remaining;secondRow[4] = footage - parts.remaining;
+        parts.firstRows.push(firstRow);parts.secondRows.push(secondRow);parts.remaining = 0;
+      } else if (parts.remaining > 0) {
+        parts.firstRows.push(row);parts.remaining = Math.max(0, parts.remaining - footage);
+      } else parts.secondRows.push(row);
+      return parts;
+    }, { firstRows:[],secondRows:[],remaining:first });
+    const firstBlock = normalizeSecondaryBlock({
+      ...original,id:`${stamp}-1`,footage:first,
+      content:replaceFootage(original.content, first),title:replaceFootage(original.title, first),
+      sourceRows:splitRows.firstRows
+    }, target.track);
+    const secondBlock = normalizeSecondaryBlock({
+      ...original,id:`${stamp}-2`,footage:second,
+      content:replaceFootage(original.content, second),title:replaceFootage(original.title, second),
+      sourceRows:splitRows.secondRows
+    }, target.track);
+    target.model.tracks[target.track].splice(target.index, 1, firstBlock, secondBlock);
+    return true;
+  }
+
   function confirmSplitBlock() {
-    const group = computed && computed.groups.find(item => item.blockId === splitBlockTargetId);
+    const target = splitBlockTarget();
+    const group = target && target.group;
     const firstFootage = Number($("#splitBlockRange").value);
-    if (!group || !splitComputedBlock(group, firstFootage)) return;
+    const changed = target && target.gridId === "yardGrid"
+      ? splitComputedBlock(group, firstFootage)
+      : splitSecondaryBlock(target, firstFootage);
+    if (!group || !changed) return;
     closeSplitBlockModal();
     selectedBlockIds.clear();
     selectedBlockGridId = "";
@@ -7906,7 +7981,6 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     }
     const grid = event.currentTarget;
     const gridId = grid.id;
-    if (gridId === "yardGrid" && !blockReorderingAvailable()) return;
     const block = event.target.closest(".cut-cell[data-block-id]");
     if (block) {
       event.preventDefault();
@@ -7924,7 +7998,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         return;
       }
       if (selectedBlockIds.size === 1 && selectedBlockIds.has(id)) {
-        if (gridId === "yardGrid") openSplitBlockModal(id);
+        if (gridId) openSplitBlockModal(gridId, id);
         return;
       }
       selectedBlockIds.clear();
@@ -7972,7 +8046,6 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   }
   function openBlockContextMenu(event) {
     const grid = event.currentTarget;
-    if (grid.id === "yardGrid" && !blockReorderingAvailable()) return;
     const summaryZone = event.target.closest("[data-summary-paste-zone]");
     if (summaryZone && summaryZone.closest(".yard-grid") === grid) {
       event.preventDefault();
@@ -8056,10 +8129,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     if (clearButton) clearButton.hidden = true;
     const splitButton = $("#splitSelectedBlockBtn");
     if (splitButton) {
-      const group = grid.id === "yardGrid" && computed
-        ? computed.groups.find(candidate => candidate.blockId === id)
-        : null;
-      splitButton.hidden = !group || Math.round(Number(group.footage) || 0) < 2;
+      splitButton.hidden = Math.round(splitBlockFootage(grid.id, id)) < 2;
     }
     $("#consolidateSelectedToIhosa").hidden = !selectedBlockIds.size;
     $("#consolidateSelectedToMhoas").hidden = !selectedBlockIds.size;
@@ -9476,7 +9546,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     const blockId = blockContextBlockId;
     const gridId = blockContextGridId;
     hideBlockContextMenu();
-    if (gridId === "yardGrid" && blockId) openSplitBlockModal(blockId);
+    if (gridId && blockId) openSplitBlockModal(gridId, blockId);
   });
   $("#deleteSelectedBlocks").addEventListener("click", deleteSelectedBlocks);
   $("#consolidateSelectedToIhosa").addEventListener("click", () => consolidateSelectedBlocks("IHOSA"));
@@ -9487,12 +9557,13 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   $("#rawTrackModal").addEventListener("click", event => {
     if (event.target === $("#rawTrackModal")) closeRawTrackModal();
   });
-  $("#yardGrid").addEventListener("dblclick", event => {
-    const block = event.target.closest("#yardGrid .cut-cell[data-block-id]");
-    if (!block || !blockReorderingAvailable()) return;
+  ["yardGrid", "blankYardGrid", "blankYardGridTwo"].forEach(id => document.getElementById(id)?.addEventListener("dblclick", event => {
+    const grid = event.currentTarget;
+    const block = event.target.closest(".cut-cell[data-block-id]");
+    if (!block) return;
     event.preventDefault();
-    openSplitBlockModal(block.dataset.blockId);
-  });
+    openSplitBlockModal(grid.id, block.dataset.blockId);
+  }));
   $("#splitBlockRange").addEventListener("input", updateSplitBlockValues);
   $("#closeSplitBlock").addEventListener("click", closeSplitBlockModal);
   $("#cancelSplitBlock").addEventListener("click", closeSplitBlockModal);
