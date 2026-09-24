@@ -2426,6 +2426,32 @@
   .block-context-menu .paste-menu-action:hover { background: #16a34a; }
   .block-context-menu button:disabled { opacity: .45; cursor: default; }
   .block-context-menu .danger-menu-action { border-color: #ef4444; background: #7f1d1d; }
+  /* Semantic context-menu palette: action type and destination stay visually distinct. */
+  .block-context-menu { width: 220px; gap: 3px; padding: 5px; border-color: #475569; }
+  .block-context-menu button { min-height: 31px; border-color: transparent; font-size: 11px; }
+  #viewRawBlock { background: #075985; border-color: #38bdf8; }
+  #copySelectedBlocksBtn { background: #1d4ed8; border-color: #60a5fa; }
+  #pasteCopiedBlocksBtn { background: #15803d; border-color: #4ade80; }
+  #splitSelectedBlockBtn { margin-top: 4px; background: #b45309; border-color: #fbbf24; color: #fff7d6; }
+  #consolidateSelectedToIhosa { margin-top: 4px; background: #166534; border-color: #4ade80; }
+  #consolidateSelectedToMhoas { background: #5b21b6; border-color: #a78bfa; }
+  #consolidateSelectedToSs { background: #334155; border-color: #94a3b8; }
+  #consolidateSelectedToPierce { background: #9d174d; border-color: #f472b6; }
+  #assignSelectedToIhosa { margin-top: 4px; background: #dcfce7; border-color: #4ade80; color: #14532d; }
+  #assignSelectedToMhoas { background: #ede9fe; border-color: #a78bfa; color: #4c1d95; }
+  #assignSelectedToPierce { background: #fce7f3; border-color: #f472b6; color: #9d174d; }
+  #clearSelectedAssignment, #clearFinalZoneBtn { margin-top: 4px; background: #e2e8f0; border-color: #94a3b8; color: #334155; }
+  #deleteSelectedBlocks { margin-top: 4px; background: #991b1b; border-color: #f87171; color: #fff; }
+  #splitSelectedBlockBtn:hover { background: #d97706; }
+  #consolidateSelectedToIhosa:hover { background: #15803d; }
+  #consolidateSelectedToMhoas:hover { background: #6d28d9; }
+  #consolidateSelectedToSs:hover { background: #475569; }
+  #consolidateSelectedToPierce:hover { background: #be185d; }
+  #assignSelectedToIhosa:hover { background: #bbf7d0; }
+  #assignSelectedToMhoas:hover { background: #ddd6fe; }
+  #assignSelectedToPierce:hover { background: #fbcfe8; }
+  #clearSelectedAssignment:hover, #clearFinalZoneBtn:hover { background: #cbd5e1; }
+  #deleteSelectedBlocks:hover { background: #b91c1c; }
   .raw-track-backdrop {
     place-items: start center;
     padding-top: clamp(34px, 6vh, 74px);
@@ -7461,7 +7487,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   function splitBlockTarget() {
     if (!splitBlockTargetId || !splitBlockTargetGridId) return null;
     if (splitBlockTargetGridId === "yardGrid") {
-      const group = computed && computed.groups.find(item => item.blockId === splitBlockTargetId);
+      const group = computed && computed.groups.find(item => String(item.blockId) === String(splitBlockTargetId));
       return group ? { gridId:splitBlockTargetGridId, group } : null;
     }
     const model = state[secondaryGridStateKey(splitBlockTargetGridId)];
@@ -7504,14 +7530,19 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     splitBlockTargetId = blockId;
     const target = splitBlockTarget();
     const group = target && target.group;
-    const total = group ? Number(group.footage) || 0 : 0;
-    if (!group || total < 2) { splitBlockTargetGridId = "";splitBlockTargetId = "";return; }
+    const grid = document.getElementById(gridId);
+    const cell = grid && Array.from(grid.querySelectorAll(".cut-cell[data-block-id]"))
+      .find(item => String(item.dataset.blockId) === String(blockId));
+    const total = Number(group && group.footage) || Number(cell && cell.dataset.footage) || 0;
+    if (total < 2) { splitBlockTargetGridId = "";splitBlockTargetId = "";return; }
     const first = Math.max(1, Math.floor(total / 2));
     const range = $("#splitBlockRange");
     range.min = "1";
     range.max = String(Math.max(1, Math.floor(total) - 1));
     range.value = String(Math.min(first, Number(range.max)));
-    $("#splitBlockLabel").textContent = splitBlockGroupLabel(group);
+    $("#splitBlockLabel").textContent = group
+      ? splitBlockGroupLabel(group)
+      : stripBlockTrackIds(cell && cell.textContent || "Yard block").trim();
     $("#splitBlockTotal").textContent = fmtInt(total);
     updateSplitBlockValues();
     const modal = $("#splitBlockModal");
@@ -9548,6 +9579,16 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     hideBlockContextMenu();
     if (gridId && blockId) openSplitBlockModal(gridId, blockId);
   });
+  // Own the Split action before other menu handlers can clear its target.
+  document.addEventListener("click", event => {
+    if (!event.target.closest("#splitSelectedBlockBtn")) return;
+    const blockId = blockContextBlockId;
+    const gridId = blockContextGridId;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    hideBlockContextMenu();
+    if (gridId && blockId) openSplitBlockModal(gridId, blockId);
+  }, true);
   $("#deleteSelectedBlocks").addEventListener("click", deleteSelectedBlocks);
   $("#consolidateSelectedToIhosa").addEventListener("click", () => consolidateSelectedBlocks("IHOSA"));
   $("#consolidateSelectedToMhoas").addEventListener("click", () => consolidateSelectedBlocks("MHOAS"));
