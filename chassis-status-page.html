@@ -26760,9 +26760,42 @@ body #forecastExcelView .forecast-excel-block.request .forecast-excel-table tbod
   }
   const originalDate=forecastDateFromEtaDay;
   forecastDateFromEtaDay=function(day){return dateFromInput(String(day||""))||originalDate(day);};
+  function canonicalDay(day){
+    const raw=String(day||"").trim();
+    if(!/\d/.test(raw)||/no\s*eta/i.test(raw))return raw;
+    const date=forecastDateFromEtaDay(raw);
+    return date?`${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,"0")}-${String(date.getDate()).padStart(2,"0")}`:raw;
+  }
+  function normalizeStoredDays(){
+    let changed=false;
+    forecastImportedUnits=forecastImportedUnits.map(unit=>{
+      const current=getForecastUnitDay(unit),normalized=canonicalDay(current);
+      if(!normalized||normalized===current)return unit;
+      changed=true;
+      return {...unit,etaDay:normalized};
+    });
+    if(forecastSelectedDays instanceof Set){
+      const normalized=new Set([...forecastSelectedDays].map(canonicalDay).filter(Boolean));
+      if([...normalized].join("|")!==[...forecastSelectedDays].join("|")){forecastSelectedDays=normalized;changed=true;}
+    }
+    if(forecastHiddenTrainDays instanceof Set){
+      const normalized=new Set([...forecastHiddenTrainDays].map(value=>{
+        const split=String(value).lastIndexOf("||");
+        return split<0?value:String(value).slice(0,split+2)+canonicalDay(String(value).slice(split+2));
+      }));
+      if([...normalized].join("|")!==[...forecastHiddenTrainDays].join("|")){forecastHiddenTrainDays=normalized;changed=true;}
+    }
+    const order=readForecastDayTrainOrder(),normalizedOrder={};
+    Object.entries(order).forEach(([day,trains])=>{
+      const normalized=canonicalDay(day);
+      normalizedOrder[normalized]=[...(normalizedOrder[normalized]||[]),...(Array.isArray(trains)?trains:[])].filter((train,index,list)=>list.indexOf(train)===index);
+    });
+    if(JSON.stringify(order)!==JSON.stringify(normalizedOrder)){writeForecastDayTrainOrder(normalizedOrder);changed=true;}
+    if(changed)saveForecastState();
+  }
   const originalAvailableDays=getForecastAvailableDays;
   getForecastAvailableDays=function(){
-    return [...new Set([...originalAvailableDays(),...readDays()])].sort((a,b)=>forecastDaySortValue(a)-forecastDaySortValue(b)||String(a).localeCompare(String(b)));
+    return [...new Set([...originalAvailableDays(),...readDays()].map(canonicalDay).filter(Boolean))].sort((a,b)=>forecastDaySortValue(a)-forecastDaySortValue(b)||String(a).localeCompare(String(b)));
   };
   updateForecastTrainDay=function(train,oldDay,dateValue){if(dateFromInput(dateValue))moveForecastTrainToDay(train,oldDay,dateValue);};
   const originalArchiveSnapshot=getForecastRuntimeState;
@@ -26800,12 +26833,13 @@ body #forecastExcelView .forecast-excel-block.request .forecast-excel-table tbod
   }
   const originalRender=renderForecastStatusCards;
   renderForecastStatusCards=function(...args){
+    normalizeStoredDays();
     originalRender(...args);
     const box=document.getElementById("forecastStatusCards");
     if(!box)return;
     const selected=getForecastSelectedDayFilter();
     readDays().forEach(day=>{
-      if([...box.querySelectorAll(".forecast-day-section")].some(section=>section.dataset.forecastDropDay===day))return;
+      if([...box.querySelectorAll(".forecast-day-section")].some(section=>canonicalDay(section.dataset.forecastDropDay)===canonicalDay(day)))return;
       const section=document.createElement("section");
       section.className="forecast-day-section forecast-manual-empty";
       section.dataset.forecastDropDay=day;
@@ -26868,6 +26902,7 @@ body #forecastExcelView .forecast-excel-block.request .forecast-excel-table tbod
     };
     input.onkeydown=event=>{if(event.key==="Escape"){input.hidden=true;input.value="";}};
   }
+  normalizeStoredDays();
   refreshDates();
 })();
 </script>
