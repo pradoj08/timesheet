@@ -1467,6 +1467,28 @@
   }
   .split-block-close:hover { background: #91343d; }
   .split-block-body { padding: 18px; }
+  .track-import-backdrop { z-index: 2450; place-items: start center; padding-top: 42px; background: rgba(4,10,22,.82); }
+  .track-import-dialog { width: min(980px, calc(100vw - 24px)); max-height: calc(100vh - 70px); overflow: auto; border: 1px solid #3b82f6; border-radius: 14px; background: #071226; color: #e8f0ff; box-shadow: 0 30px 90px rgba(0,0,0,.62); }
+  .track-import-head { position: sticky; top: 0; z-index: 2; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:13px 16px; border-bottom:1px solid #31537d; background:#10213d; }
+  .track-import-head h3 { margin:0; color:#93c5fd; font-size:15px; letter-spacing:.08em; text-transform:uppercase; }
+  .track-import-close { width:32px; height:32px; border:1px solid #f87171; border-radius:50%; background:#7f1d1d; color:#fff; font-size:19px; }
+  .track-import-body { display:grid; gap:12px; padding:15px; }
+  .track-import-note { color:#b9c9df; font-size:11px; line-height:1.45; }
+  .track-import-paste { width:100%; min-height:190px; resize:vertical; padding:10px; border:1px solid #426286; border-radius:8px; background:#020817; color:#e5eefc; font:700 12px/1.35 Consolas,monospace; }
+  .track-import-toolbar,.track-import-actions { display:flex; align-items:center; justify-content:flex-end; gap:8px; flex-wrap:wrap; }
+  .track-import-btn { min-height:33px; padding:7px 12px; border:1px solid #64748b; border-radius:7px; background:#e2e8f0; color:#172033; font-weight:900; }
+  .track-import-btn.parse { border-color:#60a5fa; background:#1d4ed8; color:#fff; }
+  .track-import-btn.confirm { border-color:#4ade80; background:#15803d; color:#fff; }
+  .track-import-btn:disabled { opacity:.45; cursor:default; }
+  .track-import-status { flex:1; color:#bfdbfe; font-size:11px; font-weight:800; }
+  .track-import-preview { display:grid; gap:7px; }
+  .track-import-preview.empty { min-height:68px; place-items:center; border:1px dashed #3b526f; border-radius:8px; color:#7f95b2; }
+  .track-import-row { display:grid; grid-template-columns:42px minmax(170px,1fr) 120px 92px 100px; gap:7px; align-items:center; padding:8px; border:1px solid #2f4869; border-radius:8px; background:#0c1a30; }
+  .track-import-row input { width:100%; min-width:0; height:31px; padding:5px 8px; border:1px solid #57759b; border-radius:6px; background:#f8fafc; color:#172033; font-weight:850; }
+  .track-import-row .seq { color:#93c5fd; font-weight:950; text-align:center; }
+  .track-import-row .meta { color:#cbd5e1; font-size:10px; font-weight:800; text-align:center; }
+  .track-label[data-track] { cursor:pointer; }
+  .track-label[data-track]:hover { background:#dbeafe; color:#1d4ed8; box-shadow:inset 0 0 0 2px #60a5fa; }
   .split-block-summary {
     min-height: 42px; padding: 9px 13px; display: flex; align-items: center;
     justify-content: space-between; gap: 14px; border: 1px solid #35445f;
@@ -4224,6 +4246,19 @@
   </section>
 </div>
 
+<div class="modal-backdrop track-import-backdrop" id="trackImportModal" role="dialog" aria-modal="true" aria-labelledby="trackImportTitle" hidden>
+  <section class="track-import-dialog">
+    <header class="track-import-head"><h3 id="trackImportTitle">Import Cars to Track</h3><button class="track-import-close" id="closeTrackImport" type="button" aria-label="Close">&times;</button></header>
+    <div class="track-import-body">
+      <div class="track-import-note">Paste the UP car table. Adjacent cars with the same Train ID become one block. Review and edit each block name and footage before replacing the selected track.</div>
+      <textarea class="track-import-paste" id="trackImportPaste" placeholder="Paste car sequence table here..."></textarea>
+      <div class="track-import-toolbar"><span class="track-import-status" id="trackImportStatus">Waiting for pasted data.</span><button class="track-import-btn" id="readTrackClipboard" type="button">Paste Clipboard</button><button class="track-import-btn parse" id="parseTrackImport" type="button">Parse &amp; Preview</button></div>
+      <div class="track-import-preview empty" id="trackImportPreview">No blocks parsed yet.</div>
+      <div class="track-import-actions"><button class="track-import-btn" id="cancelTrackImport" type="button">Cancel</button><button class="track-import-btn confirm" id="confirmTrackImport" type="button" disabled>Replace Track with Preview</button></div>
+    </div>
+  </section>
+</div>
+
 <div class="inbound-train-backdrop" id="inboundTrainModal" role="dialog" aria-modal="true" aria-labelledby="inboundTrainTitle" hidden>
   <section class="inbound-train-dialog">
     <header class="inbound-train-head">
@@ -4612,6 +4647,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   let lastCommittedExcelViewState = JSON.stringify(state);
   let splitBlockTargetId = "";
   let splitBlockTargetGridId = "";
+  let trackImportTarget = 0;
+  let trackImportBlocks = [];
   let inboundArchiveSort = "newest";
   let inboundArchiveFilter = "all";
   let inboundArchivePreviewId = "";
@@ -7659,6 +7696,95 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     renderAll();
   }
 
+  function trackImportCells(line) {
+    const trimmed = String(line || "").trim();
+    if (!trimmed) return [];
+    if (trimmed.includes("|")) return trimmed.split("|").map(clean).filter(Boolean);
+    if (trimmed.includes("\t")) return trimmed.split("\t").map(clean);
+    return [];
+  }
+
+  function parseTrackImportText(text) {
+    const lines = String(text || "").replace(/\r/g, "").split("\n").filter(line => line.trim());
+    let header = null;
+    const cars = [];
+    for (const line of lines) {
+      const cells = trackImportCells(line);
+      if (!cells.length) continue;
+      const normalized = cells.map(value => value.toLowerCase().replace(/[^a-z0-9]+/g, ""));
+      if (normalized.some(value => value.includes("equipmentid")) && normalized.some(value => value.includes("trainid"))) {
+        header = cells.length >= 11 ? normalized : null;
+        continue;
+      }
+      if (/^-+$/.test(cells.join(""))) continue;
+      let seq,equipment,platform,aar,carKind,length,totalLength,weight,totalWeight,trainId,yardBlock;
+      if (header) {
+        const find = (...names) => { const i=header.findIndex(value => names.some(name => value === name || value.includes(name)));return i >= 0 ? cells[i] : ""; };
+        seq=find("carseq");equipment=find("equipmentid");platform=find("platformwellcount");aar=find("aarkind");carKind=find("carkind");length=find("lengthft");totalLength=find("totallengthft");weight=find("weighttons");totalWeight=find("totalweighttons");trainId=find("trainid");yardBlock=find("yardblock");
+      } else if (cells.length >= 11 && /^\d+$/.test(cells[0])) {
+        [seq,equipment,platform,aar,carKind,length,totalLength,weight,totalWeight,trainId,yardBlock] = cells;
+      } else {
+        const match=line.trim().match(/^(\d+)\s+([A-Z]{2,5}\s+\d+)\s+(\d+)\s+(\S+)\s+(\S+)\s+(\d+)\s+(\d+)\s+([\d.]+)\s+([\d.]+)\s+(.+?)\s+([A-Z]{2,6})(?:\s+.*)?$/i);
+        if (!match) continue;
+        [,seq,equipment,platform,aar,carKind,length,totalLength,weight,totalWeight,trainId,yardBlock]=match;
+      }
+      const footage=Number(String(length||"").replace(/,/g,""));
+      if (!/^\d+$/.test(String(seq||"")) || !equipment || !Number.isFinite(footage) || footage <= 0 || !trainId) continue;
+      cars.push({seq:Number(seq),equipment:clean(equipment),platform:clean(platform),aar:clean(aar),carKind:clean(carKind),length:footage,totalLength:Number(totalLength)||0,weight:Number(weight)||0,totalWeight:Number(totalWeight)||0,trainId:clean(trainId),yardBlock:clean(yardBlock)});
+    }
+    if (!cars.length) {
+      const tokens=lines.map(value=>clean(value.replace(/^\|?|\|?$/g,"").replace(/\*\*/g,""))).filter(Boolean);
+      for (let i=0;i+10<tokens.length;i++) {
+        if (!/^\d+$/.test(tokens[i]) || !/^[A-Z]{2,5}\s+\d+$/i.test(tokens[i+1])) continue;
+        const footage=Number(tokens[i+5].replace(/,/g,""));
+        if (!Number.isFinite(footage) || footage<=0) continue;
+        cars.push({seq:Number(tokens[i]),equipment:tokens[i+1],platform:tokens[i+2],aar:tokens[i+3],carKind:tokens[i+4],length:footage,totalLength:Number(tokens[i+6])||0,weight:Number(tokens[i+7])||0,totalWeight:Number(tokens[i+8])||0,trainId:tokens[i+9],yardBlock:tokens[i+10]});
+        i+=10;
+      }
+    }
+    const blocks=[];
+    cars.forEach(car => {
+      let block=blocks[blocks.length-1];
+      if (!block || block.originalName !== car.trainId) { block={originalName:car.trainId,name:car.trainId,footage:0,cars:[]};blocks.push(block); }
+      block.cars.push(car);block.footage += car.length;
+    });
+    return {cars,blocks};
+  }
+
+  function renderTrackImportPreview() {
+    const host=$("#trackImportPreview"),confirm=$("#confirmTrackImport");
+    if (!trackImportBlocks.length) { host.className="track-import-preview empty";host.textContent="No valid blocks found. Include Equipment Id, Length(ft), Train Id, and Yard-Block columns.";confirm.disabled=true;return; }
+    host.className="track-import-preview";
+    host.innerHTML=trackImportBlocks.map((block,index)=>`<div class="track-import-row" data-track-import-index="${index}"><div class="seq">${index+1}</div><input data-field="name" value="${escapeAttr(block.name)}" aria-label="Block ${index+1} name"><input data-field="footage" value="${fmtInt(block.footage)}" inputmode="numeric" aria-label="Block ${index+1} footage"><div class="meta">${block.cars.length} car${block.cars.length===1?"":"s"}</div><div class="meta">${escapeHtml([...new Set(block.cars.map(car=>car.yardBlock).filter(Boolean))].join(", ")||"No yard block")}</div></div>`).join("");
+    confirm.disabled=false;
+  }
+
+  function openTrackImport(track) {
+    if (!TRACKS.includes(Number(track))) return;
+    trackImportTarget=Number(track);trackImportBlocks=[];
+    $("#trackImportTitle").textContent=`Import Cars to Track 6-${trackImportTarget}`;
+    $("#trackImportPaste").value="";$("#trackImportStatus").textContent="Waiting for pasted data.";
+    renderTrackImportPreview();
+    const modal=$("#trackImportModal");modal.hidden=false;modal.classList.add("open");document.body.classList.add("modal-open");
+    setTimeout(()=>$("#trackImportPaste").focus(),0);
+  }
+  function closeTrackImport() { const modal=$("#trackImportModal");modal.classList.remove("open");modal.hidden=true;trackImportTarget=0;trackImportBlocks=[];if(!document.querySelector(".modal-backdrop.open"))document.body.classList.remove("modal-open"); }
+  function parseTrackImportPreview() { const parsed=parseTrackImportText($("#trackImportPaste").value);trackImportBlocks=parsed.blocks;$("#trackImportStatus").textContent=`${parsed.cars.length} cars parsed into ${parsed.blocks.length} block${parsed.blocks.length===1?"":"s"}.`;renderTrackImportPreview(); }
+  function confirmTrackImport() {
+    if (!TRACKS.includes(trackImportTarget) || !trackImportBlocks.length) return;
+    const newRows=[];let seq=1;
+    trackImportBlocks.forEach((block,blockIndex)=>{
+      const desired=Math.max(1,Number(block.footage)||block.cars.reduce((sum,car)=>sum+car.length,0));
+      const original=Math.max(1,block.cars.reduce((sum,car)=>sum+car.length,0));let assigned=0;
+      block.cars.forEach((car,carIndex)=>{
+        const length=carIndex===block.cars.length-1?Math.max(1,desired-assigned):Math.max(1,Math.round(car.length/original*desired));assigned+=length;
+        newRows.push([trackImportTarget,seq++,car.equipment,car.weight,length,block.name,"","",0,0,"","",car.yardBlock,`track-import-${Date.now()}-${blockIndex}`]);
+      });
+    });
+    state.rows=state.rows.filter(row=>Number(normalizeTrackValue(row[0]))!==trackImportTarget).concat(newRows);
+    state.sourceName=`Track 6-${trackImportTarget} pasted car table`;closeTrackImport();renderAll();
+  }
+
   function movePrimarySelectedBlocks(destinationTrack, targetBlockId = "") {
     const track = Number(destinationTrack);
     if (!computed || !TRACKS.includes(track) || !selectedBlockIds.size) return;
@@ -9612,6 +9738,44 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   $("#splitBlockModal").addEventListener("click", event => {
     if (event.target === $("#splitBlockModal")) closeSplitBlockModal();
   });
+  document.addEventListener("click", event => {
+    const label=event.target.closest(".track-label");
+    if (!label) return;
+    const textMatch=clean(label.textContent).match(/6\s*-\s*(80[1-9])/i);
+    const track=Number(label.dataset.track||(textMatch&&textMatch[1]));
+    if (!TRACKS.includes(track)) return;
+    event.preventDefault();event.stopImmediatePropagation();openTrackImport(track);
+  }, true);
+  $("#trackImportPaste").addEventListener("paste", event => {
+    const text=event.clipboardData && event.clipboardData.getData("text/plain");
+    if (text) {
+      event.preventDefault();
+      const input=event.currentTarget,start=input.selectionStart??input.value.length,end=input.selectionEnd??start;
+      input.setRangeText(text,start,end,"end");
+    }
+    setTimeout(parseTrackImportPreview,0);
+  }, true);
+  $("#readTrackClipboard").addEventListener("click", async () => {
+    try {
+      const text=await navigator.clipboard.readText();
+      if (!text) throw new Error("Clipboard is empty.");
+      $("#trackImportPaste").value=text;
+      parseTrackImportPreview();
+    } catch (error) {
+      $("#trackImportStatus").textContent=(error&&error.message)||"Clipboard access was blocked. Click inside the box and press Ctrl+V.";
+    }
+  });
+  $("#parseTrackImport").addEventListener("click", parseTrackImportPreview);
+  $("#trackImportPreview").addEventListener("input", event => {
+    const row=event.target.closest("[data-track-import-index]");if(!row)return;
+    const block=trackImportBlocks[Number(row.dataset.trackImportIndex)];if(!block)return;
+    if(event.target.dataset.field==="name")block.name=clean(event.target.value)||block.originalName;
+    if(event.target.dataset.field==="footage")block.footage=Math.max(1,Number(String(event.target.value).replace(/,/g,""))||block.footage);
+  });
+  $("#closeTrackImport").addEventListener("click", closeTrackImport);
+  $("#cancelTrackImport").addEventListener("click", closeTrackImport);
+  $("#confirmTrackImport").addEventListener("click", confirmTrackImport);
+  $("#trackImportModal").addEventListener("click", event=>{if(event.target===$("#trackImportModal"))closeTrackImport();});
   $("#toggleSplitView").addEventListener("click", event => {
     event.preventDefault();
     toggleSplitView();
