@@ -26737,6 +26737,42 @@ body #forecastExcelView .forecast-excel-block.request .forecast-excel-table tbod
   border-bottom: 1px solid #334155 !important;
 }
 </style>
+<style id="chassis-24h-focus-toggle-v1-styles">
+#forecastExcel24hFocusToggle{border:1px solid #38bdf8;border-radius:8px;background:#0c4a6e;color:#f0f9ff;padding:7px 12px;font:900 11px/1.2 Arial,sans-serif;cursor:pointer;white-space:nowrap}
+#forecastExcel24hFocusToggle:hover{background:#075985}
+#forecastExcel24hFocusToggle[aria-pressed="true"]{background:#fbbf24;border-color:#f59e0b;color:#111827}
+#forecastExcelView .forecast-excel-page.forecast-24h-focus .forecast-excel-block.hours48,
+#forecastExcelView .forecast-excel-page.forecast-24h-focus .forecast-excel-block.request,
+#forecastExcelView .forecast-excel-page.forecast-24h-focus .forecast-excel-notes{display:none!important}
+#forecastExcelView .forecast-excel-page.forecast-24h-focus .forecast-excel-columns{grid-template-columns:minmax(0,1.45fr) minmax(320px,.75fr)!important;align-items:start!important}
+#forecastExcelView .forecast-excel-page.forecast-24h-focus .forecast-excel-right{display:block!important}
+@media(max-width:900px){#forecastExcelView .forecast-excel-page.forecast-24h-focus .forecast-excel-columns{grid-template-columns:1fr!important}}
+</style>
+<script id="chassis-24h-focus-toggle-v1">
+(function(){
+  const key="conglobal-chassis-excel-24h-focus-v1";
+  const toolbar=document.querySelector("#forecastExcelView .forecast-excel-toolbar");
+  const page=document.querySelector("#forecastExcelView .forecast-excel-page");
+  const close=document.getElementById("closeForecastExcelViewBtn");
+  if(!toolbar||!page||!close||document.getElementById("forecastExcel24hFocusToggle"))return;
+  const button=document.createElement("button");
+  button.id="forecastExcel24hFocusToggle";
+  button.type="button";
+  close.before(button);
+  function apply(enabled){
+    page.classList.toggle("forecast-24h-focus",enabled);
+    button.setAttribute("aria-pressed",String(enabled));
+    button.textContent=enabled?"Full View":"24H Focus";
+    button.title=enabled?"Show the complete 72-hour forecast":"Show only the Train ID table and 24-hour chassis calculator";
+  }
+  button.onclick=()=>{
+    const enabled=!page.classList.contains("forecast-24h-focus");
+    localStorage.setItem(key,String(enabled));
+    apply(enabled);
+  };
+  apply(localStorage.getItem(key)==="true");
+})();
+</script>
 <style id="chassis-day-date-editor-v1-styles">
 #forecastDateToolbar{display:flex;align-items:center;gap:8px;margin:0 0 10px}
 #forecastDateToolbar button,#forecastStatusCards .forecast-day-edit{border:1px solid #64748b;border-radius:6px;background:#253247;color:#f8fafc;padding:5px 9px;font:800 11px/1.2 Arial,sans-serif;cursor:pointer}
@@ -26745,6 +26781,7 @@ body #forecastExcelView .forecast-excel-block.request .forecast-excel-table tbod
 #forecastDateToolbar [hidden],#forecastStatusCards [hidden]{display:none!important}
 #forecastStatusCards .forecast-day-divider>div:first-child{display:flex;align-items:center;gap:8px;min-width:0}
 #forecastStatusCards .forecast-day-edit{flex:none;padding:3px 6px;font-size:10px}
+#forecastStatusCards .forecast-day-section.forecast-day-filter-hidden{display:none!important}
 #forecastStatusCards .forecast-day-section.forecast-manual-empty .forecast-status-cards-grid{min-height:45px;display:flex;align-items:center;color:#94a3b8;font:700 11px Arial,sans-serif}
 </style>
 <script id="chassis-day-date-editor-v1">
@@ -26797,6 +26834,19 @@ body #forecastExcelView .forecast-excel-block.request .forecast-excel-table tbod
   getForecastAvailableDays=function(){
     return [...new Set([...originalAvailableDays(),...readDays()].map(canonicalDay).filter(Boolean))].sort((a,b)=>forecastDaySortValue(a)-forecastDaySortValue(b)||String(a).localeCompare(String(b)));
   };
+  function syncDaySectionVisibility(){
+    const selected=getForecastSelectedDayFilter();
+    const visible=new Set((selected==="all"?getForecastAvailableDays():selected).map(canonicalDay));
+    document.querySelectorAll("#forecastStatusCards [data-forecast-drop-day]").forEach(section=>{
+      section.classList.toggle("forecast-day-filter-hidden",!visible.has(canonicalDay(section.dataset.forecastDropDay)));
+    });
+  }
+  const originalDaySelectionFeedback=applyForecastDaySelectionFeedback;
+  applyForecastDaySelectionFeedback=function(...args){
+    const result=originalDaySelectionFeedback(...args);
+    syncDaySectionVisibility();
+    return result;
+  };
   updateForecastTrainDay=function(train,oldDay,dateValue){if(dateFromInput(dateValue))moveForecastTrainToDay(train,oldDay,dateValue);};
   const originalArchiveSnapshot=getForecastRuntimeState;
   getForecastRuntimeState=function(){return {...originalArchiveSnapshot(),manualDays:readDays()};};
@@ -26845,7 +26895,7 @@ body #forecastExcelView .forecast-excel-block.request .forecast-excel-table tbod
       section.dataset.forecastDropDay=day;
       section.innerHTML='<div class="forecast-day-divider"><div><strong></strong></div><div class="forecast-day-unit-total"><span>Total Units</span><strong>0</strong></div></div><div class="forecast-status-cards-grid">No trains on this date yet.</div>';
       section.querySelector(".forecast-day-divider strong").textContent=getForecastEtaDayDetail(day);
-      section.style.display=selected==="all"||selected.includes(day)?"":"none";
+      section.classList.toggle("forecast-day-filter-hidden",selected!=="all"&&!selected.map(canonicalDay).includes(canonicalDay(day)));
       section.addEventListener("dragover",event=>{
         event.preventDefault();
         event.dataTransfer.dropEffect="move";
@@ -26869,6 +26919,7 @@ body #forecastExcelView .forecast-excel-block.request .forecast-excel-table tbod
     });
     if(readDays().length)box.querySelector(".forecast-status-empty")?.remove();
     [...box.querySelectorAll(".forecast-day-section")].sort((a,b)=>forecastDaySortValue(a.dataset.forecastDropDay)-forecastDaySortValue(b.dataset.forecastDropDay)).forEach(section=>box.appendChild(section));
+    syncDaySectionVisibility();
     box.querySelectorAll(".forecast-day-section").forEach(section=>{
       const head=section.querySelector(".forecast-day-divider>div:first-child");
       if(!head||head.querySelector(".forecast-day-edit"))return;
