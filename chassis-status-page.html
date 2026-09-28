@@ -10511,7 +10511,7 @@ function renderForecastExcelView(){
     </section>`;
   const forecastTitleIcon=`<svg class="forecast-excel-main-title-icon" viewBox="0 0 48 24" aria-hidden="true"><path d="M3 4h28v15H3z"/><path d="M7 6v11M11 6v11M15 6v11M19 6v11M23 6v11M27 6v11"/><path d="M31 11h8l5 5v3H31z"/><path d="M36 12v4h6"/><circle cx="9" cy="21" r="2"/><circle cx="27" cy="21" r="2"/><circle cx="39" cy="21" r="2"/></svg>`;
   const inlineNotes=forecastExcelHideEmptyInbounds?notes:"";
-  content.innerHTML=`<div class="forecast-excel-columns${forecastExcelHideEmptyInbounds?" hide-empty-inbounds":""}"><div class="forecast-excel-left"><h1>${forecastTitleIcon}<span>Chassis Forecast (72H)</span></h1>${trainTable}${inlineNotes}</div><div class="forecast-excel-right">${calcTable("Chassis Calculator (24H)",calc24Rows,"hours24")}${calcTable("Chassis Calculator (72H)",calc72Rows,"hours48")}${requestTable}</div></div>${forecastExcelHideEmptyInbounds?"":notes}`;
+  content.innerHTML=`<div class="forecast-excel-columns${forecastExcelHideEmptyInbounds?" hide-empty-inbounds":""}"><div class="forecast-excel-left"><h1>${forecastTitleIcon}<span>Chassis Status Current Tracks</span></h1>${trainTable}${inlineNotes}</div><div class="forecast-excel-right">${calcTable("Chassis Calculator",calc24Rows,"hours24")}${calcTable("Chassis Calculator (72H)",calc72Rows,"hours48")}${requestTable}</div></div>${forecastExcelHideEmptyInbounds?"":notes}`;
   const unplannedColumnToggle=$("forecastExcelUnplannedColumnToggle");
   if(unplannedColumnToggle){
     unplannedColumnToggle.setAttribute("aria-pressed",String(forecastExcelShowUnplannedColumn));
@@ -26765,11 +26765,19 @@ body #forecastExcelView .forecast-excel-block.request .forecast-excel-table tbod
     button.textContent=enabled?"Full View":"24H Focus";
     button.title=enabled?"Show the complete 72-hour forecast":"Show only the Train ID table and 24-hour chassis calculator";
   }
+  function applyLabels(){
+    const tracksTitle=page.querySelector(".forecast-excel-left h1 span");
+    const calculatorTitle=page.querySelector(".forecast-excel-block.hours24 h3 span");
+    if(tracksTitle&&tracksTitle.textContent!=="Chassis Status Current Tracks")tracksTitle.textContent="Chassis Status Current Tracks";
+    if(calculatorTitle&&calculatorTitle.textContent!=="Chassis Calculator")calculatorTitle.textContent="Chassis Calculator";
+  }
   button.onclick=()=>{
     const enabled=!page.classList.contains("forecast-24h-focus");
     localStorage.setItem(key,String(enabled));
     apply(enabled);
   };
+  new MutationObserver(applyLabels).observe(document.getElementById("forecastExcelContent"),{childList:true,subtree:true});
+  applyLabels();
   apply(localStorage.getItem(key)==="true");
 })();
 </script>
