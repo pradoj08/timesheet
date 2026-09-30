@@ -2933,6 +2933,8 @@
   }
   .dwell-panel .details-head { min-height: 40px; padding: 5px 10px 5px 13px; }
   .dwell-summary-actions { display: flex; align-items: center; gap: 9px; margin-left: auto; }
+  .dwell-routing-actions { display: inline-flex; align-items: center; gap: 6px; }
+  .dwell-routing-actions .btn:disabled { opacity: .45; cursor: not-allowed; }
   .dwell-panel .panel-body { padding: 0; }
   .dwell-panel .dwell-table-scroll { border-left: 0; border-right: 0; border-radius: 0; }
   .dwell-panel .dwell-footer { margin: 0; padding: 7px 12px; }
@@ -2975,6 +2977,14 @@
     white-space: nowrap; text-align: center; text-overflow: ellipsis;
   }
   .dwell-table td.block-cell { text-align: left; font-weight: 820; background: #f5f6f7; }
+  .dwell-table tr.dwell-source-row { cursor: pointer; }
+  .dwell-table tr.dwell-source-row:hover td { box-shadow: inset 0 0 0 999px rgba(226,232,240,.34); }
+  .dwell-table tr.dwell-source-row.selected td { box-shadow: inset 0 0 0 999px rgba(254,240,138,.46); }
+  .dwell-select-wrap { display: flex; align-items: center; gap: 8px; }
+  .dwell-table .dwell-select-checkbox { width: 17px; height: 17px; min-height: 17px; padding: 0; margin: 0; accent-color: #1d4ed8; }
+  .dwell-source-table th.select-cell,
+  .dwell-source-table td.select-cell { width: 52px; min-width: 52px; max-width: 52px; padding: 5px; text-align: center; }
+  .dwell-source-table th:nth-child(2), .dwell-source-table td:nth-child(2) { width: 18%; }
   .dwell-table td.car-cell { font-weight: 790; background: #dedede; }
   .dwell-table td.arrival-cell { background: #e7e7e7; }
   .dwell-table td.manual-cell { padding: 0; background: #ffeda4; }
@@ -3028,6 +3038,17 @@
     display: flex; justify-content: space-between; gap: 10px; margin-top: 8px;
     color: var(--muted); font-size: 13px; flex-wrap: wrap;
   }
+  .dwell-destination-grid { display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 12px; }
+  .dwell-destination-panel { border-top: 5px solid #166534; }
+  .dwell-destination-panel.mhoas { border-top-color: #4338ca; }
+  .dwell-destination-panel .details-head { background: linear-gradient(180deg,#fff,#f4f7fa); }
+  .dwell-destination-summary { display: grid; grid-template-columns: repeat(4,minmax(120px,1fr)); gap: 8px; padding: 9px 12px; border-bottom: 1px solid var(--line); background: #eef3f7; }
+  .dwell-destination-stat { padding: 7px 9px; border: 1px solid #cbd5e1; border-radius: 7px; background: white; }
+  .dwell-destination-stat span { display: block; color: #64748b; font-size: 8px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+  .dwell-destination-stat strong { display: block; margin-top: 2px; color: #0f172a; font-size: 15px; }
+  .dwell-destination-empty { padding: 18px; color: #64748b; font-size: 11px; font-weight: 800; text-align: center; }
+  .dwell-remove-btn { float: right; margin-left: 5px; border: 1px solid #dc2626; border-radius: 5px; background: #fff; color: #b91c1c; padding: 3px 7px; font-size: 9px; font-weight: 900; }
+  @media (max-width: 900px) { .dwell-destination-summary { grid-template-columns: 1fr 1fr; } }
   .dwell-format-note { font-family: "Cascadia Mono", "SFMono-Regular", Consolas, monospace; }
   .inventory-panel {
     border-color: #dfbba2;
@@ -4138,6 +4159,10 @@
       <summary class="details-head">
         <div class="panel-title">Non-SS Dwell Adjustment</div>
         <div class="dwell-summary-actions">
+          <span class="dwell-routing-actions">
+            <button class="btn btn-white btn-small" id="sendDwellToIhosa" type="button" disabled>Send to IHOSA</button>
+            <button class="btn btn-white btn-small" id="sendDwellToMhoas" type="button" disabled>Send to MHOAS</button>
+          </span>
           <button class="btn btn-white btn-small" id="resolveSsBtn" type="button" onclick="document.getElementById('ssResolverModal').hidden=false;document.getElementById('ssResolverModal').classList.add('open');document.body.classList.add('modal-open')">Resolve SS</button>
           <button class="btn btn-danger btn-small" id="clearDwellBtn" type="button">Clear SS Inputs</button>
           <span class="chev">&#9662;</span>
@@ -4145,10 +4170,11 @@
       </summary>
       <div class="panel-body">
         <div class="dwell-table-scroll">
-          <table class="dwell-table">
+          <table class="dwell-table dwell-source-table">
             <thead>
               <tr>
-                <th>Non-SS Unique Block</th>
+                <th class="select-cell">Select</th>
+                <th>Non-SS Block</th>
                 <th><span class="header-copy-wrap">Example Car <button class="copy-column-btn" id="copyExampleCarsBtn" type="button" title="Copy all example car values separated by commas" aria-label="Copy all example car values separated by commas">&#128203;</button></span></th>
                 <th>Arrival</th>
                 <th>SS Start</th>
@@ -4168,6 +4194,17 @@
         </div>
       </div>
     </details>
+
+    <div class="dwell-destination-grid" id="dwellDestinationGrid">
+      <details class="panel dwell-panel dwell-destination-panel" open>
+        <summary class="details-head"><div class="panel-title">IHOSA Dwell Table</div><span class="chev">&#9662;</span></summary>
+        <div class="panel-body" id="ihosaDwellDestination"></div>
+      </details>
+      <details class="panel dwell-panel dwell-destination-panel mhoas" open>
+        <summary class="details-head"><div class="panel-title">MHOAS Dwell Table</div><span class="chev">&#9662;</span></summary>
+        <div class="panel-body" id="mhoasDwellDestination"></div>
+      </details>
+    </div>
 
     <details class="panel inventory-panel" id="inventoryPanel" style="margin-top:12px">
       <summary class="details-head">
@@ -4632,6 +4669,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   let inventoryColorMode = localStorage.getItem(INVENTORY_COLOR_MODE_KEY) === "track" ? "track" : "default";
   let currentWork = loadCurrentWorkState();
   let computed = null;
+  const selectedDwellKeys = new Set();
   const selectedBlockIds = new Set();
   let selectedBlockGridId = "";
   let blockContextGridId = "";
@@ -4805,6 +4843,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       gridDisplayBaselineVersion: GRID_DISPLAY_BASELINE_VERSION,
       colorKeyBaselineVersion: COLOR_KEY_BASELINE_VERSION,
       dwellOverrides: {},
+      dwellDestinations: {ihosa:[], mhoas:[]},
       secondaryGridTwo: null,
       secondaryGridThree: null,
       sourceName: SAMPLE_SOURCE
@@ -4890,6 +4929,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         if (!merged.dwellOverrides || typeof merged.dwellOverrides !== "object" || Array.isArray(merged.dwellOverrides)) {
           merged.dwellOverrides = {};
         }
+        merged.dwellDestinations = normalizeDwellDestinations(merged.dwellDestinations);
         merged.inboundPlannerVisible = saved.inboundPlannerPopupMigrated ? saved.inboundPlannerVisible === true : false;
         merged.inboundPlannerPopupMigrated = true;
         merged.inboundPlans = normalizeInboundPlans(saved.inboundPlans);
@@ -4911,6 +4951,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     } catch (error) {}
     const fallback = applyPersistedRampTables(defaultState(), persistedRampTables);
     fallback.inboundPlans = normalizeInboundPlans(fallback.inboundPlans);
+    fallback.dwellDestinations = normalizeDwellDestinations(fallback.dwellDestinations);
     fallback.inboundArchive = [];
     fallback.gridTypography = normalizeGridTypography(fallback.gridTypography);
     if (persistedGridTypography) fallback.gridTypography = persistedGridTypography;
@@ -5248,6 +5289,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     return {
       key,
       block: group.baseDisplay,
+      footage: Number(group.footage) || 0,
       exampleCar: clean((group.rows[0] || [])[2]),
       arrival,
       rawStart,
@@ -6621,6 +6663,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     publishLiveSnapshot();
     renderGrid();
     renderDwellTable();
+    renderDwellDestinations();
     renderInventory();
     renderInboundPlanner();
     renderInboundSummary();
@@ -9188,7 +9231,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     const body = $("#dwellBody");
     const records = computed.nonSSBlocks || [];
     if (!records.length) {
-      body.innerHTML = `<tr><td colspan="9"><div class="empty-state">No eligible non-SS destination blocks were found in the imported inventory.</div></td></tr>`;
+      body.innerHTML = `<tr><td colspan="10"><div class="empty-state">No eligible non-SS destination blocks were found in the imported inventory.</div></td></tr>`;
       $("#dwellMeta").textContent = "No non-SS blocks found.";
       return;
     }
@@ -9220,7 +9263,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       const sequenceErrorClass = sequenceError ? " sequence-error" : "";
       const sequenceErrorTitle = sequenceError ? ' title="SS Start occurs before the imported Arrival time."' : "";
       const sequenceErrorFlag = sequenceError ? '<span class="dwell-order-flag">SS BEFORE ARRIVAL</span>' : "";
-      return `<tr>
+      return `<tr class="dwell-source-row ${selectedDwellKeys.has(record.key) ? "selected" : ""}" data-dwell-select-key="${escapeAttr(record.key)}">
+        <td class="select-cell"><input class="dwell-select-checkbox" type="checkbox" data-dwell-select-checkbox="${escapeAttr(record.key)}" aria-label="Select ${escapeAttr(record.block)}" ${selectedDwellKeys.has(record.key) ? "checked" : ""}></td>
         <td class="block-cell mono">${escapeHtml(record.block)}</td>
         <td class="car-cell mono">${escapeHtml(record.exampleCar || "\u2014")}</td>
         <td class="arrival-cell${sequenceErrorClass}"${sequenceErrorTitle}>${escapeHtml(formatDwellDate(record.arrival))}</td>
@@ -9236,6 +9280,79 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     const ready = records.filter(record => Number.isFinite(record.dwell)).length;
     const entered = records.filter(record => record.rawStart || record.rawEnd).length;
     $("#dwellMeta").textContent = `${records.length} eligible non-SS blocks \u00B7 ${entered} with SS entries \u00B7 ${ready} dwell values feeding the grid \u00B7 ZLBHO/ZPBHO ignored`;
+    syncDwellRoutingButtons();
+  }
+
+  function normalizeDwellDestinations(value) {
+    const source = value && typeof value === "object" && !Array.isArray(value) ? value : {};
+    const cleanKeys = list => Array.from(new Set((Array.isArray(list) ? list : []).map(item => clean(item)).filter(Boolean)));
+    return {ihosa:cleanKeys(source.ihosa), mhoas:cleanKeys(source.mhoas)};
+  }
+
+  function dwellDestinationStats(records, field) {
+    const usable = records.filter(record => Number.isFinite(record[field]));
+    const regular = usable.length ? usable.reduce((sum, record) => sum + record[field], 0) / usable.length : NaN;
+    const weighted = usable.filter(record => Number(record.footage) > 0);
+    const totalFootage = weighted.reduce((sum, record) => sum + Number(record.footage), 0);
+    const weightedAverage = totalFootage
+      ? weighted.reduce((sum, record) => sum + record[field] * Number(record.footage), 0) / totalFootage
+      : NaN;
+    return {regular, weighted:weightedAverage};
+  }
+
+  function destinationDwellRowHtml(record, destination) {
+    let ruleText = "\u2014";
+    let ruleClass = "";
+    if (record.rawStart && record.rawEnd) {
+      if (!Number.isFinite(record.ssDuration) || record.ssDuration < 0) { ruleText = "CHECK TIMES"; ruleClass = "unknown"; }
+      else if (record.ssDuration >= 24) { ruleText = `YES \u00B7 ${fmtOne(record.ssDuration)}H`; ruleClass = "ready"; }
+      else { ruleText = `NO \u00B7 ${fmtOne(record.ssDuration)}H`; ruleClass = "warning"; }
+    }
+    const arrivalToSsText = record.rawStart && Number.isFinite(record.arrivalToSs) ? dwellCellText(record.arrivalToSs) : "\u2014";
+    return `<tr>
+      <td class="block-cell mono">${escapeHtml(record.block)}</td>
+      <td class="car-cell mono">${escapeHtml(record.exampleCar || "\u2014")}</td>
+      <td class="arrival-cell">${escapeHtml(formatDwellDate(record.arrival))}</td>
+      <td class="manual-cell">${escapeHtml(record.rawStart || "\u2014")}</td>
+      <td class="manual-cell">${escapeHtml(record.rawEnd || "\u2014")}</td>
+      <td class="rule-cell ${ruleClass}">${escapeHtml(ruleText)}</td>
+      <td class="arrival-to-ss-cell ${arrivalToSsText === "\u2014" ? "unknown" : ""}">${escapeHtml(arrivalToSsText)}</td>
+      <td class="dwell-cell ${Number.isFinite(record.dwell) ? "ready" : "unknown"}">${escapeHtml(dwellCellText(record.dwell))}</td>
+      <td class="future-cell ${Number.isFinite(record.futureDwell) ? "ready" : "unknown"}">${escapeHtml(dwellCellText(record.futureDwell))}<button class="dwell-remove-btn" type="button" data-remove-dwell-destination="${destination}" data-remove-dwell-key="${escapeAttr(record.key)}">Remove</button></td>
+    </tr>`;
+  }
+
+  function renderDwellDestination(destination) {
+    const host = $(`#${destination}DwellDestination`);
+    if (!host) return;
+    state.dwellDestinations = normalizeDwellDestinations(state.dwellDestinations);
+    const byKey = new Map((computed.nonSSBlocks || []).map(record => [record.key, record]));
+    const records = state.dwellDestinations[destination].map(key => byKey.get(key)).filter(Boolean);
+    const dwellStats = dwellDestinationStats(records, "dwell");
+    const futureStats = dwellDestinationStats(records, "futureDwell");
+    const stat = (label, value) => `<div class="dwell-destination-stat"><span>${label}</span><strong>${escapeHtml(dwellCellText(value))}</strong></div>`;
+    const summary = `<div class="dwell-destination-summary">${stat("Regular Avg Dwell", dwellStats.regular)}${stat("Weighted Avg Dwell", dwellStats.weighted)}${stat("Regular Avg at 2030", futureStats.regular)}${stat("Weighted Avg at 2030", futureStats.weighted)}</div>`;
+    if (!records.length) {
+      host.innerHTML = summary + `<div class="dwell-destination-empty">Select blocks in the Non-SS table, then send them to ${destination.toUpperCase()}.</div>`;
+      return;
+    }
+    host.innerHTML = summary + `<div class="dwell-table-scroll"><table class="dwell-table"><thead><tr><th>Non-SS Unique Block</th><th>Example Car</th><th>Arrival</th><th>SS Start</th><th>SS End</th><th>SS Greater Than 24?</th><th>Arrival to SS</th><th>Dwell</th><th>Dwell at 2030</th></tr></thead><tbody>${records.map(record => destinationDwellRowHtml(record, destination)).join("")}</tbody></table></div><div class="dwell-footer"><span>${records.length} block${records.length === 1 ? "" : "s"} assigned to ${destination.toUpperCase()}</span><span>Weighted averages use block footage.</span></div>`;
+  }
+
+  function renderDwellDestinations() {
+    renderDwellDestination("ihosa");
+    renderDwellDestination("mhoas");
+  }
+
+  function syncDwellRoutingButtons() {
+    ["sendDwellToIhosa", "sendDwellToMhoas"].forEach(id => { const button = $(`#${id}`); if (button) button.disabled = selectedDwellKeys.size === 0; });
+  }
+
+  function sendSelectedDwellBlocks(destination) {
+    state.dwellDestinations = normalizeDwellDestinations(state.dwellDestinations);
+    state.dwellDestinations[destination] = Array.from(new Set([...state.dwellDestinations[destination], ...selectedDwellKeys]));
+    selectedDwellKeys.clear();
+    renderAll();
   }
 
   function renderInventory() {
@@ -10003,6 +10120,13 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   });
 
   $("#dwellBody").addEventListener("change", e => {
+    const selection = e.target.closest("input[data-dwell-select-checkbox]");
+    if (selection) {
+      if (selection.checked) selectedDwellKeys.add(selection.dataset.dwellSelectCheckbox);
+      else selectedDwellKeys.delete(selection.dataset.dwellSelectCheckbox);
+      renderDwellTable();
+      return;
+    }
     const input = e.target.closest("input[data-dwell-key]");
     if (!input) return;
     const key = input.dataset.dwellKey;
@@ -10013,6 +10137,26 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     if (!clean(state.dwellOverrides[key].ssStart) && !clean(state.dwellOverrides[key].ssEnd)) {
       delete state.dwellOverrides[key];
     }
+    renderAll();
+  });
+
+  $("#dwellBody").addEventListener("click", e => {
+    if (e.target.closest("input,button,label")) return;
+    const row = e.target.closest("tr[data-dwell-select-key]");
+    if (!row) return;
+    const key = row.dataset.dwellSelectKey;
+    if (selectedDwellKeys.has(key)) selectedDwellKeys.delete(key); else selectedDwellKeys.add(key);
+    renderDwellTable();
+  });
+
+  $("#sendDwellToIhosa").addEventListener("click", () => sendSelectedDwellBlocks("ihosa"));
+  $("#sendDwellToMhoas").addEventListener("click", () => sendSelectedDwellBlocks("mhoas"));
+  $("#dwellDestinationGrid").addEventListener("click", e => {
+    const button = e.target.closest("[data-remove-dwell-destination]");
+    if (!button) return;
+    const destination = button.dataset.removeDwellDestination;
+    state.dwellDestinations = normalizeDwellDestinations(state.dwellDestinations);
+    state.dwellDestinations[destination] = state.dwellDestinations[destination].filter(key => key !== button.dataset.removeDwellKey);
     renderAll();
   });
 
