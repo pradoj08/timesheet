@@ -2705,6 +2705,7 @@
         <button id="bulkInclude" class="bulk-action" type="button">Include Selected</button>
         <button id="bulkExclude" class="bulk-action exclude" type="button">Exclude Selected</button>
         <button id="bulkExcludeReason" class="bulk-action exclude" type="button">Exclude Reason</button>
+        <button id="sendUnknownFlipsToStack" class="bulk-action hidden" type="button">Unknown → Stacked</button>
         <label id="reasonFilterLabel" for="reasonFilter">Reason</label>
         <select id="reasonFilter">
           <option value="all">All reasons</option>
@@ -2850,6 +2851,7 @@
       bulkInclude: document.querySelector("#bulkInclude"),
       bulkExclude: document.querySelector("#bulkExclude"),
       bulkExcludeReason: document.querySelector("#bulkExcludeReason"),
+      sendUnknownFlipsToStack: document.querySelector("#sendUnknownFlipsToStack"),
       rampReviewHeader: document.querySelector("#rampReviewHeader"),
       derampReviewHeader: document.querySelector("#derampReviewHeader"),
       flipReviewHeader: document.querySelector("#flipReviewHeader"),
@@ -3107,6 +3109,7 @@
     els.bulkInclude.addEventListener("click", () => applyBulkMoveDetailState(false));
     els.bulkExclude.addEventListener("click", () => applyBulkMoveDetailState(true));
     els.bulkExcludeReason.addEventListener("click", excludeMoveDetailsByReason);
+    els.sendUnknownFlipsToStack.addEventListener("click", sendUnknownFlipsToStack);
     function openMonthlyReview(field) {
       // A previous Dupes Only review must never carry into a fresh monthly
       // review and make valid lift rows appear to have disappeared.
@@ -3193,7 +3196,7 @@
         importRows(prepared.rows, prepared.details);
         const dayCount = new Set(prepared.rows.map((row) => row.date)).size;
         const suffix = failed.length ? ` Failed: ${failed.join(", ")}` : "";
-        const duplicateNote = prepared.skippedDuplicates ? ` Kept ${prepared.skippedDuplicates} duplicate row${prepared.skippedDuplicates === 1 ? "" : "s"} visible for review without adding duplicate lifts.` : "";
+        const duplicateNote = prepared.skippedDuplicates ? ` Includes ${prepared.skippedDuplicates} flagged duplicate row${prepared.skippedDuplicates === 1 ? "" : "s"}; exclude a row only when it should not count.` : "";
         const uniqueNote = prepared.uniqueMoveRows ? ` Counted ${prepared.uniqueMoveRows} operational row${prepared.uniqueMoveRows === 1 ? "" : "s"}.` : "";
         const persistenceNote = state.persistenceWarning ? " Detailed import history exceeded browser storage; totals were retained." : "";
         showToast(`Imported ${dayCount} day${dayCount === 1 ? "" : "s"} from ${files.length} file${files.length === 1 ? "" : "s"}.${uniqueNote}${duplicateNote}${suffix}${persistenceNote}`);
@@ -5339,14 +5342,12 @@
         const duplicateKey = `${row.date}|${row.__field}|${source}|${row.__equipment}|${row.__train || ""}`;
         const isDuplicate = counted.has(duplicateKey);
         if (isDuplicate) skippedDuplicates += 1;
-        else {
-          counted.add(duplicateKey);
-          uniqueMoveRows += 1;
-        }
+        else counted.add(duplicateKey);
+        uniqueMoveRows += 1;
 
         const countKey = `${row.date}|${row.__field}`;
         const existing = counts.get(countKey) || { date: row.date, [row.__field]: 0 };
-        if (!isDuplicate) existing[row.__field] += 1;
+        existing[row.__field] += 1;
         counts.set(countKey, existing);
       });
 
@@ -5432,6 +5433,9 @@
       const label = unifiedDuplicateReview ? "Duplicate" : fieldLabel(field);
       const details = previewMoveDetails(date, field);
       const activeDetails = details.filter((detail) => !detail.deleted);
+      const unknownFlipDetails = field === "flip"
+        ? activeDetails.filter((detail) => isUnknownFlipReason(detail.reason))
+        : [];
       const hasReasons = details.some((detail) => String(detail.reason || "").trim());
       const duplicateScope = unifiedDuplicateReview ? details : previewMoveDetails("__duplicates__", "allDuplicates");
       const duplicateSet = duplicateEquipmentSet(duplicateScope);
@@ -5472,6 +5476,10 @@
       els.reasonHeader.classList.toggle("hidden", !hasReasons);
       els.reasonFilterLabel.classList.toggle("hidden", !hasReasons);
       els.reasonFilter.classList.toggle("hidden", !hasReasons);
+      els.sendUnknownFlipsToStack.classList.toggle("hidden", unknownFlipDetails.length === 0);
+      els.sendUnknownFlipsToStack.dataset.count = String(unknownFlipDetails.length);
+      els.sendUnknownFlipsToStack.dataset.confirming = "false";
+      els.sendUnknownFlipsToStack.textContent = `Unknown → Stacked (${unknownFlipDetails.length})`;
       els.previewFilter.value = state.previewFilter;
       els.moveModal.classList.toggle("duplicates-only", state.previewFilter === "duplicates");
       els.duplicatesFirst.setAttribute("aria-pressed", String(state.previewDuplicatesFirst));
@@ -6006,6 +6014,48 @@
       openMoveModal(state.previewDate, state.previewField);
     }
 
+    function isUnknownFlipReason(reason) {
+      return ["unknown", "unk", "unrecognized", "unclassified"].includes(reasonKey(reason));
+    }
+
+    function sendUnknownFlipsToStack() {
+      if (!state.previewDate || state.previewField !== "flip") return;
+      const matching = previewMoveDetails(state.previewDate, "flip")
+        .filter((detail) => !detail.deleted && isUnknownFlipReason(detail.reason));
+      if (!matching.length) {
+        showToast("No included unknown flips are available to move.");
+        openMoveModal(state.previewDate, state.previewField);
+        return;
+      }
+      if (els.sendUnknownFlipsToStack.dataset.confirming !== "true") {
+        els.sendUnknownFlipsToStack.dataset.confirming = "true";
+        els.sendUnknownFlipsToStack.textContent = `Confirm ${matching.length} → Stacked`;
+        clearTimeout(sendUnknownFlipsToStack.confirmTimer);
+        sendUnknownFlipsToStack.confirmTimer = setTimeout(() => {
+          els.sendUnknownFlipsToStack.dataset.confirming = "false";
+          els.sendUnknownFlipsToStack.textContent = `Unknown → Stacked (${matching.length})`;
+        }, 5000);
+        return;
+      }
+
+      clearTimeout(sendUnknownFlipsToStack.confirmTimer);
+      const ids = new Set(matching.map((detail) => detail.id));
+      const dates = new Set(matching.map((detail) => detail.date));
+      state.moveDetails = state.moveDetails.map((detail) => ids.has(detail.id) ? {
+        ...detail,
+        field: "stacked",
+        liftSource: liftSourceKeyFor("stacked", detail.equipment, detail.source, detail.reason, detail.train)
+      } : detail);
+      dates.forEach((date) => {
+        recalculateMoveCount(date, "flip");
+        recalculateMoveCount(date, "stacked");
+      });
+      persist();
+      render();
+      openMoveModal(state.previewDate, "flip");
+      showToast(`Moved ${matching.length} unknown flip${matching.length === 1 ? "" : "s"} to Stacked.`);
+    }
+
     function populateReasonFilter(details) {
       const reasons = new Map();
       details.forEach((detail) => {
@@ -6063,10 +6113,7 @@
 
     function operationalMoveCount(details, field) {
       const active = details.filter((detail) => !detail.deleted);
-      if (!["ramp", "deramp", "flip"].includes(field)) return active.length;
-      const counted = new Set();
-      active.forEach((detail) => counted.add(duplicateDetailKey(detail)));
-      return counted.size;
+      return active.length;
     }
 
     function recalculateAllMoveDetailCounts() {
