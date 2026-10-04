@@ -3156,6 +3156,7 @@
       inlineToolPanel.hidden = true;
       document.body.classList.remove("inline-tool-open");
       inlineToolFrame.removeAttribute("srcdoc");
+      inlineToolFrame.removeAttribute("src");
       inlineToolFrame.style.height = "520px";
       setActiveTopView("timesheet");
       requestOuterResize();
@@ -3176,7 +3177,13 @@
         setTimeout(resizeInlineToolFrame, 120);
         setTimeout(resizeInlineToolFrame, 420);
       }, { once: true });
-      inlineToolFrame.srcdoc = event.data.html || "";
+      if (event.data.sourceUrl) {
+        inlineToolFrame.removeAttribute("srcdoc");
+        inlineToolFrame.src = event.data.sourceUrl;
+      } else {
+        inlineToolFrame.removeAttribute("src");
+        inlineToolFrame.srcdoc = event.data.html || "";
+      }
       requestOuterResize();
     });
 

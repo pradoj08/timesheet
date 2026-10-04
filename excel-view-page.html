@@ -1700,13 +1700,12 @@
   }
   .track-id-toggle input { width: 14px; height: 14px; margin: 0; accent-color: #254f7c; }
   #yardGrid .hide-track-ids-header {
-    position: relative; z-index: 8; padding: 0 2px; overflow: visible; display: flex; align-items: center; justify-content: center;
+    position: relative; z-index: 8; padding: 0 3px; overflow: hidden; display: flex; align-items: center; justify-content: center;
   }
-  #yardGrid .grid-display-toggles { width: 100%; display: flex; align-items: center; justify-content: center; gap: 3px; }
   #yardGrid .hide-track-ids-header .track-id-toggle {
-    width: auto; min-height: 17px; height: 17px; padding: 0 4px; justify-content: center; gap: 4px;
+    width: 100%; min-width: 0; min-height: 18px; height: 18px; padding: 0 5px; justify-content: center; gap: 4px;
     border-color: rgba(255,255,255,.32); border-radius: 4px; background: rgba(255,255,255,.16); color: rgba(255,255,255,.92);
-    font-size: 6.5px; font-weight: 800; letter-spacing: 0; text-transform: uppercase;
+    font-size: 7px; font-weight: 800; letter-spacing: 0; text-transform: uppercase; overflow: hidden;
   }
   #yardGrid .hide-track-ids-header .track-id-toggle input { width: 10px; height: 10px; accent-color: #94a3b8; }
   .live-chip {
@@ -1950,6 +1949,28 @@
   .inbound-summary-train-toggle:focus-visible { outline:2px solid #d7a900; outline-offset:2px; border-radius:3px; }
   .inbound-summary-train-check { color:#078149; font-weight:900; }
   .inbound-summary-table .summary-muted { color: #dce7ee; }
+  .inbound-summary-lifts-input {
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 25px !important;
+    margin: 0 auto !important;
+    padding: 2px 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    color: inherit !important;
+    font: 900 var(--grid-block-size, 12px)/1 var(--grid-block-font, "Aptos Narrow", Arial, sans-serif) !important;
+    text-align: center !important;
+    appearance: textfield !important;
+  }
+  .inbound-summary-lifts-input::-webkit-inner-spin-button,
+  .inbound-summary-lifts-input::-webkit-outer-spin-button { margin: 0; appearance: none; }
+  .inbound-summary-table td.summary-muted { padding-left: 0; padding-right: 0; text-align: center; }
+  .inbound-summary-lifts-input:hover { background: rgba(255,255,255,.04) !important; }
+  .inbound-summary-lifts-input:focus { outline: 1px solid #facc15 !important; outline-offset: -2px; background: rgba(255,255,255,.06) !important; color: inherit !important; }
+  .inbound-summary-lifts-input::placeholder { color: currentColor; opacity: .82; }
   .inbound-summary-train {
     display: inline-flex;
     flex-direction: column;
@@ -4715,7 +4736,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     const normalizedDay = ["TODAY", "TOMORROW", "DAY AFTER", "OTHER"].includes(String(day || "").toUpperCase())
       ? String(day).toUpperCase()
       : "TODAY";
-    return { day:normalizedDay, color:inboundColorForDay(normalizedDay), tag:"", train:"TRAIN", eta:"", status:"", totalFt:"0", onHandChecked:false, archivedAt:"", archiveId:"", rows:[blankInboundRow()] };
+    return { day:normalizedDay, color:inboundColorForDay(normalizedDay), tag:"", train:"TRAIN", eta:"", status:"", totalFt:"0", liftOverride:"", onHandChecked:false, archivedAt:"", archiveId:"", rows:[blankInboundRow()] };
   }
 
   function blankInboundRow() {
@@ -4785,6 +4806,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         eta: String(plan && plan.eta || ""),
         status: String(plan && plan.status || ""),
         totalFt: String(plan && plan.totalFt || ""),
+        liftOverride: plan && plan.liftOverride != null ? String(plan.liftOverride) : "",
         onHandChecked: plan && plan.onHandChecked === true,
         archivedAt: String(plan && plan.archivedAt || ""),
         archiveId: String(plan && plan.archiveId || ""),
@@ -5119,6 +5141,21 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     while (walker.nextNode()) textNodes.push(walker.currentNode);
     textNodes.forEach(node => { node.nodeValue = blockTextForDisplay(node.nodeValue); });
     return host.innerHTML;
+  }
+
+  function secondaryBlockContentForDisplay(block) {
+    const html = blockContentForDisplay(block && block.content);
+    try {
+      const labelReader = typeof inboundTrainLabel === "function" ? inboundTrainLabel : () => "";
+      const train = clean(block && (block.inboundTrain || labelReader(block.sourceRows)));
+      if (!train) return html;
+      const suffixes = [` (${train})`, ` (${escapeHtml(train)})`];
+      let display = html;
+      suffixes.forEach(suffix => { display = display.split(suffix).join(""); });
+      return state.showInboundTrain ? `${display} (${escapeHtml(train)})` : display;
+    } catch (_) {
+      return html;
+    }
   }
 
   function toDateTimeLocal(d) {
@@ -6857,7 +6894,15 @@ https://github.com/nodeca/pako/blob/main/LICENSE
 
   function inboundSummaryLiftCount(plan) {
     const count = chassisForecastUnitsForTrain(plan && plan.train);
-    return count > 0 ? "(" + fmtInt(count) + ")" : "";
+    return count > 0 ? fmtInt(count) : "";
+  }
+
+  function inboundSummaryLiftInput(plan) {
+    const planIndex = state.inboundPlans.indexOf(plan);
+    const override = plan && plan.liftOverride != null ? String(plan.liftOverride).trim() : "";
+    const forecast = inboundSummaryLiftCount(plan);
+    const display = override !== "" ? override : forecast;
+    return '<span class="inbound-summary-lifts-input" contenteditable="true" inputmode="numeric" role="spinbutton" aria-valuemin="0" data-inbound-lift-override-index="' + planIndex + '" data-forecast-value="' + escapeAttr(forecast) + '" aria-label="Lift count for ' + escapeAttr(plan && plan.train || "inbound") + '" title="Blank uses the Chassis Forecast count">' + escapeHtml(display) + '</span>';
   }
 
 
@@ -6923,7 +6968,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         body += '<td>' + escapeHtml(inboundSummaryShift(plan)) + '</td>';
         body += '<td>' + escapeHtml(fmtInt(parseInboundFt(plan.totalFt))) + '</td>';
         if (index === 0) body += '<td class="summary-rollup" rowspan="' + group.plans.length + '"><div class="summary-ft-pill ' + totalClass + '"><span>' + totalLabel + '</span><b>' + escapeHtml(fmtInt(totalFt)) + '</b></div></td>';
-        body += '<td class="summary-muted">' + escapeHtml(inboundSummaryLiftCount(plan)) + '</td>';
+        body += '<td class="summary-muted">' + inboundSummaryLiftInput(plan) + '</td>';
         if (index === 0) body += '<td class="summary-rollup" rowspan="' + group.plans.length + '">' + (totalFt ? '<div class="summary-info-pill">LIGHT</div>' : '') + '</td>';
         if (index === 0) body += '<td class="summary-note" rowspan="' + group.plans.length + '">' + (stock.onHand ? '<div class="summary-info-pill">' + onHandDisplayHtml + '</div>' : '') + '</td>';
         if (index === 0) body += '<td class="summary-note" rowspan="' + group.plans.length + '">' + (stock.with803 ? '<div class="summary-info-pill">' + with803DisplayHtml + '</div>' : '') + '</td>';
@@ -7903,6 +7948,12 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       .replace(/\[\d{3}\]/g, `[${track}]`);
     next.title = String(next.title || "").replace(/\[\d{3}\]/g, `[${track}]`);
     next.sourceRows = Array.isArray(next.sourceRows) ? next.sourceRows.map(row => Array.isArray(row) ? row.slice() : []) : [];
+    try {
+      const labelReader = typeof inboundTrainLabel === "function" ? inboundTrainLabel : () => "";
+      next.inboundTrain = clean(next.inboundTrain || labelReader(next.sourceRows));
+    } catch (_) {
+      next.inboundTrain = clean(next.inboundTrain);
+    }
     return next;
   }
 
@@ -8696,14 +8747,14 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       cells.push(`<div class="track-remaining ${remaining < 0 ? "over" : ""}${blockReorderingAvailable() ? " block-drop-end" : ""}" data-track="${track}"${blockReorderingAvailable() ? ` data-drop-end-track="${track}"` : ""} title="${fmtInt(capacity)} ft capacity - ${fmtInt(total)} ft current${blockReorderingAvailable() ? "; click to place selected blocks at track end" : ""}">${fmtInt(remaining)}</div>`);
     });
     $("#yardGrid").innerHTML = cells.join("");
-    const deltaRemainingHeader = $("#yardGrid").querySelector('.grid-head[title="Track capacity minus current footage"]');
-    const hideTrackIdsHeader = deltaRemainingHeader?.previousElementSibling;
-    if (hideTrackIdsControl && hideDwellControl && showInboundTrainControl && hideTrackIdsHeader) {
-      hideTrackIdsHeader.classList.add("hide-track-ids-header");
-      const toggles = document.createElement("div");
-      toggles.className = "grid-display-toggles";
-      toggles.append(hideTrackIdsControl, hideDwellControl, showInboundTrainControl);
-      hideTrackIdsHeader.replaceChildren(toggles);
+    const cutHeaders = [...$("#yardGrid").querySelectorAll('.grid-head[aria-label="Cut column"]')];
+    const toggleHeaders = cutHeaders.slice(-3);
+    const displayControls = [hideTrackIdsControl, hideDwellControl, showInboundTrainControl];
+    if (displayControls.every(Boolean) && toggleHeaders.length === displayControls.length) {
+      toggleHeaders.forEach((header,index)=>{
+        header.classList.add("hide-track-ids-header");
+        header.replaceChildren(displayControls[index]);
+      });
     }
     renderBlankGrid();
     syncBlockSelectionUi();
@@ -9001,7 +9052,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     const items = (Array.isArray(blocks) ? blocks : []).map(normalizeFinalBlock);
     const content = items.length
       ? items.map(block => {
-          const displayContent = blockContentForDisplay(block.content);
+          const displayContent = secondaryBlockContentForDisplay(block);
           const displayTitle = state.hideTrackIds ? stripBlockTrackIds(block.title) : block.title;
           const currentClassName = classNameWithCurrentColor(block.className, block.title || textFromCellHtml(`<div>${block.content}</div>`));
           const currentStyle = styleWithCurrentColorRule(block.title || textFromCellHtml(`<div>${block.content}</div>`));
@@ -9065,7 +9116,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
           const inboundSequenceClass = inboundSequence === 2
             ? " inbound-sequence-two"
             : inboundSequence >= 3 ? " inbound-sequence-three" : "";
-          const displayContent = blockContentForDisplay(block.content);
+          const displayContent = secondaryBlockContentForDisplay(block);
           const displayTitle = state.hideTrackIds ? stripBlockTrackIds(block.title) : block.title;
           const currentClassName = classNameWithCurrentColor(block.className, block.title || textFromCellHtml(`<div>${block.content}</div>`));
           const currentStyle = styleWithCurrentColorRule(block.title || textFromCellHtml(`<div>${block.content}</div>`));
@@ -10059,6 +10110,25 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       }
     }
     if (e.target.closest("[data-calc-field]")) updateFootageCalcTotals();
+  });
+
+  document.addEventListener("keydown", e => {
+    const liftOverride = e.target.closest && e.target.closest("[data-inbound-lift-override-index]");
+    if (liftOverride && e.key === "Enter") {
+      e.preventDefault();
+      liftOverride.blur();
+    }
+  });
+
+  document.addEventListener("focusout", e => {
+    const liftOverride = e.target.closest && e.target.closest("[data-inbound-lift-override-index]");
+    if (!liftOverride) return;
+    const plan = state.inboundPlans[Number(liftOverride.dataset.inboundLiftOverrideIndex)];
+    if (!plan) return;
+    const raw = String(liftOverride.textContent || "").trim();
+    plan.liftOverride = raw === "" ? "" : String(Math.max(0, Math.round(Number(raw.replace(/,/g, "")) || 0)));
+    saveState();
+    renderInboundSummary();
   });
 
   document.addEventListener("change", e => {
@@ -11442,6 +11512,65 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     if (event.key === "Escape" && !excelUrgentNotesPopup.hidden) excelUrgentNotesClose();
   });
 
+</script>
+<script id="excel-visual-settings-persistence-v2">
+(function(){
+  const key="settegast-excel-visual-settings-v2";
+  let applying=false,saveTimer=0;
+  function stores(){
+    const result=[];
+    try{if(window.parent&&window.parent!==window&&window.parent.localStorage)result.push(window.parent.localStorage);}catch(_){}
+    try{result.push(localStorage);}catch(_){}
+    return [...new Set(result)];
+  }
+  function readNewest(){
+    let newest=null,newestAt=-1;
+    stores().forEach(store=>{try{
+      const value=JSON.parse(store.getItem(key)||"null");
+      const at=Date.parse(value&&value.updatedAt||"")||0;
+      if(value&&at>=newestAt){newest=value;newestAt=at;}
+    }catch(_){}});
+    return newest;
+  }
+  function snapshot(){
+    if(applying||typeof state==="undefined"||!state)return;
+    const payload={
+      version:2,
+      updatedAt:new Date().toISOString(),
+      gridTypography:normalizeGridTypography(state.gridTypography),
+      colorRules:normalizeColorRules(state.colorRules)
+    };
+    stores().forEach(store=>{try{store.setItem(key,JSON.stringify(payload));}catch(_){}});
+    try{persistGridTypography();persistColorRules();}catch(_){}
+  }
+  function scheduleSnapshot(){clearTimeout(saveTimer);saveTimer=setTimeout(snapshot,0);}
+  function restore(){
+    const saved=readNewest();
+    if(!saved||typeof state==="undefined"||!state)return;
+    applying=true;
+    try{
+      if(saved.gridTypography)state.gridTypography=normalizeGridTypography(saved.gridTypography);
+      if(Array.isArray(saved.colorRules))state.colorRules=normalizeColorRules(saved.colorRules);
+      applyGridTypography();
+      renderGridTypographyControls();
+      renderColorRules();
+      renderGrid();
+      if(typeof publishLiveSnapshot==="function")publishLiveSnapshot();
+    }finally{applying=false;}
+  }
+  function isVisualControl(target){return !!(target&&target.closest&&target.closest("[data-grid-typography],[data-color-rule],[data-color-choice],[data-color-rule-remove],#addColorRuleBtn,#resetColorRulesBtn"));}
+  document.addEventListener("input",event=>{if(isVisualControl(event.target))scheduleSnapshot();},true);
+  document.addEventListener("change",event=>{if(isVisualControl(event.target))scheduleSnapshot();},true);
+  document.addEventListener("click",event=>{if(isVisualControl(event.target))scheduleSnapshot();},true);
+  window.addEventListener("pagehide",snapshot);
+  window.addEventListener("beforeunload",snapshot);
+  window.addEventListener("message",event=>{
+    if(!event.data||!["conglobal-excel-table-state-restore","conglobal-excel-color-rules-restore","conglobal-excel-visual-settings-restore"].includes(event.data.type))return;
+    setTimeout(restore,0);setTimeout(restore,160);
+  });
+  setTimeout(()=>{const saved=readNewest();if(saved)restore();else snapshot();},0);
+  setTimeout(restore,250);
+})();
 </script>
 </body>
 </html>
