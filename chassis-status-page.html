@@ -27062,7 +27062,9 @@ body #forecastExcelView .forecast-excel-block.request .forecast-excel-table tbod
   const originalRender=renderForecastStatusCards;
   renderForecastStatusCards=function(...args){
     normalizeStoredDays();
-    originalRender(...args);
+    // Rebuild from the normalized source instead of a caller-supplied snapshot
+    // that may still contain both legacy day numbers and ISO dates.
+    originalRender();
     const box=document.getElementById("forecastStatusCards");
     if(!box)return;
     const selected=getForecastSelectedDayFilter();

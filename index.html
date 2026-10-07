@@ -10186,6 +10186,472 @@ document.addEventListener('click',function(event){
         );
     }
 
+    function withMatrixBalancedCraneTerritories(html) {
+      const marker = "matrix-balanced-crane-territories-v2";
+      if (!html || typeof html !== "string" || html.includes(marker)) return html;
+      const patch = `<script id="${marker}">
+(() => {
+  buildScenarioTrains = function(events) {
+    const cranes = sim.cranes
+      .filter(crane => crane.active)
+      .slice(0, MAX_ACTIVE_CRANES);
+    const railEvents = (events || []).filter(event => scenarioSourceClass(event.key) !== "flip");
+    if (!cranes.length || !railEvents.length) return [];
+
+    const craneLoads = new Map(cranes.map(crane => [crane.name, 0]));
+    const plannedTrackUses = new Map(CRANE_ACCESS_TRACKS.map(trackName => [trackName, 0]));
+    const fallbackTrackRank = trackName => {
+      const index = SCENARIO_TRACK_FILL_ORDER.indexOf(String(trackName || ""));
+      return index >= 0 ? index : Number.MAX_SAFE_INTEGER;
+    };
+    const craneForTrack = trackName => {
+      const groupIndex = CRANE_TRACK_GROUPS.findIndex(group => group.includes(String(trackName || "")));
+      return groupIndex >= 0 ? cranes[Math.min(groupIndex, cranes.length - 1)] || null : null;
+    };
+    const fallbackTracksForCrane = crane => {
+      const territory = new Set(craneTrackPreferences(crane.name, { cranes }));
+      return SCENARIO_TRACK_FILL_ORDER
+        .filter(trackName => territory.has(trackName))
+        .sort((a, b) => Number(plannedTrackUses.get(a) || 0) - Number(plannedTrackUses.get(b) || 0)
+          || fallbackTrackRank(a) - fallbackTrackRank(b));
+    };
+    const leastLoadedCrane = (hourlyLoads = null) => cranes.slice().sort((a, b) => {
+      const hourlyDifference = hourlyLoads
+        ? Number(hourlyLoads.get(a.name) || 0) - Number(hourlyLoads.get(b.name) || 0)
+        : 0;
+      if (hourlyDifference) return hourlyDifference;
+      const loadDifference = Number(craneLoads.get(a.name) || 0) - Number(craneLoads.get(b.name) || 0);
+      if (loadDifference) return loadDifference;
+      const rankA = Math.min(...craneTrackPreferences(a.name, { cranes }).map(fallbackTrackRank));
+      const rankB = Math.min(...craneTrackPreferences(b.name, { cranes }).map(fallbackTrackRank));
+      return rankA - rankB || String(a.name).localeCompare(String(b.name));
+    })[0] || null;
+
+    const sections = [];
+    for (let hourIndex = 0; hourIndex < 24; hourIndex++) {
+      const hourEvents = railEvents
+        .filter(event => Math.max(0, Math.min(23, Math.floor(Number(event.atHours) || 0))) === hourIndex)
+        .sort((a, b) => Number(a.atHours || 0) - Number(b.atHours || 0) || Number(a.sequence || 0) - Number(b.sequence || 0));
+      if (!hourEvents.length) continue;
+      const hourlyCraneLoads = new Map(cranes.map(crane => [crane.name, 0]));
+      const hourlyCraneShare = Math.max(1, Math.ceil(hourEvents.length / cranes.length));
+      const hourlyWorkTypes = ["lift", "load"]
+        .filter(workType => hourEvents.some(event => scenarioSourceClass(event.key) === workType))
+        .sort((a, b) => {
+          const firstA = hourEvents.find(event => scenarioSourceClass(event.key) === a);
+          const firstB = hourEvents.find(event => scenarioSourceClass(event.key) === b);
+          return Number(firstA && firstA.atHours || 0) - Number(firstB && firstB.atHours || 0);
+        });
+      hourlyWorkTypes.forEach(workType => {
+        const configuredTracks = scenarioConfiguredTracksForWorkType(workType);
+        const typeEvents = hourEvents.filter(event => scenarioSourceClass(event.key) === workType);
+        let eventCursor = 0;
+        let workSectionIndex = 0;
+        while (eventCursor < typeEvents.length) {
+          const sectionIndex = sections.length;
+          const configuredTrack = configuredTracks.length ? configuredTracks[workSectionIndex % configuredTracks.length] : "";
+          const selectedCrane = configuredTrack
+            ? (craneForTrack(configuredTrack) || leastLoadedCrane(hourlyCraneLoads))
+            : leastLoadedCrane(hourlyCraneLoads);
+          const fallbackTracks = selectedCrane ? fallbackTracksForCrane(selectedCrane) : [];
+          const trackName = configuredTrack || fallbackTracks[0] || SCENARIO_TRACK_FILL_ORDER[sectionIndex % SCENARIO_TRACK_FILL_ORDER.length];
+          const trackCapacity = railVisibleContainerCapacity(trackName);
+          const currentCraneLoad = selectedCrane ? Number(craneLoads.get(selectedCrane.name) || 0) : 0;
+          const currentHourlyLoad = selectedCrane ? Number(hourlyCraneLoads.get(selectedCrane.name) || 0) : 0;
+          const keepTypeTogether = !configuredTrack
+            && hourlyWorkTypes.length > 1
+            && currentHourlyLoad === 0
+            && typeEvents.length <= trackCapacity;
+          const sectionCapacity = configuredTrack
+            ? trackCapacity
+            : (keepTypeTogether
+              ? typeEvents.length
+              : Math.min(trackCapacity, Math.max(1, hourlyCraneShare - currentHourlyLoad)));
+          const sectionEvents = typeEvents.slice(eventCursor, eventCursor + sectionCapacity);
+          if (!sectionEvents.length) break;
+          const labels = Array.from(new Set(sectionEvents.map(event => liftSourceBannerLabel(event.key, event.label))));
+          sections.push({
+            sourceKey: hourIndex + ":" + workType + ":" + sectionIndex,
+            sourceOrder: sectionIndex,
+            workType,
+            baseLabel: labels.length === 1 ? labels[0] : (workType === "load" ? "MIXED OUTBOUND LOAD" : "MIXED DERAMP"),
+            sourceLiftCount: sectionEvents.length,
+            sectionIndex,
+            sectionCount: 0,
+            craneName: selectedCrane && selectedCrane.name,
+            trackName,
+            operationTrackLocked: Boolean(configuredTrack),
+            events: sectionEvents,
+            firstEventAt: Math.min(...sectionEvents.map(event => Math.max(0, Number(event.atHours) || 0))),
+            lastEventAt: Math.max(...sectionEvents.map(event => Math.max(0, Number(event.atHours) || 0)))
+          });
+          if (selectedCrane) {
+            craneLoads.set(selectedCrane.name, currentCraneLoad + sectionEvents.length);
+            hourlyCraneLoads.set(selectedCrane.name, currentHourlyLoad + sectionEvents.length);
+          }
+          plannedTrackUses.set(trackName, Number(plannedTrackUses.get(trackName) || 0) + 1);
+          eventCursor += sectionEvents.length;
+          workSectionIndex++;
+        }
+      });
+    }
+    sections.sort((a, b) => a.firstEventAt - b.firstEventAt || a.sourceOrder - b.sourceOrder);
+    sections.forEach((section, index) => { section.sectionIndex = index; });
+    sections.forEach(section => { section.sectionCount = sections.length; });
+
+    const trackStates = new Map(CRANE_ACCESS_TRACKS.map(trackName => [trackName, { availableAt: 0, uses: 0, lastTrainId: null }]));
+    const trains = [];
+    sections.forEach((section, trainIndex) => {
+      const desiredShoveStart = Math.max(CROSSING_ARM_LEAD_HOURS, section.firstEventAt - TRAIN_SHOVE_DURATION_HOURS);
+      const desiredArmStart = Math.max(0, desiredShoveStart - CROSSING_ARM_LEAD_HOURS);
+      const crane = cranes.find(item => item.name === section.craneName);
+      const craneIndex = Math.max(0, cranes.indexOf(crane));
+      const state = trackStates.get(section.trackName) || { availableAt: 0, uses: 0, lastTrainId: null };
+      if (!crane) return;
+      const id = "T" + (trainIndex + 1);
+      const trainEvents = section.events;
+      if (!trainEvents.length || trainEvents.length > railVisibleContainerCapacity(section.trackName)) return;
+      const containerCount = trainEvents.length;
+      const bottomCount = Math.ceil(containerCount / 2);
+      const topCount = Math.floor(containerCount / 2);
+      trainEvents.forEach((event, eventIndex) => {
+        const isOutboundLoad = section.workType === "load";
+        const slot = isOutboundLoad
+          ? (eventIndex < bottomCount ? eventIndex * 2 : (eventIndex - bottomCount) * 2 + 1)
+          : (eventIndex < topCount ? eventIndex * 2 + 1 : (eventIndex - topCount) * 2);
+        event.scenarioTrainId = id;
+        event.scenarioTrainSlot = slot;
+        event.scenarioTrackName = section.trackName;
+        event.scenarioCraneName = crane.name;
+      });
+      const label = section.sectionCount > 1
+        ? section.baseLabel + " " + (section.sectionIndex + 1) + "/" + section.sectionCount
+        : section.baseLabel;
+      const train = {
+        id,
+        craneName: crane.name,
+        trackName: section.trackName,
+        events: trainEvents,
+        eventSequences: trainEvents.map(event => event.sequence),
+        baseLabel: section.baseLabel,
+        workType: section.workType,
+        label,
+        sourceLiftCount: section.sourceLiftCount,
+        sectionIndex: section.sectionIndex,
+        sectionCount: section.sectionCount,
+        containerCount,
+        carCount: bottomCount,
+        // Only reuse of the same physical track must wait for the prior
+        // consist. A second track in the same crane territory may be spotted
+        // while the crane finishes its current train; the crane consist guard
+        // still prevents simultaneous crane work.
+        previousTrainId: state.lastTrainId || null,
+        operationTrackLocked: false,
+        plannedArmStartAt: desiredArmStart,
+        actualArmStartAt: null,
+        armStartAt: desiredArmStart,
+        shoveStartAt: desiredShoveStart,
+        shoveEndAt: desiredShoveStart + TRAIN_SHOVE_DURATION_HOURS,
+        clearEndAt: desiredShoveStart + TRAIN_SHOVE_DURATION_HOURS + CROSSING_ARM_CLEAR_HOURS,
+        state: "waiting",
+        progress: 0,
+        armProgress: 0,
+        crossingActive: false,
+        ready: false,
+        departedAt: null,
+        originalTrackName: null,
+        storageTrackName: null,
+        storageMoveStartAt: null,
+        storageProgress: 0,
+        crossingSide: "right",
+        airTestState: "pending",
+        airTestStartAt: null,
+        airTestProgress: 0,
+        airTestComplete: false
+      };
+      trains.push(train);
+      state.availableAt = Math.max(section.lastEventAt + CROSSING_ARM_CLEAR_HOURS, train.clearEndAt);
+      state.uses++;
+      state.lastTrainId = id;
+      trackStates.set(section.trackName, state);
+    });
+    return trains;
+  };
+})();
+<\/script>`;
+      const close = html.toLowerCase().lastIndexOf("</body>");
+      return close >= 0 ? html.slice(0, close) + patch + "\n" + html.slice(close) : html + patch;
+    }
+
+    function withMatrixContinuousTargetsAndHostlerDispatch(html) {
+      html = withMatrixBalancedCraneTerritories(html);
+      const marker = "matrix-continuous-targets-hostlers-v2";
+      if (html.includes(marker)) return html;
+      const resetPattern = /  const replayCanReset = scenarioWorkFinished\r?\n    \|\| \(reportedSwingsComplete && reportedGatesComplete && scenarioVisuallyIdle\)\r?\n    \|\| \(reportedSwingsComplete && reportedGatesComplete && drainTimedOut\);/;
+      const resetReplacement = [
+        "  const craneTargetsComplete = (scenario.payload && Array.isArray(scenario.payload.buckets) ? scenario.payload.buckets : []).every((bucket, index) => {",
+        "    const target = Math.max(0, Math.round(Number(bucket && bucket.craneLifts) || 0));",
+        "    return Math.max(0, Number(scenario.completedCraneByWindow[index]) || 0) >= target;",
+        "  });",
+        "  const replayCanReset = craneTargetsComplete && (scenarioWorkFinished",
+        "    || (reportedSwingsComplete && reportedGatesComplete && scenarioVisuallyIdle)",
+        "    || (reportedSwingsComplete && reportedGatesComplete && drainTimedOut));"
+      ].join("\n");
+      html = html.replace(resetPattern, resetReplacement);
+      const patch = `<script id="${marker}">
+(() => {
+  const originalSeparateMobileWorkers = separateMobileWorkers;
+  const originalAvailableCraneOperators = availableCraneOperators;
+  const originalSyncGroundmanNames = syncGroundmanNames;
+  const originalActivePerformanceLunchWindow = activePerformanceLunchWindow;
+  const originalSchedulePerformanceCraneRepair = schedulePerformanceCraneRepair;
+  const originalStageUpcomingOutboundLoads = stageUpcomingOutboundLoads;
+  const originalBeginScenarioCraneLift = beginScenarioCraneLift;
+  const originalStartScenarioCraneLift = startScenarioCraneLift;
+  const originalBuildScenarioTrains = buildScenarioTrains;
+  const originalScenarioConfiguredTracksForWorkType = scenarioConfiguredTracksForWorkType;
+  const originalLiveLookOperationsControlPlayback = liveLookOperationsControlPlayback;
+  const originalScenarioGroundmanPaceMultiplier = scenarioGroundmanPaceMultiplier;
+  const runtimeCranePrepLeadHours = 0.32;
+
+  scenarioConfiguredTracksForWorkType = function(workType) {
+    if (sim.scenario) return [];
+    return originalScenarioConfiguredTracksForWorkType(workType);
+  };
+
+  liveLookOperationsControlPlayback = function() {
+    if (sim.scenario) return false;
+    return originalLiveLookOperationsControlPlayback();
+  };
+
+  separateHostlerPairs = function() {
+    for (let i = 0; i < sim.hostlers.length; i++) {
+      for (let j = i + 1; j < sim.hostlers.length; j++) {
+        const a = sim.hostlers[i];
+        const b = sim.hostlers[j];
+        if (hasRoute(a) || hasRoute(b)) continue;
+        const aHasPriority = hostlerHasTrafficPriority(a, b);
+        pushApart(a, b, hostlerPairSeparation(a, b), aHasPriority ? 0.08 : 0.92, aHasPriority ? 0.92 : 0.08);
+      }
+    }
+  };
+  separateMobileWorkers = function() {
+    originalSeparateMobileWorkers();
+    separateHostlerPairs();
+  };
+
+  ensureScenarioHostlersMoving = function() {
+    scenarioHostlerPool().forEach(hostler => {
+      if (scenarioHostlerMoving(hostler) || scenarioHostlerOperational(hostler)) return;
+      startHostlerAdminParking(hostler);
+    });
+  };
+
+  availableCraneOperators = function() {
+    const candidates = originalAvailableCraneOperators().slice();
+    if (!sim.scenario) return candidates;
+    const required = Math.max(0, sim.cranes.filter(crane => crane.active
+      && crane.scenarioReleased !== false
+      && scenarioCraneNeedsOperator(crane)).length);
+    const used = new Set(candidates.map(candidate => candidate.key || normalizeEmployeeName(candidate.name)).filter(Boolean));
+    let seat = 1;
+    while (candidates.length < required) {
+      const name = "Recorded Crane Crew " + seat++;
+      const key = normalizeEmployeeName(name);
+      if (used.has(key)) continue;
+      used.add(key);
+      candidates.push({ key, name, shift: "scenario", role: "crane", preferredRole: "crane", capabilities: ["crane"], recordedScenarioCrew: true });
+    }
+    return candidates;
+  };
+
+  syncGroundmanNames = function(workers, reservedKeys) {
+    const result = originalSyncGroundmanNames(workers, reservedKeys) || { changed: false, keys: new Set() };
+    if (!sim.scenario) return result;
+    const keys = result.keys instanceof Set ? result.keys : new Set(result.keys || []);
+    let changed = Boolean(result.changed);
+    sim.groundmen.forEach(groundman => {
+      const crane = sim.cranes.find(item => item.name === groundman.craneName);
+      if (groundman.scenarioReleased === false || groundman.staffed !== false || !crane || !scenarioCraneHasTerritoryWork(crane)) return;
+      const name = "Recorded Ground Crew " + crane.name;
+      const key = normalizeEmployeeName(name);
+      groundman.name = name;
+      groundman.employeeKey = key;
+      groundman.employeeShift = "scenario";
+      groundman.staffed = true;
+      keys.add(key);
+      changed = true;
+    });
+    return { changed, keys };
+  };
+
+  activePerformanceLunchWindow = function() {
+    const active = originalActivePerformanceLunchWindow();
+    const scenario = sim.scenario;
+    if (!active || !scenario) return active;
+    const currentWindow = Math.max(0, Math.min(23, Math.floor(Number(scenario.elapsedHours) || 0)));
+    const buckets = scenario.payload && Array.isArray(scenario.payload.buckets) ? scenario.payload.buckets : [];
+    const short = Array.from({ length: currentWindow + 1 }, (_, index) => index).some(index => {
+      const target = Math.max(0, Math.round(Number(buckets[index] && buckets[index].craneLifts) || 0));
+      return Math.max(0, Number(scenario.completedCraneByWindow[index]) || 0) < target;
+    });
+    return short ? null : active;
+  };
+
+  schedulePerformanceCraneRepair = function() {
+    const scenario = sim.scenario;
+    if (scenario && !scenario.finished) {
+      const currentWindow = Math.max(0, Math.min(23, Math.floor(Number(scenario.elapsedHours) || 0)));
+      const buckets = scenario.payload && Array.isArray(scenario.payload.buckets) ? scenario.payload.buckets : [];
+      const short = Array.from({ length: currentWindow + 1 }, (_, index) => index).some(index => {
+        const target = Math.max(0, Math.round(Number(buckets[index] && buckets[index].craneLifts) || 0));
+        return Math.max(0, Number(scenario.completedCraneByWindow[index]) || 0) < target;
+      });
+      if (short) return;
+    }
+    return originalSchedulePerformanceCraneRepair();
+  };
+
+  const stageUpcomingScenarioCraneWork = function(targetElapsedHours) {
+    const scenario = sim.scenario;
+    if (!scenario || scenario.finished) return 0;
+    const horizon = Math.min(24, Math.max(0, Number(targetElapsedHours) || 0) + runtimeCranePrepLeadHours);
+    let staged = 0;
+    scenario.events
+      .filter(event => scenarioSourceClass(event.key) !== "flip"
+        && Number(event.atHours || 0) <= horizon
+        && !event.scenarioCountedComplete)
+      .sort((a, b) => Number(a.atHours || 0) - Number(b.atHours || 0) || Number(a.sequence || 0) - Number(b.sequence || 0))
+      .forEach(event => {
+        if (!scenarioPendingForEvent(event) && enqueueScenarioCraneEvent(event)) staged++;
+      });
+    return staged;
+  };
+  stageUpcomingOutboundLoads = function(targetElapsedHours) {
+    originalStageUpcomingOutboundLoads(targetElapsedHours);
+    stageUpcomingScenarioCraneWork(targetElapsedHours);
+  };
+
+  buildScenarioTrains = function(events) {
+    const trains = originalBuildScenarioTrains(events);
+    trains.forEach(train => {
+      const firstEventAt = Math.min(...train.events.map(event => Number(event.atHours) || 0));
+      const desiredShoveStart = Math.max(CROSSING_ARM_LEAD_HOURS, firstEventAt - TRAIN_SHOVE_DURATION_HOURS - runtimeCranePrepLeadHours);
+      const desiredArmStart = Math.max(0, desiredShoveStart - CROSSING_ARM_LEAD_HOURS);
+      train.plannedArmStartAt = desiredArmStart;
+      train.actualArmStartAt = null;
+      train.armStartAt = desiredArmStart;
+      train.shoveStartAt = desiredShoveStart;
+      train.shoveEndAt = desiredShoveStart + TRAIN_SHOVE_DURATION_HOURS;
+      train.clearEndAt = train.shoveEndAt + CROSSING_ARM_CLEAR_HOURS;
+    });
+    return trains;
+  };
+
+  beginScenarioCraneLift = function(pending, container, crane, work) {
+    const eventAt = Number(pending && pending.event && pending.event.atHours);
+    // Performance supplies hourly totals, not per-container timestamps. The
+    // fractional event positions are visualization spacing generated by this
+    // page, so all work in a bucket may start at that bucket's opening while
+    // work from later buckets remains ineligible.
+    const earliestStart = Number.isFinite(eventAt) ? Math.floor(eventAt) : 0;
+    if (sim.scenario && Number(sim.scenario.elapsedHours || 0) + 0.0001 < earliestStart) return false;
+    return originalBeginScenarioCraneLift(pending, container, crane, work);
+  };
+
+  startScenarioCraneLift = function(pending) {
+    const started = originalStartScenarioCraneLift(pending);
+    const crane = pending && sim.cranes.find(item => item.name === pending.craneName);
+    if (started && crane && crane.scenarioTravelPendingId === pending.id && crane.departingTrack) {
+      crane.initialDispatchBoost = true;
+    }
+    return started;
+  };
+
+  scenarioOperationPaceMultiplier = function() {
+    const scenario = sim.scenario;
+    if (!scenario || scenario.finished) return 1;
+    const elapsed = Math.max(0, Number(scenario.elapsedHours) || 0);
+    const currentWindow = Math.max(0, Math.min(23, Math.floor(elapsed)));
+    const buckets = scenario.payload && Array.isArray(scenario.payload.buckets) ? scenario.payload.buckets : [];
+    let multiplier = 1;
+    for (let windowIndex = 0; windowIndex <= currentWindow; windowIndex++) {
+      const target = Math.max(0, Math.round(Number(buckets[windowIndex] && buckets[windowIndex].craneLifts) || 0));
+      if (!target) continue;
+      const completed = Math.max(0, Number(scenario.completedCraneByWindow[windowIndex]) || 0);
+      if (completed >= target) continue;
+      if (windowIndex < currentWindow) return 48;
+      const progress = Math.max(0, Math.min(1, elapsed - windowIndex));
+      const expected = Math.ceil(target * Math.min(1, progress / 0.86));
+      const deficit = Math.max(0, expected - completed);
+      const remaining = Math.max(0, target - completed);
+      const deadlinePressure = progress > 0.60 ? (progress - 0.60) / 0.40 : 0;
+      multiplier = Math.max(
+        multiplier,
+        6 + Math.min(remaining, 4) * 0.75,
+        1 + deficit * 1.6 + Math.min(remaining, 8) * deadlinePressure * 1.25 + deadlinePressure * 9
+      );
+    }
+    return Math.max(1, Math.min(48, multiplier));
+  };
+
+  scenarioGroundmanPaceMultiplier = function() {
+    return Math.max(originalScenarioGroundmanPaceMultiplier(), Math.min(12, scenarioOperationPaceMultiplier()));
+  };
+
+  recoverScenarioHourlyCraneTarget = function() {
+    const scenario = sim.scenario;
+    if (!scenario || scenario.finished) return false;
+    const currentWindow = Math.max(0, Math.min(23, Math.floor(Number(scenario.elapsedHours) || 0)));
+    const buckets = scenario.payload && Array.isArray(scenario.payload.buckets) ? scenario.payload.buckets : [];
+    const windowIndex = Array.from({ length: currentWindow + 1 }, (_, index) => index).find(index => {
+      const target = Math.max(0, Math.round(Number(buckets[index] && buckets[index].craneLifts) || 0));
+      const completed = Math.max(0, Number(scenario.completedCraneByWindow[index]) || 0);
+      const dueCutoff = index < currentWindow ? index + 1 : Number(scenario.elapsedHours) - 0.02;
+      const hasEligibleEvent = scenario.events.some(event => scenarioSourceClass(event.key) !== "flip"
+        && Math.floor(Number(event.atHours) || 0) === index
+        && Number(event.atHours) <= dueCutoff
+        && !event.scenarioCountedComplete);
+      return target > completed && hasEligibleEvent;
+    });
+    if (!Number.isInteger(windowIndex)) return false;
+    const bucket = buckets[windowIndex] || null;
+    const target = Math.max(0, Math.round(Number(bucket && bucket.craneLifts) || 0));
+    const completed = Math.max(0, Number(scenario.completedCraneByWindow[windowIndex]) || 0);
+    if (!target || completed >= target) return false;
+    const dueCutoff = windowIndex < currentWindow ? windowIndex + 1 : Number(scenario.elapsedHours) - 0.02;
+    const events = scenario.events
+      .filter(event => scenarioSourceClass(event.key) !== "flip"
+        && Math.floor(Number(event.atHours) || 0) === windowIndex
+        && Number(event.atHours) <= dueCutoff
+        && !event.scenarioCountedComplete)
+      .sort((a, b) => Number(a.sequence || 0) - Number(b.sequence || 0));
+    if (!events.length) return false;
+    events.forEach(event => enqueueScenarioCraneEvent(event));
+    const idleCranes = activeRuntimeCranes().filter(crane => !crane.scenarioLift
+      && !crane.scenarioTravelPendingId
+      && !crane.traveling
+      && !crane.repairNeeded
+      && !crane.underRepair);
+    let started = false;
+    for (const crane of idleCranes) {
+      const pending = events
+        .map(event => scenarioPendingForEvent(event))
+        .filter(Boolean)
+        .find(item => ["queued", "ready"].includes(item.status)
+          && scenarioCraneConsistAllows(item, crane)
+          && (item.craneName === crane.name || !activeRuntimeCranes().some(other => other.name === item.craneName)));
+      if (!pending || !prepareScenarioCatchupContainer(pending, crane)) continue;
+      if (startScenarioCraneLift(pending)) started = true;
+    }
+    return started;
+  };
+})();
+<\/script>`;
+      const close = html.toLowerCase().lastIndexOf("</body>");
+      return close >= 0 ? html.slice(0, close) + patch + "\n" + html.slice(close) : html + patch;
+    }
+
     function settegastMapPageHtml() {
       return `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Settegast Map</title><style>html,body,iframe{width:100%;height:100%;margin:0;border:0;overflow:hidden;background:#08111d}iframe{display:block}</style></head><body><iframe src="settegast-map-page.html" title="Settegast Map editor"></iframe></body></html>`;
       /* The legacy inline map below is retained as a fallback reference. The active runtime uses the maintained page source above. */
@@ -14780,6 +15246,18 @@ function duplicateForecastTrainDay(train,day){
       return close >= 0 ? html.slice(0, close) + patch + "\n" + html.slice(close) : html + patch;
     }
 
+    function withChassisCanonicalDayRender(html) {
+      const marker = "chassis-canonical-day-render-v1";
+      if (!html || typeof html !== "string" || html.includes(marker)) return html;
+      const wrapperStart = html.indexOf("const originalRender=renderForecastStatusCards;");
+      if (wrapperStart < 0) return html;
+      const staleCall = "    originalRender(...args);";
+      const callAt = html.indexOf(staleCall, wrapperStart);
+      if (callAt < 0) return html;
+      const replacement = "    /* " + marker + ": rebuild from normalized records, not the stale caller snapshot. */\n    originalRender();";
+      return html.slice(0, callAt) + replacement + html.slice(callAt + staleCall.length);
+    }
+
     function withChassisForecastScreenshot(html) {
       const marker = "chassis-forecast-screenshot-v1";
       if (!html || typeof html !== "string" || html.includes(marker)) return html;
@@ -15077,7 +15555,7 @@ function duplicateForecastTrainDay(train,day){
       if (!bridgedPageHtml.has(id)) {
         let pageHtml = pages[id].html;
         if (["amReport", "timeMd", "roster", "timeOff"].includes(id)) pageHtml = withSharedRosterBaseline20260829(pageHtml);
-        if (id === "matrix" || id === "matrixWide") pageHtml = withMatrixDerampRailcarSequence(withMatrixAssignmentContainerColors(withMatrixRailContainerPinkFamilies(withMatrixDirtLotAsChassisLot(withMatrixYardCheckedNineDays(withMatrixLiftTimelineLabels(withMatrixExcelColorPalette(pageHtml)))))));
+        if (id === "matrix" || id === "matrixWide") pageHtml = withMatrixContinuousTargetsAndHostlerDispatch(withMatrixDerampRailcarSequence(withMatrixAssignmentContainerColors(withMatrixRailContainerPinkFamilies(withMatrixDirtLotAsChassisLot(withMatrixYardCheckedNineDays(withMatrixLiftTimelineLabels(withMatrixExcelColorPalette(pageHtml))))))));
         if (id === "performance") pageHtml = withPerformanceScenarioIndexedDb(withPerformanceMatrixLiftPriority(pageHtml));
         if (id === "matrix") pageHtml = withMatrixCraneScale6885(pageHtml);
         if (id === "amReport") {
@@ -15236,6 +15714,7 @@ function duplicateForecastTrainDay(train,day){
           pageHtml = withChassisImportOldestFirst(pageHtml);
           pageHtml = withChassisCleanInboundNameEditor(pageHtml);
           pageHtml = withChassisEditableDates(pageHtml);
+          pageHtml = withChassisCanonicalDayRender(pageHtml);
           pageHtml = withChassis24hFocusToggle(pageHtml);
           pageHtml = withChassisNewInboundCreator(pageHtml);
           pageHtml = withChassisForecastScreenshot(pageHtml);

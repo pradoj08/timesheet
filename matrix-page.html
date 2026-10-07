@@ -3278,6 +3278,7 @@ const CONGLOBAL_CONTAINER_ORANGE = "#f97316";
 const SCENARIO_OUTBOUND_CONTAINER_COLORS = [CONGLOBAL_CONTAINER_ORANGE, "#f8fafc"];
 const SCENARIO_INITIAL_OUTBOUND_BOXES = 18;
 const SCENARIO_OUTBOUND_DELIVERY_LEAD_HOURS = 6;
+const SCENARIO_CRANE_PREP_LEAD_HOURS = 0.32;
 const AMBIENT_MAX_CLOUDS = 2;
 const AMBIENT_MAX_BIRD_FLOCKS = 1;
 const AMBIENT_MAX_GROUND_VISITORS = 1;
@@ -3560,8 +3561,6 @@ function availableCraneOperators() {
       seen.add(key);
       return items;
     }, []);
-    if (operators.length) return sortWorkersForPreferredRole(operators, "crane");
-
     // Saved role filters must not leave recorded crane work with no operator.
     // Fall back only to known crane-qualified employees who are actually in
     // the current hourly crew; support assignments are rebuilt afterward.
@@ -3575,7 +3574,30 @@ function availableCraneOperators() {
       seen.add(key);
       return items;
     }, []);
-    return sortWorkersForPreferredRole(fallback, "crane");
+    const recorded = sortWorkersForPreferredRole([...operators, ...fallback], "crane");
+    // Performance sends lift totals and employee names, but it does not send
+    // the operational role each person worked. A recorded lift therefore
+    // proves that a crane crew existed even when none of the names happen to
+    // match Matrix's separate roster qualification list. Keep real qualified
+    // names when available and fill only the missing active crane seats with
+    // clearly labelled recorded-crew placeholders.
+    const required = Math.max(0, sim.cranes.filter(crane => crane.active
+      && crane.scenarioReleased !== false
+      && scenarioCraneNeedsOperator(crane)).length);
+    while (recorded.length < required) {
+      const seat = recorded.length + 1;
+      const name = "Recorded Crane Crew " + seat;
+      recorded.push({
+        key: normalizeEmployeeName(name),
+        name,
+        shift: "scenario",
+        role: "crane",
+        preferredRole: "crane",
+        capabilities: ["crane"],
+        recordedScenarioCrew: true
+      });
+    }
+    return recorded;
   }
   const dayIndex = matrixScheduleDayIndex(new Date());
   return sortWorkersForPreferredRole(rows
@@ -3943,15 +3965,18 @@ function syncGroundmanNames(workers, reservedKeys) {
     const current = available.find(candidate => candidate.key === currentKey);
     const best = available[0] || null;
     const worker = current && best && preferredRoleScore(current, "ground") <= preferredRoleScore(best, "ground") ? current : best;
-    const name = worker ? worker.name : UNASSIGNED_GROUNDMAN;
-    const staffed = Boolean(worker);
+    const crane = sim.cranes.find(item => item.name === groundman.craneName);
+    const recordedCrew = Boolean(!worker && sim.scenario && crane && scenarioCraneHasTerritoryWork(crane));
+    const name = worker ? worker.name : (recordedCrew ? "Recorded Ground Crew " + crane.name : UNASSIGNED_GROUNDMAN);
+    const recordedKey = recordedCrew ? normalizeEmployeeName(name) : "";
+    const staffed = Boolean(worker || recordedCrew);
     if (groundman.name !== name || groundman.staffed !== staffed) changed = true;
     groundman.name = name;
-    groundman.employeeKey = worker ? worker.key : "";
-    groundman.employeeShift = worker ? String(worker.shift || "") : "";
+    groundman.employeeKey = worker ? worker.key : recordedKey;
+    groundman.employeeShift = worker ? String(worker.shift || "") : (recordedCrew ? "scenario" : "");
     groundman.staffed = staffed;
-    if (worker) {
-      assigned.add(worker.key);
+    if (worker || recordedCrew) {
+      assigned.add(worker ? worker.key : recordedKey);
       return;
     }
     if (groundman.cont) groundman.cont.unlockClaimed = false;
@@ -5658,15 +5683,36 @@ function activePerformanceBreakWindow(type) {
     .find(window => elapsed >= window.start && elapsed < window.end) || null;
 }
 function activePerformanceLunchWindow() {
-  return activePerformanceBreakWindow("lunch");
+  const active = activePerformanceBreakWindow("lunch");
+  if (!active || !sim.scenario) return active;
+  const currentWindow = Math.max(0, Math.min(23, Math.floor(Number(sim.scenario.elapsedHours) || 0)));
+  const buckets = sim.scenario.payload && Array.isArray(sim.scenario.payload.buckets) ? sim.scenario.payload.buckets : [];
+  const craneShortfall = Array.from({ length: currentWindow + 1 }, (_, index) => index).some(index => {
+    const target = Math.max(0, Math.round(Number(buckets[index] && buckets[index].craneLifts) || 0));
+    const completed = Math.max(0, Number(sim.scenario.completedCraneByWindow[index]) || 0);
+    return completed < target;
+  });
+  // A lunch marker must not stop recorded crane production. If the recorded
+  // target is still short, keep operational crews moving and let lunch take
+  // effect only after every crane bucket due so far is complete.
+  return craneShortfall ? null : active;
 }
 function activePerformanceCraneRepairWindow() {
   return activePerformanceBreakWindow("craneRepair");
 }
 function activeScenarioParkingBreakWindow() {
-  return activePerformanceBreakWindow("lunch")
+  const active = activePerformanceBreakWindow("lunch")
     || activePerformanceBreakWindow("shiftChange")
     || activePerformanceBreakWindow("shiftEnd");
+  if (!active || !sim.scenario) return active;
+  const currentWindow = Math.max(0, Math.min(23, Math.floor(Number(sim.scenario.elapsedHours) || 0)));
+  const buckets = sim.scenario.payload && Array.isArray(sim.scenario.payload.buckets) ? sim.scenario.payload.buckets : [];
+  const craneShortfall = Array.from({ length: currentWindow + 1 }, (_, index) => index).some(index => {
+    const target = Math.max(0, Math.round(Number(buckets[index] && buckets[index].craneLifts) || 0));
+    const completed = Math.max(0, Number(sim.scenario.completedCraneByWindow[index]) || 0);
+    return completed < target;
+  });
+  return craneShortfall ? null : active;
 }
 function activeScenarioUpsFocusWindow() {
   return activePerformanceBreakWindow("upsFocus");
@@ -5684,6 +5730,15 @@ function schedulePerformanceCraneRepair() {
   if (!window) return;
   if (!Array.isArray(sim.scenario.handledCraneRepairWindows)) sim.scenario.handledCraneRepairWindows = [];
   if (sim.scenario.handledCraneRepairWindows.includes(window.id)) return;
+  const currentWindow = Math.max(0, Math.min(23, Math.floor(Number(sim.scenario.elapsedHours) || 0)));
+  const buckets = sim.scenario.payload && Array.isArray(sim.scenario.payload.buckets) ? sim.scenario.payload.buckets : [];
+  const craneShortfall = Array.from({ length: currentWindow + 1 }, (_, index) => index).some(index => {
+    const target = Math.max(0, Math.round(Number(buckets[index] && buckets[index].craneLifts) || 0));
+    const completed = Math.max(0, Number(sim.scenario.completedCraneByWindow[index]) || 0);
+    return completed < target;
+  });
+  // Finish every recorded crane target due so far before starting scheduled repair downtime.
+  if (craneShortfall) return;
   const staffedMechanic = sim.mechanics.some(mechanic => mechanic.staffed);
   const crane = sim.cranes
     .filter(item => item.active && item.scenarioReleased !== false && craneHasQualifiedOperator(item) && !item.repairNeeded && !item.underRepair)
@@ -5948,6 +6003,11 @@ function separateHostlerPairs() {
     for (let j = i + 1; j < sim.hostlers.length; j++) {
       const a = sim.hostlers[i];
       const b = sim.hostlers[j];
+      // Never steer an active route with collision separation. Moving a truck
+      // sideways changes its next-waypoint heading every frame and produces a
+      // visible left/right stutter. Route lane offsets handle moving traffic;
+      // pair separation is only for stopped units sharing a display position.
+      if (hasRoute(a) || hasRoute(b)) continue;
       const aHasPriority = hostlerHasTrafficPriority(a, b);
       pushApart(a, b, hostlerPairSeparation(a, b), aHasPriority ? 0.08 : 0.92, aHasPriority ? 0.92 : 0.08);
     }
@@ -5972,6 +6032,7 @@ function separateHostlersFromGroundmen() {
   }
 }
 function separateMobileWorkers() {
+  separateHostlerPairs();
   for (let pass = 0; pass < 4; pass++) {
     separateGroundmanPairs();
     separateHostlersFromGroundmen();
@@ -6265,7 +6326,8 @@ function scenarioGroundmanPaceMultiplier() {
   const unlocksPerGroundman = Math.max(1, lifts / staffedGroundmen);
   const targetSeconds = Math.max(0.18, (SCENARIO_SECONDS_PER_HOUR / unlocksPerGroundman) * 0.62);
   const baseSeconds = GROUNDMAN_LADDER_APPEAR_SECONDS + GROUNDMAN_CLIMB_SECONDS * 2 + UNLOCK_SECONDS;
-  return Math.max(1, Math.min(24, baseSeconds / targetSeconds));
+  const deadlinePace = Math.min(12, scenarioOperationPaceMultiplier());
+  return Math.max(1, Math.min(24, baseSeconds / targetSeconds), deadlinePace);
 }
 function groundmanScaledSeconds(baseSeconds, minSeconds) {
   return sim.scenario ? Math.max(minSeconds, baseSeconds / scenarioGroundmanPaceMultiplier()) : baseSeconds;
@@ -7573,6 +7635,11 @@ function scenarioTrainSectionCapacity() {
   return capacities.length ? Math.max(2, Math.min(MAX_CONTAINERS_PER_TRACK, ...capacities)) : MAX_CONTAINERS_PER_TRACK;
 }
 function scenarioConfiguredTracksForWorkType(workType) {
+  // Saved Live Look instructions describe the current yard, not a historical
+  // Performance replay. Applying them to sim.scenario can hard-lock an entire
+  // recorded shift to one crane territory and make its hourly totals
+  // impossible even though both recorded cranes were working.
+  if (sim.scenario) return [];
   const phase = workType === "load" ? "load" : "drop";
   const orders = typeof liveLookConfiguredOrders === "function" ? liveLookConfiguredOrders() : [];
   const matching = orders.filter(order => {
@@ -7603,54 +7670,121 @@ function buildScenarioTrains(events) {
   const railEvents = (events || []).filter(event => scenarioSourceClass(event.key) !== "flip");
   if (!cranes.length || !railEvents.length) return [];
 
+  const craneLoads = new Map(cranes.map(crane => [crane.name, 0]));
+  const plannedTrackUses = new Map(CRANE_ACCESS_TRACKS.map(trackName => [trackName, 0]));
+  const fallbackTrackRank = trackName => {
+    const index = SCENARIO_TRACK_FILL_ORDER.indexOf(String(trackName || ""));
+    return index >= 0 ? index : Number.MAX_SAFE_INTEGER;
+  };
+  const craneForTrack = trackName => {
+    const groupIndex = CRANE_TRACK_GROUPS.findIndex(group => group.includes(String(trackName || "")));
+    return groupIndex >= 0 ? cranes[Math.min(groupIndex, cranes.length - 1)] || null : null;
+  };
+  const fallbackTracksForCrane = crane => {
+    const territory = new Set(craneTrackPreferences(crane.name, { cranes }));
+    return SCENARIO_TRACK_FILL_ORDER
+      .filter(trackName => territory.has(trackName))
+      .sort((a, b) => Number(plannedTrackUses.get(a) || 0) - Number(plannedTrackUses.get(b) || 0)
+        || fallbackTrackRank(a) - fallbackTrackRank(b));
+  };
+  const leastLoadedCrane = (hourlyLoads = null, typeLoads = null) => cranes.slice().sort((a, b) => {
+    const typeDifference = typeLoads
+      ? Number(typeLoads.get(a.name) || 0) - Number(typeLoads.get(b.name) || 0)
+      : 0;
+    if (typeDifference) return typeDifference;
+    const hourlyDifference = hourlyLoads
+      ? Number(hourlyLoads.get(a.name) || 0) - Number(hourlyLoads.get(b.name) || 0)
+      : 0;
+    if (hourlyDifference) return hourlyDifference;
+    const loadDifference = Number(craneLoads.get(a.name) || 0) - Number(craneLoads.get(b.name) || 0);
+    if (loadDifference) return loadDifference;
+    const rankA = Math.min(...craneTrackPreferences(a.name, { cranes }).map(fallbackTrackRank));
+    const rankB = Math.min(...craneTrackPreferences(b.name, { cranes }).map(fallbackTrackRank));
+    return rankA - rankB || String(a.name).localeCompare(String(b.name));
+  })[0] || null;
+
   const sections = [];
-  ["lift", "load"].forEach(workType => {
-    const configuredTracks = scenarioConfiguredTracksForWorkType(workType);
-    const upsFocusWindows = workType === "lift" && sim.scenario
-      ? performanceBreakWindows(sim.scenario.dateValue, "upsFocus", 1)
-      : [];
-    const eventIsUpsFocused = event => upsFocusWindows.some(window => Number(event && event.atHours || 0) >= window.start && Number(event && event.atHours || 0) < window.end);
-    const typeEvents = railEvents
-      .filter(event => scenarioSourceClass(event.key) === workType)
+  // Build consists in deadline order. Whole-day lift/load batching can put the
+  // first several hours in one crane territory while the other crane has no
+  // eligible train, making an otherwise reachable hourly target impossible.
+  for (let hourIndex = 0; hourIndex < 24; hourIndex++) {
+    const hourEvents = railEvents
+      .filter(event => Math.max(0, Math.min(23, Math.floor(Number(event.atHours) || 0))) === hourIndex)
       .sort((a, b) => Number(a.atHours || 0) - Number(b.atHours || 0) || Number(a.sequence || 0) - Number(b.sequence || 0));
-    let eventCursor = 0;
-    let workSectionIndex = 0;
-    while (eventCursor < typeEvents.length) {
-      const sectionIndex = sections.length;
-      const nextEventAt = Number(typeEvents[eventCursor] && typeEvents[eventCursor].atHours) || 0;
-      const upsWindow = upsFocusWindows.find(window => nextEventAt >= window.start && nextEventAt < window.end) || null;
-      const upsTracks = ["808", "809"].filter(isCraneAccessTrack);
-      const configuredTrack = upsWindow && upsTracks.length
-        ? upsTracks[workSectionIndex % upsTracks.length]
-        : (configuredTracks.length ? configuredTracks[workSectionIndex % configuredTracks.length] : "");
-      const trackName = configuredTrack || SCENARIO_TRACK_FILL_ORDER[sectionIndex % SCENARIO_TRACK_FILL_ORDER.length];
-      const trackCapacity = railVisibleContainerCapacity(trackName);
-      let sectionEvents = typeEvents.slice(eventCursor, eventCursor + trackCapacity);
-      if (workType === "lift" && sectionEvents.length > 1) {
-        const focusedSection = Boolean(upsWindow);
-        const focusBoundary = sectionEvents.findIndex((event, index) => index > 0 && eventIsUpsFocused(event) !== focusedSection);
-        if (focusBoundary > 0) sectionEvents = sectionEvents.slice(0, focusBoundary);
-      }
-      if (!sectionEvents.length) break;
-      const labels = Array.from(new Set(sectionEvents.map(event => liftSourceBannerLabel(event.key, event.label))));
-      sections.push({
-        sourceKey: workType + ":" + sectionIndex,
-        sourceOrder: sectionIndex,
-        workType,
-        baseLabel: labels.length === 1 ? labels[0] : (workType === "load" ? "MIXED OUTBOUND LOAD" : "MIXED DERAMP"),
-        sourceLiftCount: sectionEvents.length,
-        sectionIndex,
-        sectionCount: 0,
-        trackName,
-        operationTrackLocked: Boolean(configuredTrack),
-        events: sectionEvents,
-        firstEventAt: Math.min(...sectionEvents.map(event => Math.max(0, Number(event.atHours) || 0))),
-        lastEventAt: Math.max(...sectionEvents.map(event => Math.max(0, Number(event.atHours) || 0)))
+    if (!hourEvents.length) continue;
+    const hourlyCraneLoads = new Map(cranes.map(crane => [crane.name, 0]));
+    const hourlyWorkTypes = ["lift", "load"]
+      .filter(workType => hourEvents.some(event => scenarioSourceClass(event.key) === workType))
+      .sort((a, b) => {
+        const firstA = hourEvents.find(event => scenarioSourceClass(event.key) === a);
+        const firstB = hourEvents.find(event => scenarioSourceClass(event.key) === b);
+        return Number(firstA && firstA.atHours || 0) - Number(firstB && firstB.atHours || 0);
       });
-      eventCursor += sectionEvents.length;
-      workSectionIndex++;
-    }
-  });
+    hourlyWorkTypes.forEach(workType => {
+      const configuredTracks = scenarioConfiguredTracksForWorkType(workType);
+      const typeEvents = hourEvents.filter(event => scenarioSourceClass(event.key) === workType);
+      const typeCraneLoads = new Map(cranes.map(crane => [crane.name, 0]));
+      const hourlyTypeShare = Math.max(1, Math.ceil(typeEvents.length / cranes.length));
+      let eventCursor = 0;
+      let workSectionIndex = 0;
+      while (eventCursor < typeEvents.length) {
+        const sectionIndex = sections.length;
+        // UPS Focus remains a visible historical marker, but it must not
+        // force recorded production onto 808/809. That hard lock split one
+        // hourly consist into serial trains on the same track and cut the
+        // achieved total in half.
+        const configuredTrack = configuredTracks.length ? configuredTracks[workSectionIndex % configuredTracks.length] : "";
+        const selectedCrane = configuredTrack
+          ? (craneForTrack(configuredTrack) || leastLoadedCrane(hourlyCraneLoads, typeCraneLoads))
+          : leastLoadedCrane(hourlyCraneLoads, typeCraneLoads);
+        const fallbackTracks = selectedCrane ? fallbackTracksForCrane(selectedCrane) : [];
+        const trackName = configuredTrack || fallbackTracks[0] || SCENARIO_TRACK_FILL_ORDER[sectionIndex % SCENARIO_TRACK_FILL_ORDER.length];
+        const trackCapacity = railVisibleContainerCapacity(trackName);
+        const currentCraneLoad = selectedCrane ? Number(craneLoads.get(selectedCrane.name) || 0) : 0;
+        const currentHourlyLoad = selectedCrane ? Number(hourlyCraneLoads.get(selectedCrane.name) || 0) : 0;
+        const currentTypeLoad = selectedCrane ? Number(typeCraneLoads.get(selectedCrane.name) || 0) : 0;
+        // When the hour already has both inbound and outbound work, keep each
+        // type on one crane when it fits a consist. This uses both territories
+        // without adding a mid-hour cross-track handoff merely to make the
+        // counts perfectly even. Single-type hours still split across cranes.
+        const keepTypeTogether = !configuredTrack
+          && hourlyWorkTypes.length > 1
+          && currentHourlyLoad === 0
+          && typeEvents.length <= trackCapacity;
+        const sectionCapacity = configuredTrack
+          ? trackCapacity
+          : (keepTypeTogether
+            ? typeEvents.length
+            : Math.min(trackCapacity, Math.max(1, hourlyTypeShare - currentTypeLoad)));
+        const sectionEvents = typeEvents.slice(eventCursor, eventCursor + sectionCapacity);
+        if (!sectionEvents.length) break;
+        const labels = Array.from(new Set(sectionEvents.map(event => liftSourceBannerLabel(event.key, event.label))));
+        sections.push({
+          sourceKey: hourIndex + ":" + workType + ":" + sectionIndex,
+          sourceOrder: sectionIndex,
+          workType,
+          baseLabel: labels.length === 1 ? labels[0] : (workType === "load" ? "MIXED OUTBOUND LOAD" : "MIXED DERAMP"),
+          sourceLiftCount: sectionEvents.length,
+          sectionIndex,
+          sectionCount: 0,
+          craneName: selectedCrane && selectedCrane.name,
+          trackName,
+          operationTrackLocked: Boolean(configuredTrack),
+          events: sectionEvents,
+          firstEventAt: Math.min(...sectionEvents.map(event => Math.max(0, Number(event.atHours) || 0))),
+          lastEventAt: Math.max(...sectionEvents.map(event => Math.max(0, Number(event.atHours) || 0)))
+        });
+        if (selectedCrane) {
+          craneLoads.set(selectedCrane.name, currentCraneLoad + sectionEvents.length);
+          hourlyCraneLoads.set(selectedCrane.name, currentHourlyLoad + sectionEvents.length);
+          typeCraneLoads.set(selectedCrane.name, currentTypeLoad + sectionEvents.length);
+        }
+        plannedTrackUses.set(trackName, Number(plannedTrackUses.get(trackName) || 0) + 1);
+        eventCursor += sectionEvents.length;
+        workSectionIndex++;
+      }
+    });
+  }
   sections.sort((a, b) => a.firstEventAt - b.firstEventAt || a.sourceOrder - b.sourceOrder);
   sections.forEach((section, index) => {
     section.sectionIndex = index;
@@ -7658,24 +7792,27 @@ function buildScenarioTrains(events) {
   sections.forEach(section => { section.sectionCount = sections.length; });
 
   const trackStates = new Map(CRANE_ACCESS_TRACKS.map(trackName => [trackName, { availableAt: 0, uses: 0, lastTrainId: null }]));
-  const craneLoads = new Map(cranes.map(crane => [crane.name, 0]));
-  const craneLastTrain = new Map();
   const trains = [];
   sections.forEach((section, trainIndex) => {
-    const desiredShoveStart = Math.max(CROSSING_ARM_LEAD_HOURS, section.firstEventAt - TRAIN_SHOVE_DURATION_HOURS);
+    // Performance has no per-lift timestamps. Spot every consist from this
+    // hourly aggregate for the opening of its bucket; using firstEventAt here
+    // would make later source groups (especially outbound loads) lose most of
+    // their hour to artificial visualization spacing.
+    const sectionReleaseAt = Math.floor(Math.max(0, Number(section.firstEventAt) || 0));
+    const desiredShoveStart = Math.max(CROSSING_ARM_LEAD_HOURS, sectionReleaseAt - TRAIN_SHOVE_DURATION_HOURS - SCENARIO_CRANE_PREP_LEAD_HOURS);
     const desiredArmStart = Math.max(0, desiredShoveStart - CROSSING_ARM_LEAD_HOURS);
     const trackName = section.trackName;
     const trackGroupIndex = CRANE_TRACK_GROUPS.findIndex(group => group.includes(trackName));
-    const craneIndex = trackGroupIndex >= 0
-      ? Math.min(trackGroupIndex, cranes.length - 1)
-      : trainIndex % cranes.length;
+    const territoryCrane = trackGroupIndex >= 0 ? cranes[Math.min(trackGroupIndex, cranes.length - 1)] : null;
+    const assignedCrane = cranes.find(crane => crane.name === section.craneName) || territoryCrane || cranes[trainIndex % cranes.length];
+    const craneIndex = Math.max(0, cranes.indexOf(assignedCrane));
     const selected = {
-      crane: cranes[craneIndex],
+      crane: assignedCrane,
       craneIndex,
       trackName,
       state: trackStates.get(trackName) || { availableAt: 0, uses: 0, lastTrainId: null }
     };
-    if (!selected) return;
+    if (!selected.crane) return;
     const id = "T" + (trainIndex + 1);
     // A section is already sized for its assigned track. Re-slicing after the
     // chronological sort discarded valid events whenever the new track was
@@ -7708,7 +7845,11 @@ function buildScenarioTrains(events) {
       sectionCount: section.sectionCount,
       containerCount,
       carCount: bottomCount,
-      previousTrainId: craneLastTrain.get(selected.crane.name) || selected.state.lastTrainId,
+      // Only repeated use of the same physical track is serialized. Different
+      // tracks in one crane territory may be spotted while the crane finishes
+      // its current consist; scenarioCraneConsistAllows still prevents the
+      // crane itself from working two trains at once.
+      previousTrainId: selected.state.lastTrainId || null,
       operationTrackLocked: Boolean(section.operationTrackLocked),
       plannedArmStartAt: desiredArmStart,
       actualArmStartAt: null,
@@ -7739,9 +7880,7 @@ function buildScenarioTrains(events) {
     );
     selected.state.uses++;
     selected.state.lastTrainId = id;
-    craneLastTrain.set(selected.crane.name, id);
     trackStates.set(selected.trackName, selected.state);
-    craneLoads.set(selected.crane.name, Number(craneLoads.get(selected.crane.name) || 0) + containerCount);
   });
   return trains;
 }
@@ -8496,19 +8635,12 @@ function startScenarioAssistRoute(hostler, poolIndex) {
 }
 function ensureScenarioHostlersMoving() {
   const pool = scenarioHostlerPool();
-  const scenario = sim.scenario;
-  const windowIndex = scenario ? Math.max(0, Math.min(23, Math.floor(Number(scenario.elapsedHours) || 0))) : -1;
-  const bucket = windowIndex >= 0 && scenario.payload && Array.isArray(scenario.payload.buckets)
-    ? scenario.payload.buckets[windowIndex]
-    : null;
-  const target = Math.max(0, Math.round(Number(bucket && bucket.craneLifts) || 0));
-  const completed = windowIndex >= 0 ? Math.max(0, Number(scenario.completedCraneByWindow[windowIndex]) || 0) : 0;
-  const supportNeeded = target > completed && scenarioPendingLifts().some(pending =>
-    !["done", "lifting", "craneTravel"].includes(pending.status));
-  pool.forEach((hostler, index) => {
+  // Operational dispatch runs before this fallback. Never send a free hostler
+  // on a decorative loop; keep the unit in its own ready slot until a chassis,
+  // outbound or loaded-container move is available.
+  pool.forEach(hostler => {
     if (scenarioHostlerMoving(hostler) || scenarioHostlerOperational(hostler)) return;
-    if (supportNeeded) startScenarioAssistRoute(hostler, index);
-    else startHostlerAdminParking(hostler);
+    startHostlerAdminParking(hostler);
   });
 }
 function claimScenarioChassis(color, hostlerId) {
@@ -8987,6 +9119,7 @@ function stageUpcomingOutboundLoads(targetElapsedHours) {
     event.outboundDirectlyStaged = true;
     sim.outbound++;
   }
+  stageUpcomingScenarioCraneWork(targetElapsedHours);
 }
 function scenarioContainerRailcarIndex(container, event = null) {
   if (!container) return 0;
@@ -9643,6 +9776,14 @@ function requestScenarioGroundmanUnlock(container, crane) {
 function beginScenarioCraneLift(pending, container, crane, work = scenarioCraneLiftWorkPoint(pending, container)) {
   if (!craneHasQualifiedOperator(crane) || crane.repairNeeded || crane.underRepair) return false;
   const outboundLoad = scenarioSourceClass(pending && pending.event && pending.event.key) === "load";
+  const eventAt = Number(pending && pending.event && pending.event.atHours);
+  // Performance supplies an hourly aggregate, not individual lift timestamps.
+  // event.atHours is only deterministic spacing for the animation, so treating
+  // its fractional part as a real release time can make the last synthetic
+  // event impossible to finish before its own hourly boundary. Every recorded
+  // lift is available at the start of its bucket, but never in an earlier one.
+  const earliestStart = Number.isFinite(eventAt) ? Math.floor(eventAt) : 0;
+  if (sim.scenario && Number(sim.scenario.elapsedHours || 0) + 0.0001 < earliestStart) return false;
   if (!container || (!outboundLoad && !container.unlocked)) return false;
   crane.route = [];
   crane.routeMode = null;
@@ -9758,7 +9899,9 @@ function startScenarioCraneLift(pending) {
       clearGroundmanLadder(groundman);
     }
     setCraneRoute(crane, craneRouteToWork(crane, container, work), "work", container.id, work.track.name);
-    crane.initialDispatchBoost = false;
+    // Accelerate only cross-track travel so the next consist can hand off
+    // within its recorded hour while the crane still follows the real route.
+    crane.initialDispatchBoost = Boolean(crane.departingTrack);
     crane.routeSpeed = CRANE_TRAVEL_SPEED;
     crane.scenarioTravelPendingId = pending.id;
     crane.state = "scenarioTravel";
@@ -10139,6 +10282,21 @@ function enqueueScenarioCraneEvent(event, preferredCrane) {
   sim.scenario.enqueued = Number(sim.scenario.enqueued || 0) + 1;
   return pending;
 }
+function stageUpcomingScenarioCraneWork(targetElapsedHours) {
+  const scenario = sim.scenario;
+  if (!scenario || scenario.finished) return 0;
+  const horizon = Math.min(24, Math.max(0, Number(targetElapsedHours) || 0) + SCENARIO_CRANE_PREP_LEAD_HOURS);
+  let staged = 0;
+  scenario.events
+    .filter(event => scenarioSourceClass(event.key) !== "flip"
+      && Number(event.atHours || 0) <= horizon
+      && !event.scenarioCountedComplete)
+    .sort((a, b) => Number(a.atHours || 0) - Number(b.atHours || 0) || Number(a.sequence || 0) - Number(b.sequence || 0))
+    .forEach(event => {
+      if (!scenarioPendingForEvent(event) && enqueueScenarioCraneEvent(event)) staged++;
+    });
+  return staged;
+}
 function prepareScenarioCatchupContainer(pending, crane) {
   const event = pending && pending.event;
   const train = pending && scenarioTrainById(pending.scenarioTrainId);
@@ -10184,8 +10342,23 @@ function prepareScenarioCatchupContainer(pending, crane) {
 function recoverScenarioHourlyCraneTarget() {
   const scenario = sim.scenario;
   if (!scenario || scenario.finished) return false;
-  const windowIndex = Math.max(0, Math.min(23, Math.floor(Number(scenario.elapsedHours) || 0)));
-  const bucket = scenario.payload && Array.isArray(scenario.payload.buckets) ? scenario.payload.buckets[windowIndex] : null;
+  const currentWindow = Math.max(0, Math.min(23, Math.floor(Number(scenario.elapsedHours) || 0)));
+  const buckets = scenario.payload && Array.isArray(scenario.payload.buckets) ? scenario.payload.buckets : [];
+  // Keep recovering the oldest missed crane hour after the clock advances.
+  // This preserves uninterrupted time while ensuring a short hour is not
+  // abandoned merely because the next hourly bucket has started.
+  const windowIndex = Array.from({ length: currentWindow + 1 }, (_, index) => index).find(index => {
+    const hourlyTarget = Math.max(0, Math.round(Number(buckets[index] && buckets[index].craneLifts) || 0));
+    const hourlyCompleted = Math.max(0, Number(scenario.completedCraneByWindow[index]) || 0);
+    const dueCutoff = index < currentWindow ? index + 1 : Number(scenario.elapsedHours) - 0.02;
+    const hasEligibleEvent = scenario.events.some(event => scenarioSourceClass(event.key) !== "flip"
+      && Math.floor(Number(event.atHours) || 0) === index
+      && Number(event.atHours) <= dueCutoff
+      && !event.scenarioCountedComplete);
+    return hourlyTarget > hourlyCompleted && hasEligibleEvent;
+  });
+  if (!Number.isInteger(windowIndex)) return false;
+  const bucket = buckets[windowIndex] || null;
   const target = Math.max(0, Math.round(Number(bucket && bucket.craneLifts) || 0));
   const completed = Math.max(0, Number(scenario.completedCraneByWindow[windowIndex]) || 0);
   if (!target || completed >= target) return false;
@@ -10193,7 +10366,9 @@ function recoverScenarioHourlyCraneTarget() {
   // Give normal train/hostler setup a short grace period, then recover each
   // recorded lift as it becomes due. This distributes work through the hour
   // instead of waiting for the final catch-up window.
-  const dueCutoff = Number(scenario.elapsedHours) - 0.06;
+  const dueCutoff = windowIndex < currentWindow
+    ? windowIndex + 1
+    : Number(scenario.elapsedHours) - 0.02;
   const events = scenario.events
     .filter(event => scenarioSourceClass(event.key) !== "flip"
       && Math.floor(Number(event.atHours) || 0) === windowIndex
@@ -10349,9 +10524,13 @@ function updateScenarioPlayback(dt) {
   const drainTimedOut = scenario.drainStartedAt && performance.now() - scenario.drainStartedAt >= 15000;
   const reportedSwingsComplete = reportedFlipVisualsComplete();
   const reportedGatesComplete = reportedGateVisualsComplete();
-  const replayCanReset = scenarioWorkFinished
+  const craneTargetsComplete = (scenario.payload && Array.isArray(scenario.payload.buckets) ? scenario.payload.buckets : []).every((bucket, index) => {
+    const target = Math.max(0, Math.round(Number(bucket && bucket.craneLifts) || 0));
+    return Math.max(0, Number(scenario.completedCraneByWindow[index]) || 0) >= target;
+  });
+  const replayCanReset = craneTargetsComplete && (scenarioWorkFinished
     || (reportedSwingsComplete && reportedGatesComplete && scenarioVisuallyIdle)
-    || (reportedSwingsComplete && reportedGatesComplete && drainTimedOut);
+    || (reportedSwingsComplete && reportedGatesComplete && drainTimedOut));
   if (scenario.elapsedHours >= 24 && replayCanReset) {
     scenario.finished = true;
     sim.running = false;
@@ -10364,16 +10543,28 @@ function updateScenarioPlayback(dt) {
 function scenarioOperationPaceMultiplier() {
   const scenario = sim.scenario;
   if (!scenario || scenario.finished) return 1;
-  const windowIndex = Math.max(0, Math.min(23, Math.floor(Number(scenario.elapsedHours) || 0)));
-  const bucket = scenario.payload && Array.isArray(scenario.payload.buckets) ? scenario.payload.buckets[windowIndex] : null;
-  const target = Math.max(0, Math.round(Number(bucket && bucket.craneLifts) || 0));
-  if (!target) return 1;
-  const completed = Math.max(0, Number(scenario.completedCraneByWindow[windowIndex]) || 0);
-  const progress = Math.max(0, Math.min(1, Number(scenario.elapsedHours) - windowIndex));
-  const expected = Math.round(target * Math.min(1, progress / 0.82));
-  const deficit = Math.max(0, expected - completed);
-  const deadlinePressure = progress > 0.68 ? (progress - 0.68) / 0.32 : 0;
-  return Math.max(1, Math.min(24, 1 + deficit * 1.35 + deadlinePressure * 7));
+  const elapsed = Math.max(0, Number(scenario.elapsedHours) || 0);
+  const currentWindow = Math.max(0, Math.min(23, Math.floor(elapsed)));
+  const buckets = scenario.payload && Array.isArray(scenario.payload.buckets) ? scenario.payload.buckets : [];
+  let multiplier = 1;
+  for (let windowIndex = 0; windowIndex <= currentWindow; windowIndex++) {
+    const target = Math.max(0, Math.round(Number(buckets[windowIndex] && buckets[windowIndex].craneLifts) || 0));
+    if (!target) continue;
+    const completed = Math.max(0, Number(scenario.completedCraneByWindow[windowIndex]) || 0);
+    if (completed >= target) continue;
+    if (windowIndex < currentWindow) return 48;
+    const progress = Math.max(0, Math.min(1, elapsed - windowIndex));
+    const expected = Math.ceil(target * Math.min(1, progress / 0.86));
+    const deficit = Math.max(0, expected - completed);
+    const remaining = Math.max(0, target - completed);
+    const deadlinePressure = progress > 0.60 ? (progress - 0.60) / 0.40 : 0;
+    multiplier = Math.max(
+      multiplier,
+      6 + Math.min(remaining, 4) * 0.75,
+      1 + deficit * 1.6 + Math.min(remaining, 8) * deadlinePressure * 1.25 + deadlinePressure * 9
+    );
+  }
+  return Math.max(1, Math.min(48, multiplier));
 }
 function enforceScenarioHourlyProgress(dt) {
   const scenario = sim.scenario;
@@ -10481,7 +10672,13 @@ function moveScenarioActorToward(actor, point, speed, dt) {
 function updateScenarioUpsFocusChoreography(dt) {
   if (!sim.scenario) return;
   const focusWindow = activeScenarioUpsFocusWindow();
-  if (!focusWindow) {
+  const currentWindow = Math.max(0, Math.min(23, Math.floor(Number(sim.scenario.elapsedHours) || 0)));
+  const buckets = sim.scenario.payload && Array.isArray(sim.scenario.payload.buckets) ? sim.scenario.payload.buckets : [];
+  const craneShortfall = Array.from({ length: currentWindow + 1 }, (_, index) => index).some(index => {
+    const target = Math.max(0, Math.round(Number(buckets[index] && buckets[index].craneLifts) || 0));
+    return Math.max(0, Number(sim.scenario.completedCraneByWindow[index]) || 0) < target;
+  });
+  if (!focusWindow || craneShortfall) {
     sim.cranes.forEach(crane => {
       if (crane.state !== "upsFocus") return;
       crane.state = "ready";
@@ -10935,7 +11132,7 @@ function liveLookConfiguredOrders() {
   return liveLookOperationsSettings.orders.filter(order => order.track && order.operation);
 }
 function liveLookOperationsControlPlayback() {
-  return Boolean(sim.rampBlockingLive || (sim.scenario && liveLookConfiguredOrders().length));
+  return Boolean(sim.rampBlockingLive);
 }
 function liveLookTrackHasRemainingPhase(trackName, phase) {
   return sim.containers.some(container => {
@@ -11161,9 +11358,10 @@ function updatePlayback(dt) {
     const operationDt = dt * scenarioOperationPaceMultiplier();
     updateFlipOperations(dt);
     updateGateTraffic(dt);
-    // Logistics use accelerated scenario time, while crane travel keeps a
-    // real-frame budget so the operator can visibly follow it to each box.
-    runScenarioOperationPipeline(operationDt, dt);
+    // Crane travel is part of the same target-delivery pipeline as hostler and
+    // lift work. Keeping it on raw frame time makes a normal 809 traverse take
+    // longer than an entire simulated hour and guarantees an early miss.
+    runScenarioOperationPipeline(operationDt, operationDt);
     schedulePerformanceCraneRepair();
     assignMechanicRepairs();
     assignMechanicInspections();
