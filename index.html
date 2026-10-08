@@ -10228,6 +10228,33 @@ document.addEventListener('click',function(event){
     })[0] || null;
 
     const sections = [];
+    const inboundEvents = railEvents.filter(event => scenarioSourceClass(event.key) === "lift")
+      .sort((a, b) => Number(a.atHours || 0) - Number(b.atHours || 0) || Number(a.sequence || 0) - Number(b.sequence || 0));
+    let inboundCursor = 0;
+    while (inboundCursor < inboundEvents.length) {
+      const sectionIndex = sections.length;
+      const configuredTracks = scenarioConfiguredTracksForWorkType("lift");
+      const configuredTrack = configuredTracks.length ? configuredTracks[sectionIndex % configuredTracks.length] : "";
+      const selectedCrane = configuredTrack ? (craneForTrack(configuredTrack) || leastLoadedCrane()) : leastLoadedCrane();
+      const fallbackTracks = selectedCrane ? fallbackTracksForCrane(selectedCrane) : [];
+      const trackName = configuredTrack || fallbackTracks[0] || SCENARIO_TRACK_FILL_ORDER[sectionIndex % SCENARIO_TRACK_FILL_ORDER.length];
+      const trackCapacity = railVisibleContainerCapacity(trackName);
+      if (inboundEvents.length - inboundCursor < trackCapacity) {
+        inboundEvents.slice(inboundCursor).forEach(event => { event.scenarioDeferredPartialInbound = true; });
+        break;
+      }
+      const sectionEvents = inboundEvents.slice(inboundCursor, inboundCursor + trackCapacity);
+      const labels = Array.from(new Set(sectionEvents.map(event => liftSourceBannerLabel(event.key, event.label))));
+      sections.push({ sourceKey: "inbound-full:" + sectionIndex, sourceOrder: sectionIndex, workType: "lift",
+        baseLabel: labels.length === 1 ? labels[0] : "MIXED DERAMP", sourceLiftCount: sectionEvents.length,
+        sectionIndex, sectionCount: 0, craneName: selectedCrane && selectedCrane.name, trackName,
+        operationTrackLocked: Boolean(configuredTrack), events: sectionEvents,
+        firstEventAt: Math.min(...sectionEvents.map(event => Math.max(0, Number(event.atHours) || 0))),
+        lastEventAt: Math.max(...sectionEvents.map(event => Math.max(0, Number(event.atHours) || 0))) });
+      if (selectedCrane) craneLoads.set(selectedCrane.name, Number(craneLoads.get(selectedCrane.name) || 0) + sectionEvents.length);
+      plannedTrackUses.set(trackName, Number(plannedTrackUses.get(trackName) || 0) + 1);
+      inboundCursor += sectionEvents.length;
+    }
     for (let hourIndex = 0; hourIndex < 24; hourIndex++) {
       const hourEvents = railEvents
         .filter(event => Math.max(0, Math.min(23, Math.floor(Number(event.atHours) || 0))) === hourIndex)
@@ -10235,7 +10262,7 @@ document.addEventListener('click',function(event){
       if (!hourEvents.length) continue;
       const hourlyCraneLoads = new Map(cranes.map(crane => [crane.name, 0]));
       const hourlyCraneShare = Math.max(1, Math.ceil(hourEvents.length / cranes.length));
-      const hourlyWorkTypes = ["lift", "load"]
+      const hourlyWorkTypes = ["load"]
         .filter(workType => hourEvents.some(event => scenarioSourceClass(event.key) === workType))
         .sort((a, b) => {
           const firstA = hourEvents.find(event => scenarioSourceClass(event.key) === a);
@@ -10340,7 +10367,10 @@ document.addEventListener('click',function(event){
         sectionIndex: section.sectionIndex,
         sectionCount: section.sectionCount,
         containerCount,
-        carCount: bottomCount,
+      // A spotted consist occupies the selected physical track end-to-end.
+      // Inbound sections are admitted only at full container capacity above;
+      // outbound consists may arrive empty but never as a short cut of cars.
+      carCount: Math.ceil(railVisibleContainerCapacity(section.trackName) / 2),
         // Only reuse of the same physical track must wait for the prior
         // consist. A second track in the same crane territory may be spotted
         // while the crane finishes its current train; the crane consist guard
@@ -10609,6 +10639,7 @@ document.addEventListener('click',function(event){
       const completed = Math.max(0, Number(scenario.completedCraneByWindow[index]) || 0);
       const dueCutoff = index < currentWindow ? index + 1 : Number(scenario.elapsedHours) - 0.02;
       const hasEligibleEvent = scenario.events.some(event => scenarioSourceClass(event.key) !== "flip"
+        && !event.scenarioDeferredPartialInbound
         && Math.floor(Number(event.atHours) || 0) === index
         && Number(event.atHours) <= dueCutoff
         && !event.scenarioCountedComplete);
@@ -10622,6 +10653,7 @@ document.addEventListener('click',function(event){
     const dueCutoff = windowIndex < currentWindow ? windowIndex + 1 : Number(scenario.elapsedHours) - 0.02;
     const events = scenario.events
       .filter(event => scenarioSourceClass(event.key) !== "flip"
+        && !event.scenarioDeferredPartialInbound
         && Math.floor(Number(event.atHours) || 0) === windowIndex
         && Number(event.atHours) <= dueCutoff
         && !event.scenarioCountedComplete)
@@ -10645,6 +10677,11 @@ document.addEventListener('click',function(event){
       if (startScenarioCraneLift(pending)) started = true;
     }
     return started;
+  };
+  const priorPerformScenarioLift = performScenarioLift;
+  performScenarioLift = function(event) {
+    if (event && event.scenarioDeferredPartialInbound) return true;
+    return priorPerformScenarioLift(event);
   };
 })();
 <\/script>`;
@@ -15310,12 +15347,14 @@ function duplicateForecastTrainDay(train,day){
   button.addEventListener("click",async function(){
     if(button.disabled)return;
     button.disabled=true;button.textContent="Creating Image...";status.textContent="Preparing full forecast";page.classList.add("forecast-screenshot-capturing");
+    const content=document.getElementById("forecastExcelContent");
     try{
+      if(!content)throw new Error("Forecast content is unavailable.");
       await new Promise(function(resolve){requestAnimationFrame(function(){requestAnimationFrame(resolve);});});
       const capture=await loadCaptureLibrary();
-      const width=Math.ceil(page.scrollWidth),height=Math.ceil(page.scrollHeight),pixelLimit=26000000;
+      const width=Math.ceil(content.scrollWidth),height=Math.ceil(content.scrollHeight),pixelLimit=26000000;
       const scale=Math.max(1,Math.min(2,Math.sqrt(pixelLimit/Math.max(1,width*height))));
-      const canvas=await capture(page,{backgroundColor:"#ffffff",scale:scale,useCORS:true,logging:false,width:width,height:height,windowWidth:Math.max(document.documentElement.clientWidth,width),windowHeight:Math.max(document.documentElement.clientHeight,height),scrollX:0,scrollY:0});
+      const canvas=await capture(content,{backgroundColor:"#ffffff",scale:scale,useCORS:true,logging:false,width:width,height:height,windowWidth:document.documentElement.clientWidth,windowHeight:document.documentElement.clientHeight,scrollX:-window.scrollX,scrollY:-window.scrollY});
       await downloadCanvas(canvas);status.textContent="PNG downloaded";
     }catch(error){console.error("Chassis Forecast screenshot failed",error);status.textContent="Could not create PNG — check connection and retry";}
     finally{page.classList.remove("forecast-screenshot-capturing");button.disabled=false;button.textContent="Screenshot PNG";setTimeout(function(){if(status.textContent==="PNG downloaded")status.textContent="";},4000);}
@@ -15718,10 +15757,53 @@ function duplicateForecastTrainDay(train,day){
           pageHtml = withChassis24hFocusToggle(pageHtml);
           pageHtml = withChassisNewInboundCreator(pageHtml);
           pageHtml = withChassisForecastScreenshot(pageHtml);
+          pageHtml = withChassisHideEmptyForecastDays(pageHtml);
         }
         bridgedPageHtml.set(id, withWorkbookSyncBridge(pageHtml));
       }
       return bridgedPageHtml.get(id);
+    }
+
+    function withChassisHideEmptyForecastDays(html) {
+      const marker = "chassis-hide-empty-forecast-days-v1";
+      if (!html || typeof html !== "string" || html.includes(marker)) return html;
+      const patch = `<script id="${marker}">
+(function(){
+  function dayKey(value){
+    const raw=String(value||"").trim();
+    try{return typeof forecastDateInputValueFromEtaDay==="function"?(forecastDateInputValueFromEtaDay(raw)||raw):raw;}catch(_){return raw;}
+  }
+  function inboundDays(){
+    return new Set((Array.isArray(forecastImportedUnits)?forecastImportedUnits:[]).map(unit=>dayKey(getForecastUnitDay(unit))).filter(Boolean));
+  }
+  function pruneEmptyDays(){
+    const days=inboundDays();
+    document.querySelectorAll("#forecastStatusCards .forecast-day-section").forEach(section=>{
+      if(!days.has(dayKey(section.dataset.forecastDropDay)))section.remove();
+    });
+    const toolbar=document.getElementById("forecastDateToolbar");
+    const newInbound=document.getElementById("forecastNewInboundBtn");
+    const primaryActions=document.querySelector(".forecast-import-actions.forecast-primary-actions");
+    if(newInbound&&primaryActions)primaryActions.prepend(newInbound);
+    toolbar?.remove();
+  }
+  const originalAvailableDays=getForecastAvailableDays;
+  getForecastAvailableDays=function(){
+    const days=inboundDays();
+    return originalAvailableDays().filter(day=>days.has(dayKey(day)));
+  };
+  const originalRender=renderForecastStatusCards;
+  renderForecastStatusCards=function(...args){
+    const result=originalRender(...args);
+    pruneEmptyDays();
+    return result;
+  };
+  updateForecastDayFilterOptions();
+  renderForecastStatusCards();
+})();
+<\/script>`;
+      const close = html.toLowerCase().lastIndexOf("</body>");
+      return close >= 0 ? html.slice(0, close) + patch + "\n" + html.slice(close) : html + patch;
     }
 
     function withChassisCleanInboundNameEditor(html) {

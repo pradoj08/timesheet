@@ -7797,7 +7797,34 @@ function buildScenarioTrains(events) {
   })[0] || null;
 
   const sections = [];
-  // Build consists in deadline order. Whole-day lift/load batching can put the
+  const inboundEvents = railEvents.filter(event => scenarioSourceClass(event.key) === "lift")
+    .sort((a, b) => Number(a.atHours || 0) - Number(b.atHours || 0) || Number(a.sequence || 0) - Number(b.sequence || 0));
+  let inboundCursor = 0;
+  while (inboundCursor < inboundEvents.length) {
+    const sectionIndex = sections.length;
+    const configuredTracks = scenarioConfiguredTracksForWorkType("lift");
+    const configuredTrack = configuredTracks.length ? configuredTracks[sectionIndex % configuredTracks.length] : "";
+    const selectedCrane = configuredTrack ? (craneForTrack(configuredTrack) || leastLoadedCrane()) : leastLoadedCrane();
+    const fallbackTracks = selectedCrane ? fallbackTracksForCrane(selectedCrane) : [];
+    const trackName = configuredTrack || fallbackTracks[0] || SCENARIO_TRACK_FILL_ORDER[sectionIndex % SCENARIO_TRACK_FILL_ORDER.length];
+    const trackCapacity = railVisibleContainerCapacity(trackName);
+    if (inboundEvents.length - inboundCursor < trackCapacity) {
+      inboundEvents.slice(inboundCursor).forEach(event => { event.scenarioDeferredPartialInbound = true; });
+      break;
+    }
+    const sectionEvents = inboundEvents.slice(inboundCursor, inboundCursor + trackCapacity);
+    const labels = Array.from(new Set(sectionEvents.map(event => liftSourceBannerLabel(event.key, event.label))));
+    sections.push({ sourceKey: "inbound-full:" + sectionIndex, sourceOrder: sectionIndex, workType: "lift",
+      baseLabel: labels.length === 1 ? labels[0] : "MIXED DERAMP", sourceLiftCount: sectionEvents.length,
+      sectionIndex, sectionCount: 0, craneName: selectedCrane && selectedCrane.name, trackName,
+      operationTrackLocked: Boolean(configuredTrack), events: sectionEvents,
+      firstEventAt: Math.min(...sectionEvents.map(event => Math.max(0, Number(event.atHours) || 0))),
+      lastEventAt: Math.max(...sectionEvents.map(event => Math.max(0, Number(event.atHours) || 0))) });
+    if (selectedCrane) craneLoads.set(selectedCrane.name, Number(craneLoads.get(selectedCrane.name) || 0) + sectionEvents.length);
+    plannedTrackUses.set(trackName, Number(plannedTrackUses.get(trackName) || 0) + 1);
+    inboundCursor += sectionEvents.length;
+  }
+  // Build outbound consists in deadline order. Whole-day batching can put the
   // first several hours in one crane territory while the other crane has no
   // eligible train, making an otherwise reachable hourly target impossible.
   for (let hourIndex = 0; hourIndex < 24; hourIndex++) {
@@ -7806,7 +7833,7 @@ function buildScenarioTrains(events) {
       .sort((a, b) => Number(a.atHours || 0) - Number(b.atHours || 0) || Number(a.sequence || 0) - Number(b.sequence || 0));
     if (!hourEvents.length) continue;
     const hourlyCraneLoads = new Map(cranes.map(crane => [crane.name, 0]));
-    const hourlyWorkTypes = ["lift", "load"]
+    const hourlyWorkTypes = ["load"]
       .filter(workType => hourEvents.some(event => scenarioSourceClass(event.key) === workType))
       .sort((a, b) => {
         const firstA = hourEvents.find(event => scenarioSourceClass(event.key) === a);
@@ -7937,7 +7964,10 @@ function buildScenarioTrains(events) {
       sectionIndex: section.sectionIndex,
       sectionCount: section.sectionCount,
       containerCount,
-      carCount: bottomCount,
+      // A spotted consist occupies the selected physical track end-to-end.
+      // Inbound sections are admitted only at full container capacity above;
+      // outbound consists may arrive empty but never as a short cut of cars.
+      carCount: Math.ceil(railVisibleContainerCapacity(selected.trackName) / 2),
       // Only repeated use of the same physical track is serialized. Different
       // tracks in one crane territory may be spotted while the crane finishes
       // its current consist; scenarioCraneConsistAllows still prevents the
@@ -10281,6 +10311,7 @@ function recoverScenarioHourlyCraneTarget() {
   return started;
 }
 function performScenarioLift(event) {
+  if (event && event.scenarioDeferredPartialInbound) return true;
   if (scenarioPendingForEvent(event)) return true;
   const workingCranes = activeRuntimeCranes();
   if (!sim.scenario) return false;
