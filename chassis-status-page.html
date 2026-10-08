@@ -11100,6 +11100,15 @@ function forecastPoolByCarKindRule(carType,unitId){
     return {pool:"trailer",reason:"Car Kind contains V"};
   }
 
+  // Domestic-container owner prefixes take precedence over a consignee-level
+  // pool rule. A single consignee can receive equipment from several pools.
+  if(unit.startsWith("HGIU") || unit.startsWith("STTU") || unit.startsWith("SWRU")){
+    return {pool:"dcli",reason:"Equipment owner prefix"};
+  }
+  if(unit.startsWith("SNLU")){
+    return {pool:"sncz",reason:"Equipment owner prefix"};
+  }
+
   if(car.includes("K7") && (unit.startsWith("UMXU") || unit.startsWith("EMHU"))){
     return {pool:"dcli",reason:"K7 + UMXU/EMHU"};
   }
