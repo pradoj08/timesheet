@@ -5743,6 +5743,64 @@ tfoot .lph-target-pill.below-target{background:#fecaca;color:#7f1d1d}
 </head>`);
     }
 
+    function withExcelAddNewInbound(html) {
+      const marker = "excel-add-new-inbound-v1";
+      if (!html || typeof html !== "string" || html.includes(marker)) return html;
+      if (!html.includes('id="toggleInboundDayHeadings"') || !html.includes("function blankInboundPlan")) return html;
+      html = html.replace('</head>', '<style id="excel-add-new-inbound-style">.inbound-popup-head{gap:6px!important;padding-left:8px!important;padding-right:8px!important}.inbound-popup-head>div:not(.inbound-title-actions){flex-direction:row!important;align-items:center!important;gap:6px!important}.inbound-title-actions{display:flex!important;flex-direction:row!important;align-items:center!important;gap:7px!important}.inbound-day-heading-toggle{padding:3px 5px!important;font-size:8px!important;letter-spacing:.02em!important}.inbound-add-new{width:23px;height:23px;display:grid;place-items:center;margin:0;padding:0;border:1px solid #f4c430;border-radius:5px;background:#f4c430;color:#111827;font-size:16px;line-height:1;font-weight:900;cursor:pointer}.inbound-add-new:hover,.inbound-add-new:focus-visible{background:#ffe16b;border-color:#ffe16b;outline:2px solid rgba(244,196,48,.32);outline-offset:1px}.inbound-popup-close{min-width:100px!important;padding-left:6px!important;padding-right:6px!important}</style></head>');
+      html = html.replace(
+        '<div class="inbound-popup-title">Inbounds</div>',
+        '<div class="inbound-title-actions"><div class="inbound-popup-title">Inbounds</div><button class="inbound-add-new" id="addNewInbound" type="button" title="Add new inbound" aria-label="Add new inbound">+</button></div>'
+      );
+      html = html.replace(
+        "  function renderInboundPlanner() {",
+        `  /* ${marker} */
+  function addNewInbound(day = "TODAY") {
+    const plan = blankInboundPlan(day);
+    plan.train = "";
+    const index = state.inboundPlans.length;
+    state.inboundPlans.push(plan);
+    state.inboundPlannerVisible = true;
+    renderAll();
+    requestAnimationFrame(() => {
+      const field = document.querySelector('[data-inbound-index="' + index + '"] [data-inbound-field="train"]');
+      if (field) field.focus();
+    });
+  }
+
+  function renderInboundPlanner() {`
+      );
+      html = html.replace(
+        '    const addInboundDay = e.target.closest("[data-inbound-add-day]");',
+        '    if (e.target.closest("#addNewInbound")) {\n      addNewInbound("TODAY");\n      return;\n    }\n    const addInboundDay = e.target.closest("[data-inbound-add-day]");'
+      );
+      html = html.replace(
+        /    const addInboundDay = e\.target\.closest\("\[data-inbound-add-day\]"\);\s*if \(addInboundDay\) \{\s*state\.inboundPlans\.push\(blankInboundPlan\(addInboundDay\.dataset\.inboundAddDay\)\);\s*state\.inboundPlannerVisible = true;\s*renderAll\(\);\s*\}/,
+        '    const addInboundDay = e.target.closest("[data-inbound-add-day]");\n    if (addInboundDay) {\n      addNewInbound(addInboundDay.dataset.inboundAddDay);\n      return;\n    }'
+      );
+      return html;
+    }
+
+    function withExcelMatrixViewButton(html) {
+      const marker = "excel-open-actual-matrix-v1";
+      if (!html || typeof html !== "string" || html.includes(marker)) return html;
+      if (!html.includes('class="dashboard-controls"') || !html.includes('id="undoExcelView"')) return html;
+      html = html.replace(
+        '<div class="dashboard-controls">',
+        '<div class="dashboard-controls">\n            <button class="btn btn-white btn-small" id="openMatrixView" type="button">Matrix View</button>'
+      );
+      html = html.replace(
+        '  $("#undoExcelView").addEventListener("click", undoExcelViewChange);',
+        `  /* ${marker} */
+  $("#openMatrixView").addEventListener("click",()=>{
+    publishLiveSnapshot();
+    if(window.parent&&window.parent!==window)window.parent.postMessage({type:"conglobal-open-excel-matrix-overlay"},"*");
+  });
+  $("#undoExcelView").addEventListener("click", undoExcelViewChange);`
+      );
+      return html;
+    }
+
     function withExcelInboundPlannerClosedAtBoot(html) {
       if (!html || typeof html !== "string" || html.includes("conglobal-excel-inbound-closed-at-boot-v1")) return html;
       const before = '<section class="workspace has-inbound" id="excelWorkspace">';
@@ -10162,7 +10220,7 @@ document.addEventListener('click',function(event){
       if (!html || typeof html !== "string" || html.includes("matrix-rail-container-pink-families-v1")) return html;
       return html.replace(
         'function drawRailContainer(width, y, color, label, brandSeed = 0, outboundLoad = false, blockedTextOnly = false) {\n  const height = 21;',
-        '/* matrix-rail-container-pink-families-v1 */\nfunction matrixRailContainerFamilyColor(label, fallback) {\n  const value = String(label || "").toUpperCase().replace(/[^A-Z0-9]/g, "");\n  if (value.startsWith("ZLBHO")) return "#f472b6";\n  if (value.startsWith("ZPBHO")) return "#db2777";\n  if (value.startsWith("ILBHOX")) return "#f9a8d4";\n  return fallback;\n}\nfunction drawRailContainer(width, y, color, label, brandSeed = 0, outboundLoad = false, blockedTextOnly = false) {\n  color = matrixRailContainerFamilyColor(label, color);\n  const height = 21;'
+        '/* matrix-rail-container-pink-families-v1 */\nfunction matrixRailContainerFamilyColor(label, fallback) {\n  const value = String(label || "").toUpperCase().replace(/[^A-Z0-9]/g, "");\n  if (value.startsWith("ZLBHO")) return "#f472b6";\n  if (value.startsWith("ZPBHO")) return "#db2777";\n  if (value.startsWith("ILBHOX")) return "#f9a8d4";\n  return fallback;\n}\nfunction drawRailContainer(width, y, color, label, brandSeed = 0, outboundLoad = false, blockedTextOnly = false) {\n  color = blockedTextOnly ? color : matrixRailContainerFamilyColor(label, color);\n  const height = 21;'
       );
     }
     function withMatrixDirtLotAsChassisLot(html) {
@@ -10883,6 +10941,59 @@ document.addEventListener('click',function(event){
     const chassisFrame = document.getElementById("chassisPageFrame");
     const excelFrame = document.getElementById("excelPageFrame");
     let frame = primaryFrame;
+    let excelMatrixOverlay = null;
+    let excelMatrixOverlayFrame = null;
+    let excelMatrixOverlayMode = "reloaded";
+
+    function renderExcelMatrixOverlayMode(mode) {
+      if (!excelMatrixOverlay || !excelMatrixOverlayFrame) return;
+      excelMatrixOverlayMode = mode === "regular" ? "regular" : "reloaded";
+      const regular = excelMatrixOverlayMode === "regular";
+      const title = excelMatrixOverlay.querySelector("#excelMatrixRuntimeTitle");
+      const toggle = excelMatrixOverlay.querySelector("#toggleExcelMatrixRuntimeMode");
+      if (title) title.textContent = regular
+        ? "Regular Matrix · Compact Live Excel Track Contents"
+        : "Matrix Reloaded · Live Excel Track Contents";
+      if (toggle) {
+        toggle.textContent = regular ? "Matrix Reloaded" : "Regular Matrix";
+        toggle.setAttribute("aria-pressed", regular ? "true" : "false");
+      }
+      excelMatrixOverlayFrame.title = regular ? "Regular Matrix compact track view" : "Matrix Reloaded track view";
+      // Both presentations must use Matrix Reloaded's live Excel manifest.
+      // The compact Regular Matrix option changes only the presentation, never the car source.
+      excelMatrixOverlayFrame.srcdoc = withMatrixExcelTracksOnly(bridgedHtmlForPage("matrixWide"));
+    }
+
+    function closeExcelMatrixOverlay() {
+      if (!excelMatrixOverlay) return;
+      excelMatrixOverlay.hidden = true;
+      excelMatrixOverlay.style.display = "none";
+      if (excelMatrixOverlayFrame) excelMatrixOverlayFrame.removeAttribute("srcdoc");
+      try { excelFrame.contentWindow?.focus(); } catch (error) {}
+    }
+
+    function openExcelMatrixOverlay() {
+      if (!excelMatrixOverlay) {
+        excelMatrixOverlay = document.createElement("section");
+        excelMatrixOverlay.id = "excelMatrixRuntimeOverlay";
+        excelMatrixOverlay.setAttribute("aria-label", "Matrix Reloaded track view");
+        excelMatrixOverlay.style.cssText = "position:fixed;inset:0;z-index:10000;display:flex;flex-direction:column;background:#090d12";
+        excelMatrixOverlay.innerHTML = '<header style="height:46px;flex:0 0 46px;display:flex;align-items:center;justify-content:space-between;padding:0 12px;border-bottom:1px solid #303d4e;background:#0d141d;color:#e4edf8;font:900 13px Segoe UI,Arial,sans-serif;letter-spacing:.06em;text-transform:uppercase"><span id="excelMatrixRuntimeTitle">Matrix Reloaded · Live Excel Track Contents</span><span style="display:flex;align-items:center;gap:7px"><button id="toggleExcelMatrixRuntimeMode" type="button" aria-pressed="false" style="min-height:26px;padding:3px 10px;border:1px solid #64748b;border-radius:5px;background:#1e293b;color:#f8fafc;font:900 10px Segoe UI,Arial,sans-serif;letter-spacing:.04em;text-transform:uppercase;cursor:pointer">Regular Matrix</button><button id="closeExcelMatrixRuntimeOverlay" type="button" style="min-height:32px;padding:5px 15px;border:1px solid #f4c430;border-radius:6px;background:#f4c430;color:#111827;font:900 13px Segoe UI,Arial,sans-serif;cursor:pointer">Excel View</button></span></header><iframe id="excelMatrixRuntimeFrame" title="Matrix Reloaded track view" style="display:block;flex:1 1 auto;width:100%;min-height:0;border:0;background:#090d12"></iframe>';
+        document.body.appendChild(excelMatrixOverlay);
+        excelMatrixOverlayFrame = excelMatrixOverlay.querySelector("#excelMatrixRuntimeFrame");
+        excelMatrixOverlay.querySelector("#closeExcelMatrixRuntimeOverlay").addEventListener("click", closeExcelMatrixOverlay);
+        excelMatrixOverlay.querySelector("#toggleExcelMatrixRuntimeMode").addEventListener("click", () => {
+          renderExcelMatrixOverlayMode(excelMatrixOverlayMode === "regular" ? "reloaded" : "regular");
+        });
+      }
+      excelMatrixOverlay.hidden = false;
+      excelMatrixOverlay.style.display = "flex";
+      renderExcelMatrixOverlayMode("reloaded");
+    }
+
+    document.addEventListener("keydown", event => {
+      if (event.key === "Escape" && excelMatrixOverlay && !excelMatrixOverlay.hidden) closeExcelMatrixOverlay();
+    });
     let pendingTalkingPointsArticle = null;
     let pendingExcelColorRulesRestore = null;
     let pendingExcelColorRulesRestoreTimer = 0;
@@ -15594,11 +15705,101 @@ function duplicateForecastTrainDay(train,day){
       return close >= 0 ? html.slice(0, close) + patch + "\n" + html.slice(close) : html + patch;
     }
 
+    function withMatrixWideCenteredTrackFocus(html) {
+      const marker = "matrix-wide-centered-track-focus-v1";
+      if (!html || typeof html !== "string" || html.includes(marker)) return html;
+      const legacyCamera = /function trackFocusCamera\(\)\s*\{\s*return\s*\{\s*x:\s*780,\s*y:\s*338,\s*scale:\s*1\.32,/;
+      if (!legacyCamera.test(html)) return html;
+      return html.replace(legacyCamera, `function trackFocusCamera() {
+  /* ${marker} */
+  return {
+    x: 1240,
+    y: 350,
+    scale: 1.16,`);
+    }
+
+    function withMatrixExcelTracksOnly(html) {
+      const marker = "matrix-excel-tracks-only-v1";
+      if (!html || typeof html !== "string" || html.includes(marker)) return html;
+      const start = html.indexOf("function drawYardSceneLayers() {");
+      const end = start >= 0 ? html.indexOf("\nfunction drawMap()", start) : -1;
+      if (start < 0 || end < 0) return html;
+      const replacement = `function drawYardSceneLayers() {
+  /* ${marker} */
+  ctx.fillStyle = "#283222";
+  ctx.fillRect(0, 0, BUILT_YARD_W, BUILT_YARD_H);
+  drawGrassTexture();
+  const rowTracks = TRACK_DEFS.map((track, index) => ({
+    ...track,
+    x0: 10,
+    x1: 2340,
+    y0: 72 + index * 89,
+    y1: 72 + index * 89
+  }));
+  for (const track of rowTracks) {
+    if (track.hidden) continue;
+    drawRailTrack(track, trackColor(track.name), Boolean(inboundByTrack(track.name)));
+  }
+  for (const track of rowTracks) {
+    if (track.hidden) continue;
+    drawRailCarsOnTrack(track);
+    const y = track.y0;
+    ctx.save();
+    ctx.fillStyle = "rgba(4,12,22,.94)";
+    ctx.strokeStyle = "#facc15";
+    ctx.lineWidth = 2;
+    ctx.fillRect(10, y - 70, 78, 17);
+    ctx.strokeRect(11, y - 69, 76, 15);
+    ctx.fillStyle = "#f8fafc";
+    ctx.font = "900 9px Segoe UI,Arial,sans-serif";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+    ctx.fillText("TRACK " + track.name, 16, y - 61);
+    ctx.restore();
+  }
+}`;
+      let next = html.slice(0, start) + replacement + html.slice(end);
+      next = next.replace("</head>", `<style id="${marker}">
+#matrixTimeline,#currentHourLiftBanner,.scenario-worker-window,#togglePanel,.matrix-controls-toggle,#side{display:none!important}
+#app{grid-template-columns:minmax(0,1fr)!important}
+#mapPane{height:100vh!important;padding-top:0!important;overflow:hidden!important}
+#mapCrop{width:100%!important;max-width:none!important;height:100%!important;aspect-ratio:2400/860!important}
+#mapPane canvas{width:100%!important;height:100%!important;max-height:none!important}
+</style></head>`);
+      return next.replace(
+        'let matrixViewMode = storedMatrixViewMode === "detail" || storedMatrixViewMode === "tracks" ? storedMatrixViewMode : "yard";',
+        'let matrixViewMode = "yard";'
+      );
+    }
+
+    function withMatrixPinkFamilyBlackText(html) {
+      const marker = "matrix-pink-family-black-text-v1";
+      if (!html || typeof html !== "string" || html.includes(marker)) return html;
+      const start = html.indexOf("function drawRailContainer(");
+      const end = start >= 0 ? html.indexOf("\nfunction drawEmptyBlockingRailCarLabel", start) : -1;
+      if (start < 0 || end < 0 || !html.includes("matrixRailContainerFamilyColor")) return html;
+      let block = html.slice(start, end);
+      block = block.replace(
+        '  color = blockedTextOnly ? color : matrixRailContainerFamilyColor(label, color);',
+        '  color = blockedTextOnly ? color : matrixRailContainerFamilyColor(label, color);\n  /* ' + marker + ' */\n  const pinkFamilyBlackText = ["#f472b6", "#db2777", "#f9a8d4"].includes(String(color || "").toLowerCase());'
+      );
+      block = block.replace('  ctx.fillStyle = "rgba(248,250,252,.7)";', '  ctx.fillStyle = pinkFamilyBlackText ? "#050505" : "rgba(248,250,252,.7)";');
+      block = block.replace('    const darkText = color === "#ffcf57" || color === "#f8fafc";', '    const darkText = pinkFamilyBlackText || color === "#ffcf57" || color === "#f8fafc";');
+      block = block.replace('      ctx.fillStyle = darkText ? "rgba(12,18,28,.82)" : "rgba(255,255,255,.86)";', '      ctx.fillStyle = darkText ? "#050505" : "rgba(255,255,255,.86)";');
+      block = block.replace('    const darkLabel = color === "#f59e0b" || color === "#facc15" || color === "#4ade80" || color === "#f8fafc";', '    const darkLabel = pinkFamilyBlackText || color === "#f59e0b" || color === "#facc15" || color === "#4ade80" || color === "#f8fafc";');
+      block = block.replace('    ctx.fillStyle = darkLabel ? "rgba(5,15,25,.94)" : "rgba(255,255,255,.94)";', '    ctx.fillStyle = darkLabel ? "#050505" : "rgba(255,255,255,.94)";');
+      block = block.replace('    let labelSize = blockedTextOnly ? (lines.length > 1 ? 5.5 : 6.4) : 4.2;', '    let labelSize = blockedTextOnly ? 8.2 : 4.2;');
+      block = block.replace('    } while (labelSize > (blockedTextOnly ? 3.5 : 2.5));', '    } while (labelSize > (blockedTextOnly ? 6.2 : 2.5));');
+      return html.slice(0, start) + block + html.slice(end);
+    }
+
     function bridgedHtmlForPage(id) {
       if (!bridgedPageHtml.has(id)) {
         let pageHtml = pages[id].html;
         if (["amReport", "timeMd", "roster", "timeOff"].includes(id)) pageHtml = withSharedRosterBaseline20260829(pageHtml);
         if (id === "matrix" || id === "matrixWide") pageHtml = withMatrixContinuousTargetsAndHostlerDispatch(withMatrixDerampRailcarSequence(withMatrixAssignmentContainerColors(withMatrixRailContainerPinkFamilies(withMatrixDirtLotAsChassisLot(withMatrixYardCheckedNineDays(withMatrixLiftTimelineLabels(withMatrixExcelColorPalette(pageHtml))))))));
+        if (id === "matrix" || id === "matrixWide") pageHtml = withMatrixPinkFamilyBlackText(pageHtml);
+        if (id === "matrixWide") pageHtml = withMatrixWideCenteredTrackFocus(pageHtml);
         if (id === "performance") pageHtml = withPerformanceScenarioIndexedDb(withPerformanceMatrixLiftPriority(pageHtml));
         if (id === "matrix") pageHtml = withMatrixCraneScale6885(pageHtml);
         if (id === "amReport") {
@@ -15714,6 +15915,8 @@ function duplicateForecastTrainDay(train,day){
           pageHtml = withExcelVisualSettingsPersistenceV2(pageHtml);
           pageHtml = withExcelDisplayTogglesAllTablesV2(pageHtml);
           pageHtml = withExcelInboundLiftOverridesV1(pageHtml);
+          pageHtml = withExcelAddNewInbound(pageHtml);
+          pageHtml = withExcelMatrixViewButton(pageHtml);
         }
         if (id === "chassisStatus") {
           pageHtml = withChassisGreenExcelHero(pageHtml);
@@ -15928,6 +16131,7 @@ function duplicateForecastTrainDay(train,day){
 
     function selectPage(id, colorRulesCheckpointed = false) {
       const requestedPage = pages[id] && !["compare", "time", "dayforce", "archive", "roster", "timeOff", "pearl", "pearlBrowser"].includes(id) ? id : "amReport";
+      if (requestedPage !== "excelView") closeExcelMatrixOverlay();
       if (!colorRulesCheckpointed && activePage === "excelView" && requestedPage !== "excelView") {
         requestExcelColorRulesCheckpoint().then(() => selectPage(requestedPage, true));
         return;
@@ -16591,6 +16795,10 @@ function duplicateForecastTrainDay(train,day){
     excelFrame.addEventListener("load", handleWorkbookFrameLoad);
     window.addEventListener("resize", () => resizeFrame(frame));
     window.addEventListener("message", (event) => {
+      if (event.data && event.data.type === "conglobal-open-excel-matrix-overlay" && event.source === excelFrame.contentWindow) {
+        openExcelMatrixOverlay();
+        return;
+      }
       if (event.data && event.data.type === "archive-bot-send-to-talking-points" && event.origin === "http://127.0.0.1:4317") {
         pendingTalkingPointsArticle = {
           title: String(event.data.title || "Archived article"),

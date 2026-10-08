@@ -3636,10 +3636,15 @@
     user-select: none;
   }
   .inbound-popup-title { font-size: 13px; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; }
-  .inbound-popup-head > div { min-width: 0; display: flex; align-items: center; gap: 8px; }
+  .inbound-popup-head { gap:6px; padding-left:8px; padding-right:8px; }
+  .inbound-popup-head > div { min-width: 0; display: flex; flex-direction:row; align-items:center; gap: 6px; }
+  .inbound-title-actions { display:flex; flex-direction:row !important; align-items:center !important; gap:7px !important; }
   .inbound-popup-sub { margin-top: 2px; color: #aebdd0; font-size: 10px; font-weight: 700; }
-  .inbound-day-heading-toggle { margin-top:0; padding:3px 8px; border:1px solid #64748b; border-radius:5px; background:#18263a; color:#dce8f7; font-size:9px; font-weight:900; letter-spacing:.04em; text-transform:uppercase; white-space:nowrap; cursor:pointer; }
+  .inbound-day-heading-toggle { margin-top:0; padding:3px 5px; border:1px solid #64748b; border-radius:5px; background:#18263a; color:#dce8f7; font-size:8px; font-weight:900; letter-spacing:.02em; text-transform:uppercase; white-space:nowrap; cursor:pointer; }
   .inbound-day-heading-toggle[aria-pressed="true"] { border-color:#38bdf8; background:#075985; color:#fff; }
+  .inbound-add-new { width:23px; height:23px; display:grid; place-items:center; margin:0; padding:0; border:1px solid #f4c430; border-radius:5px; background:#f4c430; color:#111827; font-size:16px; line-height:1; font-weight:900; cursor:pointer; }
+  .inbound-popup-close { min-width:100px; padding-left:6px; padding-right:6px; }
+  .inbound-add-new:hover,.inbound-add-new:focus-visible { background:#ffe16b; border-color:#ffe16b; outline:2px solid rgba(244,196,48,.32); outline-offset:1px; }
   #inboundPanel.hide-inbound-day-headings .inbound-group-label { display:none; }
   .inbound-popup-close {
     min-width: 112px;
@@ -4111,7 +4116,7 @@
       <aside class="panel inbound-panel" id="inboundPanel" aria-label="Inbound Planner">
         <header class="inbound-popup-head" id="inboundPopupDragHandle">
           <div>
-            <div class="inbound-popup-title">Inbounds</div>
+            <div class="inbound-title-actions"><div class="inbound-popup-title">Inbounds</div><button class="inbound-add-new" id="addNewInbound" type="button" title="Add new inbound" aria-label="Add new inbound">+</button></div>
             <button class="inbound-day-heading-toggle" id="toggleInboundDayHeadings" type="button" aria-pressed="true">Date Headers On</button>
           </div>
           <button class="inbound-popup-close" id="closeInboundPlanner" type="button" aria-label="Hide Inbounds">Hide Inbounds</button>
@@ -4129,6 +4134,7 @@
             <div class="panel-subtitle" id="viewDescription"></div>
           </div>
           <div class="dashboard-controls">
+            <button class="btn btn-white btn-small" id="openMatrixView" type="button">Matrix View</button>
             <label class="table-density-control" title="Condense or expand all ramp tables">
               <span>Table space</span>
               <input id="tableDensityRange" type="range" min="0" max="100" step="1" value="50" aria-label="Table spacing from condensed to expanded">
@@ -4745,6 +4751,20 @@ https://github.com/nodeca/pako/blob/main/LICENSE
 
   function blankInboundDpuRow() {
     return { block:"DPU", cars:"", loads:"", mty:"", wt:"", ft:"" };
+  }
+
+  /* excel-add-new-inbound-v1 */
+  function addNewInbound(day = "TODAY") {
+    const plan = blankInboundPlan(day);
+    plan.train = "";
+    const index = state.inboundPlans.length;
+    state.inboundPlans.push(plan);
+    state.inboundPlannerVisible = true;
+    renderAll();
+    requestAnimationFrame(() => {
+      const field = document.querySelector('[data-inbound-index="' + index + '"] [data-inbound-field="train"]');
+      if (field) field.focus();
+    });
   }
 
   function inboundEtaCalendarDate(value) {
@@ -9825,6 +9845,11 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   });
 
   $("#undoExcelView").addEventListener("click", undoExcelViewChange);
+  /* excel-open-actual-matrix-v1 */
+  $("#openMatrixView").addEventListener("click",()=>{
+    publishLiveSnapshot();
+    if(window.parent&&window.parent!==window)window.parent.postMessage({type:"conglobal-open-excel-matrix-overlay"},"*");
+  });
   ["yardGrid", "blankYardGrid", "blankYardGridTwo"].forEach(gridId => {
     const grid = document.getElementById(gridId);
     grid.addEventListener("pointerdown", setBlockPasteTarget);
@@ -10026,6 +10051,10 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       syncInboundDayHeadings();
       return;
     }
+    if (e.target.closest("#addNewInbound")) {
+      addNewInbound("TODAY");
+      return;
+    }
     const onHandToggle = e.target.closest("[data-inbound-on-hand-index]");
     if (onHandToggle) {
       const plan = state.inboundPlans[Number(onHandToggle.dataset.inboundOnHandIndex)];
@@ -10042,9 +10071,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     }
     const addInboundDay = e.target.closest("[data-inbound-add-day]");
     if (addInboundDay) {
-      state.inboundPlans.push(blankInboundPlan(addInboundDay.dataset.inboundAddDay));
-      state.inboundPlannerVisible = true;
-      renderAll();
+      addNewInbound(addInboundDay.dataset.inboundAddDay);
+      return;
     }
     const deleteTrain = e.target.closest("[data-inbound-delete]");
     if (deleteTrain) {

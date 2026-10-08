@@ -1600,7 +1600,7 @@ body.multi-selecting .unit,body.multi-selecting .y-half{cursor:crosshair!importa
 .model3d-toolbar{position:absolute;z-index:5;left:14px;top:14px;display:flex;align-items:center;gap:8px;padding:7px 9px;border:1px solid #52677d;border-radius:9px;background:rgba(8,15,22,.9);color:#eaf4ff;box-shadow:0 8px 24px #0008}.model3d-toolbar strong{font-size:12px;letter-spacing:.08em}.model3d-toolbar span{color:#9fb1c2;font-size:10px}.model3d-toolbar button{min-height:27px!important;padding:4px 8px!important}.model3d-compass{position:absolute;right:16px;bottom:14px;z-index:4;width:66px;height:66px;border:1px solid #50677a;border-radius:50%;background:rgba(8,15,22,.82);color:#fff;font:900 10px Consolas;text-align:center;line-height:66px}.model3d-compass::before{content:"N";position:absolute;left:28px;top:-23px;color:#fbbf24}.model3d-compass::after{content:"↗";display:block;font-size:30px;line-height:62px;transform:rotate(var(--compass-angle,0deg));color:#38bdf8}.model3d-empty{position:absolute;inset:0;display:grid;place-items:center;color:#9fb1c2;font-weight:900;letter-spacing:.08em}
 .model3d-toolbar .model3d-review-status{padding:3px 6px;border:1px solid #277c55;border-radius:5px;background:#123c2c;color:#a7f3d0;font-size:9px;font-weight:950}.model3d-toolbar .model3d-review-status.fail{border-color:#a43c45;background:#4a171b;color:#fecaca}
 #model3dCanvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}.model3d-stage{perspective:none}.model3d-stage .model3d-world{display:none}
-.model3d-access-info{position:absolute;z-index:5;left:50%;top:50%;min-width:210px;padding:10px 13px;border:1px solid #f4c430;border-radius:9px;background:rgba(5,12,19,.9);color:#fff;transform:translate(-50%,calc(-100% - 14px));box-shadow:0 8px 22px rgba(0,0,0,.42);pointer-events:none}.model3d-access-info::after{content:"";position:absolute;left:50%;bottom:-8px;width:14px;height:14px;border-right:1px solid #f4c430;border-bottom:1px solid #f4c430;background:rgba(5,12,19,.96);transform:translateX(-50%) rotate(45deg)}.model3d-access-info[hidden]{display:none}.model3d-access-info strong{display:block;color:#f8fafc;font:900 14px/1.2 Consolas,monospace}.model3d-access-info b{display:block;margin-top:4px;color:#f4c430;font:900 18px/1 Arial,sans-serif}.model3d-access-info span{display:block;margin-top:4px;color:#aebdca;font:800 10px/1.25 Consolas,monospace}
+.model3d-access-info{position:absolute;z-index:5;left:50%;top:50%;min-width:210px;padding:10px 13px;border:1px solid #f4c430;border-radius:9px;background:rgba(5,12,19,.9);color:#fff;transform:translate(-50%,calc(-100% - 14px));box-shadow:0 8px 22px rgba(0,0,0,.42);pointer-events:none}.model3d-access-info::after{content:"";position:absolute;left:50%;bottom:-8px;width:14px;height:14px;border-right:1px solid #f4c430;border-bottom:1px solid #f4c430;background:rgba(5,12,19,.96);transform:translateX(-50%) rotate(45deg)}.model3d-access-info[hidden]{display:none}.model3d-access-info strong{display:block;color:#f8fafc;font:900 14px/1.2 Consolas,monospace}.model3d-access-info b{display:block;margin-top:4px;color:#f4c430;font:900 18px/1 Arial,sans-serif}.model3d-access-info span{display:block;margin-top:4px;color:#aebdca;font:800 10px/1.25 Consolas,monospace}.model3d-access-info .paid-swing-status{margin-top:7px;padding-top:6px;border-top:1px solid #344455;font-size:11px}.model3d-access-info .paid-swing-status.match{color:#65e6a2}.model3d-access-info .paid-swing-status.missing{color:#ff8892}.model3d-access-info .paid-swing-status.unknown{color:#9fb0bf}
 .model3d-edit{position:fixed;inset:0;z-index:13000;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(3,8,15,.72);backdrop-filter:blur(4px)}.model3d-edit.open{display:flex}.model3d-edit-card{width:min(430px,calc(100vw - 32px));padding:16px;border:1px solid #52677d;border-radius:12px;background:#111b26;color:#fff;box-shadow:0 24px 70px #000b}.model3d-edit-card h2{margin:0 0 11px;font-size:16px}.model3d-edit-card input{box-sizing:border-box;width:100%;padding:11px 12px;border:2px solid #38bdf8;border-radius:8px;background:#050b12;color:#fff;font:900 16px/1.2 Consolas,monospace;text-transform:uppercase;outline:none}.model3d-edit-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}.model3d-edit-actions button{min-width:88px!important}
 </style>
 </head>
@@ -1991,7 +1991,13 @@ function itemHighlightStyle(item){
 
 const BAYS_KEY=KEY+'_columns_v1';
 function stackBaysKey(page=activeStackPage){return `${BAYS_KEY}_page_${page}`}
-function readStackBays(page=activeStackPage){return Math.min(12,Math.max(2,Number(localStorage.getItem(stackBaysKey(page)))||Number(localStorage.getItem(BAYS_KEY))||7))}
+function readStackBays(page=activeStackPage){
+  const scopedKey=stackBaysKey(page),scoped=Number(localStorage.getItem(scopedKey));
+  if(Number.isFinite(scoped)&&scoped>=2&&scoped<=12)return scoped;
+  const migrated=Math.min(12,Math.max(2,Number(localStorage.getItem(BAYS_KEY))||7));
+  localStorage.setItem(scopedKey,String(migrated));
+  return migrated;
+}
 let BAYS=readStackBays(activeStackPage);
 const LEVELS=3;
 let ROW_SIZE=BAYS*LEVELS;
@@ -2000,9 +2006,11 @@ const ORDER_KEY=KEY+'_three_level_order';
 const DISPLAY_LEVEL_KEY=KEY+'_display_levels';
 function stackDisplayLevelKey(page=activeStackPage){return `${DISPLAY_LEVEL_KEY}_page_${page}`}
 function readStackDisplayLevels(page=activeStackPage){
-  const saved=localStorage.getItem(stackDisplayLevelKey(page));
+  const scopedKey=stackDisplayLevelKey(page),saved=localStorage.getItem(scopedKey);
   if(saved==='2'||saved==='3')return Number(saved);
-  return localStorage.getItem(DISPLAY_LEVEL_KEY)==='2'?2:3;
+  const migrated=localStorage.getItem(DISPLAY_LEVEL_KEY)==='2'?2:3;
+  localStorage.setItem(scopedKey,String(migrated));
+  return migrated;
 }
 function activeLevelIndexesFor(page=activeStackPage){return readStackDisplayLevels(page)===2?[0,2]:[0,1,2]}
 let displayLevels=readStackDisplayLevels();
@@ -2479,21 +2487,21 @@ let removeColumnArmed=false,removeColumnTimer=0;
 function resetRemoveColumn(){removeColumnArmed=false;clearTimeout(removeColumnTimer);const button=document.getElementById('removeColumn');if(button){button.textContent='−';button.classList.remove('confirming');button.title='Remove the left column'}}
 let removeRightColumnArmed=false,removeRightColumnTimer=0;
 function resetRemoveRightColumn(){removeRightColumnArmed=false;clearTimeout(removeRightColumnTimer);const button=document.getElementById('removeColumnRight');if(button){button.textContent='−';button.classList.remove('confirming');button.title='Remove the right column'}}
-function resizeAllStackPages(nextBays,edge='left'){
+function resizeActiveStackPage(nextBays,edge='left'){
   const oldBays=BAYS,next=Math.min(12,Math.max(2,nextBays));if(next===oldBays)return;
   rememberState();
   state=resizeStackColumns(state,oldBays,next,edge);
   BAYS=next;ROW_SIZE=BAYS*LEVELS;localStorage.setItem(stackBaysKey(),String(BAYS));
   selectedIndex=null;selectedIndexes.clear();resetRemoveColumn();resetRemoveRightColumn();save();renderAll();updateUndoButton();
 }
-function addStackColumn(){resizeAllStackPages(BAYS+1)}
-function addStackColumnRight(){resizeAllStackPages(BAYS+1,'right')}
+function addStackColumn(){resizeActiveStackPage(BAYS+1)}
+function addStackColumnRight(){resizeActiveStackPage(BAYS+1,'right')}
 function removeStackColumn(){
   if(BAYS<=2)return;
   const occupied=[];
   const oldRowSize=BAYS*LEVELS,rows=Math.ceil(state.length/oldRowSize);for(let row=0;row<rows;row++)for(let level=0;level<LEVELS;level++){const item=state[(row*oldRowSize)+(level*BAYS)];if(String(item?.text||'').trim())occupied.push(item.text)}
   if(occupied.length&&!removeColumnArmed){removeColumnArmed=true;const button=document.getElementById('removeColumn');button.textContent='CONFIRM −';button.classList.add('confirming');button.title=`Remove column containing ${occupied.length} unit${occupied.length===1?'':'s'}`;removeColumnTimer=setTimeout(resetRemoveColumn,3500);return}
-  resizeAllStackPages(BAYS-1);
+  resizeActiveStackPage(BAYS-1);
 }
 function removeStackColumnRight(){
   if(BAYS<=2)return;
@@ -2511,7 +2519,7 @@ function removeStackColumnRight(){
     button.textContent='CONFIRM −';button.classList.add('confirming');button.title=`Remove right column containing ${occupied.length} unit${occupied.length===1?'':'s'}`;
     removeRightColumnTimer=setTimeout(resetRemoveRightColumn,3500);return;
   }
-  resizeAllStackPages(BAYS-1,'right');
+  resizeActiveStackPage(BAYS-1,'right');
 }
 function addTopRow(){
   rememberState();
@@ -2544,14 +2552,28 @@ function removeBottomRow(){
   renderAll();
 }
 let stackingFitFrame=0;
-function fitStackingView(){
+function captureStackingViewPosition(){
+  const savedGridView=document.getElementById('gridView');
+  const savedYardView=document.getElementById('yardView');
+  const savedGridViewport=savedGridView?.querySelector('.viewport');
+  return{
+    windowX:window.scrollX,windowY:window.scrollY,
+    gridLeft:savedGridView?.scrollLeft||0,gridTop:savedGridView?.scrollTop||0,
+    viewportLeft:savedGridViewport?.scrollLeft||0,viewportTop:savedGridViewport?.scrollTop||0,
+    yardLeft:savedYardView?.scrollLeft||0,yardTop:savedYardView?.scrollTop||0
+  };
+}
+function fitStackingView(preservePosition=false){
+  const savedView=preservePosition&&typeof preservePosition==='object'?preservePosition:captureStackingViewPosition();
   cancelAnimationFrame(stackingFitFrame);
   stackingFitFrame=requestAnimationFrame(()=>{
-    window.scrollTo(0,0);
-    document.documentElement.scrollTop=0;
-    document.documentElement.scrollLeft=0;
-    document.body.scrollTop=0;
-    document.body.scrollLeft=0;
+    if(!preservePosition){
+      window.scrollTo(0,0);
+      document.documentElement.scrollTop=0;
+      document.documentElement.scrollLeft=0;
+      document.body.scrollTop=0;
+      document.body.scrollLeft=0;
+    }
     const header=document.querySelector('header');
     const headerHeight=header&&getComputedStyle(header).display!=='none'?header.getBoundingClientRect().height:0;
     const poolKey=document.getElementById('poolKeyBar');
@@ -2573,11 +2595,10 @@ function fitStackingView(){
     if(!host||!canvas)return;
     host.style.height=availableHeight+'px';
     const viewport=gridVisible?host.querySelector('.viewport'):host;
-    host.scrollTop=0;
-    host.scrollLeft=0;
-    if(viewport){
-      viewport.scrollTop=0;
-      viewport.scrollLeft=0;
+    if(!preservePosition){
+      host.scrollTop=0;
+      host.scrollLeft=0;
+      if(viewport){viewport.scrollTop=0;viewport.scrollLeft=0}
     }
     if(viewport){viewport.style.height=availableHeight+'px';viewport.style.overflow='auto'}
     canvas.style.zoom='1';
@@ -2589,6 +2610,15 @@ function fitStackingView(){
     const scale=Math.max(.25,Math.min(1.4,autoScale*(stackingSizePercent/100)));
     canvas.style.zoom=String(scale);
     canvas.style.marginLeft=Math.max(0,(availableWidth-(naturalWidth*scale))/2)+'px';
+    if(preservePosition){
+      window.scrollTo(savedView.windowX,savedView.windowY);
+      if(gridVisible){
+        host.scrollLeft=savedView.gridLeft;host.scrollTop=savedView.gridTop;
+        if(viewport){viewport.scrollLeft=savedView.viewportLeft;viewport.scrollTop=savedView.viewportTop}
+      }else{
+        host.scrollLeft=savedView.yardLeft;host.scrollTop=savedView.yardTop;
+      }
+    }
   });
 }
 function setStackingSize(value){
@@ -2938,7 +2968,7 @@ function applyThreeModel3dSearch(queryValue){
     object.scale.setScalar(1);
   });
   const info=document.getElementById('model3dAccessInfo'),units=query?allStackingUnits():[],match=query?(units.find(item=>unitSearchPointer&&item.page===unitSearchPointer.page&&item.index===unitSearchPointer.index)||units.find(item=>item.page===activeStackPage&&normalizeGridUnit(item.text).includes(query))):null;
-  if(info){if(!match){info.hidden=true;info.innerHTML='';delete info.dataset.index}else{info.hidden=false;info.dataset.index=String(target?.userData.index??match.index);info.innerHTML=`<strong>${escapeStackToolText(match.text)}</strong><b>${match.accessMoves===0?'DIRECT ACCESS':match.accessMoves+' MOVE'+(match.accessMoves===1?'':'S')+' TO ACCESS'}</b><span>${match.aboveMoves} ABOVE + ${match.frontMoves} IN FRONT</span>`;positionModel3dAccessInfo()}}
+  if(info){if(!match){info.hidden=true;info.innerHTML='';delete info.dataset.index}else{const swingStatus=paidSwingStatus(match.text),swingLabel=swingStatus==='match'?'PAID SWING: YES \u2713':swingStatus==='missing'?'PAID SWING: NO \u00d7':'PAID SWING LIST NOT IMPORTED';info.hidden=false;info.dataset.index=String(target?.userData.index??match.index);info.innerHTML=`<strong>${escapeStackToolText(match.text)}</strong><b>${match.accessMoves===0?'DIRECT ACCESS':match.accessMoves+' MOVE'+(match.accessMoves===1?'':'S')+' TO ACCESS'}</b><span>${match.aboveMoves} ABOVE + ${match.frontMoves} IN FRONT</span><span class="paid-swing-status ${swingStatus||'unknown'}">${swingLabel}</span>`;positionModel3dAccessInfo()}}
 }
 function positionModel3dAccessInfo(){
   const info=document.getElementById('model3dAccessInfo');if(!model3dThree||!info||info.hidden)return;
@@ -2988,7 +3018,7 @@ function resetModel3dView(){
   model3dView={...MODEL3D_DEFAULT_VIEW};
   if(model3dThree){setThreeModel3dDefaultView(model3dThree,model3dGeometry());model3dThree.renderer.render(model3dThree.scene,model3dThree.camera)}else{model3dThreeKey='';drawModel3d()}
 }
-function renderAll(){refreshDuplicateUnitKeys();renderGrid();renderYard();renderModel3d();applyPageLayoutLabels();renderPoolColorKey();updateContainerTotal();fitStackingView();updateDeleteButton();updateClipboardControls();renderWheelTargetList();}
+function renderAll(options={}){const preservedView=options.preserveView?captureStackingViewPosition():null;refreshDuplicateUnitKeys();renderGrid();renderYard();renderModel3d();applyPageLayoutLabels();renderPoolColorKey();updateContainerTotal();fitStackingView(preservedView||false);updateDeleteButton();updateClipboardControls();renderWheelTargetList();}
 
 window.addEventListener('resize',fitStackingView,{passive:true});
 
@@ -3139,7 +3169,7 @@ function select(i){
   selectedIndex=i;
   selectedIndexes.clear();
   selectedIndexes.add(i);
-  renderAll();
+  renderAll({preserveView:true});
   updateGlowButton();
 }
 function updateContainerText(i,value){

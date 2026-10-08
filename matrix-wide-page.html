@@ -14123,9 +14123,9 @@ function detailViewCamera() {
 }
 function trackFocusCamera() {
   return {
-    x: 780,
-    y: 338,
-    scale: 1.32,
+    x: 1240,
+    y: 350,
+    scale: 1.16,
     label: "TRACKS 801 - 809"
   };
 }
@@ -15278,7 +15278,11 @@ function matrixRailContainerFamilyColor(label, fallback) {
   return fallback;
 }
 function drawRailContainer(width, y, color, label, brandSeed = 0, outboundLoad = false, blockedTextOnly = false) {
-  color = matrixRailContainerFamilyColor(label, color);
+  // Live ramp-blocking containers already carry the active Excel theme color.
+  // Preserve that color instead of replacing it with the Matrix family palette.
+  color = blockedTextOnly ? color : matrixRailContainerFamilyColor(label, color);
+  /* matrix-pink-family-black-text-v1 */
+  const pinkFamilyBlackText = ["#f472b6", "#db2777", "#f9a8d4"].includes(String(color || "").toLowerCase());
   const height = 21;
   const left = -width / 2;
   const top = y - height;
@@ -15348,7 +15352,7 @@ function drawRailContainer(width, y, color, label, brandSeed = 0, outboundLoad =
   ctx.moveTo(width / 2 - 5, top + 3);
   ctx.lineTo(width / 2 - 5, y - 3);
   ctx.stroke();
-  ctx.fillStyle = "rgba(248,250,252,.7)";
+  ctx.fillStyle = pinkFamilyBlackText ? "#050505" : "rgba(248,250,252,.7)";
   ctx.font = "bold 2.5px Consolas, monospace";
   ctx.textAlign = "left";
   ctx.textBaseline = "top";
@@ -15366,7 +15370,7 @@ function drawRailContainer(width, y, color, label, brandSeed = 0, outboundLoad =
   ctx.fillRect(left + 4, y - 4, width - 12, 2);
 
   if (width >= 29) {
-    const darkText = color === "#ffcf57" || color === "#f8fafc";
+    const darkText = pinkFamilyBlackText || color === "#ffcf57" || color === "#f8fafc";
     const brandY = top + height * .56;
     if (isConGlobal) {
       // Mask the ribs with a same-color decal field so the small wordmark stays readable.
@@ -15397,7 +15401,7 @@ function drawRailContainer(width, y, color, label, brandSeed = 0, outboundLoad =
       ctx.fillText(logoText, groupLeft + iconSize + logoGap, .2);
       ctx.restore();
     } else {
-      ctx.fillStyle = darkText ? "rgba(12,18,28,.82)" : "rgba(255,255,255,.86)";
+      ctx.fillStyle = darkText ? "#050505" : "rgba(255,255,255,.86)";
       ctx.font = "bold 6px Arial, sans-serif";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
@@ -15420,14 +15424,14 @@ function drawRailContainer(width, y, color, label, brandSeed = 0, outboundLoad =
   }
   if (label && width >= 33 && !isConGlobal) {
     const labelText = String(label).replace(/\s+/g, " ").trim();
-    const darkLabel = color === "#f59e0b" || color === "#facc15" || color === "#4ade80" || color === "#f8fafc";
+    const darkLabel = pinkFamilyBlackText || color === "#f59e0b" || color === "#facc15" || color === "#4ade80" || color === "#f8fafc";
     if (blockedTextOnly) {
       ctx.fillStyle = color;
       ctx.globalAlpha = .84;
       ctx.fillRect(left + 2.5, top + 2, width - 5, height - 4);
       ctx.globalAlpha = 1;
     }
-    ctx.fillStyle = darkLabel ? "rgba(5,15,25,.94)" : "rgba(255,255,255,.94)";
+    ctx.fillStyle = darkLabel ? "#050505" : "rgba(255,255,255,.94)";
     const words = labelText.split(" ").filter(Boolean);
     let lines = [labelText];
     if (blockedTextOnly && words.length > 1 && labelText.length > 9) {
@@ -15439,12 +15443,12 @@ function drawRailContainer(width, y, color, label, brandSeed = 0, outboundLoad =
       }
       if (best) lines = best.lines;
     }
-    let labelSize = blockedTextOnly ? (lines.length > 1 ? 5.5 : 6.4) : 4.2;
+    let labelSize = blockedTextOnly ? 8.2 : 4.2;
     do {
       ctx.font = `900 ${labelSize}px Arial Narrow, Segoe UI, sans-serif`;
       if (Math.max(...lines.map(line => ctx.measureText(line).width)) <= width - 6) break;
       labelSize -= .25;
-    } while (labelSize > (blockedTextOnly ? 3.5 : 2.5));
+    } while (labelSize > (blockedTextOnly ? 6.2 : 2.5));
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     const lineHeight = labelSize + .7;
