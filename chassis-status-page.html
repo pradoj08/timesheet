@@ -6456,11 +6456,16 @@ body.forecast-view .forecast-bottom-controls {
           <strong id="forecastExcelNotesHeightValue">90px</strong>
         </label>
         <input id="forecastExcelNotesHeightSlider" type="range" min="54" max="500" step="2" value="90">
-        <label for="forecastExcelWidthSlider">
-          <span>Table Width</span>
-          <strong id="forecastExcelWidthValue">100%</strong>
+        <label for="forecastExcelLeftWidthSlider">
+          <span>Left Side Width</span>
+          <strong id="forecastExcelLeftWidthValue">100%</strong>
         </label>
-        <input id="forecastExcelWidthSlider" type="range" min="30" max="140" step="5" value="100">
+        <input id="forecastExcelLeftWidthSlider" type="range" min="50" max="150" step="5" value="100">
+        <label for="forecastExcelRightWidthSlider">
+          <span>Right Side Width</span>
+          <strong id="forecastExcelRightWidthValue">100%</strong>
+        </label>
+        <input id="forecastExcelRightWidthSlider" type="range" min="50" max="150" step="5" value="100">
         <label for="forecastExcelHeightSlider">
           <span>Table Height</span>
           <strong id="forecastExcelHeightValue">100%</strong>
@@ -10626,10 +10631,11 @@ function applyForecastExcelViewSettings(){
   const unplannedColumnSlider=$("forecastExcelUnplannedColumnSizeSlider");
   const notesTrainSlider=$("forecastExcelNotesTrainSizeSlider");
   const notesHeightSlider=$("forecastExcelNotesHeightSlider");
-  const widthSlider=$("forecastExcelWidthSlider");
+  const leftWidthSlider=$("forecastExcelLeftWidthSlider");
+  const rightWidthSlider=$("forecastExcelRightWidthSlider");
   const heightSlider=$("forecastExcelHeightSlider");
   const headerOpacitySlider=$("forecastExcelHeaderOpacitySlider");
-  if(!page||!content||!mainHeaderSlider||!secondaryHeaderSlider||!tableHeaderSlider||!tableTextSlider||!arrivalFlagSlider||!netTextSlider||!netPaddingSlider||!notesLabelSlider||!notesTextSlider||!unplannedFlagSlider||!unplannedColumnSlider||!notesTrainSlider||!notesHeightSlider||!widthSlider||!heightSlider||!headerOpacitySlider)return;
+  if(!page||!content||!mainHeaderSlider||!secondaryHeaderSlider||!tableHeaderSlider||!tableTextSlider||!arrivalFlagSlider||!netTextSlider||!netPaddingSlider||!notesLabelSlider||!notesTextSlider||!unplannedFlagSlider||!unplannedColumnSlider||!notesTrainSlider||!notesHeightSlider||!leftWidthSlider||!rightWidthSlider||!heightSlider||!headerOpacitySlider)return;
   const mainHeader=Math.max(60,Math.min(180,Number(mainHeaderSlider.value)||100));
   const secondaryHeader=Math.max(60,Math.min(180,Number(secondaryHeaderSlider.value)||100));
   const tableHeader=Math.max(60,Math.min(180,Number(tableHeaderSlider.value)||100));
@@ -10643,7 +10649,8 @@ function applyForecastExcelViewSettings(){
   const unplannedColumnText=Math.max(6,Math.min(14,Number(unplannedColumnSlider.value)||9));
   const notesTrain=Math.max(8,Math.min(24,Number(notesTrainSlider.value)||16));
   const notesHeight=Math.max(54,Math.min(500,Number(notesHeightSlider.value)||90));
-  const width=Math.max(30,Math.min(140,Number(widthSlider.value)||100));
+  const leftWidth=Math.max(50,Math.min(150,Number(leftWidthSlider.value)||100));
+  const rightWidth=Math.max(50,Math.min(150,Number(rightWidthSlider.value)||100));
   const height=Math.max(20,Math.min(180,Number(heightSlider.value)||100));
   const headerOpacity=Math.max(0,Math.min(100,Number(headerOpacitySlider.value)||100));
   page.style.setProperty("--forecast-excel-main-header-scale",String(mainHeader/100));
@@ -10661,11 +10668,11 @@ function applyForecastExcelViewSettings(){
   page.style.setProperty("--forecast-excel-unplanned-column-size",`${unplannedColumnText}px`);
   page.style.setProperty("--forecast-excel-notes-train-scale",String(notesTrain/16));
   page.style.setProperty("--forecast-excel-notes-height",`${notesHeight}px`);
-  const visualWidth=width;
-  page.style.setProperty("--forecast-excel-width-scale",`${visualWidth}%`);
+  page.style.setProperty("--forecast-excel-left-width",`${leftWidth*.56}fr`);
+  page.style.setProperty("--forecast-excel-right-width",`${rightWidth*.44}fr`);
   page.style.setProperty("--forecast-excel-height-scale",String(height/100));
   page.style.setProperty("--forecast-excel-calc-header-opacity",String(headerOpacity/100));
-  page.style.width=`${visualWidth}%`;
+  page.style.width="100%";
   content.style.width="100%";
   if($("forecastExcelMainHeaderSizeValue"))$("forecastExcelMainHeaderSizeValue").textContent=`${mainHeader}%`;
   if($("forecastExcelSecondaryHeaderSizeValue"))$("forecastExcelSecondaryHeaderSizeValue").textContent=`${secondaryHeader}%`;
@@ -10680,7 +10687,8 @@ function applyForecastExcelViewSettings(){
   if($("forecastExcelUnplannedColumnSizeValue"))$("forecastExcelUnplannedColumnSizeValue").textContent=`${unplannedColumnText.toFixed(1).replace(".0","")}px`;
   if($("forecastExcelNotesTrainSizeValue"))$("forecastExcelNotesTrainSizeValue").textContent=`${notesTrain.toFixed(1).replace(".0","")}px`;
   if($("forecastExcelNotesHeightValue"))$("forecastExcelNotesHeightValue").textContent=`${notesHeight}px`;
-  if($("forecastExcelWidthValue"))$("forecastExcelWidthValue").textContent=`${width}%`;
+  if($("forecastExcelLeftWidthValue"))$("forecastExcelLeftWidthValue").textContent=`${leftWidth}%`;
+  if($("forecastExcelRightWidthValue"))$("forecastExcelRightWidthValue").textContent=`${rightWidth}%`;
   if($("forecastExcelHeightValue"))$("forecastExcelHeightValue").textContent=`${height}%`;
   if($("forecastExcelHeaderOpacityValue"))$("forecastExcelHeaderOpacityValue").textContent=`${headerOpacity}%`;
   localStorage.setItem("forecastExcelMainHeaderSize",String(mainHeader));
@@ -10696,7 +10704,8 @@ function applyForecastExcelViewSettings(){
   localStorage.setItem("forecastExcelUnplannedColumnSize",String(unplannedColumnText));
   localStorage.setItem("forecastExcelNotesTrainSize",String(notesTrain));
   localStorage.setItem("forecastExcelNotesHeight",String(notesHeight));
-  localStorage.setItem("forecastExcelWidth",String(width));
+  localStorage.setItem("forecastExcelLeftWidth",String(leftWidth));
+  localStorage.setItem("forecastExcelRightWidth",String(rightWidth));
   localStorage.setItem("forecastExcelHeight",String(height));
   localStorage.setItem("forecastExcelHeaderOpacity",String(headerOpacity));
 }
@@ -10714,10 +10723,11 @@ function setupForecastExcelViewSettings(){
   const unplannedColumnSlider=$("forecastExcelUnplannedColumnSizeSlider");
   const notesTrainSlider=$("forecastExcelNotesTrainSizeSlider");
   const notesHeightSlider=$("forecastExcelNotesHeightSlider");
-  const widthSlider=$("forecastExcelWidthSlider");
+  const leftWidthSlider=$("forecastExcelLeftWidthSlider");
+  const rightWidthSlider=$("forecastExcelRightWidthSlider");
   const heightSlider=$("forecastExcelHeightSlider");
   const headerOpacitySlider=$("forecastExcelHeaderOpacitySlider");
-  if(!mainHeaderSlider||!secondaryHeaderSlider||!tableHeaderSlider||!tableTextSlider||!arrivalFlagSlider||!netTextSlider||!netPaddingSlider||!notesLabelSlider||!notesTextSlider||!unplannedFlagSlider||!unplannedColumnSlider||!notesTrainSlider||!notesHeightSlider||!widthSlider||!heightSlider||!headerOpacitySlider)return;
+  if(!mainHeaderSlider||!secondaryHeaderSlider||!tableHeaderSlider||!tableTextSlider||!arrivalFlagSlider||!netTextSlider||!netPaddingSlider||!notesLabelSlider||!notesTextSlider||!unplannedFlagSlider||!unplannedColumnSlider||!notesTrainSlider||!notesHeightSlider||!leftWidthSlider||!rightWidthSlider||!heightSlider||!headerOpacitySlider)return;
   const legacyText=localStorage.getItem("forecastExcelTextSize")||"100";
   mainHeaderSlider.value=localStorage.getItem("forecastExcelMainHeaderSize")||legacyText;
   secondaryHeaderSlider.value=localStorage.getItem("forecastExcelSecondaryHeaderSize")||legacyText;
@@ -10732,8 +10742,11 @@ function setupForecastExcelViewSettings(){
   unplannedColumnSlider.value=localStorage.getItem("forecastExcelUnplannedColumnSize")||"9";
   notesTrainSlider.value=localStorage.getItem("forecastExcelNotesTrainSize")||"16";
   notesHeightSlider.value=localStorage.getItem("forecastExcelNotesHeight")||"90";
-  const savedWidth=Number(localStorage.getItem("forecastExcelWidth"));
-  widthSlider.value=Number.isFinite(savedWidth)&&savedWidth>=30?String(savedWidth):"100";
+  const legacyWidth=Number(localStorage.getItem("forecastExcelWidth"));
+  const savedLeftWidth=Number(localStorage.getItem("forecastExcelLeftWidth"));
+  const savedRightWidth=Number(localStorage.getItem("forecastExcelRightWidth"));
+  leftWidthSlider.value=Number.isFinite(savedLeftWidth)&&savedLeftWidth>=50?String(savedLeftWidth):(Number.isFinite(legacyWidth)&&legacyWidth>=50?String(legacyWidth):"100");
+  rightWidthSlider.value=Number.isFinite(savedRightWidth)&&savedRightWidth>=50?String(savedRightWidth):(Number.isFinite(legacyWidth)&&legacyWidth>=50?String(legacyWidth):"100");
   heightSlider.value=localStorage.getItem("forecastExcelHeight")||"100";
   headerOpacitySlider.value=localStorage.getItem("forecastExcelHeaderOpacity")||"100";
   mainHeaderSlider.oninput=applyForecastExcelViewSettings;
@@ -10749,7 +10762,8 @@ function setupForecastExcelViewSettings(){
   unplannedColumnSlider.oninput=applyForecastExcelViewSettings;
   notesTrainSlider.oninput=applyForecastExcelViewSettings;
   notesHeightSlider.oninput=applyForecastExcelViewSettings;
-  widthSlider.oninput=applyForecastExcelViewSettings;
+  leftWidthSlider.oninput=applyForecastExcelViewSettings;
+  rightWidthSlider.oninput=applyForecastExcelViewSettings;
   heightSlider.oninput=applyForecastExcelViewSettings;
   headerOpacitySlider.oninput=applyForecastExcelViewSettings;
   const emptyToggle=$("forecastExcelEmptyInboundToggle");
@@ -22984,7 +22998,7 @@ body.forecast-excel-view-open{
 }
 .forecast-excel-columns{
   display:grid;
-  grid-template-columns:minmax(0, 56%) minmax(0, 44%);
+  grid-template-columns:minmax(0,var(--forecast-excel-left-width,56fr)) minmax(0,var(--forecast-excel-right-width,44fr));
   gap:6px;
   align-items:stretch;
 }
@@ -23356,7 +23370,7 @@ body.forecast-excel-view-open{
   min-width:76px;
   max-width:76px;
 }
-.forecast-excel-columns:has(.forecast-request-unplanned-cell){grid-template-columns:minmax(0,calc(56% - 140px)) minmax(0,44%)}
+.forecast-excel-columns:has(.forecast-request-unplanned-cell){grid-template-columns:minmax(0,var(--forecast-excel-left-width,56fr)) minmax(0,var(--forecast-excel-right-width,44fr))}
 .forecast-excel-block.request .forecast-excel-table:has(.forecast-request-unplanned-cell){width:100%!important;overflow:visible!important}
 .forecast-excel-block.request .forecast-excel-table:has(.forecast-request-unplanned-cell) tr > :last-child{position:relative;overflow:visible!important}
 .forecast-excel-page.modern-table-view .forecast-excel-block.request:has(.forecast-request-unplanned-cell){overflow:visible!important}
