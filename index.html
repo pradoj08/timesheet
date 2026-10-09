@@ -14147,10 +14147,18 @@ function getForecastPreviousSubmissionValues(){`;
       const style = `<style id="${marker}">
 .forecast-excel-toolbar{
   width:300px!important;
-  max-height:none!important;
-  padding-bottom:0!important;
-  overflow-y:visible!important;
+  max-height:calc(100vh - 20px)!important;
+  padding:0 4px 14px 0!important;
+  overflow-y:auto!important;
   overflow-x:hidden!important;
+  overscroll-behavior:contain!important;
+  scrollbar-gutter:stable!important;
+}
+.forecast-excel-view-controls label[for="forecastExcelLeftWidthSlider"],
+.forecast-excel-view-controls #forecastExcelLeftWidthSlider,
+.forecast-excel-view-controls label[for="forecastExcelRightWidthSlider"],
+.forecast-excel-view-controls #forecastExcelRightWidthSlider{
+  order:-10!important;
 }
 .forecast-excel-view-controls{
   grid-template-columns:minmax(112px,1fr) minmax(112px,1fr)!important;
@@ -15388,7 +15396,7 @@ function duplicateForecastTrainDay(train,day){
     function withChassis24hFocusToggle(html) {
       const marker = "chassis-24h-focus-toggle-v1";
       if (!html || typeof html !== "string" || html.includes(marker)) return html;
-      const patch = "<style id=\"chassis-24h-focus-toggle-v1-styles\">\r\n#forecastExcel24hFocusToggle{border:1px solid #38bdf8;border-radius:8px;background:#0c4a6e;color:#f0f9ff;padding:7px 12px;font:900 11px/1.2 Arial,sans-serif;cursor:pointer;white-space:nowrap}\r\n#forecastExcel24hFocusToggle:hover{background:#075985}\r\n#forecastExcel24hFocusToggle[aria-pressed=\"true\"]{background:#fbbf24;border-color:#f59e0b;color:#111827}\r\n#forecastExcelView .forecast-excel-page.forecast-24h-focus .forecast-excel-block.hours48,\r\n#forecastExcelView .forecast-excel-page.forecast-24h-focus .forecast-excel-block.request,\r\n#forecastExcelView .forecast-excel-page.forecast-24h-focus .forecast-excel-notes{display:none!important}\r\n#forecastExcelView .forecast-excel-page.forecast-24h-focus .forecast-excel-columns{grid-template-columns:minmax(0,1.45fr) minmax(320px,.75fr)!important;align-items:start!important}\r\n#forecastExcelView .forecast-excel-page.forecast-24h-focus .forecast-excel-right{display:block!important}\r\n@media(max-width:900px){#forecastExcelView .forecast-excel-page.forecast-24h-focus .forecast-excel-columns{grid-template-columns:1fr!important}}\r\n</style>\r\n<script id=\"chassis-24h-focus-toggle-v1\">\r\n(function(){\r\n  const key=\"conglobal-chassis-excel-24h-focus-v1\";\r\n  const toolbar=document.querySelector(\"#forecastExcelView .forecast-excel-toolbar\");\r\n  const page=document.querySelector(\"#forecastExcelView .forecast-excel-page\");\r\n  const close=document.getElementById(\"closeForecastExcelViewBtn\");\r\n  if(!toolbar||!page||!close||document.getElementById(\"forecastExcel24hFocusToggle\"))return;\r\n  const button=document.createElement(\"button\");\r\n  button.id=\"forecastExcel24hFocusToggle\";\r\n  button.type=\"button\";\r\n  close.before(button);\r\n  function apply(enabled){\n    page.classList.toggle(\"forecast-24h-focus\",enabled);\n    button.setAttribute(\"aria-pressed\",String(enabled));\r\n    button.textContent=enabled?\"Full View\":\"24H Focus\";\r\n    button.title=enabled?\"Show the complete 72-hour forecast\":\"Show only the Train ID table and 24-hour chassis calculator\";\n  }\n  function applyLabels(){\n    const tracksTitle=page.querySelector(\".forecast-excel-left h1 span\");\n    const calculatorTitle=page.querySelector(\".forecast-excel-block.hours24 h3 span\");\n    if(tracksTitle&&tracksTitle.textContent!==\"Chassis Status Current Tracks\")tracksTitle.textContent=\"Chassis Status Current Tracks\";\n    if(calculatorTitle&&calculatorTitle.textContent!==\"Chassis Calculator\")calculatorTitle.textContent=\"Chassis Calculator\";\n  }\n  button.onclick=()=>{\r\n    const enabled=!page.classList.contains(\"forecast-24h-focus\");\r\n    localStorage.setItem(key,String(enabled));\r\n    apply(enabled);\r\n  };\r\n  new MutationObserver(applyLabels).observe(document.getElementById(\"forecastExcelContent\"),{childList:true,subtree:true});\n  applyLabels();\n  apply(localStorage.getItem(key)===\"true\");\n})();\n<\/script>";
+      const patch = "<style id=\"chassis-24h-focus-toggle-v1-styles\">\r\n#forecastExcel24hFocusToggle{border:1px solid #38bdf8;border-radius:8px;background:#0c4a6e;color:#f0f9ff;padding:7px 12px;font:900 11px/1.2 Arial,sans-serif;cursor:pointer;white-space:nowrap}\r\n#forecastExcel24hFocusToggle:hover{background:#075985}\r\n#forecastExcel24hFocusToggle[aria-pressed=\"true\"]{background:#fbbf24;border-color:#f59e0b;color:#111827}\r\n#forecastExcelView .forecast-excel-page.forecast-24h-focus .forecast-excel-block.hours48,\r\n#forecastExcelView .forecast-excel-page.forecast-24h-focus .forecast-excel-block.request,\r\n#forecastExcelView .forecast-excel-page.forecast-24h-focus .forecast-excel-notes{display:none!important}\r\n#forecastExcelView .forecast-excel-page.forecast-24h-focus .forecast-excel-columns{grid-template-columns:minmax(0,var(--forecast-excel-left-width,56fr)) minmax(320px,var(--forecast-excel-right-width,44fr))!important;align-items:start!important}\r\n#forecastExcelView .forecast-excel-page.forecast-24h-focus .forecast-excel-right{display:block!important}\r\n@media(max-width:900px){#forecastExcelView .forecast-excel-page.forecast-24h-focus .forecast-excel-columns{grid-template-columns:1fr!important}}\r\n</style>\r\n<script id=\"chassis-24h-focus-toggle-v1\">\r\n(function(){\r\n  const key=\"conglobal-chassis-excel-24h-focus-v1\";\r\n  const toolbar=document.querySelector(\"#forecastExcelView .forecast-excel-toolbar\");\r\n  const page=document.querySelector(\"#forecastExcelView .forecast-excel-page\");\r\n  const close=document.getElementById(\"closeForecastExcelViewBtn\");\r\n  if(!toolbar||!page||!close||document.getElementById(\"forecastExcel24hFocusToggle\"))return;\r\n  const button=document.createElement(\"button\");\r\n  button.id=\"forecastExcel24hFocusToggle\";\r\n  button.type=\"button\";\r\n  close.before(button);\r\n  function apply(enabled){\n    page.classList.toggle(\"forecast-24h-focus\",enabled);\n    button.setAttribute(\"aria-pressed\",String(enabled));\r\n    button.textContent=enabled?\"Full View\":\"24H Focus\";\r\n    button.title=enabled?\"Show the complete 72-hour forecast\":\"Show only the Train ID table and 24-hour chassis calculator\";\n  }\n  function applyLabels(){\n    const tracksTitle=page.querySelector(\".forecast-excel-left h1 span\");\n    const calculatorTitle=page.querySelector(\".forecast-excel-block.hours24 h3 span\");\n    if(tracksTitle&&tracksTitle.textContent!==\"Chassis Status Current Tracks\")tracksTitle.textContent=\"Chassis Status Current Tracks\";\n    if(calculatorTitle&&calculatorTitle.textContent!==\"Chassis Calculator (24H)\")calculatorTitle.textContent=\"Chassis Calculator (24H)\";\n  }\n  button.onclick=()=>{\r\n    const enabled=!page.classList.contains(\"forecast-24h-focus\");\r\n    localStorage.setItem(key,String(enabled));\r\n    apply(enabled);\r\n  };\r\n  new MutationObserver(applyLabels).observe(document.getElementById(\"forecastExcelContent\"),{childList:true,subtree:true});\n  applyLabels();\n  apply(localStorage.getItem(key)===\"true\");\n})();\n<\/script>";
       const close = html.toLowerCase().lastIndexOf("</body>");
       return close >= 0 ? html.slice(0, close) + patch + "\n" + html.slice(close) : html + patch;
     }
@@ -15414,11 +15422,55 @@ function duplicateForecastTrainDay(train,day){
     }
 
     function withChassisSplitForecastWidths(html) {
-      if (!html || typeof html !== "string" || html.includes("forecastExcelLeftWidthSlider")) return html;
+      if (!html || typeof html !== "string" || html.includes('id="forecastExcelLeftWidthSlider"')) return html;
       const replacements = [["        <label for=\"forecastExcelWidthSlider\">\n          <span>Table Width</span>\n          <strong id=\"forecastExcelWidthValue\">100%</strong>\n        </label>\n        <input id=\"forecastExcelWidthSlider\" type=\"range\" min=\"30\" max=\"140\" step=\"5\" value=\"100\">","        <label for=\"forecastExcelLeftWidthSlider\">\n          <span>Left Side Width</span>\n          <strong id=\"forecastExcelLeftWidthValue\">100%</strong>\n        </label>\n        <input id=\"forecastExcelLeftWidthSlider\" type=\"range\" min=\"50\" max=\"150\" step=\"5\" value=\"100\">\n        <label for=\"forecastExcelRightWidthSlider\">\n          <span>Right Side Width</span>\n          <strong id=\"forecastExcelRightWidthValue\">100%</strong>\n        </label>\n        <input id=\"forecastExcelRightWidthSlider\" type=\"range\" min=\"50\" max=\"150\" step=\"5\" value=\"100\">"],["  const widthSlider=$(\"forecastExcelWidthSlider\");","  const leftWidthSlider=$(\"forecastExcelLeftWidthSlider\");\n  const rightWidthSlider=$(\"forecastExcelRightWidthSlider\");"],["||!widthSlider||!heightSlider","||!leftWidthSlider||!rightWidthSlider||!heightSlider"],["  const width=Math.max(30,Math.min(140,Number(widthSlider.value)||100));","  const leftWidth=Math.max(50,Math.min(150,Number(leftWidthSlider.value)||100));\n  const rightWidth=Math.max(50,Math.min(150,Number(rightWidthSlider.value)||100));"],["  const visualWidth=width;\n  page.style.setProperty(\"--forecast-excel-width-scale\",`${visualWidth}%`);\n  page.style.setProperty(\"--forecast-excel-height-scale\",String(height/100));","  page.style.setProperty(\"--forecast-excel-left-width\",`${leftWidth*.56}fr`);\n  page.style.setProperty(\"--forecast-excel-right-width\",`${rightWidth*.44}fr`);\n  page.style.setProperty(\"--forecast-excel-height-scale\",String(height/100));"],["  page.style.width=`${visualWidth}%`;\n  content.style.width=\"100%\";","  page.style.width=\"100%\";\n  content.style.width=\"100%\";"],["  if($(\"forecastExcelWidthValue\"))$(\"forecastExcelWidthValue\").textContent=`${width}%`;","  if($(\"forecastExcelLeftWidthValue\"))$(\"forecastExcelLeftWidthValue\").textContent=`${leftWidth}%`;\n  if($(\"forecastExcelRightWidthValue\"))$(\"forecastExcelRightWidthValue\").textContent=`${rightWidth}%`;"],["  localStorage.setItem(\"forecastExcelWidth\",String(width));","  localStorage.setItem(\"forecastExcelLeftWidth\",String(leftWidth));\n  localStorage.setItem(\"forecastExcelRightWidth\",String(rightWidth));"],["  const savedWidth=Number(localStorage.getItem(\"forecastExcelWidth\"));\n  widthSlider.value=Number.isFinite(savedWidth)&&savedWidth>=30?String(savedWidth):\"100\";","  const legacyWidth=Number(localStorage.getItem(\"forecastExcelWidth\"));\n  const savedLeftWidth=Number(localStorage.getItem(\"forecastExcelLeftWidth\"));\n  const savedRightWidth=Number(localStorage.getItem(\"forecastExcelRightWidth\"));\n  leftWidthSlider.value=Number.isFinite(savedLeftWidth)&&savedLeftWidth>=50?String(savedLeftWidth):(Number.isFinite(legacyWidth)&&legacyWidth>=50?String(legacyWidth):\"100\");\n  rightWidthSlider.value=Number.isFinite(savedRightWidth)&&savedRightWidth>=50?String(savedRightWidth):(Number.isFinite(legacyWidth)&&legacyWidth>=50?String(legacyWidth):\"100\");"],["  widthSlider.oninput=applyForecastExcelViewSettings;","  leftWidthSlider.oninput=applyForecastExcelViewSettings;\n  rightWidthSlider.oninput=applyForecastExcelViewSettings;"],["  grid-template-columns:minmax(0, 56%) minmax(0, 44%);","  grid-template-columns:minmax(0,var(--forecast-excel-left-width,56fr)) minmax(0,var(--forecast-excel-right-width,44fr));"],[".forecast-excel-columns:has(.forecast-request-unplanned-cell){grid-template-columns:minmax(0,calc(56% - 140px)) minmax(0,44%)}",".forecast-excel-columns:has(.forecast-request-unplanned-cell){grid-template-columns:minmax(0,var(--forecast-excel-left-width,56fr)) minmax(0,var(--forecast-excel-right-width,44fr))}"]];
       if (!html.includes(replacements[0][0])) return html;
       for (const [before, after] of replacements) html = html.split(before).join(after);
       return html;
+    }
+
+
+    function withChassisLiveSplitWidthFallback(html) {
+      const marker = "chassis-live-split-width-fallback-v1";
+      if (!html || html.includes(marker)) return html;
+      const patch = `<style id="chassis-live-split-width-fallback-v1">
+.forecast-excel-view-controls label[for="forecastExcelLeftWidthSlider"],
+.forecast-excel-view-controls #forecastExcelLeftWidthSlider,
+.forecast-excel-view-controls label[for="forecastExcelRightWidthSlider"],
+.forecast-excel-view-controls #forecastExcelRightWidthSlider{order:-20!important}
+#forecastExcelView .forecast-excel-page.forecast-24h-focus .forecast-excel-columns{grid-template-columns:minmax(0,var(--forecast-excel-left-width,56fr)) minmax(320px,var(--forecast-excel-right-width,44fr))!important}
+</style>
+<script id="chassis-live-split-width-fallback-v1">
+(function(){
+  const page=document.querySelector("#forecastExcelView .forecast-excel-page"),content=document.getElementById("forecastExcelContent"),controls=document.querySelector("#forecastExcelView .forecast-excel-view-controls");
+  if(!page||!content||!controls)return;
+  let left=document.getElementById("forecastExcelLeftWidthSlider"),right=document.getElementById("forecastExcelRightWidthSlider");
+  const legacy=document.getElementById("forecastExcelWidthSlider"),legacyValue=legacy?Number(legacy.value)||100:Number(localStorage.getItem("forecastExcelWidth"))||100;
+  function makeControl(id,labelText,value){
+    const label=document.createElement("label");label.htmlFor=id;
+    const span=document.createElement("span");span.textContent=labelText;
+    const strong=document.createElement("strong");strong.id=id.replace("Slider","Value");strong.textContent=String(value)+"%";label.append(span,strong);
+    const input=document.createElement("input");input.id=id;input.type="range";input.min="50";input.max="150";input.step="5";input.value=String(value);
+    return {label:label,input:input};
+  }
+  if(!left||!right){
+    const oldLabel=controls.querySelector('label[for="forecastExcelWidthSlider"]'),savedLeft=Number(localStorage.getItem("forecastExcelLeftWidth")),savedRight=Number(localStorage.getItem("forecastExcelRightWidth"));
+    const l=makeControl("forecastExcelLeftWidthSlider","Left Side Width",Number.isFinite(savedLeft)&&savedLeft>=50?savedLeft:legacyValue);
+    const r=makeControl("forecastExcelRightWidthSlider","Right Side Width",Number.isFinite(savedRight)&&savedRight>=50?savedRight:legacyValue);
+    controls.prepend(r.input);controls.prepend(r.label);controls.prepend(l.input);controls.prepend(l.label);
+    if(oldLabel)oldLabel.remove();if(legacy)legacy.remove();left=l.input;right=r.input;
+  }
+  function applyWidths(){
+    const l=Math.max(50,Math.min(150,Number(left.value)||100)),r=Math.max(50,Math.min(150,Number(right.value)||100));
+    page.style.width="100%";content.style.width="100%";page.style.setProperty("--forecast-excel-left-width",String(l*.56)+"fr");page.style.setProperty("--forecast-excel-right-width",String(r*.44)+"fr");
+    const lv=document.getElementById("forecastExcelLeftWidthValue"),rv=document.getElementById("forecastExcelRightWidthValue");if(lv)lv.textContent=String(l)+"%";if(rv)rv.textContent=String(r)+"%";
+    localStorage.setItem("forecastExcelLeftWidth",String(l));localStorage.setItem("forecastExcelRightWidth",String(r));
+  }
+  left.addEventListener("input",applyWidths);right.addEventListener("input",applyWidths);applyWidths();
+})();
+<\/script>`;
+      const close = html.toLowerCase().lastIndexOf("</body>");
+      return close >= 0 ? html.slice(0, close) + patch + "\n" + html.slice(close) : html + patch;
     }
 
     function withChassisForecastScreenshot(html) {
@@ -16003,6 +16055,7 @@ function duplicateForecastTrainDay(train,day){
           pageHtml = withChassis24hFocusToggle(pageHtml);
           pageHtml = withChassisNewInboundCreator(pageHtml);
           pageHtml = withChassisSplitForecastWidths(pageHtml);
+          pageHtml = withChassisLiveSplitWidthFallback(pageHtml);
           pageHtml = withChassisForecastScreenshot(pageHtml);
           pageHtml = withChassisHideEmptyForecastDays(pageHtml);
           pageHtml = withChassisForecastGroupUnits(pageHtml);

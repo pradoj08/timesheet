@@ -22323,10 +22323,12 @@ body.forecast-excel-view-open{
   display:grid;
   gap:8px;
   width:300px;
-  max-height:none;
-  padding-bottom:0;
-  overflow-y:visible;
+  max-height:calc(100vh - 20px);
+  padding:0 4px 14px 0;
+  overflow-y:auto;
   overflow-x:hidden;
+  overscroll-behavior:contain;
+  scrollbar-gutter:stable;
 }
 .forecast-excel-toolbar h2{display:none}
 .forecast-excel-toolbar button,.forecast-excel-open-btn{
@@ -22504,6 +22506,12 @@ body.forecast-excel-view-open{
   font-weight:850;
 }
 .forecast-excel-view-controls strong{color:#0f172a!important;font-size:11px!important}
+.forecast-excel-view-controls label[for="forecastExcelLeftWidthSlider"],
+.forecast-excel-view-controls #forecastExcelLeftWidthSlider,
+.forecast-excel-view-controls label[for="forecastExcelRightWidthSlider"],
+.forecast-excel-view-controls #forecastExcelRightWidthSlider{
+  order:-10;
+}
 .forecast-excel-view-controls input[type="range"]{
   width:100%;
   accent-color:#2563eb;
@@ -26847,7 +26855,7 @@ body #forecastExcelView .forecast-excel-block.request .forecast-excel-table tbod
 #forecastExcelView .forecast-excel-page.forecast-24h-focus .forecast-excel-block.hours48,
 #forecastExcelView .forecast-excel-page.forecast-24h-focus .forecast-excel-block.request,
 #forecastExcelView .forecast-excel-page.forecast-24h-focus .forecast-excel-notes{display:none!important}
-#forecastExcelView .forecast-excel-page.forecast-24h-focus .forecast-excel-columns{grid-template-columns:minmax(0,1.45fr) minmax(320px,.75fr)!important;align-items:start!important}
+#forecastExcelView .forecast-excel-page.forecast-24h-focus .forecast-excel-columns{grid-template-columns:minmax(0,var(--forecast-excel-left-width,56fr)) minmax(320px,var(--forecast-excel-right-width,44fr))!important;align-items:start!important}
 #forecastExcelView .forecast-excel-page.forecast-24h-focus .forecast-excel-right{display:block!important}
 @media(max-width:900px){#forecastExcelView .forecast-excel-page.forecast-24h-focus .forecast-excel-columns{grid-template-columns:1fr!important}}
 </style>
@@ -26872,7 +26880,7 @@ body #forecastExcelView .forecast-excel-block.request .forecast-excel-table tbod
     const tracksTitle=page.querySelector(".forecast-excel-left h1 span");
     const calculatorTitle=page.querySelector(".forecast-excel-block.hours24 h3 span");
     if(tracksTitle&&tracksTitle.textContent!=="Chassis Status Current Tracks")tracksTitle.textContent="Chassis Status Current Tracks";
-    if(calculatorTitle&&calculatorTitle.textContent!=="Chassis Calculator")calculatorTitle.textContent="Chassis Calculator";
+    if(calculatorTitle&&calculatorTitle.textContent!=="Chassis Calculator (24H)")calculatorTitle.textContent="Chassis Calculator (24H)";
   }
   button.onclick=()=>{
     const enabled=!page.classList.contains("forecast-24h-focus");
