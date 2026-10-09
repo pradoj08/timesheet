@@ -1410,6 +1410,29 @@
     background: var(--swatch);
     box-shadow: 0 0 8px 2px var(--swatch);
   }
+  /* matrix-railcar-bottom-key-v1 */
+  .matrix-railcar-bottom-key {
+    position: fixed;
+    left: 50%;
+    bottom: 12px;
+    z-index: 950;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transform: translateX(-50%);
+    padding: 7px 12px;
+    border: 1px solid rgba(148, 163, 184, .62);
+    border-radius: 999px;
+    background: rgba(7, 13, 24, .92);
+    color: #e5edf7;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .42);
+    font: 900 10px/1 Consolas, monospace;
+    text-transform: uppercase;
+    pointer-events: none;
+  }
+  .matrix-railcar-bottom-key > strong { color: #fff; letter-spacing: .06em; }
+  .matrix-railcar-bottom-key .railcar-highlight-key { font: inherit; color: #dbeafe; }
+  .matrix-railcar-bottom-key .railcar-highlight-swatch { width: 10px; height: 10px; flex: none; }
   .yard-activity-highlight-panel {
     grid-column: 1 / -1;
     display: grid;
@@ -15424,7 +15447,7 @@ function drawRailContainer(width, y, color, label, brandSeed = 0, outboundLoad =
   }
   if (label && width >= 33 && !isConGlobal) {
     const labelText = String(label).replace(/\s+/g, " ").trim();
-    const darkLabel = pinkFamilyBlackText || color === "#f59e0b" || color === "#facc15" || color === "#4ade80" || color === "#f8fafc";
+    const darkLabel = pinkFamilyBlackText || color === "#d6b881" || color === "#f59e0b" || color === "#facc15" || color === "#4ade80" || color === "#f8fafc";
     if (blockedTextOnly) {
       ctx.fillStyle = color;
       ctx.globalAlpha = .84;
@@ -20505,5 +20528,11 @@ renderMatrixTimeline();
 setInterval(renderMatrixTimeline, 60000);
 setInterval(refreshCraneOperatorAssignments, 3000);
 </script>
+<div class="matrix-railcar-bottom-key" aria-label="Railcar highlight key">
+  <strong>Highlights</strong>
+  <span class="railcar-highlight-key"><i class="railcar-highlight-swatch" style="--swatch:#f97316"></i>Long</span>
+  <span class="railcar-highlight-key"><i class="railcar-highlight-swatch" style="--swatch:#22d3ee"></i>Short</span>
+  <span class="railcar-highlight-key"><i class="railcar-highlight-swatch" style="--swatch:#a855f7"></i>Spine</span>
+</div>
 </body>
 </html>

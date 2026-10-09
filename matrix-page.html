@@ -13967,7 +13967,7 @@ function drawYardSceneLayers() {
   drawGround();
   drawAmbientClouds();
   drawDriveLanes();
-  drawZones();
+  if (matrixViewMode !== "tracks") drawZones();
   drawTracks();
   drawScenarioUpsTrackGlow();
   drawPlaybackCargo();
@@ -13981,11 +13981,11 @@ function drawYardSceneLayers() {
   drawTrackOperations();
   drawPlaybackActors();
   drawScenarioBreakActors();
-  drawOverheadLightPoles();
+  if (matrixViewMode !== "tracks") drawOverheadLightPoles();
   drawTrack808PriorityCargo();
   drawTrack809PriorityCargo();
   if (!FLIP_STATION.hidden) drawFlipOperator();
-  drawCranes();
+  if (matrixViewMode !== "tracks") drawCranes();
   drawAdminBuilding();
   drawNightLighting();
   drawYardScoreboard();
@@ -14284,7 +14284,7 @@ function drawGround() {
       ctx.setLineDash([]);
     }
   }
-  if (!EMPLOYEE_PARKING.hidden) drawEmployeeParkingLot();
+  if (!EMPLOYEE_PARKING.hidden && matrixViewMode !== "tracks") drawEmployeeParkingLot();
   if (!CRANE_PAD.hidden) {
     const padMaintenanceActive = sim.initialized && sim.mechanics.some(mechanic => mechanic.staffed !== false && mechanic.state === "pad");
     ctx.fillStyle = "rgba(250, 204, 21, 0.18)";
@@ -16388,7 +16388,7 @@ function drawTrackLabels() {
     const isFaintTrack = ["803", "805", "806", "807"].includes(String(tr.name));
     const labelX = Math.min(tr.x0, tr.x1) + 12;
     const labelY = trackYAt(tr, labelX) - 14;
-    const labelText = `Track ${tr.name}`;
+    const labelText = matrixViewMode === "tracks" ? String(tr.name) : `Track ${tr.name}`;
     ctx.save();
     ctx.textAlign = "left";
     ctx.textBaseline = "middle";
