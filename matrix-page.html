@@ -7880,6 +7880,7 @@ function buildScenarioTrains(events) {
       // its current consist; scenarioCraneConsistAllows still prevents the
       // crane itself from working two trains at once.
       previousTrainId: selected.state.lastTrainId || null,
+      trackUseIndex: selected.state.uses,
       operationTrackLocked: Boolean(section.operationTrackLocked),
       plannedArmStartAt: desiredArmStart,
       actualArmStartAt: null,
@@ -7980,8 +7981,17 @@ function scenarioTrainTracksideClear(train) {
     return cleared;
   });
 }
+function scenarioTrainTrackFullyLoaded(train) {
+  /* matrix-storage-requires-full-track-v2 */
+  const trackCapacity = railVisibleContainerCapacity(train && train.trackName);
+  const loadedContainers = scenarioTrainContainers(train).filter(container => container.status === "onTrain").length;
+  return trackCapacity > 0 && loadedContainers >= trackCapacity;
+}
 function scenarioTrainReadyForStorage(train) {
-  return scenarioTrainPhysicallyLoaded(train) && train.airTestComplete && scenarioTrainTracksideClear(train);
+  return scenarioTrainPhysicallyLoaded(train)
+    && scenarioTrainTrackFullyLoaded(train)
+    && train.airTestComplete
+    && scenarioTrainTracksideClear(train);
 }
 function scenarioTrackUnderAirTest(trackName) {
   const name = String(trackName || "");
@@ -8239,6 +8249,17 @@ function scenarioTrainMatchesActiveOperation(train) {
   const phase = train.workType === "load" ? "load" : "drop";
   return String(train.trackName) === String(instruction.track) && phase === instruction.phase;
 }
+function scenarioTrainMayEnterRamp(train) {
+  /* matrix-two-partial-outbound-tracks-v5 */
+  if (!train || train.workType !== "load") return true;
+  const partialOutboundTracks = new Set(sim.scenarioTrains.filter(other => other !== train
+    && other.workType === "load"
+    && ["protecting", "shoving", "clearing", "spotted"].includes(other.state)
+    && !scenarioTrainTrackFullyLoaded(other))
+    .map(other => String(other.trackName || ""))
+    .filter(Boolean));
+  return partialOutboundTracks.size < 2;
+}
 function updateScenarioTrainMovements(elapsedHours = sim.scenario && sim.scenario.elapsedHours, releaseHorizon = elapsedHours) {
   const elapsed = Math.max(0, Number(elapsedHours) || 0);
   const releaseAt = Math.max(0, Number(releaseHorizon) || 0);
@@ -8246,7 +8267,22 @@ function updateScenarioTrainMovements(elapsedHours = sim.scenario && sim.scenari
   sim.scenarioTrains.forEach(train => {
     if (updateScenarioStorageDeparture(train, elapsed)) return;
     if (train.state === "departed") return;
+    if (train.state === "waiting" && !scenarioTrainMayEnterRamp(train)) {
+      train.rampHoldActive = true;
+      train.progress = 0;
+      train.armProgress = 0;
+      train.crossingActive = false;
+      train.ready = false;
+      return;
+    }
     if (scenarioTrainPhysicallyLoaded(train)) {
+      if (!scenarioTrainTrackFullyLoaded(train)) {
+        train.state = "spotted";
+        train.ready = true;
+        train.crossingActive = false;
+        train.armProgress = 0;
+        return;
+      }
       releaseCompletedScenarioTrainLock(train);
       reconcileCompletedTrainIbc(train);
       if (!updateScenarioTrainAirTest(train, elapsed)) return;
@@ -8292,7 +8328,11 @@ function updateScenarioTrainMovements(elapsedHours = sim.scenario && sim.scenari
       return;
     }
     if (train.actualArmStartAt === null) {
-      train.actualArmStartAt = Math.max(train.plannedArmStartAt, previousTrain && previousTrain.departedAt !== null ? previousTrain.departedAt : train.plannedArmStartAt);
+      const resumedFromRampHold = train.rampHoldActive === true;
+      train.rampHoldActive = false;
+      train.actualArmStartAt = resumedFromRampHold
+        ? elapsed
+        : Math.max(train.plannedArmStartAt, previousTrain && previousTrain.departedAt !== null ? previousTrain.departedAt : train.plannedArmStartAt);
       train.armStartAt = train.actualArmStartAt;
       train.shoveStartAt = train.armStartAt + CROSSING_ARM_LEAD_HOURS;
       train.shoveEndAt = train.shoveStartAt + TRAIN_SHOVE_DURATION_HOURS;
@@ -9365,6 +9405,7 @@ function outboundTierSequenceReady(container) {
 }
 function outboundLoadTrainCanStage(train) {
   if (!train || train.workType !== "load") return true;
+  if (!train.ready) return false;
   const occupyingTrain = scenarioTrainForTrack(train.trackName);
   if (occupyingTrain && occupyingTrain.id !== train.id) return false;
   const loadTrains = sim.scenarioTrains.filter(item => item.workType === "load");

@@ -9971,11 +9971,18 @@ document.addEventListener('click',function(event){
     }
 
     function withChassisForecastPersistence(html) {
-      if (!html || typeof html !== "string" || html.includes("chassis-forecast-parent-persistence-v1")) return html;
+      if (!html || typeof html !== "string" || html.includes("chassis-forecast-parent-persistence-v2")) return html;
       // Chassis Status is loaded as an iframe srcdoc. In browsers that give srcdoc
       // an opaque origin, its localStorage is unavailable and imported Excel rows
       // disappear when the frame is recreated. Keep the authoritative copy in the
       // workbook shell and rehydrate the frame on every load.
+      let initialState = {};
+      try {
+        const parsed = JSON.parse(localStorage.getItem("chassisForecastReport") || "{}");
+        if (parsed && typeof parsed === "object") initialState = parsed;
+      } catch (error) {}
+      const initialStateJson = JSON.stringify(initialState).replace(/</g, "\\u003c");
+      const bootstrap = `<scr${""}ipt id="chassis-forecast-parent-persistence-v2">window.__CONGLOBAL_CHASSIS_FORECAST_STATE__=${initialStateJson};</scr${""}ipt>`;
       const stateRead = '(function(){try{if(window.__CONGLOBAL_CHASSIS_FORECAST_STATE__&&typeof window.__CONGLOBAL_CHASSIS_FORECAST_STATE__==="object")return window.__CONGLOBAL_CHASSIS_FORECAST_STATE__;return JSON.parse(localStorage.getItem("chassisForecastReport")||"{}")}catch(e){return window.__CONGLOBAL_CHASSIS_FORECAST_STATE__&&typeof window.__CONGLOBAL_CHASSIS_FORECAST_STATE__==="object"?window.__CONGLOBAL_CHASSIS_FORECAST_STATE__:{}}})()';
       const stateWrite = 'try{localStorage.setItem("chassisForecastReport",JSON.stringify(state))}catch(e){}try{window.__CONGLOBAL_CHASSIS_FORECAST_STATE__=state}catch(e){}try{if(window.parent&&window.parent!==window)window.parent.postMessage({type:"conglobal-chassis-forecast-state-save",state:state},"*")}catch(e){}';
       const clearWrite = 'try{localStorage.removeItem("chassisForecastReport")}catch(e){}try{window.__CONGLOBAL_CHASSIS_FORECAST_STATE__={}}catch(e){}try{if(window.parent&&window.parent!==window)window.parent.postMessage({type:"conglobal-chassis-forecast-state-clear"},"*")}catch(e){}';
@@ -9986,8 +9993,10 @@ document.addEventListener('click',function(event){
           stateWrite)
         .replace(/localStorage\.removeItem\("chassisForecastReport"\);/,
           clearWrite);
+      const headClose = patched.toLowerCase().indexOf("</head>");
+      patched = headClose >= 0 ? patched.slice(0, headClose) + bootstrap + "\n" + patched.slice(headClose) : bootstrap + patched;
       const patch = `
-<scr${""}ipt id="chassis-forecast-parent-persistence-v1">
+<scr${""}ipt id="chassis-forecast-parent-persistence-listener-v2">
 (function(){
   function redraw(){
     try{if(typeof loadForecastState==="function")loadForecastState();}catch(e){}
@@ -10838,7 +10847,7 @@ document.addEventListener('click',function(event){
     };
     pages.importTrackList = {
       label: "Import Track List",
-      html: `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Import Track List</title><style>html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#050b18}iframe{display:block;width:100%;height:100%;border:0;background:#050b18}</style></head><body><iframe src="import-track-list-page.html?v=20261008-track-detail-north" title="Import Track List"></iframe></body></html>`
+      html: `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Import Track List</title><style>html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#050b18}iframe{display:block;width:100%;height:100%;border:0;background:#050b18}</style></head><body><iframe src="import-track-list-page.html?v=20261010-fedex-badge-purple-v1" title="Import Track List"></iframe></body></html>`
     };
     pages.observations = {
       label: "Observations",
@@ -15473,17 +15482,61 @@ function duplicateForecastTrainDay(train,day){
       return close >= 0 ? html.slice(0, close) + patch + "\n" + html.slice(close) : html + patch;
     }
 
-    function withChassisForecastScreenshot(html) {
-      const marker = "chassis-forecast-screenshot-v1";
+
+    function withChassisSpecialRowsToggle(html) {
+      const marker = "chassis-special-rows-toggle-v1";
       if (!html || typeof html !== "string" || html.includes(marker)) return html;
-      const patch = `<style id="chassis-forecast-screenshot-v1-styles">
+      const patch = `<style id="chassis-special-rows-toggle-v1-styles">
+#forecastExcelSpecialRowsToggle{border:1px solid #64748b;border-radius:8px;background:#e2e8f0;color:#0f172a;padding:8px 12px;font:900 11px/1.2 Arial,sans-serif;cursor:pointer;white-space:nowrap}
+#forecastExcelSpecialRowsToggle[aria-pressed="true"]{border-color:#f59e0b;background:#fbbf24;color:#111827}
+#forecastExcelView .forecast-excel-page.hide-special-rows .excel-stacked-row,
+#forecastExcelView .forecast-excel-page.hide-special-rows .excel-mismatch-row{display:none!important}
+</style>
+<script id="chassis-special-rows-toggle-v1">
+(function(){
+  const key="conglobal-chassis-hide-stacked-mismatch-v1";
+  const page=document.querySelector("#forecastExcelView .forecast-excel-page");
+  const close=document.getElementById("closeForecastExcelViewBtn");
+  if(!page||!close||document.getElementById("forecastExcelSpecialRowsToggle"))return;
+  const button=document.createElement("button");
+  button.id="forecastExcelSpecialRowsToggle";
+  button.type="button";
+  function apply(hidden){
+    page.classList.toggle("hide-special-rows",hidden);
+    button.setAttribute("aria-pressed",String(hidden));
+    button.textContent=hidden?"Show Stacked & Mismatch":"Hide Stacked & Mismatch";
+    button.title=hidden?"Show the Stacked and Mismatch row groups":"Hide the Stacked and Mismatch row groups";
+  }
+  button.addEventListener("click",()=>{
+    const hidden=!page.classList.contains("hide-special-rows");
+    try{localStorage.setItem(key,hidden?"1":"0")}catch(error){}
+    apply(hidden);
+  });
+  close.before(button);
+  let saved=false;
+  try{saved=localStorage.getItem(key)==="1"}catch(error){}
+  apply(saved);
+})();
+<\/script>`;
+      const close = html.toLowerCase().lastIndexOf("</body>");
+      return close >= 0 ? html.slice(0, close) + patch + "\n" + html.slice(close) : html + patch;
+    }
+
+    function withChassisForecastScreenshot(html) {
+      const marker = "chassis-forecast-screenshot-v6";
+      if (!html || typeof html !== "string" || html.includes(marker)) return html;
+      const oldStart = html.indexOf('<style id="chassis-forecast-screenshot-v');
+      if (oldStart >= 0) {
+        const oldEnd = html.indexOf("</scr" + "ipt>", oldStart);
+        if (oldEnd >= 0) html = html.slice(0, oldStart) + html.slice(oldEnd + 9);
+      }
+      const patch = `<style id="chassis-forecast-screenshot-v6-styles">
 #forecastExcelScreenshotBtn{border:1px solid #22c55e;border-radius:8px;background:#15803d;color:#fff;padding:7px 12px;font:900 11px/1.2 Arial,sans-serif;cursor:pointer;white-space:nowrap}
 #forecastExcelScreenshotBtn:hover{background:#166534}
 #forecastExcelScreenshotBtn:disabled{cursor:wait;opacity:.72}
 #forecastExcelScreenshotStatus{min-width:92px;color:#166534;font:800 11px/1.2 Arial,sans-serif}
-#forecastExcelView .forecast-excel-page.forecast-screenshot-capturing .forecast-excel-toolbar{display:none!important}
 </style>
-<scr${""}ipt id="chassis-forecast-screenshot-v1">
+<scr${""}ipt id="chassis-forecast-screenshot-v6">
 (function(){
   const toolbar=document.querySelector("#forecastExcelView .forecast-excel-toolbar");
   const page=document.querySelector("#forecastExcelView .forecast-excel-page");
@@ -15499,43 +15552,41 @@ function duplicateForecastTrainDay(train,day){
   status.setAttribute("role","status");
   status.setAttribute("aria-live","polite");
   close.before(button,status);
-  function loadCaptureLibrary(){
-    if(typeof window.html2canvas==="function")return Promise.resolve(window.html2canvas);
-    return new Promise(function(resolve,reject){
-      let script=document.getElementById("chassisForecastHtml2CanvasLibrary");
-      if(script){script.addEventListener("load",function(){resolve(window.html2canvas);},{once:true});script.addEventListener("error",function(){reject(new Error("Screenshot library could not load."));},{once:true});return;}
-      script=document.createElement("script");
-      script.id="chassisForecastHtml2CanvasLibrary";
-      script.src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js";
-      script.crossOrigin="anonymous";
-      script.onload=function(){resolve(window.html2canvas);};
-      script.onerror=function(){reject(new Error("Screenshot library could not load."));};
-      document.head.appendChild(script);
-    });
-  }
   function fileName(){
     const now=new Date();
     const date=[now.getFullYear(),String(now.getMonth()+1).padStart(2,"0"),String(now.getDate()).padStart(2,"0")].join("-");
     const time=String(now.getHours()).padStart(2,"0")+String(now.getMinutes()).padStart(2,"0");
     return "chassis-forecast-"+date+"-"+time+".png";
   }
-  function downloadCanvas(canvas){
-    return new Promise(function(resolve,reject){canvas.toBlob(function(blob){if(!blob){reject(new Error("The forecast image could not be created."));return;}const url=URL.createObjectURL(blob);const link=document.createElement("a");link.href=url;link.download=fileName();document.body.appendChild(link);link.click();link.remove();setTimeout(function(){URL.revokeObjectURL(url);},1500);resolve();},"image/png");});
+  function downloadBlob(blob){
+    if(!blob)throw new Error("The forecast image could not be created.");
+    const url=URL.createObjectURL(blob),link=document.createElement("a");
+    link.href=url;link.download=fileName();document.body.appendChild(link);link.click();link.remove();setTimeout(function(){URL.revokeObjectURL(url);},1500);
+  }
+  async function captureVisiblePixels(){
+    if(!navigator.mediaDevices||typeof navigator.mediaDevices.getDisplayMedia!=="function")throw new Error("Native tab capture is unavailable in this browser.");
+    const stream=await navigator.mediaDevices.getDisplayMedia({video:{displaySurface:"browser"},audio:false,preferCurrentTab:true,selfBrowserSurface:"include",surfaceSwitching:"exclude"});
+    try{
+      const video=document.createElement("video");video.srcObject=stream;video.muted=true;video.playsInline=true;
+      await new Promise(function(resolve,reject){video.onloadedmetadata=resolve;video.onerror=reject;});await video.play();
+      await new Promise(function(resolve){requestAnimationFrame(function(){requestAnimationFrame(resolve);});});
+      const rect=page.getBoundingClientRect();let left=rect.left,top=rect.top,right=rect.right,bottom=rect.bottom,viewportWidth=window.innerWidth,viewportHeight=window.innerHeight;
+      try{if(window.frameElement&&window.parent&&window.parent!==window){const frameRect=window.frameElement.getBoundingClientRect();left+=frameRect.left;right+=frameRect.left;top+=frameRect.top;bottom+=frameRect.top;viewportWidth=window.parent.innerWidth;viewportHeight=window.parent.innerHeight;}}catch(error){}
+      left=Math.max(0,left);top=Math.max(0,top);right=Math.min(viewportWidth,right);bottom=Math.min(viewportHeight,bottom);
+      if(right<=left||bottom<=top)throw new Error("The 24H view is not visible for capture.");
+      const scaleX=video.videoWidth/viewportWidth,scaleY=video.videoHeight/viewportHeight,canvas=document.createElement("canvas");
+      canvas.width=Math.max(1,Math.round((right-left)*scaleX));canvas.height=Math.max(1,Math.round((bottom-top)*scaleY));
+      canvas.getContext("2d",{alpha:false}).drawImage(video,Math.round(left*scaleX),Math.round(top*scaleY),canvas.width,canvas.height,0,0,canvas.width,canvas.height);
+      return await new Promise(function(resolve,reject){canvas.toBlob(function(blob){if(blob)resolve(blob);else reject(new Error("Native PNG creation failed."));},"image/png");});
+    }finally{stream.getTracks().forEach(function(track){track.stop();});}
   }
   button.addEventListener("click",async function(){
     if(button.disabled)return;
-    button.disabled=true;button.textContent="Creating Image...";status.textContent="Preparing full forecast";page.classList.add("forecast-screenshot-capturing");
-    const content=document.getElementById("forecastExcelContent");
+    button.disabled=true;button.textContent="Creating Image...";status.textContent="Choose This Tab to capture the visible 24H view";
     try{
-      if(!content)throw new Error("Forecast content is unavailable.");
-      await new Promise(function(resolve){requestAnimationFrame(function(){requestAnimationFrame(resolve);});});
-      const capture=await loadCaptureLibrary();
-      const width=Math.ceil(content.scrollWidth),height=Math.ceil(content.scrollHeight),pixelLimit=26000000;
-      const scale=Math.max(1,Math.min(2,Math.sqrt(pixelLimit/Math.max(1,width*height))));
-      const canvas=await capture(content,{backgroundColor:"#ffffff",scale:scale,useCORS:true,logging:false,width:width,height:height,windowWidth:document.documentElement.clientWidth,windowHeight:document.documentElement.clientHeight,scrollX:-window.scrollX,scrollY:-window.scrollY});
-      await downloadCanvas(canvas);status.textContent="PNG downloaded";
-    }catch(error){console.error("Chassis Forecast screenshot failed",error);status.textContent="Could not create PNG — check connection and retry";}
-    finally{page.classList.remove("forecast-screenshot-capturing");button.disabled=false;button.textContent="Screenshot PNG";setTimeout(function(){if(status.textContent==="PNG downloaded")status.textContent="";},4000);}
+      const blob=await captureVisiblePixels();downloadBlob(blob);status.textContent="PNG downloaded";
+    }catch(error){console.error("Chassis Forecast screenshot failed",error);status.textContent=error&&error.name==="NotAllowedError"?"Capture canceled":"Could not capture this tab";}
+    finally{button.disabled=false;button.textContent="Screenshot PNG";setTimeout(function(){if(status.textContent==="PNG downloaded")status.textContent="";},4000);}
   });
 })();
 </scr${""}ipt>`;
@@ -15884,12 +15935,98 @@ function duplicateForecastTrainDay(train,day){
       return html.replace("</head>", style + "</head>").replace("</body>", key + "</body>");
     }
 
+
+    function withMatrixStorageOnlyWhenTrackFull(html) {
+      const marker = "matrix-storage-requires-full-track-v2";
+      if (!html || typeof html !== "string" || html.includes(marker)) return html;
+      const readinessBefore = `function scenarioTrainReadyForStorage(train) {
+  return scenarioTrainPhysicallyLoaded(train) && train.airTestComplete && scenarioTrainTracksideClear(train);
+}`;
+      const readinessAfter = `function scenarioTrainTrackFullyLoaded(train) {
+  /* matrix-storage-requires-full-track-v2 */
+  const trackCapacity = railVisibleContainerCapacity(train && train.trackName);
+  const loadedContainers = scenarioTrainContainers(train).filter(container => container.status === "onTrain").length;
+  return trackCapacity > 0 && loadedContainers >= trackCapacity;
+}
+function scenarioTrainReadyForStorage(train) {
+  return scenarioTrainPhysicallyLoaded(train)
+    && scenarioTrainTrackFullyLoaded(train)
+    && train.airTestComplete
+    && scenarioTrainTracksideClear(train);
+}`;
+      const movementBefore = `    if (scenarioTrainPhysicallyLoaded(train)) {
+      releaseCompletedScenarioTrainLock(train);`;
+      const movementAfter = `    if (scenarioTrainPhysicallyLoaded(train)) {
+      if (!scenarioTrainTrackFullyLoaded(train)) {
+        train.state = "spotted";
+        train.ready = true;
+        train.crossingActive = false;
+        train.armProgress = 0;
+        return;
+      }
+      releaseCompletedScenarioTrainLock(train);`;
+      if (html.includes(readinessBefore)) html = html.replace(readinessBefore, readinessAfter);
+      if (html.includes(movementBefore)) html = html.replace(movementBefore, movementAfter);
+      return html;
+    }
+
+    function withMatrixHoldFollowOnEmptyCuts(html) {
+      const marker = "matrix-two-partial-outbound-tracks-v5";
+      if (!html || typeof html !== "string" || html.includes(marker)) return html;
+      html = html.replace(
+        "      previousTrainId: selected.state.lastTrainId || null,\n      operationTrackLocked: Boolean(section.operationTrackLocked),",
+        "      previousTrainId: selected.state.lastTrainId || null,\n      trackUseIndex: selected.state.uses,\n      operationTrackLocked: Boolean(section.operationTrackLocked),"
+      );
+      const helperNeedle = `function updateScenarioTrainMovements(elapsedHours = sim.scenario && sim.scenario.elapsedHours, releaseHorizon = elapsedHours) {`;
+      const helper = `function scenarioTrainMayEnterRamp(train) {
+  /* matrix-two-partial-outbound-tracks-v5 */
+  if (!train || train.workType !== "load") return true;
+  const partialOutboundTracks = new Set(sim.scenarioTrains.filter(other => other !== train
+    && other.workType === "load"
+    && ["protecting", "shoving", "clearing", "spotted"].includes(other.state)
+    && !scenarioTrainTrackFullyLoaded(other))
+    .map(other => String(other.trackName || ""))
+    .filter(Boolean));
+  return partialOutboundTracks.size < 2;
+}
+`;
+      if (html.includes(helperNeedle)) html = html.replace(helperNeedle, helper + helperNeedle);
+      const gateNeedle = `    if (train.state === "departed") return;`;
+      const gate = `    if (train.state === "departed") return;
+    if (train.state === "waiting" && !scenarioTrainMayEnterRamp(train)) {
+      train.rampHoldActive = true;
+      train.progress = 0;
+      train.armProgress = 0;
+      train.crossingActive = false;
+      train.ready = false;
+      return;
+    }
+`;
+      if (html.includes(gateNeedle)) html = html.replace(gateNeedle, gate);
+      const stagingNeedle = `function outboundLoadTrainCanStage(train) {
+  if (!train || train.workType !== "load") return true;`;
+      const staging = `function outboundLoadTrainCanStage(train) {
+  if (!train || train.workType !== "load") return true;
+  if (!train.ready) return false;`;
+      if (html.includes(stagingNeedle)) html = html.replace(stagingNeedle, staging);
+      const timingNeedle = `    if (train.actualArmStartAt === null) {
+      train.actualArmStartAt = Math.max(train.plannedArmStartAt, previousTrain && previousTrain.departedAt !== null ? previousTrain.departedAt : train.plannedArmStartAt);`;
+      const timing = `    if (train.actualArmStartAt === null) {
+      const resumedFromRampHold = train.rampHoldActive === true;
+      train.rampHoldActive = false;
+      train.actualArmStartAt = resumedFromRampHold
+        ? elapsed
+        : Math.max(train.plannedArmStartAt, previousTrain && previousTrain.departedAt !== null ? previousTrain.departedAt : train.plannedArmStartAt);`;
+      if (html.includes(timingNeedle)) html = html.replace(timingNeedle, timing);
+      return html;
+    }
+
     function bridgedHtmlForPage(id) {
       if (!bridgedPageHtml.has(id)) {
         let pageHtml = pages[id].html;
         if (["amReport", "timeMd", "roster", "timeOff"].includes(id)) pageHtml = withSharedRosterBaseline20260829(pageHtml);
         if (id === "matrix" || id === "matrixWide") pageHtml = withMatrixContinuousTargetsAndHostlerDispatch(withMatrixDerampRailcarSequence(withMatrixAssignmentContainerColors(withMatrixRailContainerPinkFamilies(withMatrixDirtLotAsChassisLot(withMatrixYardCheckedNineDays(withMatrixLiftTimelineLabels(withMatrixExcelColorPalette(pageHtml))))))));
-        if (id === "matrix" || id === "matrixWide") pageHtml = withMatrixRailcarBottomKey(withMatrixPinkFamilyBlackText(pageHtml));
+        if (id === "matrix" || id === "matrixWide") pageHtml = withMatrixHoldFollowOnEmptyCuts(withMatrixStorageOnlyWhenTrackFull(withMatrixRailcarBottomKey(withMatrixPinkFamilyBlackText(pageHtml))));
         if (id === "matrixWide") pageHtml = withMatrixWideCenteredTrackFocus(pageHtml);
         if (id === "performance") pageHtml = withPerformanceScenarioIndexedDb(withPerformanceMatrixLiftPriority(pageHtml));
         if (id === "matrix") pageHtml = withMatrixTrackFocusCleanLayers(withMatrixCraneScale6885(pageHtml));
@@ -16053,6 +16190,7 @@ function duplicateForecastTrainDay(train,day){
           pageHtml = withChassisEditableDates(pageHtml);
           pageHtml = withChassisCanonicalDayRender(pageHtml);
           pageHtml = withChassis24hFocusToggle(pageHtml);
+          pageHtml = withChassisSpecialRowsToggle(pageHtml);
           pageHtml = withChassisNewInboundCreator(pageHtml);
           pageHtml = withChassisSplitForecastWidths(pageHtml);
           pageHtml = withChassisLiveSplitWidthFallback(pageHtml);

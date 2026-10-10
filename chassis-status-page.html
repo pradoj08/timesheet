@@ -26892,14 +26892,13 @@ body #forecastExcelView .forecast-excel-block.request .forecast-excel-table tbod
   apply(localStorage.getItem(key)==="true");
 })();
 </script>
-<style id="chassis-forecast-screenshot-v1-styles">
+<style id="chassis-forecast-screenshot-v6-styles">
 #forecastExcelScreenshotBtn{border:1px solid #22c55e;border-radius:8px;background:#15803d;color:#fff;padding:7px 12px;font:900 11px/1.2 Arial,sans-serif;cursor:pointer;white-space:nowrap}
 #forecastExcelScreenshotBtn:hover{background:#166534}
 #forecastExcelScreenshotBtn:disabled{cursor:wait;opacity:.72}
 #forecastExcelScreenshotStatus{min-width:92px;color:#166534;font:800 11px/1.2 Arial,sans-serif}
-#forecastExcelView .forecast-excel-page.forecast-screenshot-capturing .forecast-excel-toolbar{display:none!important}
 </style>
-<script id="chassis-forecast-screenshot-v1">
+<script id="chassis-forecast-screenshot-v6">
 (function(){
   const toolbar=document.querySelector("#forecastExcelView .forecast-excel-toolbar");
   const page=document.querySelector("#forecastExcelView .forecast-excel-page");
@@ -26915,69 +26914,67 @@ body #forecastExcelView .forecast-excel-block.request .forecast-excel-table tbod
   status.setAttribute("role","status");
   status.setAttribute("aria-live","polite");
   close.before(button,status);
-  function loadCaptureLibrary(){
-    if(typeof window.html2canvas==="function")return Promise.resolve(window.html2canvas);
-    return new Promise(function(resolve,reject){
-      let script=document.getElementById("chassisForecastHtml2CanvasLibrary");
-      if(script){
-        script.addEventListener("load",function(){resolve(window.html2canvas);},{once:true});
-        script.addEventListener("error",function(){reject(new Error("Screenshot library could not load."));},{once:true});
-        return;
-      }
-      script=document.createElement("script");
-      script.id="chassisForecastHtml2CanvasLibrary";
-      script.src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js";
-      script.crossOrigin="anonymous";
-      script.onload=function(){resolve(window.html2canvas);};
-      script.onerror=function(){reject(new Error("Screenshot library could not load."));};
-      document.head.appendChild(script);
-    });
-  }
   function fileName(){
     const now=new Date();
     const date=[now.getFullYear(),String(now.getMonth()+1).padStart(2,"0"),String(now.getDate()).padStart(2,"0")].join("-");
     const time=String(now.getHours()).padStart(2,"0")+String(now.getMinutes()).padStart(2,"0");
     return "chassis-forecast-"+date+"-"+time+".png";
   }
-  function downloadCanvas(canvas){
-    return new Promise(function(resolve,reject){
-      canvas.toBlob(function(blob){
-        if(!blob){reject(new Error("The forecast image could not be created."));return;}
-        const url=URL.createObjectURL(blob);
-        const link=document.createElement("a");
-        link.href=url;
-        link.download=fileName();
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-        setTimeout(function(){URL.revokeObjectURL(url);},1500);
-        resolve();
-      },"image/png");
-    });
+  function downloadBlob(blob){
+    if(!blob)throw new Error("The forecast image could not be created.");
+    const url=URL.createObjectURL(blob);
+    const link=document.createElement("a");
+    link.href=url;
+    link.download=fileName();
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(function(){URL.revokeObjectURL(url);},1500);
+  }
+  async function captureVisiblePixels(){
+    if(!navigator.mediaDevices||typeof navigator.mediaDevices.getDisplayMedia!=="function")throw new Error("Native tab capture is unavailable in this browser.");
+    const stream=await navigator.mediaDevices.getDisplayMedia({video:{displaySurface:"browser"},audio:false,preferCurrentTab:true,selfBrowserSurface:"include",surfaceSwitching:"exclude"});
+    try{
+      const video=document.createElement("video");
+      video.srcObject=stream;video.muted=true;video.playsInline=true;
+      await new Promise(function(resolve,reject){video.onloadedmetadata=resolve;video.onerror=reject;});
+      await video.play();
+      await new Promise(function(resolve){requestAnimationFrame(function(){requestAnimationFrame(resolve);});});
+      const rect=page.getBoundingClientRect();
+      let left=rect.left,top=rect.top,right=rect.right,bottom=rect.bottom,viewportWidth=window.innerWidth,viewportHeight=window.innerHeight;
+      try{
+        if(window.frameElement&&window.parent&&window.parent!==window){
+          const frameRect=window.frameElement.getBoundingClientRect();
+          left+=frameRect.left;right+=frameRect.left;top+=frameRect.top;bottom+=frameRect.top;
+          viewportWidth=window.parent.innerWidth;viewportHeight=window.parent.innerHeight;
+        }
+      }catch(error){}
+      left=Math.max(0,left);top=Math.max(0,top);right=Math.min(viewportWidth,right);bottom=Math.min(viewportHeight,bottom);
+      if(right<=left||bottom<=top)throw new Error("The 24H view is not visible for capture.");
+      const scaleX=video.videoWidth/viewportWidth,scaleY=video.videoHeight/viewportHeight;
+      const canvas=document.createElement("canvas");
+      canvas.width=Math.max(1,Math.round((right-left)*scaleX));
+      canvas.height=Math.max(1,Math.round((bottom-top)*scaleY));
+      const context=canvas.getContext("2d",{alpha:false});
+      context.drawImage(video,Math.round(left*scaleX),Math.round(top*scaleY),canvas.width,canvas.height,0,0,canvas.width,canvas.height);
+      return await new Promise(function(resolve,reject){canvas.toBlob(function(blob){if(blob)resolve(blob);else reject(new Error("Native PNG creation failed."));},"image/png");});
+    }finally{
+      stream.getTracks().forEach(function(track){track.stop();});
+    }
   }
   button.addEventListener("click",async function(){
     if(button.disabled)return;
     button.disabled=true;
     button.textContent="Creating Image...";
-    status.textContent="Preparing full forecast";
-    page.classList.add("forecast-screenshot-capturing");
-    const content=document.getElementById("forecastExcelContent");
+    status.textContent="Choose This Tab to capture the visible 24H view";
     try{
-      if(!content)throw new Error("Forecast content is unavailable.");
-      await new Promise(function(resolve){requestAnimationFrame(function(){requestAnimationFrame(resolve);});});
-      const capture=await loadCaptureLibrary();
-      const width=Math.ceil(content.scrollWidth);
-      const height=Math.ceil(content.scrollHeight);
-      const pixelLimit=26000000;
-      const scale=Math.max(1,Math.min(2,Math.sqrt(pixelLimit/Math.max(1,width*height))));
-      const canvas=await capture(content,{backgroundColor:"#ffffff",scale:scale,useCORS:true,logging:false,width:width,height:height,windowWidth:document.documentElement.clientWidth,windowHeight:document.documentElement.clientHeight,scrollX:-window.scrollX,scrollY:-window.scrollY});
-      await downloadCanvas(canvas);
+      const blob=await captureVisiblePixels();
+      downloadBlob(blob);
       status.textContent="PNG downloaded";
     }catch(error){
       console.error("Chassis Forecast screenshot failed",error);
-      status.textContent="Could not create PNG — check connection and retry";
+      status.textContent=error&&error.name==="NotAllowedError"?"Capture canceled":"Could not capture this tab";
     }finally{
-      page.classList.remove("forecast-screenshot-capturing");
       button.disabled=false;
       button.textContent="Screenshot PNG";
       setTimeout(function(){if(status.textContent==="PNG downloaded")status.textContent="";},4000);
@@ -27186,6 +27183,39 @@ body #forecastExcelView .forecast-excel-block.request .forecast-excel-table tbod
  function details(target){const item=target.closest(".forecast-quadrant-item"),other=target.closest(".forecast-other-pill"),empty=target.closest(".forecast-quadrant-empty");if(!item&&!other&&!empty)return null;const source=item?.querySelector("[data-forecast-pool-edit-label]")||other||empty;const train=source?.dataset.forecastPoolEditTrain||source?.dataset.forecastJumpUnknownTrain||source?.dataset.forecastEmptyQuadrantTrain||"";const day=source?.dataset.forecastPoolEditDay||source?.dataset.forecastJumpUnknownDay||source?.dataset.forecastEmptyQuadrantDay||"";let label=source?.dataset.forecastPoolEditLabel||source?.dataset.forecastJumpUnknownLabel||"";if(!label&&empty)label=empty.closest(".forecast-quadrant")?.querySelector(".forecast-quadrant-head strong")?.textContent||"";return{train,day,label}}
  function open(info,x,y){const units=(Array.isArray(forecastImportedUnits)?forecastImportedUnits:[]).filter(u=>getForecastTrainGroupName(u)===info.train&&getForecastUnitDay(u)===info.day&&clean(getForecastUnitPoolSizeLabel(u))===clean(info.label)).sort((a,b)=>unitName(a).localeCompare(unitName(b),undefined,{numeric:true,sensitivity:"base"}));menu.querySelector("strong").textContent=info.label||"Unit Group";menu.querySelector(".forecast-group-units-head span").textContent=(info.train||"Inbound")+" - "+getForecastEtaDayDetail(info.day)+" - "+units.length+" unit"+(units.length===1?"":"s");menu.querySelector(".forecast-group-units-list").innerHTML=units.length?units.map(u=>'<div class="forecast-group-unit"><b>'+escapeHtml(unitName(u))+'</b><em>'+escapeHtml(getForecastUnitPoolSizeLabel(u))+'</em><small>Car: '+escapeHtml(u.railcar||u.carType||"--")+' - Consignee: '+escapeHtml(u.consignee||"--")+'</small></div>').join(""):'<div class="forecast-group-units-empty">No units are currently assigned to this group.</div>';menu.classList.add("open");menu.style.left="0px";menu.style.top="0px";const rect=menu.getBoundingClientRect();menu.style.left=Math.max(8,Math.min(x,innerWidth-rect.width-8))+"px";menu.style.top=Math.max(8,Math.min(y,innerHeight-rect.height-8))+"px"}
  box.addEventListener("contextmenu",event=>{const info=details(event.target);if(!info)return;event.preventDefault();event.stopPropagation();open(info,event.clientX,event.clientY)});menu.querySelector(".forecast-group-units-close").onclick=close;document.addEventListener("pointerdown",event=>{if(!menu.contains(event.target))close()});document.addEventListener("keydown",event=>{if(event.key==="Escape")close()});
+})();
+</script>
+
+<style id="chassis-special-rows-toggle-v1-styles">
+#forecastExcelSpecialRowsToggle{border:1px solid #64748b;border-radius:8px;background:#e2e8f0;color:#0f172a;padding:8px 12px;font:900 11px/1.2 Arial,sans-serif;cursor:pointer;white-space:nowrap}
+#forecastExcelSpecialRowsToggle[aria-pressed="true"]{border-color:#f59e0b;background:#fbbf24;color:#111827}
+#forecastExcelView .forecast-excel-page.hide-special-rows .excel-stacked-row,
+#forecastExcelView .forecast-excel-page.hide-special-rows .excel-mismatch-row{display:none!important}
+</style>
+<script id="chassis-special-rows-toggle-v1">
+(function(){
+  const key="conglobal-chassis-hide-stacked-mismatch-v1";
+  const page=document.querySelector("#forecastExcelView .forecast-excel-page");
+  const close=document.getElementById("closeForecastExcelViewBtn");
+  if(!page||!close||document.getElementById("forecastExcelSpecialRowsToggle"))return;
+  const button=document.createElement("button");
+  button.id="forecastExcelSpecialRowsToggle";
+  button.type="button";
+  function apply(hidden){
+    page.classList.toggle("hide-special-rows",hidden);
+    button.setAttribute("aria-pressed",String(hidden));
+    button.textContent=hidden?"Show Stacked & Mismatch":"Hide Stacked & Mismatch";
+    button.title=hidden?"Show the Stacked and Mismatch row groups":"Hide the Stacked and Mismatch row groups";
+  }
+  button.addEventListener("click",()=>{
+    const hidden=!page.classList.contains("hide-special-rows");
+    try{localStorage.setItem(key,hidden?"1":"0")}catch(error){}
+    apply(hidden);
+  });
+  close.before(button);
+  let saved=false;
+  try{saved=localStorage.getItem(key)==="1"}catch(error){}
+  apply(saved);
 })();
 </script>
 </body>
