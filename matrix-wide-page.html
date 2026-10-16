@@ -8366,11 +8366,12 @@ function scenarioTrainMatchesActiveOperation(train) {
   return String(train.trackName) === String(instruction.track) && phase === instruction.phase;
 }
 function scenarioTrainMayEnterRamp(train) {
-  /* matrix-two-partial-outbound-tracks-v5 */
+  /* matrix-two-partial-outbound-tracks-v6 */
   if (!train || train.workType !== "load") return true;
   const partialOutboundTracks = new Set(sim.scenarioTrains.filter(other => other !== train
     && other.workType === "load"
-    && ["protecting", "shoving", "clearing", "spotted"].includes(other.state)
+    && !["waiting", "departed", "stored"].includes(other.state)
+    && isCraneAccessTrack(other.trackName)
     && !scenarioTrainTrackFullyLoaded(other))
     .map(other => String(other.trackName || ""))
     .filter(Boolean));
@@ -8383,8 +8384,10 @@ function updateScenarioTrainMovements(elapsedHours = sim.scenario && sim.scenari
   sim.scenarioTrains.forEach(train => {
     if (updateScenarioStorageDeparture(train, elapsed)) return;
     if (train.state === "departed") return;
-    if (train.state === "waiting" && !scenarioTrainMayEnterRamp(train)) {
+    if (["waiting", "protecting"].includes(train.state) && !scenarioTrainMayEnterRamp(train)) {
+      train.state = "waiting";
       train.rampHoldActive = true;
+      train.actualArmStartAt = null;
       train.progress = 0;
       train.armProgress = 0;
       train.crossingActive = false;
@@ -10277,31 +10280,13 @@ function stageUpcomingScenarioCraneWork(targetElapsedHours) {
   return staged;
 }
 function prepareScenarioCatchupContainer(pending, crane) {
+  /* matrix-catchup-respects-ramp-admission-v1 */
   const event = pending && pending.event;
   const train = pending && scenarioTrainById(pending.scenarioTrainId);
   const container = pending && sim.containers.find(item => item.id === pending.containerId);
   const track = train && trackDef(train.trackName);
   if (!event || !train || !container || !track || !crane) return false;
-  if (!scenarioCraneConsistAllows(pending, crane)) return false;
-
-  const lockOwner = sim.trackCraneLocks[track.name];
-  if (lockOwner && lockOwner !== crane.name) {
-    const otherCrane = sim.cranes.find(item => item.name === lockOwner);
-    if (otherCrane && (otherCrane.scenarioLift || otherCrane.scenarioTravelPendingId || otherCrane.traveling)) return false;
-    if (otherCrane) releaseCraneTrackLocks(otherCrane, null);
-    else delete sim.trackCraneLocks[track.name];
-  }
-  releaseCraneTrackLocks(crane, track.name);
-  train.previousTrainId = null;
-  train.state = "spotted";
-  train.progress = 1;
-  train.armProgress = 0;
-  train.crossingActive = false;
-  train.ready = true;
-  train.craneName = crane.name;
-  event.scenarioCraneName = crane.name;
-  event.scenarioTrackName = track.name;
-  container.crane = crane.name;
+  if (!train.ready || train.state !== "spotted" || !scenarioTrainMayEnterRamp(train)) return false;
   const outboundLoad = scenarioSourceClass(event.key) === "load";
   if (outboundLoad) {
     // Recovery may release the train and its crane, but the box remains in its
@@ -10313,6 +10298,20 @@ function prepareScenarioCatchupContainer(pending, crane) {
     // ground-man unlock sequence.
     if (pending.status !== "ready" || container.status !== "onTrack" || !container.chassisStaged || !container.chassisId) return false;
   }
+  if (!scenarioCraneConsistAllows(pending, crane)) return false;
+
+  const lockOwner = sim.trackCraneLocks[track.name];
+  if (lockOwner && lockOwner !== crane.name) {
+    const otherCrane = sim.cranes.find(item => item.name === lockOwner);
+    if (otherCrane && (otherCrane.scenarioLift || otherCrane.scenarioTravelPendingId || otherCrane.traveling)) return false;
+    if (otherCrane) releaseCraneTrackLocks(otherCrane, null);
+    else delete sim.trackCraneLocks[track.name];
+  }
+  releaseCraneTrackLocks(crane, track.name);
+  train.craneName = crane.name;
+  event.scenarioCraneName = crane.name;
+  event.scenarioTrackName = track.name;
+  container.crane = crane.name;
   container.track = track.name;
   container.workTrack = track.name;
   pending.craneName = crane.name;

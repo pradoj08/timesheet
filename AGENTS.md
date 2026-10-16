@@ -51,6 +51,7 @@
   - `archive`
   - `timeOff`
   - `time`
+- `excelView2` is a virtual shell route, not a second embedded page. It reuses the live `excelView` iframe and `#yardGrid`, then toggles the Page 2 overview presentation by message so operational state, undo history, imports, and storage stay single-instance.
 - `bridgedHtmlForPage(id)` is the important runtime composition boundary. It takes the embedded page HTML, applies page-specific `with...` transformations, injects shared workbook synchronization, and returns the document loaded into the iframe.
 - Many user-facing fixes exist as `with...` functions in `index.html` rather than in the corresponding page source. Examples include AM roster/SCW behavior, Excel persistence and Yard/Pierce parity, Chassis shortage allocation, LPH controls, and Pearl/AlertMeter controls.
 - Do not blindly replace the embedded page string or transformer chain. A syntactically valid replacement can still silently remove later transformation behavior.
@@ -69,7 +70,7 @@
 | Runtime page | Likely source file | Notes |
 | --- | --- | --- |
 | AM Report | `am-report-page.html` | Runtime has substantial combined-only roster, SCW, weather, import, and performance patches. |
-| Chassis Status | `chassis-status-page.html` | Forecast allocation and floating editor behavior are regression-sensitive. |
+| Chassis Status | `chassis-status-page.html` | This source is the authoritative self-contained Chassis baseline; embed it exactly and do not reapply the legacy Chassis transformer chain. Forecast allocation and floating editor behavior remain regression-sensitive. |
 | Excel View | `excel-view-page.html` | Inbounds, archives, Yard/Pierce, dwell, meeting boards, and fourth table are tightly coupled. |
 | Timesheet | `timesheet-md-page.html` | Schedule, Archive, Full View, and Quick Actions share state and styles. |
 | LPH Tracker | `lph-tracker-page.html` | Inputs, work-plan ordering, profiles, and inbound selection interact. |
@@ -97,6 +98,7 @@
 ## Current runtime feature map
 
 - The top workbook navigation uses grouped dropdowns for AM Report/Chassis Status, Matrix variants, and Pearl.io/Cloud/Web Browser destinations.
+- Matrix may have at most two incomplete outbound loading tracks on the ramp. Hourly crane catch-up must never force a waiting train to `spotted`/`ready` or bypass normal ramp admission; it may recover work only for a train that is already legitimately spotted and ready.
 - AM Report is a three-column workspace. The default presentation uses the floating current-day roster on the left, the current report in the middle, and the floating Space City Weather latest-post panel over the third column.
 - The AM current-day roster must mirror the Timesheet Full View TODAY roster. It uses the same current-day status, role, schedule, time-off, and punch data; default off-schedule employees are hidden, active assignments are ordered consistently, and totals count visible working employees.
 - AM roster rows open the shared Quick Actions workflow. The roster Reset control uses inline two-click confirmation and clears only current-day Quick Action overrides before rebuilding from schedule defaults.
@@ -121,6 +123,7 @@
 - Treat the root `index.html` as the protected runtime baseline unless the user explicitly selects another file or the page sources have been reconciled with it.
 - The current baseline was adopted from a newer user-supplied combined workbook and may contain features that are not present in the individual page source files.
 - The active baseline currently has combined-only patches for AM roster/SCW behavior, Checklist stacking, Excel inbound archive save points, Yard/Pierce presentation, Pearl navigation/browser behavior, and related fixes. Do not assume the matching `*-page.html` files contain these changes.
+- Chassis Status is the current exception: `chassis-status-page.html` is embedded byte-for-byte in `pages.chassisStatus`, and `bridgedHtmlForPage("chassisStatus")` applies only the shared workbook bridge. Its self-contained feature scripts must not be layered with the older `withChassis...` transformer chain.
 - Do not run `build-combined.js` over the active workbook merely because a page source changed.
 - Before rebuilding, compare the active combined workbook with the relevant page source and confirm that newer combined-only features will be preserved.
 - When a task changes only `index.html`, clearly report that the change has not yet been backported to the corresponding page source.
@@ -166,6 +169,7 @@
 ### Excel View
 
 - Table 1 population is foundational. Parsing or Yard/Pierce changes must not cause it to become empty.
+- Excel Page 2 is an alternate presentation of the existing nine-track grid. Never implement it as another iframe or cloned Excel document; switching `excelView`/`excelView2` must not reload the live Excel frame.
 - Yard/Pierce classification:
   - `06-xxx` is Yard;
   - `03-xxx` is Pierce;
@@ -180,6 +184,7 @@
 
 - Shortage allocation order is: current inventory covers mismatch demand first, then inbound demand in operational order.
 - Red shortage X markers belong on affected demand values, not TOTAL rows, and must not move the numeric value off center.
+- Chassis Forecast operational state uses `chassisForecastReport` with the last-known-good fallback `chassisForecastReportLastKnownGoodV1`. Never test by clearing or refreshing the user's live `file://` workbook state; use an isolated HTTP origin or static fixtures. Empty initialization must not overwrite an existing populated forecast.
 - Chassis Forecast uses a white canvas; keep surrounding navigation and settings readable.
 - Floating chassis editors should confirm saves and remain movable without obscuring live updates.
 
