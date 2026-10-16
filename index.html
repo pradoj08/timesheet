@@ -5874,10 +5874,6 @@ tfoot .lph-target-pill.below-target{background:#fecaca;color:#7f1d1d}
             <span class="excel-page2-legend-card"><i class="dark"></i><strong>SS · DWELL</strong><em id="excelPage2DarkTotal">0 ft</em></span>
             <span class="excel-page2-legend-card" id="excelPage2OtherLegend" hidden><i class="other"></i><strong>OTHER</strong><em id="excelPage2OtherTotal">0 ft</em></span>
           </div>
-          <div class="excel-page2-legend-actions">
-            <button id="excelPage2ToolsToggle" type="button" aria-expanded="false">TOOLS &amp; VIEWS</button>
-            <span id="excelPage2Showing">Showing 9 of 9 tracks</span>
-          </div>
           <div class="excel-page2-quick-controls" id="excelPage2QuickControls" aria-label="Grid display controls"></div>
         </section>`;
       html = html.replace(/(<section class="panel dashboard-panel"[^>]*>)/i, "$1\n" + overview);
@@ -5900,6 +5896,12 @@ body.excel-page-2:not(.excel-page-2-tools-open)>.app>.topbar,
 body.excel-page-2:not(.excel-page-2-tools-open) #excelWorkspace>.dashboard-panel>.panel-head{display:none!important}
 body.excel-page-2.excel-page-2-tools-open>.app>.topbar{position:relative!important;inset:auto!important;z-index:1!important;border-radius:0!important}
 body.excel-page-2.excel-page-2-tools-open #excelWorkspace>.dashboard-panel>.panel-head{display:flex!important;margin:0!important;border-radius:0!important;border-left:0!important;border-right:0!important}
+body.excel-page-2 #excelWorkspace>.dashboard-panel>.panel-head{background:#050505!important;color:#fff!important;border-bottom-color:#303030!important}
+body.excel-page-2 #excelWorkspace>.dashboard-panel>.panel-head .panel-title,
+body.excel-page-2 #excelWorkspace>.dashboard-panel>.panel-head .panel-subtitle{color:#fff!important}
+body.excel-page-2 #removeAllBlockTags,
+body.excel-page-2 #toggleInboundBlockGlow,
+body.excel-page-2 #assignmentLabelToolbarToggle{display:none!important}
 .excel-page2-overview{position:sticky;top:0;z-index:60;display:grid;grid-template-columns:minmax(300px,1fr) minmax(520px,auto);gap:10px;padding:7px 20px 12px;background:#10191f;color:#f8fafc;border-bottom:1px solid #26343e;font-family:"Arial Narrow","Segoe UI",Arial,sans-serif;box-shadow:0 2px 5px rgba(15,25,31,.2)}
 .excel-page2-overview[hidden],.excel-page2-legend[hidden]{display:none!important}
 .excel-page2-heading>span{display:block;margin-bottom:3px;color:#7fb1cc;font:800 9px/1.1 Consolas,"Courier New",monospace;letter-spacing:.15em}
@@ -5926,8 +5928,6 @@ body.excel-page-2.excel-page-2-tools-open #excelWorkspace>.dashboard-panel>.pane
 .excel-page2-legend-actions>button{min-height:32px;padding:5px 8px;border:1px solid #c4ccd2;border-radius:3px;background:#fff;color:#17232c;font:900 9px/1 "Arial Narrow","Segoe UI",Arial,sans-serif;letter-spacing:.02em;cursor:pointer}
 .excel-page2-legend-actions>button:hover,.excel-page2-legend-actions>button:focus-visible{border-color:#68859a;outline:2px solid rgba(64,112,146,.18);outline-offset:1px}
 .excel-page2-legend-actions>button[aria-pressed="true"]{border-color:#a71320;background:#a71320;color:#fff}
-.excel-page2-legend-actions>#excelPage2ToolsToggle:after{content:"⌄";display:inline-block;margin-left:5px;font-size:11px;line-height:.7;transition:transform .15s ease}
-.excel-page2-legend-actions>#excelPage2ToolsToggle[aria-expanded="true"]:after{transform:rotate(180deg)}
 .excel-page2-legend-actions>span{color:#687984;font-size:8px}.excel-page2-legend-actions b{margin-left:4px;font:900 9px/1 Consolas,"Courier New",monospace}
 .excel-page2-quick-controls:empty{display:none}.excel-page2-quick-controls{order:3;width:100%;flex-wrap:wrap;padding:6px 0 0;border-left:0;border-top:1px solid #c7d0d6}
 .excel-page2-quick-controls .track-id-toggle{min-height:26px!important;margin:0!important;padding:4px 6px!important;border:1px solid #c4ccd2!important;border-radius:3px!important;background:#fff!important;color:#24343f!important;font-size:8px!important}
@@ -5939,13 +5939,18 @@ body.excel-page-2 #excelPage2QuickControls{display:flex!important}
 body.excel-page-2 .grid-wrap{overflow-x:auto!important;padding:0!important;background:#f3f5f6!important}
 body.excel-page-2:not(.excel-page-2-tools-open) #yardGrid~*{display:none!important}
 body.excel-page-2:not(.excel-page-2-tools-open) .main>:not(#excelWorkspace){display:none!important}
-body.excel-page-2 #yardGrid{position:relative!important;display:grid!important;grid-template-columns:68px 330px repeat(8,minmax(110px,126px)) minmax(24px,1fr) 98px!important;grid-auto-flow:row!important;min-width:1400px!important;width:100%!important;margin:0 0 8px!important;border:0!important;border-radius:0!important;background:#f6f8f9!important;box-shadow:none!important;overflow:visible!important;font-family:"Arial Narrow","Segoe UI",Arial,sans-serif}
+body.excel-page-2 #yardGrid{position:relative!important;display:grid!important;grid-template-columns:68px 330px repeat(8,minmax(110px,126px)) 0 98px!important;grid-auto-flow:row!important;min-width:1400px!important;width:100%!important;margin:0 0 8px!important;border:0!important;border-radius:0!important;background:#f6f8f9!important;box-shadow:none!important;overflow:visible!important;font-family:"Arial Narrow","Segoe UI",Arial,sans-serif}
 body.excel-page-2 #yardGrid>.grid-head{min-height:calc(38px * var(--excel-table-scale,1))!important;padding:calc(7px * var(--excel-table-scale,1)) 6px calc(5px * var(--excel-table-scale,1))!important;justify-content:flex-start!important;align-items:flex-end!important;border:0!important;border-bottom:2px solid #111!important;background:#f6f8f9!important;color:transparent!important;font-family:var(--grid-header-font,"Roboto Condensed","Arial Narrow",Arial,sans-serif)!important;font-size:0!important;font-weight:var(--grid-header-weight,700)!important;line-height:1.2!important;letter-spacing:.08em!important;text-transform:uppercase!important}
+body.excel-page-2 #yardGrid>.grid-head{display:none!important}
 body.excel-page-2 #yardGrid>.grid-head.excel-page2-ruler-head{position:relative!important;display:block!important;padding:9px 16px 5px!important}
-.excel-page2-ruler-title{display:none!important}.excel-page2-ruler-ticks{position:absolute;left:16px;right:16px;bottom:5px;display:flex;justify-content:space-between;color:#17232c;font:700 8px/1 Consolas,"Courier New",monospace;letter-spacing:0;text-transform:none}.excel-page2-ruler-ticks i{font-style:normal}
+.excel-page2-ruler-title,.excel-page2-ruler-ticks{display:none!important}.excel-page2-ruler-ticks{position:absolute;left:16px;right:16px;bottom:5px;justify-content:space-between;color:#17232c;font:700 8px/1 Consolas,"Courier New",monospace;letter-spacing:0;text-transform:none}.excel-page2-ruler-ticks i{font-style:normal}
 body.excel-page-2 #yardGrid>.grid-head.excel-page2-blocks-head{display:flex!important;grid-column:span 9!important;padding-left:12px!important;text-align:left!important}
 body.excel-page-2 #yardGrid>.grid-head.excel-page2-head-hidden{display:none!important}
 body.excel-page-2 #yardGrid>.grid-head.excel-page2-remaining-head{display:flex!important;justify-content:flex-end!important;padding-right:6px!important;text-align:right!important}
+body.excel-page-2 #yardGrid>.grid-head.excel-page2-track-head,
+body.excel-page-2 #yardGrid>.grid-head.excel-page2-ruler-head,
+body.excel-page-2 #yardGrid>.grid-head.excel-page2-blocks-head,
+body.excel-page-2 #yardGrid>.grid-head.excel-page2-remaining-head{display:none!important}
 body.excel-page-2 #yardGrid>.excel-page2-track-head,body.excel-page-2 #yardGrid>.track-label{grid-column:1!important}
 body.excel-page-2 #yardGrid>.excel-page2-ruler-head,body.excel-page-2 #yardGrid>.track-total{grid-column:2!important}
 body.excel-page-2 #yardGrid>.excel-page2-blocks-head{grid-column:3/span 9!important}
@@ -5953,7 +5958,7 @@ body.excel-page-2 #yardGrid>.excel-page2-remaining-head,body.excel-page-2 #yardG
 body.excel-page-2 #yardGrid>.track-label,
 body.excel-page-2 #yardGrid>.track-total,
 body.excel-page-2 #yardGrid>.track-remaining,
-body.excel-page-2 #yardGrid>.cut-cell{min-height:calc(44px * var(--excel-table-scale,1))!important;border-right:0!important;border-bottom:1px solid #d4dbe0!important}
+body.excel-page-2 #yardGrid>.cut-cell{height:calc(44px * var(--excel-table-scale,1))!important;min-height:calc(44px * var(--excel-table-scale,1))!important;max-height:calc(44px * var(--excel-table-scale,1))!important;border-right:0!important;border-bottom:1px solid #d4dbe0!important;box-sizing:border-box!important}
 body.excel-page-2 #yardGrid>.track-label{justify-content:flex-start!important;padding:0 0 0 18px!important;background:var(--excel-page2-row,#f6f8f9)!important;color:#0f1720!important;font-family:var(--grid-header-font,"Roboto Condensed","Arial Narrow",Arial,sans-serif)!important;font-size:max(11px,var(--grid-header-size,11px))!important;font-weight:var(--grid-header-weight,700)!important;letter-spacing:-.02em!important;white-space:nowrap!important}
 body.excel-page-2 #yardGrid>.track-total{position:relative!important;display:block!important;padding:0!important;background-color:var(--excel-page2-row,#f6f8f9)!important;background-image:var(--excel-page2-ruler-dots,linear-gradient(transparent,transparent)),var(--excel-page2-ruler-segments,linear-gradient(transparent,transparent)),linear-gradient(90deg,transparent calc(100% - 2px),#17232c calc(100% - 2px)),repeating-linear-gradient(90deg,#91a0aa 0 2px,transparent 2px 12px),linear-gradient(#7e8b94,#7e8b94)!important;background-position:16px 32px!important;background-size:calc(100% - 32px) 18px!important;background-repeat:no-repeat!important;color:transparent!important;font-size:0!important;overflow:visible!important}
 body.excel-page-2 #yardGrid>.track-total:before{content:attr(data-page2-used) " / " attr(data-page2-capacity) " ft";position:absolute;left:16px;top:8px;color:#17232c;font:900 10px/1 Consolas,"Courier New",monospace;white-space:nowrap}
@@ -5969,11 +5974,12 @@ body.excel-page-2 #yardGrid>.cut-cell.excel-page2-empty.block-drop-end:hover{box
 body.excel-page-2 #yardGrid>.cut-cell.block-paste-target:before,body.excel-page-2 #yardGrid>.cut-cell.block-drag-target:before{box-shadow:inset 0 0 0 3px #f59e0b,0 0 0 2px #7c2d12!important}
 body.excel-page-2 #yardGrid>.track-label.block-paste-target,body.excel-page-2 #yardGrid>.track-total.block-paste-target,body.excel-page-2 #yardGrid>.track-remaining.block-paste-target{box-shadow:inset 0 0 0 3px #f59e0b,0 0 0 2px #7c2d12!important}
 body.excel-page-2 #yardGrid>.cut-cell.block-drag-target:before,body.excel-page-2 #yardGrid>.track-remaining.block-drag-target{filter:brightness(1.1)}
-body.excel-page-2 #yardGrid>.track-remaining{position:relative!important;z-index:0!important;display:flex!important;flex-direction:column!important;justify-content:center!important;align-items:flex-end!important;margin:0!important;min-height:calc(44px * var(--excel-table-scale,1))!important;padding:5px 12px!important;border:0!important;border-radius:0!important;background:var(--excel-page2-row,#f6f8f9)!important;color:#101820!important;font-family:var(--grid-header-font,"Roboto Condensed","Arial Narrow",Arial,sans-serif)!important;font-size:max(13px,calc(var(--grid-header-size,11px) + 4px))!important;font-weight:var(--grid-header-weight,700)!important;line-height:1!important;box-shadow:none!important}
-body.excel-page-2 #yardGrid>.track-remaining:before{content:"";position:absolute;z-index:-1;inset:8px 5px;border-radius:3px;background:var(--excel-page2-remaining-bg,#dfe9e3)}
+body.excel-page-2 #yardGrid>.track-remaining{position:relative!important;z-index:0!important;display:flex!important;flex-direction:column!important;justify-content:center!important;align-items:flex-end!important;margin:0!important;min-height:calc(44px * var(--excel-table-scale,1))!important;padding:5px 12px!important;border:0!important;border-radius:0!important;background:#edf0f2!important;color:#101820!important;font-family:var(--grid-header-font,"Roboto Condensed","Arial Narrow",Arial,sans-serif)!important;font-size:max(13px,calc(var(--grid-header-size,11px) + 4px))!important;font-weight:var(--grid-header-weight,700)!important;line-height:1!important;box-shadow:none!important}
+body.excel-page-2 #yardGrid>.track-remaining:before{content:"";position:absolute;z-index:-1;inset:0;height:100%;transform:none;box-sizing:border-box;border-radius:0;background:var(--excel-page2-remaining-bg,#dfe9e3)}
 body.excel-page-2 #yardGrid>.track-remaining:after{content:none;display:none}
 body.excel-page-2 #yardGrid>.track-remaining.excel-page2-tight{--excel-page2-remaining-bg:#f6c447}body.excel-page-2 #yardGrid>.track-remaining.excel-page2-over{--excel-page2-remaining-bg:#b21422;color:#fff!important}
 body.excel-page-2 #yardGrid>.track-remaining.block-paste-target{box-shadow:inset 0 0 0 3px #f59e0b,0 0 0 2px #7c2d12!important}body.excel-page-2 #yardGrid>.track-remaining.block-drag-target{box-shadow:inset 0 0 0 3px #f59e0b,0 0 0 2px #7c2d12!important;filter:brightness(1.1)}
+body.excel-page-2 #yardGrid>.excel-page2-row-alt{--excel-page2-row:#e7eaed}
 body.excel-page-2 #yardGrid>.excel-page2-row-over{--excel-page2-row:#fbeceb}
 body.excel-page-2 #yardGrid>.excel-page2-row-hidden{display:none!important}
 body.excel-page-2 #yardGrid>.cut-cell.block-selected{outline:0!important}body.excel-page-2 #yardGrid>.cut-cell.block-selected:before{box-shadow:inset 0 0 0 3px #f6c744,0 0 0 1px #7c2d12!important;filter:brightness(1.04)}
@@ -5997,7 +6003,6 @@ body.excel-page-2 .blank-grid-separator:first-of-type{margin-top:10px!important}
   var legend=document.getElementById("excelPage2Legend");
   var grid=document.getElementById("yardGrid");
   var summaryGrid=document.getElementById("blankYardGridTwo");
-  var toolsButton=document.getElementById("excelPage2ToolsToggle");
   var attentionButton=document.getElementById("excelPage2AttentionToggle");
   var capacityToggle=document.getElementById("excelPage2CapacityToggle");
   var quickControls=document.getElementById("excelPage2QuickControls");
@@ -6107,10 +6112,11 @@ body.excel-page-2 .blank-grid-separator:first-of-type{margin-top:10px!important}
     var hideDwell=!!(document.getElementById("hideDwellToggle")&&document.getElementById("hideDwellToggle").checked);
     var hideTrackIds=!!(document.getElementById("hideTrackIdsToggle")&&document.getElementById("hideTrackIdsToggle").checked);
     var track=Number(group&&group.track)||trackNumber(cell&&cell.closest&&cell.closest("[data-track]"));
-    var primary=formatNumber(footage)+" "+type;
+    var primaryType=train&&String(train.split(/\\s+/)[0]||"").toUpperCase()===type.toUpperCase()&&/\\s\\d{1,3}$/.test(train)?train:type;
+    var primary=formatNumber(footage)+" "+primaryType;
     if(!hideDwell&&dwellMatch)primary+="  "+dwellMatch[1].toUpperCase();
     if(!hideTrackIds&&track)primary+=" ["+track+"]";
-    var secondary=showTrain&&train?"→ "+train:(destination&&destination.toUpperCase()!==train.toUpperCase()&&destination.toUpperCase()!==status.toUpperCase()?"→ "+destination:"");
+    var secondary=showTrain&&train&&primaryType.toUpperCase()!==train.toUpperCase()?"→ "+train:(destination&&destination.toUpperCase()!==train.toUpperCase()&&destination.toUpperCase()!==status.toUpperCase()?"→ "+destination:"");
     cell.setAttribute("data-page2-card","true");
     cell.setAttribute("data-page2-primary",primary);
     if(secondary)cell.setAttribute("data-page2-secondary",secondary);else cell.removeAttribute("data-page2-secondary");
@@ -6209,7 +6215,7 @@ body.excel-page-2 .blank-grid-separator:first-of-type{margin-top:10px!important}
     if(!grid)return;
     Array.prototype.forEach.call(grid.querySelectorAll(":scope > .excel-page2-row-band"),function(band){band.remove()});
     Array.prototype.forEach.call(grid.children,function(cell){
-      cell.classList.remove("excel-page2-track-head","excel-page2-ruler-head","excel-page2-blocks-head","excel-page2-remaining-head","excel-page2-head-hidden","excel-page2-row-over","excel-page2-row-hidden","excel-page2-cat-sand","excel-page2-cat-purple","excel-page2-cat-red","excel-page2-cat-dark","excel-page2-cat-other","excel-page2-empty","excel-page2-tight","excel-page2-over");
+      cell.classList.remove("excel-page2-track-head","excel-page2-ruler-head","excel-page2-blocks-head","excel-page2-remaining-head","excel-page2-head-hidden","excel-page2-row-alt","excel-page2-row-over","excel-page2-row-hidden","excel-page2-cat-sand","excel-page2-cat-purple","excel-page2-cat-red","excel-page2-cat-dark","excel-page2-cat-other","excel-page2-empty","excel-page2-tight","excel-page2-over");
       cell.style.removeProperty("--excel-page2-row");
       cell.style.removeProperty("--excel-page2-fill");
       cell.style.removeProperty("--excel-page2-track-color");
@@ -6260,9 +6266,8 @@ body.excel-page-2 .blank-grid-separator:first-of-type{margin-top:10px!important}
     var capacityTotal=0;
     var attentionCount=0;
     var overTracks=[];
-    var shown=0;
     var labels=Array.prototype.slice.call(grid.querySelectorAll(":scope > .track-label[data-track]"));
-    labels.forEach(function(label){
+    labels.forEach(function(label,rowIndex){
       var rowStart=all.indexOf(label);
       if(rowStart<0)return;
       var row=all.slice(rowStart,rowStart+11);
@@ -6314,11 +6319,11 @@ body.excel-page-2 .blank-grid-separator:first-of-type{margin-top:10px!important}
         rulerEntries.push({category:"other",footage:unclassified});
       }
       row.forEach(function(cell){
+        cell.classList.toggle("excel-page2-row-alt",rowIndex%2===1);
         cell.classList.toggle("excel-page2-row-over",over);
         cell.classList.toggle("excel-page2-row-hidden",attentionOnly&&!needsAttention);
       });
       syncRowBand(label,track,over&&(!attentionOnly||needsAttention));
-      if(!attentionOnly||needsAttention)shown+=1;
       if(total){
         var paint=rulerPaint(rulerEntries,capacity);
         total.setAttribute("data-page2-used",formatNumber(used));
@@ -6365,28 +6370,22 @@ body.excel-page-2 .blank-grid-separator:first-of-type{margin-top:10px!important}
     var otherLegend=document.getElementById("excelPage2OtherLegend");
     if(otherLegend)otherLegend.hidden=categories.other<=0;
     setText("excelPage2AttentionCount",String(attentionCount));
-    setText("excelPage2Showing","Showing "+shown+" of "+labels.length+" tracks");
     if(attentionButton){attentionButton.setAttribute("aria-pressed",String(attentionOnly));attentionButton.title=attentionOnly?"Show all tracks":"Show tracks with 200 ft or less remaining"}
   }
   function applyMode(enabled){
     var nextEnabled=Boolean(enabled);
     var alreadyApplied=page2Enabled===nextEnabled&&document.body.classList.contains("excel-page-2")===nextEnabled;
     page2Enabled=nextEnabled;
-    if(alreadyApplied){if(page2Enabled)scheduleUpdate();return}
     document.body.classList.toggle("excel-page-2",page2Enabled);
-    if(!page2Enabled)document.body.classList.remove("excel-page-2-tools-open");
+    document.body.classList.toggle("excel-page-2-tools-open",page2Enabled);
+    if(alreadyApplied){if(page2Enabled)scheduleUpdate();return}
     if(overview)overview.hidden=!page2Enabled;
     if(legend)legend.hidden=!page2Enabled;
     clearPage2Classes();
     if(!page2Enabled)restoreQuickControls();
     try{if(typeof renderGrid==="function")renderGrid()}catch(error){}
     if(page2Enabled)scheduleUpdate();
-    if(toolsButton){toolsButton.setAttribute("aria-expanded",String(document.body.classList.contains("excel-page-2-tools-open")))}
   }
-  if(toolsButton)toolsButton.addEventListener("click",function(){
-    var open=document.body.classList.toggle("excel-page-2-tools-open");
-    toolsButton.setAttribute("aria-expanded",String(open));
-  });
   if(attentionButton)attentionButton.addEventListener("click",function(){attentionOnly=!attentionOnly;scheduleUpdate()});
   function toggleTrack803(){includeTrack803=!includeTrack803;scheduleUpdate()}
   if(capacityToggle){capacityToggle.addEventListener("click",toggleTrack803);capacityToggle.addEventListener("keydown",function(event){if(event.key==="Enter"||event.key===" "){event.preventDefault();toggleTrack803()}})}
@@ -6415,11 +6414,11 @@ body.excel-page-2 #blankYardGrid + .blank-grid-separator{display:flex!important}
 body.excel-page-2 #excelWorkspace #blankYardGrid,
 body.excel-page-2 #excelWorkspace #blankYardGridTwo{display:grid!important}
 body.excel-page-2 #excelWorkspace #inboundSummaryHost{display:block!important;min-width:1400px!important;margin:0!important}
-body.excel-page-2 .excel-page2-stage-separator{min-width:1400px!important;min-height:38px!important;margin:0!important;padding:5px 20px!important;align-items:center!important;gap:10px!important;border:0!important;border-top:1px solid #2b3942!important;border-bottom:1px solid #2b3942!important;background:#17232b!important;color:#fff!important;box-sizing:border-box!important}
-body.excel-page-2 .excel-page2-stage-separator>strong{color:#fff!important;font:950 13px/1 "Arial Narrow","Segoe UI",Arial,sans-serif!important;letter-spacing:.04em!important}
-body.excel-page-2 .excel-page2-stage-separator>.copy-grid-actions{display:flex!important;margin-left:auto!important;align-items:center!important;justify-content:flex-end!important;gap:5px!important}
+body.excel-page-2 .excel-page2-stage-separator{position:relative!important;z-index:8!important;display:flex!important;flex:0 0 38px!important;min-width:1400px!important;width:100%!important;height:38px!important;min-height:38px!important;max-height:none!important;margin:0!important;padding:5px 20px!important;align-items:center!important;gap:10px!important;overflow:visible!important;border:0!important;border-top:1px solid #2b3942!important;border-bottom:1px solid #2b3942!important;background:#17232b!important;color:#fff!important;box-sizing:border-box!important}
+body.excel-page-2 .excel-page2-stage-separator>strong{position:relative!important;z-index:1!important;display:flex!important;height:100%!important;align-items:center!important;align-self:stretch!important;margin:0!important;padding:0!important;overflow:visible!important;color:#fff!important;font:950 13px/1.1 "Arial Narrow","Segoe UI",Arial,sans-serif!important;letter-spacing:.04em!important;white-space:nowrap!important}
+body.excel-page-2 .excel-page2-stage-separator>.copy-grid-actions{position:static!important;inset:auto!important;display:flex!important;height:25px!important;margin:0 0 0 auto!important;align-items:center!important;align-self:center!important;justify-content:flex-end!important;gap:5px!important;overflow:visible!important}
 body.excel-page-2 .excel-page2-stage-separator>.copy-grid-actions>button{width:auto!important;max-width:none!important;min-height:25px!important;height:25px!important;padding:0 9px!important;border-radius:3px!important;font:950 8px/1 "Arial Narrow","Segoe UI",Arial,sans-serif!important;letter-spacing:.04em!important;white-space:nowrap!important}
-body.excel-page-2 .excel-page2-secondary-grid{position:relative!important;grid-template-columns:68px 330px repeat(8,minmax(110px,126px)) minmax(24px,1fr) 98px!important;grid-auto-flow:row!important;min-width:1400px!important;width:100%!important;margin:0 0 8px!important;border:0!important;border-radius:0!important;background:#f6f8f9!important;box-shadow:none!important;overflow:visible!important;font-family:"Arial Narrow","Segoe UI",Arial,sans-serif!important}
+body.excel-page-2 .excel-page2-secondary-grid{position:relative!important;grid-template-columns:68px 330px repeat(8,minmax(110px,126px)) 0 98px!important;grid-auto-flow:row!important;min-width:1400px!important;width:100%!important;margin:0 0 8px!important;border:0!important;border-radius:0!important;background:#f6f8f9!important;box-shadow:none!important;overflow:visible!important;font-family:"Arial Narrow","Segoe UI",Arial,sans-serif!important}
 body.excel-page-2 #excelWorkspace .excel-page2-secondary-grid>.excel-page2-track-head,
 body.excel-page-2 #excelWorkspace .excel-page2-secondary-grid>.excel-page2-ruler-head,
 body.excel-page-2 #excelWorkspace .excel-page2-secondary-grid>.excel-page2-blocks-head,
@@ -6429,13 +6428,17 @@ body.excel-page-2 .excel-page2-secondary-grid>.excel-page2-ruler-head{position:r
 body.excel-page-2 .excel-page2-secondary-grid>.excel-page2-blocks-head{display:flex!important;grid-column:3/span 9!important;justify-content:flex-start!important;padding-left:12px!important;text-align:left!important}
 body.excel-page-2 .excel-page2-secondary-grid>.excel-page2-remaining-head{display:flex!important;grid-column:12!important;justify-content:flex-end!important;padding-right:6px!important;text-align:right!important}
 body.excel-page-2 .excel-page2-secondary-grid>.excel-page2-head-hidden{display:none!important}
+body.excel-page-2 #excelWorkspace .excel-page2-secondary-grid>.excel-page2-track-head,
+body.excel-page-2 #excelWorkspace .excel-page2-secondary-grid>.excel-page2-ruler-head,
+body.excel-page-2 #excelWorkspace .excel-page2-secondary-grid>.excel-page2-blocks-head,
+body.excel-page-2 #excelWorkspace .excel-page2-secondary-grid>.excel-page2-remaining-head{display:none!important}
 body.excel-page-2 .excel-page2-secondary-grid>.track-label{grid-column:1!important}
 body.excel-page-2 .excel-page2-secondary-grid>.track-total{grid-column:2!important}
 body.excel-page-2 .excel-page2-secondary-grid>.track-remaining{grid-column:12!important}
 body.excel-page-2 .excel-page2-secondary-grid>.track-label,
 body.excel-page-2 .excel-page2-secondary-grid>.track-total,
 body.excel-page-2 .excel-page2-secondary-grid>.track-remaining,
-body.excel-page-2 .excel-page2-secondary-grid>.cut-cell{position:relative!important;z-index:1!important;min-height:calc(44px * var(--excel-table-scale,1))!important;border-right:0!important;border-bottom:1px solid #d4dbe0!important}
+body.excel-page-2 .excel-page2-secondary-grid>.cut-cell{position:relative!important;z-index:1!important;height:calc(44px * var(--excel-table-scale,1))!important;min-height:calc(44px * var(--excel-table-scale,1))!important;max-height:calc(44px * var(--excel-table-scale,1))!important;border-right:0!important;border-bottom:1px solid #d4dbe0!important;box-sizing:border-box!important}
 body.excel-page-2 .excel-page2-secondary-grid>.track-label{justify-content:flex-start!important;padding:0 0 0 18px!important;background:var(--excel-page2-row,#f6f8f9)!important;color:#0f1720!important;font-family:var(--grid-header-font,"Roboto Condensed","Arial Narrow",Arial,sans-serif)!important;font-size:max(11px,var(--grid-header-size,11px))!important;font-weight:var(--grid-header-weight,700)!important;letter-spacing:-.02em!important;white-space:nowrap!important}
 body.excel-page-2 .excel-page2-secondary-grid>.track-total{display:block!important;padding:0!important;background-color:var(--excel-page2-row,#f6f8f9)!important;background-image:var(--excel-page2-ruler-dots,linear-gradient(transparent,transparent)),var(--excel-page2-ruler-segments,linear-gradient(transparent,transparent)),linear-gradient(90deg,transparent calc(100% - 2px),#17232c calc(100% - 2px)),repeating-linear-gradient(90deg,#91a0aa 0 2px,transparent 2px 12px),linear-gradient(#7e8b94,#7e8b94)!important;background-position:16px 32px!important;background-size:calc(100% - 32px) 18px!important;background-repeat:no-repeat!important;color:transparent!important;font-size:0!important;overflow:visible!important}
 body.excel-page-2 .excel-page2-secondary-grid>.track-total:before{content:attr(data-page2-used) " / " attr(data-page2-capacity) " ft";position:absolute;left:16px;top:8px;color:#17232c;font:900 10px/1 Consolas,"Courier New",monospace;white-space:nowrap}
@@ -6454,11 +6457,12 @@ body.excel-page-2 .excel-page2-secondary-grid>.cut-cell.excel-page2-empty{backgr
 body.excel-page-2 .excel-page2-secondary-grid>.cut-cell.excel-page2-empty.block-drop-end:hover{box-shadow:inset 3px 8px 0 #d6a329,inset -3px -8px 0 #d6a329!important}
 body.excel-page-2 .excel-page2-secondary-grid>.cut-cell.block-paste-target:before,
 body.excel-page-2 .excel-page2-secondary-grid>.cut-cell.block-drag-target:before{box-shadow:inset 0 0 0 3px #f59e0b,0 0 0 2px #7c2d12!important}
-body.excel-page-2 .excel-page2-secondary-grid>.track-remaining{display:flex!important;flex-direction:column!important;justify-content:center!important;align-items:flex-end!important;margin:0!important;padding:5px 12px!important;border:0!important;border-radius:0!important;background:var(--excel-page2-row,#f6f8f9)!important;color:#101820!important;font:950 17px/1 Consolas,"Courier New",monospace!important;box-shadow:none!important}
-body.excel-page-2 .excel-page2-secondary-grid>.track-remaining:before{content:"";position:absolute;z-index:-1;inset:8px 5px;border-radius:3px;background:var(--excel-page2-remaining-bg,#dfe9e3)}
+body.excel-page-2 .excel-page2-secondary-grid>.track-remaining{display:flex!important;flex-direction:column!important;justify-content:center!important;align-items:flex-end!important;margin:0!important;padding:5px 12px!important;border:0!important;border-radius:0!important;background:#edf0f2!important;color:#101820!important;font:950 17px/1 Consolas,"Courier New",monospace!important;box-shadow:none!important}
+body.excel-page-2 .excel-page2-secondary-grid>.track-remaining:before{content:"";position:absolute;z-index:-1;inset:0;height:100%;transform:none;box-sizing:border-box;border-radius:0;background:var(--excel-page2-remaining-bg,#dfe9e3)}
 body.excel-page-2 .excel-page2-secondary-grid>.track-remaining:after{content:none;display:none}
 body.excel-page-2 .excel-page2-secondary-grid>.track-remaining.excel-page2-tight{--excel-page2-remaining-bg:#f6c447}
 body.excel-page-2 .excel-page2-secondary-grid>.track-remaining.excel-page2-over{--excel-page2-remaining-bg:#b21422;color:#fff!important}
+body.excel-page-2 .excel-page2-secondary-grid>.excel-page2-row-alt{--excel-page2-row:#e7eaed}
 body.excel-page-2 .excel-page2-secondary-grid>.excel-page2-row-over{--excel-page2-row:#fbeceb}
 body.excel-page-2 .excel-page2-secondary-grid>.excel-page2-row-hidden{display:none!important}
 body.excel-page-2 .excel-page2-secondary-grid>.cut-cell.block-selected{outline:0!important}
@@ -6474,6 +6478,11 @@ body.excel-page-2 #blankYardGridTwo>.third-summary-span{grid-column:3/span 8!imp
 body.excel-page-2 #blankYardGridTwo>.third-summary-head.third-summary-span{grid-column:3/span 9!important}
 body.excel-page-2 #blankYardGridTwo>.third-summary-average,
 body.excel-page-2 #blankYardGridTwo>.excel-page2-summary-edge{grid-column:12!important}
+body.excel-page-2 #blankYardGridTwo>.third-summary-total{position:relative!important;display:block!important;min-height:44px!important;padding:0!important;overflow:hidden!important;background-color:#f6f8f9!important;background-image:linear-gradient(90deg,#dec48b 0 var(--excel-page2-summary-fill,0%),#91a0aa var(--excel-page2-summary-fill,0%) 100%)!important;background-position:16px calc(100% - 5px)!important;background-size:calc(100% - 32px) 10px!important;background-repeat:no-repeat!important;color:transparent!important;font-size:0!important}
+body.excel-page-2 #blankYardGridTwo>.third-summary-total:before{content:attr(data-page2-used) " / " attr(data-page2-capacity) " ft";position:absolute;left:16px;top:8px;color:#17232c;font:900 10px/1 Consolas,"Courier New",monospace;white-space:nowrap}
+body.excel-page-2 #blankYardGridTwo>.third-summary-total:after{content:attr(data-page2-percent) "%";position:absolute;right:12px;top:8px;color:#17232c;font:900 10px/1 Consolas,"Courier New",monospace}
+body.excel-page-2 #blankYardGridTwo>.excel-page2-final-track{background-color:#fff1bd!important}
+body.excel-page-2 #blankYardGridTwo>.third-summary-total.excel-page2-final-track{background-color:#fff1bd!important}
 </style>`;
       const script = `<scr${""}ipt id="excel-page2-three-table-script">
 (function(){
@@ -6491,11 +6500,14 @@ body.excel-page-2 #blankYardGridTwo>.excel-page2-summary-edge{grid-column:12!imp
   function readableForeground(background,fallback){var values=String(background||"").match(/[\\d.]+/g);if(!values||values.length<3)return fallback;var luminance=(Number(values[0])*299+Number(values[1])*587+Number(values[2])*114)/1000;return luminance<142?"#ffffff":"#101820"}
   function captureSourceColors(cells){var body=document.body,hadMode=body.classList.contains("excel-page-2");cells.forEach(function(cell){cell.classList.remove("excel-page2-cat-sand","excel-page2-cat-purple","excel-page2-cat-red","excel-page2-cat-dark","excel-page2-cat-other","excel-page2-empty");cell.removeAttribute("data-page2-card");cell.removeAttribute("data-page2-primary");cell.removeAttribute("data-page2-secondary");cell.style.removeProperty("--excel-page2-source-bg");cell.style.removeProperty("--excel-page2-source-fg")});if(hadMode)body.classList.remove("excel-page-2");cells.forEach(function(cell){var style=window.getComputedStyle(cell),image=style.backgroundImage,background=image&&image!=="none"?image:style.backgroundColor;if(background&&background!=="transparent"&&background!=="rgba(0, 0, 0, 0)"){cell.style.setProperty("--excel-page2-source-bg",background);cell.style.setProperty("--excel-page2-source-fg",image&&image!=="none"?(style.color||"#101820"):readableForeground(background,style.color||"#101820"))}});if(hadMode)body.classList.add("excel-page-2")}
   function cardCopy(cell,footage){var label=String(cell&&cell.getAttribute("title")||cell&&cell.textContent||"").replace(/\\s+/g," ").trim();var trackMatch=label.match(/\\[\\s*(?:6-)?(\\d{3})\\s*\\]/);var status=label.replace(/^\\s*[\\d,]+(?:\\s*ft)?\\s*/i,"").replace(/\\s*\\[\\s*(?:6-)?\\d{3}\\s*\\]\\s*$/,"").replace(/\\s*\\([^)]*\\)\\s*/g," ").replace(/\\s+/g," ").trim()||"UNASSIGNED";var parts=status.split(/\\s+/),type=parts.shift()||"UNASSIGNED",destination=parts.join(" ");if(/^\\d+(?:\\.\\d+)?H$/i.test(destination))destination="";else if(/^\\d{1,3}$/.test(destination)&&/^(?:[A-Z0-9]+HOX?|[A-Z0-9]+MQ)$/i.test(type))destination=type+" "+destination;var blockId=String(cell&&cell.dataset&&cell.dataset.blockId||""),source=blockId?document.querySelector('#yardGrid .cut-cell[data-block-id="'+blockId.replace(/"/g,'\\"')+'"]'):null,sourceLabel=String(source&&source.getAttribute("title")||source&&source.textContent||"").replace(/\\s+/g," ").trim(),model=null,group=null;try{model=typeof window.conglobalExcelPage2Model==="function"?window.conglobalExcelPage2Model():null;group=model&&Array.isArray(model.groups)?model.groups.find(function(candidate){return String(candidate&&candidate.blockId||"")===blockId}):null}catch(error){}var groupTrain=String(group&&group.train||"").replace(/\\s+/g," ").trim();var train=groupTrain||(label.match(/\\b[A-Z][A-Z0-9]{3,9}\\s+\\d{1,3}\\b/i)||sourceLabel.match(/\\b[A-Z][A-Z0-9]{3,9}\\s+\\d{1,3}\\b/i)||[])[0]||"";var dwellMatch=label.match(/\\((\\?\\?|\\d+(?:\\.\\d+)?H?)\\)/i);var showTrain=!!(document.getElementById("showInboundTrainToggle")&&document.getElementById("showInboundTrainToggle").checked),hideDwell=!!(document.getElementById("hideDwellToggle")&&document.getElementById("hideDwellToggle").checked),hideTrackIds=!!(document.getElementById("hideTrackIdsToggle")&&document.getElementById("hideTrackIdsToggle").checked);var primary=formatNumber(footage)+" "+type;if(!hideDwell&&dwellMatch)primary+="  "+dwellMatch[1].toUpperCase();if(!hideTrackIds&&trackMatch)primary+=" ["+trackMatch[1]+"]";var secondary=showTrain&&train?"→ "+train:(destination&&destination.toUpperCase()!==train.toUpperCase()?"→ "+destination:"");cell.setAttribute("data-page2-card","true");cell.setAttribute("data-page2-primary",primary);if(secondary)cell.setAttribute("data-page2-secondary",secondary);else cell.removeAttribute("data-page2-secondary");cell.setAttribute("aria-label",secondary?primary+", "+secondary:primary)}
+  var baseCardCopy=cardCopy;
+  cardCopy=function(cell,footage){baseCardCopy(cell,footage);var source=String(cell&&cell.getAttribute("title")||cell&&cell.textContent||"").replace(/\\s+/g," ").toUpperCase(),match=source.match(/\\b([A-Z][A-Z0-9]{3,9}\\s+\\d{1,3})\\b/);if(!match)return;var train=match[1],primary=String(cell.getAttribute("data-page2-primary")||""),type=train.split(/\\s+/)[0];if(primary.toUpperCase().includes(type)&&!primary.toUpperCase().includes(train))cell.setAttribute("data-page2-primary",primary.replace(new RegExp("\\b"+type+"\\b","i"),train));if(String(cell.getAttribute("data-page2-secondary")||"").replace(/^→\\s*/,"").toUpperCase()===train)cell.removeAttribute("data-page2-secondary")};
   function rulerPaint(entries,capacity){var colors={sand:"#dec48b",purple:"#5d2a92",red:"#df3e2d",dark:"#141a1e",other:"#8796a0"},cursor=0,stops=[],dots=["radial-gradient(circle at 1% 82%,#f8fafc 0 2px,#60717d 2.2px 3.3px,transparent 3.6px)"];entries.forEach(function(entry){var start=Math.max(0,Math.min(100,cursor));cursor+=capacity>0?entry.footage/capacity*100:0;var end=Math.max(start,Math.min(100,cursor));if(end>start){var color=colors[entry.category]||colors.other;stops.push(color+" "+start.toFixed(3)+"%",color+" "+end.toFixed(3)+"%");dots.push("radial-gradient(circle at "+end.toFixed(3)+"% 82%,#f8fafc 0 2px,#60717d 2.2px 3.3px,transparent 3.6px)")}});var filled=Math.max(0,Math.min(100,cursor));stops.push("transparent "+filled.toFixed(3)+"%","transparent 100%");return {segments:"linear-gradient(90deg,"+stops.join(",")+")",dots:dots.join(",")}}
+  function decorateTenThousandFootTracks(grid){if(!grid||grid.id!=="blankYardGridTwo")return;Array.prototype.forEach.call(grid.querySelectorAll(":scope > .third-summary-total"),function(total){var used=numberText(total.textContent),capacity=10000,percent=Math.max(0,Math.round(used/capacity*100));total.setAttribute("data-page2-used",formatNumber(used));total.setAttribute("data-page2-capacity",formatNumber(capacity));total.setAttribute("data-page2-percent",String(percent));total.style.setProperty("--excel-page2-summary-fill",Math.min(100,percent)+"%");var cell=total.previousElementSibling;while(cell&&!cell.classList.contains("third-summary-head")){cell.classList.add("excel-page2-final-track");cell=cell.nextElementSibling;if(cell&&cell!==total&&cell.classList.contains("third-summary-label"))break}})}
   function rowCells(label){var row=[label],node=label.nextElementSibling;while(node&&row.length<11){row.push(node);node=node.nextElementSibling}return row.length===11?row:[]}
   function syncStageActions(grid){var separator=grid.previousElementSibling;if(!separator||!separator.classList.contains("blank-grid-separator"))return;separator.classList.add("excel-page2-stage-separator");var incoming=grid.querySelector(":scope > .copy-grid-head .copy-grid-actions");if(!incoming)return;var existing=separator.querySelector(":scope > .copy-grid-actions");if(existing&&existing!==incoming)existing.remove();if(grid.id==="blankYardGrid"){var outbound=grid.querySelector("#openOutboundUnits");if(outbound)incoming.insertBefore(outbound,incoming.firstChild)}separator.appendChild(incoming)}
   function decorateHeader(grid){var header=[],thirdHeads=[];if(grid.id==="blankYardGridTwo"){thirdHeads=Array.prototype.slice.call(grid.querySelectorAll(":scope > .third-summary-head"));header=thirdHeads.slice(-5);if(thirdHeads[3])thirdHeads[3].classList.add("excel-page2-summary-edge")}else{var firstTrack=grid.querySelector(":scope > .track-label[data-track]"),children=Array.prototype.slice.call(grid.children),trackAt=children.indexOf(firstTrack);if(trackAt>=11)header=children.slice(trackAt-11,trackAt)}if(header.length<5)return;var last=grid.id==="blankYardGridTwo"?4:10;var decorated=header[0].classList.contains("excel-page2-track-head")&&Boolean(header[1].querySelector(":scope > .excel-page2-ruler-ticks"))&&header[2].classList.contains("excel-page2-blocks-head")&&header[last]&&header[last].classList.contains("excel-page2-remaining-head");if(decorated)return;Array.prototype.forEach.call(grid.querySelectorAll(":scope > .excel-page2-track-head,:scope > .excel-page2-ruler-head,:scope > .excel-page2-blocks-head,:scope > .excel-page2-remaining-head,:scope > .excel-page2-head-hidden"),function(cell){cell.classList.remove("excel-page2-track-head","excel-page2-ruler-head","excel-page2-blocks-head","excel-page2-remaining-head","excel-page2-head-hidden")});header[0].textContent="";header[0].classList.add("excel-page2-track-head");header[1].classList.add("excel-page2-ruler-head");header[1].innerHTML='<span class="excel-page2-ruler-ticks"><i>0</i><i>500</i><i>1,000</i><i>1,500</i><i>2,000</i><i>2,500</i><i>2,750</i></span>';header[2].textContent="";header[2].classList.add("excel-page2-blocks-head");if(grid.id==="blankYardGridTwo"){header[3].classList.add("excel-page2-head-hidden");header[4].textContent="";header[4].classList.add("excel-page2-remaining-head")}else{for(var index=3;index<10;index+=1)header[index].classList.add("excel-page2-head-hidden");header[10].textContent="";header[10].classList.add("excel-page2-remaining-head")}}
-  function decorateGrid(grid){syncStageActions(grid);grid.classList.add("excel-page2-secondary-grid");decorateHeader(grid);var cuts=Array.prototype.slice.call(grid.querySelectorAll(":scope > .cut-cell"));captureSourceColors(cuts);var attentionOnly=document.getElementById("excelPage2AttentionToggle")&&document.getElementById("excelPage2AttentionToggle").getAttribute("aria-pressed")==="true";Array.prototype.forEach.call(grid.querySelectorAll(":scope > .track-label[data-track]"),function(label){var row=rowCells(label);if(!row.length)return;var total=row[1],rowCuts=row.slice(2,10),remaining=row[10],track=trackNumber(label),entries=[];rowCuts.forEach(function(cell,index){cell.style.gridColumn=String(3+index);var empty=cell.classList.contains("empty")||(!cell.dataset.blockId&&!String(cell.textContent||"").trim().replace(/^0$/, ""));if(empty){cell.classList.add("excel-page2-empty");return}var footage=footageFor(cell),category=categoryFor(cell);cell.classList.add("excel-page2-cat-"+category);cardCopy(cell,footage);entries.push({footage:footage,category:category})});var cutFootage=entries.reduce(function(sum,entry){return sum+entry.footage},0),used=Math.max(numberText(total&&total.textContent),cutFootage),capacity=capacityFor(track,remaining),open=capacity-used,percent=capacity>0?Math.round(used/capacity*100):0,over=open<0,needsAttention=open<=200;if(cutFootage<used)entries.push({footage:used-cutFootage,category:"other"});row.forEach(function(cell){cell.classList.toggle("excel-page2-row-over",over);cell.classList.toggle("excel-page2-row-hidden",attentionOnly&&!needsAttention)});if(total){var paint=rulerPaint(entries,capacity);total.setAttribute("data-page2-used",formatNumber(used));total.setAttribute("data-page2-capacity",formatNumber(capacity));total.setAttribute("data-page2-percent",String(percent));total.setAttribute("data-page2-over",String(over));total.style.setProperty("--excel-page2-ruler-segments",paint.segments);total.style.setProperty("--excel-page2-ruler-dots",paint.dots)}if(remaining){remaining.classList.toggle("excel-page2-tight",!over&&open<=200);remaining.classList.toggle("excel-page2-over",over);remaining.setAttribute("data-page2-caption",over?"ft over":open<=200?"ft open · tight":"ft open")}})}
+  function decorateGrid(grid){syncStageActions(grid);grid.classList.add("excel-page2-secondary-grid");decorateHeader(grid);decorateTenThousandFootTracks(grid);var cuts=Array.prototype.slice.call(grid.querySelectorAll(":scope > .cut-cell"));captureSourceColors(cuts);var attentionOnly=document.getElementById("excelPage2AttentionToggle")&&document.getElementById("excelPage2AttentionToggle").getAttribute("aria-pressed")==="true";Array.prototype.forEach.call(grid.querySelectorAll(":scope > .track-label[data-track]"),function(label,rowIndex){var row=rowCells(label);if(!row.length)return;var total=row[1],rowCuts=row.slice(2,10),remaining=row[10],track=trackNumber(label),entries=[];rowCuts.forEach(function(cell,index){cell.style.gridColumn=String(3+index);var empty=cell.classList.contains("empty")||(!cell.dataset.blockId&&!String(cell.textContent||"").trim().replace(/^0$/, ""));if(empty){cell.classList.add("excel-page2-empty");return}var footage=footageFor(cell),category=categoryFor(cell);cell.classList.add("excel-page2-cat-"+category);cardCopy(cell,footage);entries.push({footage:footage,category:category})});var cutFootage=entries.reduce(function(sum,entry){return sum+entry.footage},0),used=Math.max(numberText(total&&total.textContent),cutFootage),capacity=capacityFor(track,remaining),open=capacity-used,percent=capacity>0?Math.round(used/capacity*100):0,over=open<0,needsAttention=open<=200;if(cutFootage<used)entries.push({footage:used-cutFootage,category:"other"});row.forEach(function(cell){cell.classList.toggle("excel-page2-row-alt",rowIndex%2===1);cell.classList.toggle("excel-page2-row-over",over);cell.classList.toggle("excel-page2-row-hidden",attentionOnly&&!needsAttention)});if(total){var paint=rulerPaint(entries,capacity);total.setAttribute("data-page2-used",formatNumber(used));total.setAttribute("data-page2-capacity",formatNumber(capacity));total.setAttribute("data-page2-percent",String(percent));total.setAttribute("data-page2-over",String(over));total.style.setProperty("--excel-page2-ruler-segments",paint.segments);total.style.setProperty("--excel-page2-ruler-dots",paint.dots)}if(remaining){remaining.classList.toggle("excel-page2-tight",!over&&open<=200);remaining.classList.toggle("excel-page2-over",over);remaining.setAttribute("data-page2-caption",over?"ft over":open<=200?"ft open · tight":"ft open")}})}
   function cleanStageActions(){grids.forEach(function(grid){var separator=grid.previousElementSibling;if(!separator||!separator.classList.contains("blank-grid-separator"))return;var moved=separator.querySelector(":scope > .copy-grid-actions");if(moved)moved.remove();separator.classList.remove("excel-page2-stage-separator")})}
   function sync(){if(!document.body.classList.contains("excel-page-2"))return;grids.forEach(decorateGrid)}
   function schedule(){if(frame)return;frame=requestAnimationFrame(function(){frame=0;sync()})}
@@ -6568,6 +6580,49 @@ body.excel-page-2 #blankYardGridTwo>.excel-page2-summary-edge{grid-column:12!imp
       if (headClose >= 0) html = html.slice(0, headClose) + style + "\n" + html.slice(headClose);
       const bodyClose = html.toLowerCase().lastIndexOf("</body>");
       return bodyClose >= 0 ? html.slice(0, bodyClose) + script + "\n" + html.slice(bodyClose) : html + script;
+    }
+
+    function withExcelCurrentWorkRowToggles(html) {
+      const marker = "excel-current-work-row-toggles-v1";
+      if (!html || typeof html !== "string" || html.includes(marker)) return html;
+      const identifiersBefore = `        <div class="current-work-identifiers" aria-label="Editable row identifiers">
+          <input data-cw-id="0" value="1" aria-label="Row 1 identifier">
+          <input data-cw-id="1" value="2" aria-label="Row 2 identifier">
+          <input data-cw-id="2" value="4" aria-label="Row 3 identifier">
+          <input data-cw-id="3" value="5" aria-label="Row 4 identifier">
+          <input data-cw-id="4" value="8" aria-label="Row 5 identifier">
+          <input data-cw-id="5" value="9" aria-label="Row 6 identifier">
+        </div>`;
+      const identifiersAfter = `        <div class="current-work-identifiers" aria-label="Editable row identifiers and calculation toggles">
+          <label class="cw-row-selector"><input type="checkbox" data-cw-include="0" checked aria-label="Include row 1 in totals"><input data-cw-id="0" value="1" aria-label="Row 1 identifier"></label>
+          <label class="cw-row-selector"><input type="checkbox" data-cw-include="1" checked aria-label="Include row 2 in totals"><input data-cw-id="1" value="2" aria-label="Row 2 identifier"></label>
+          <label class="cw-row-selector"><input type="checkbox" data-cw-include="2" checked aria-label="Include row 3 in totals"><input data-cw-id="2" value="4" aria-label="Row 3 identifier"></label>
+          <label class="cw-row-selector"><input type="checkbox" data-cw-include="3" checked aria-label="Include row 4 in totals"><input data-cw-id="3" value="5" aria-label="Row 4 identifier"></label>
+          <label class="cw-row-selector"><input type="checkbox" data-cw-include="4" checked aria-label="Include row 5 in totals"><input data-cw-id="4" value="8" aria-label="Row 5 identifier"></label>
+          <label class="cw-row-selector"><input type="checkbox" data-cw-include="5" checked aria-label="Include row 6 in totals"><input data-cw-id="5" value="9" aria-label="Row 6 identifier"></label>
+        </div>`;
+      const replacements = [
+        [identifiersBefore, identifiersAfter],
+        ['      ids:["1","2","4","5","8","9"],\n      inbound:', '      ids:["1","2","4","5","8","9"],\n      included:[true,true,true,true,true,true],\n      inbound:'],
+        ['    const sixStrings = (items, defaults) => Array.from({length:6}, (_unused, index) => String(Array.isArray(items) && items[index] != null ? items[index] : defaults[index]));\n    return {', '    const sixStrings = (items, defaults) => Array.from({length:6}, (_unused, index) => String(Array.isArray(items) && items[index] != null ? items[index] : defaults[index]));\n    const sixBooleans = items => Array.from({length:6}, (_unused, index) => !(Array.isArray(items) && items[index] === false));\n    return {'],
+        ['      ids:sixStrings(source.ids, fallback.ids),\n      inbound:', '      ids:sixStrings(source.ids, fallback.ids),\n      included:sixBooleans(source.included),\n      inbound:'],
+        ['    const inbound = currentWork.inbound.reduce((sum, value) => sum + Math.max(0, parseCalcNumber(value)), 0);\n    const outbound = currentWork.outbound.reduce((sum, value) => sum + Math.max(0, parseCalcNumber(value)), 0);', '    const rowIncluded = index => currentWork.included[index] !== false;\n    const inbound = currentWork.inbound.reduce((sum, value, index) => sum + (rowIncluded(index) ? Math.max(0, parseCalcNumber(value)) : 0), 0);\n    const outbound = currentWork.outbound.reduce((sum, value, index) => sum + (rowIncluded(index) ? Math.max(0, parseCalcNumber(value)) : 0), 0);'],
+        ['    if (differenceCell) differenceCell.className = `cw-value ${lphDifference >= 0 ? "cw-good" : "cw-bad"}`;\n  }', '    if (differenceCell) differenceCell.className = `cw-value ${lphDifference >= 0 ? "cw-good" : "cw-bad"}`;\n    document.querySelectorAll("[data-cw-include]").forEach(input => {\n      const index = Number(input.dataset.cwInclude);\n      const included = rowIncluded(index);\n      input.checked = included;\n      input.closest(".cw-row-selector")?.classList.toggle("cw-excluded", !included);\n      $("#currentWorkRows")?.children[index]?.classList.toggle("cw-excluded", !included);\n    });\n  }'],
+        ['    document.querySelectorAll("[data-cw-id]").forEach(input => { input.value = currentWork.ids[Number(input.dataset.cwId)] || ""; });\n    document.querySelectorAll("[data-cw-inbound]")', '    document.querySelectorAll("[data-cw-id]").forEach(input => { input.value = currentWork.ids[Number(input.dataset.cwId)] || ""; });\n    document.querySelectorAll("[data-cw-include]").forEach(input => { input.checked = currentWork.included[Number(input.dataset.cwInclude)] !== false; });\n    document.querySelectorAll("[data-cw-inbound]")'],
+        ['    if (target.matches("[data-cw-id]")) currentWork.ids[Number(target.dataset.cwId)] = target.value;', '    if (target.matches("[data-cw-include]")) currentWork.included[Number(target.dataset.cwInclude)] = target.checked;\n    else if (target.matches("[data-cw-id]")) currentWork.ids[Number(target.dataset.cwId)] = target.value;']
+      ];
+      if (replacements.some(([before]) => !html.includes(before))) return html;
+      let next = html;
+      replacements.forEach(([before, after]) => { next = next.replace(before, after); });
+      const style = `<style id="${marker}">
+.current-work-identifiers{right:100%!important;width:55px!important}
+.cw-row-selector{display:grid;grid-template-columns:18px minmax(0,1fr);align-items:center;width:55px;height:25px;margin:0;border-right:1px solid rgba(70,35,25,.12);border-bottom:1px solid rgba(70,35,25,.08)}
+.cw-row-selector:nth-child(odd){background:#f8e1d6}.cw-row-selector:nth-child(even){background:#fff0e8}
+.cw-row-selector input[type="checkbox"]{width:14px;height:14px;margin:0 2px;accent-color:#16a34a;cursor:pointer}
+.current-work-identifiers input[data-cw-id]{width:35px!important;height:25px!important}
+.cw-row-selector.cw-excluded,.current-work-row.cw-excluded>:nth-child(-n+2){opacity:.42}
+</style>`;
+      return next.replace(/<\/head>/i, style + "\n</head>");
     }
 
     function withExcelSelectionHighlight(html) {
@@ -8437,9 +8492,9 @@ function renderTimeMap(elId, buckets, opts){`
     function withExcelCurrentWorkTracklistImport(html) {
       if (!html || typeof html !== "string" || html.includes("excel-current-work-tracklist-import-v1")) return html;
       const patch = `<style id="excel-current-work-tracklist-import-v1">
-#currentWorkHandle{display:flex!important;align-items:center!important;gap:8px!important}
+#currentWorkHandle{display:flex!important;align-items:center!important;padding-right:94px!important}
 #currentWorkHandle>span{flex:1;text-align:center}
-#cwTracklistOpen{height:24px;padding:0 10px;border:1px solid #fef08a;border-radius:5px;background:#facc15;color:#3b2200;font:950 10px/1 Arial,sans-serif;letter-spacing:.04em;text-transform:uppercase;cursor:pointer}
+#cwTracklistOpen{position:absolute;top:1px;right:30px;z-index:1;width:58px;height:21px;padding:0 7px;border:1px solid #fef08a;border-radius:5px;background:#facc15;color:#3b2200;font:950 10px/1 Arial,sans-serif;letter-spacing:.04em;text-transform:uppercase;cursor:pointer}
 #cwTracklistOpen:hover,#cwTracklistOpen:focus-visible{background:#fde047;outline:2px solid #fff;outline-offset:1px}
 .cw-tracklist-backdrop{position:fixed;inset:0;z-index:10050;display:flex;align-items:flex-start;justify-content:center;padding:44px 18px 18px;background:rgba(2,6,23,.78);backdrop-filter:blur(5px)}
 .cw-tracklist-backdrop[hidden]{display:none!important}
@@ -8460,7 +8515,7 @@ function renderTimeMap(elId, buckets, opts){`
   if(!handle||document.getElementById("cwTracklistOpen"))return;
   var closeButton=document.getElementById("currentWorkClose");
   var openButton=document.createElement("button");
-  openButton.id="cwTracklistOpen";openButton.type="button";openButton.textContent="Paste Tracklists";
+  openButton.id="cwTracklistOpen";openButton.type="button";openButton.textContent="Paste";
   handle.insertBefore(openButton,closeButton);
   var modal=document.createElement("div");
   modal.className="cw-tracklist-backdrop";modal.id="cwTracklistModal";modal.hidden=true;
@@ -17075,6 +17130,7 @@ function scenarioTrainReadyForStorage(train) {
           pageHtml = withExcelInboundLiftOverridesV1(pageHtml);
           pageHtml = withExcelAddNewInbound(pageHtml);
           pageHtml = withExcelMatrixViewButton(pageHtml);
+          pageHtml = withExcelCurrentWorkRowToggles(pageHtml);
           pageHtml = withExcelPage2Overview(pageHtml);
           pageHtml = withExcelPage2ThreeTables(pageHtml);
           pageHtml = withExcelContextActionFlyouts(pageHtml);
