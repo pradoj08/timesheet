@@ -2174,8 +2174,8 @@
   #inboundTrainSource option.inbound-day-today { background: #047857; color: #ffffff; }
   #inboundTrainSource option.inbound-day-tomorrow { background: #c2410c; color: #ffffff; }
   #inboundTrainSource option.inbound-day-after { background: #0369a1; color: #ffffff; }
-  #inboundTrainSource option.inbound-day-archived { background: #374151; color: #f9fafb; }
-  #inboundTrainSource option.inbound-day-archived:nth-child(even) { background: #4b5563; }
+  #inboundTrainSource option.inbound-source-yard { background: #7c5a22; color: #ffffff; }
+  #inboundTrainSource option.inbound-source-pierce { background: #5b21b6; color: #ffffff; }
   .inbound-train-track-list {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -4351,14 +4351,14 @@
       <button class="inbound-train-close" id="closeInboundTrain" type="button" aria-label="Close Add Inbound Train">&times;</button>
     </header>
     <div class="inbound-train-body">
-      <div class="inbound-train-note">Choose an inbound from the Inbounds popup or enter a train and footage manually. Tracks fill in the order selected; the last selected track carries any overflow so the full train footage is preserved.</div>
+      <div class="inbound-train-note">Choose a current inbound or a Yard/Pierce track, or enter a name and footage manually. Tracks fill in the order selected; the last selected track carries any overflow so the full footage is preserved.</div>
       <div class="inbound-train-field-grid">
         <div class="inbound-train-field source">
-          <label for="inboundTrainSource">Select from Inbounds</label>
+          <label for="inboundTrainSource">Select current inbound / track</label>
           <select id="inboundTrainSource"><option value="">Manual entry</option></select>
         </div>
         <div class="inbound-train-field">
-          <label for="inboundTrainName">Inbound Train</label>
+          <label for="inboundTrainName">Source / Train</label>
           <input id="inboundTrainName" type="text" maxlength="80" placeholder="ZLBHO 22" autocomplete="off">
         </div>
         <div class="inbound-train-field">
@@ -8854,13 +8854,21 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       const train = clean(plan && plan.train);
       const footage = inboundPlanFootage(plan);
       if (!train || !footage) return;
-      const signature = `${train.toUpperCase()}|${footage}`;
+      const signature = `${source.toUpperCase()}|${train.toUpperCase()}|${footage}`;
       if (seen.has(signature)) return;
       seen.add(signature);
       entries.push({ id, train, footage, source, day:clean(plan && plan.day) });
     };
     normalizeInboundPlans(state.inboundPlans).forEach((plan, index) => add(plan, "Inbound popup", `plan:${index}`));
-    normalizeInboundArchive(state.inboundArchive).forEach(record => add(record.plan, "Inbound archive", `archive:${record.id}`));
+    const addTrackSource = (group, label) => {
+      const track = yardViewTrackLabel(group && group.track);
+      const footage = (group && Array.isArray(group.rows) ? group.rows : [])
+        .reduce((sum, entry) => sum + Math.max(0, Number(entry && entry.row && entry.row[4]) || 0), 0);
+      if (!track || track === "UNASSIGNED" || !footage) return;
+      add({train:track, totalFt:footage, day:label}, `${label} track`, `${label.toLowerCase()}:${track}`);
+    };
+    yardTrackGroups("yard").forEach(group => addTrackSource(group, "YARD"));
+    yardTrackGroups("pierce").forEach(group => addTrackSource(group, "PIERCE"));
     return entries;
   }
 
@@ -8903,17 +8911,19 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     const select = $("#inboundTrainSource");
     const entries = inboundTrainSources();
     select.innerHTML = '<option value="">Manual entry</option>' + entries.map(entry => {
-      const context = entry.source === "Inbound archive" ? "ARCHIVED" : (entry.day || "INBOUNDS");
+      const context = entry.day || "INBOUNDS";
       const normalizedDay = clean(context).toUpperCase();
-      const dayClass = entry.source === "Inbound archive"
-        ? "inbound-day-archived"
-        : normalizedDay === "TODAY"
+      const dayClass = normalizedDay === "TODAY"
           ? "inbound-day-today"
           : normalizedDay === "TOMORROW"
             ? "inbound-day-tomorrow"
             : normalizedDay === "DAY AFTER"
               ? "inbound-day-after"
-              : "";
+              : normalizedDay === "YARD"
+                ? "inbound-source-yard"
+                : normalizedDay === "PIERCE"
+                  ? "inbound-source-pierce"
+                  : "";
       return `<option class="${dayClass}" value="${escapeAttr(entry.id)}">${escapeHtml(entry.train)} — ${escapeHtml(fmtInt(entry.footage))} FT (${escapeHtml(context)})</option>`;
     }).join("");
   }
