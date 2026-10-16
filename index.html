@@ -6149,6 +6149,14 @@ body.excel-page-2 .blank-grid-separator:first-of-type{margin-top:10px!important}
     if(secondary)cell.setAttribute("data-page2-secondary",secondary);else cell.removeAttribute("data-page2-secondary");
     cell.setAttribute("aria-label",secondary?primary+", "+secondary:primary);
   }
+  /* excel-page2-track-composition-colors-v1 */
+  function rulerColorFor(cell,category){
+    var colors={sand:"#dec48b",purple:"#5d2a92",red:"#df3e2d",dark:"#141a1e",other:"#8796a0"};
+    var source=String(cell&&cell.style&&cell.style.getPropertyValue("--excel-page2-source-bg")||"").trim();
+    var tokens=source.match(/#[0-9a-f]{3,8}|rgba?[(][^)]*[)]|hsla?[(][^)]*[)]/ig);
+    if(tokens&&tokens.length)return tokens[Math.floor(tokens.length/2)];
+    return colors[category]||colors.other;
+  }
   function rulerPaint(entries,capacity){
     var colors={sand:"#dec48b",purple:"#5d2a92",red:"#df3e2d",dark:"#141a1e",other:"#8796a0"};
     var cursor=0;
@@ -6159,7 +6167,7 @@ body.excel-page-2 .blank-grid-separator:first-of-type{margin-top:10px!important}
       cursor+=capacity>0?entry.footage/capacity*100:0;
       var end=Math.max(start,Math.min(100,cursor));
       if(end>start){
-        var color=colors[entry.category]||colors.other;
+        var color=entry.color||colors[entry.category]||colors.other;
         stops.push(color+" "+start.toFixed(3)+"%",color+" "+end.toFixed(3)+"%");
         dots.push("radial-gradient(circle at "+end.toFixed(3)+"% 82%,#f8fafc 0 2px,#60717d 2.2px 3.3px,transparent 3.6px)");
       }
@@ -6331,12 +6339,14 @@ body.excel-page-2 .blank-grid-separator:first-of-type{margin-top:10px!important}
         var entry=matchedGroup?entries.find(function(item){return item.group===matchedGroup})||{group:matchedGroup,label:String(matchedGroup.display||matchedGroup.baseDisplay||matchedGroup.status||""),category:semanticCategory(matchedGroup.status)||"other",footage:Math.max(0,Number(matchedGroup.footage)||0)}:null;
         var category=categoryFor(cell,entry);
         var footage=footageFor(cell);
+        var rulerColor=rulerColorFor(cell,category);
+        if(entry)entry.color=rulerColor;
         cell.classList.add("excel-page2-cat-"+category);
         cardCopy(cell,entry||{group:null,label:String(cell.getAttribute("title")||cell.textContent||""),category:category,footage:footage});
         if(!entries.length){
           if(includedInSummary)categories[category]+=footage;
           rowCategories[category]+=footage;
-          rulerEntries.push({category:category,footage:footage});
+          rulerEntries.push({category:category,footage:footage,color:rulerColor});
         }
       });
       var rowClassified=rowCategories.sand+rowCategories.purple+rowCategories.red+rowCategories.dark+rowCategories.other;
