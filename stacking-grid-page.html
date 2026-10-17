@@ -1553,6 +1553,25 @@ body.two-high #yardView .y-pair{
 #boxContextMenu .context-swap-match{display:flex;min-height:44px;align-items:center;justify-content:center;flex-direction:column;gap:2px;margin:0!important;padding:7px 8px!important;background:#087f5b;color:#fff;text-align:center!important;white-space:normal;line-height:1.05}
 #boxContextMenu .context-swap-match span{font-size:9px;letter-spacing:.08em}
 #boxContextMenu .context-swap-match strong{font-size:12px;letter-spacing:.02em}
+/* stacking-grid-column-context-menu-v1 */
+#columnContextMenu{
+  position:fixed;
+  z-index:10001;
+  display:none;
+  width:238px;
+  padding:9px;
+  border:1px solid #526374;
+  border-radius:7px;
+  background:#101820;
+  box-shadow:0 12px 28px rgba(0,0,0,.55);
+  color:#fff;
+}
+#columnContextMenu.open{display:block}
+#columnContextMenu .context-title{margin:0 0 6px;color:#dbe7f1;font:1000 12px/1.1 system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase}
+#columnContextMenu .context-note{margin:0 0 9px;color:#aebdca;font:800 10px/1.3 system-ui,sans-serif}
+#columnContextMenu button{width:100%;min-height:38px;margin:0;padding:8px;border:1px solid #f87171;border-radius:5px;background:#b91c1c;color:#fff;-webkit-text-fill-color:#fff;font:1000 13px/1 system-ui,sans-serif;text-align:center;cursor:pointer}
+#columnContextMenu button:hover,#columnContextMenu button:focus-visible,#columnContextMenu button.confirming{border-color:#fecaca;background:#7f1d1d;outline:2px solid #fff;outline-offset:1px}
+#columnContextMenu button:disabled{border-color:#526374;background:#26323d;color:#aebdca;-webkit-text-fill-color:#aebdca;cursor:not-allowed;outline:0}
 /* stacking-grid-drag-multiselect-v1 */
 #remove.delete-confirm{background:#c62828;color:#fff}
 #remove:disabled{opacity:.45;cursor:not-allowed}
@@ -1805,6 +1824,11 @@ PAD</div>
     <input id="model3dEditInput" type="text" autocomplete="off" spellcheck="false" aria-label="Container number">
     <div class="model3d-edit-actions"><button type="button" id="model3dEditCancel">CANCEL</button><button type="button" id="model3dEditSave">SAVE</button></div>
   </section>
+</div>
+<div id="columnContextMenu" role="menu" aria-label="Column actions">
+  <div class="context-title" id="columnContextTitle">Column</div>
+  <div class="context-note" id="columnContextNote">Delete this column and every block in it.</div>
+  <button type="button" id="contextDeleteColumn" role="menuitem">Delete Column</button>
 </div>
 <div class="pool-import-modal" id="poolImportModal" aria-hidden="true">
   <section class="pool-import-card" role="dialog" aria-modal="true" aria-labelledby="poolImportTitle">
@@ -2064,6 +2088,12 @@ let deleteArmed=false;
 let deleteTimer=0;
 let contextIndex=null;
 let contextClosestMatchKey='';
+let columnContextIndex=null;
+let columnContextPage=null;
+let columnContextLabel='';
+let columnContextTrigger=null;
+let columnDeleteArmed=false;
+let columnDeleteTimer=0;
 const WHEEL_TARGET_KEY=KEY+'_wheel_targets_v1';
 const WHEEL_TARGET_SORT_KEY=KEY+'_wheel_target_sort_v1';
 const WHEEL_TARGET_NOTES_KEY=KEY+'_wheel_target_notes_v1';
@@ -2193,8 +2223,10 @@ function save(){
   localStorage.setItem(LEVEL_KEY,String(LEVELS));
   localStorage.setItem(ORDER_KEY,'level-major-v3');
 }
-function rememberState(){
-  undoStack.push({page:activeStackPage,bays:BAYS,state:state.map(item=>({...item})),selectedIndex,selectedIndexes:[...selectedIndexes]});
+function rememberState(options={}){
+  const snapshot={page:activeStackPage,bays:BAYS,state:state.map(item=>({...item})),selectedIndex,selectedIndexes:[...selectedIndexes]};
+  if(options.includeActiveWorkBays)snapshot.activeWorkBays=[...readActiveWorkBays()];
+  undoStack.push(snapshot);
   if(undoStack.length>30)undoStack.shift();
   updateUndoButton();
 }
@@ -2208,13 +2240,14 @@ function undoLast(){
   if(!previous)return;
   const targetPage=Math.min(STACK_PAGE_COUNT,Math.max(1,Number(previous.page)||activeStackPage));
   if(targetPage!==activeStackPage){save();activeStackPage=targetPage;localStorage.setItem(STACK_ACTIVE_PAGE_KEY,String(activeStackPage));displayLevels=readStackDisplayLevels(activeStackPage)}
-  if(Number(previous.bays)>=2&&Number(previous.bays)!==BAYS){BAYS=Number(previous.bays);ROW_SIZE=BAYS*LEVELS;localStorage.setItem(stackBaysKey(activeStackPage),String(BAYS))}
+  if(Number(previous.bays)>=2&&Number(previous.bays)<=MAX_BAYS){BAYS=Number(previous.bays);ROW_SIZE=BAYS*LEVELS;localStorage.setItem(stackBaysKey(activeStackPage),String(BAYS))}
   if(previous.pageStates){
     Object.entries(previous.pageStates).forEach(([page,items])=>localStorage.setItem(stackPageKey(Number(page)),JSON.stringify(items)));
     state=(previous.pageStates[activeStackPage]||previous.state||[]).map(item=>({...item}));
   }else{
     state=previous.state.map(item=>({...item}));
   }
+  if(Array.isArray(previous.activeWorkBays))localStorage.setItem(activeWorkBaysKey(activeStackPage),JSON.stringify(previous.activeWorkBays));
   updateStackPageTabs();updateStackHeightToggle();
   selectedIndex=previous.selectedIndex;
   selectedIndexes=new Set(previous.selectedIndexes||(previous.selectedIndex===null?[]:[previous.selectedIndex]));
@@ -2267,7 +2300,7 @@ function switchStackPage(page){
   localStorage.setItem(STACK_ACTIVE_PAGE_KEY,String(activeStackPage));
   BAYS=readStackBays(activeStackPage);ROW_SIZE=BAYS*LEVELS;
   displayLevels=readStackDisplayLevels(activeStackPage);
-  selectedIndex=null;selectedIndexes.clear();selectionStart=null;cancelDelete();closeBoxContextMenu();
+  selectedIndex=null;selectedIndexes.clear();selectionStart=null;cancelDelete();closeBoxContextMenu();closeColumnContextMenu();
   load();updateStackPageTabs();updateStackHeightToggle();updateUndoButton();renderAll();
 }
 function normalizePoolImportEquipment(value){
@@ -2765,6 +2798,58 @@ function insertStackColumnAt(columnIndex){
   renderAll({preserveView:true});
   renderUnitSearch();
   updateUndoButton();
+}
+function columnItems(columnIndex,bays=BAYS,items=state){
+  const target=Number(columnIndex);
+  if(!Number.isInteger(target)||target<0||target>=bays)return [];
+  const rowSize=bays*LEVELS,rows=Math.max(1,Math.ceil(items.length/rowSize)),matches=[];
+  for(let row=0;row<rows;row++)for(let level=0;level<LEVELS;level++){
+    const item=items[(row*rowSize)+(level*bays)+target];
+    if(String(item?.text||'').trim())matches.push(item);
+  }
+  return matches;
+}
+function remapActiveWorkBaysAfterColumnDelete(columnIndex,oldBays){
+  const active=readActiveWorkBays(),nextBays=oldBays-1,remapped=new Set();
+  for(let oldBay=0;oldBay<oldBays;oldBay++){
+    if(oldBay===columnIndex)continue;
+    const oldLabel=stackBayLabel(oldBay,activeStackPage,oldBays);
+    if(!active.has(oldLabel))continue;
+    const nextBay=oldBay>columnIndex?oldBay-1:oldBay;
+    remapped.add(stackBayLabel(nextBay,activeStackPage,nextBays));
+  }
+  localStorage.setItem(activeWorkBaysKey(),JSON.stringify([...remapped].sort((a,b)=>a-b)));
+}
+function deleteStackColumnAt(columnIndex){
+  const target=Number(columnIndex),oldBays=BAYS;
+  if(!Number.isInteger(target)||target<0||target>=oldBays||oldBays<=2)return false;
+  rememberState({includeActiveWorkBays:true});
+  const oldRowSize=oldBays*LEVELS,rows=Math.max(1,Math.ceil(state.length/oldRowSize)),resized=[];
+  for(let row=0;row<rows;row++)for(let level=0;level<LEVELS;level++)for(let bay=0;bay<oldBays;bay++){
+    if(bay===target)continue;
+    resized.push(state[(row*oldRowSize)+(level*oldBays)+bay]||{text:'',green:false});
+  }
+  remapActiveWorkBaysAfterColumnDelete(target,oldBays);
+  state=resized;
+  BAYS=oldBays-1;
+  ROW_SIZE=BAYS*LEVELS;
+  localStorage.setItem(stackBaysKey(),String(BAYS));
+  selectedIndex=null;
+  selectedIndexes.clear();
+  selectionStart=null;
+  selectionMarquee?.remove();
+  selectionMarquee=null;
+  unitSearchPointer=null;
+  resetRemoveColumn();
+  resetRemoveRightColumn();
+  cancelDelete();
+  closeBoxContextMenu();
+  closeColumnContextMenu();
+  save();
+  renderAll({preserveView:true});
+  renderUnitSearch();
+  updateUndoButton();
+  return true;
 }
 function addStackColumn(){resizeActiveStackPage(BAYS+1)}
 function addStackColumnRight(){resizeActiveStackPage(BAYS+1,'right')}
@@ -3361,14 +3446,14 @@ function rebuildThreeModel3d(model,geometry,key){
 function drawModel3d(){
   const canvas=document.getElementById('model3dCanvas');if(!canvas||getComputedStyle(document.getElementById('model3dView')).display==='none')return;const model=ensureThreeModel3d(canvas);if(!model)return;
   const rect=canvas.getBoundingClientRect(),width=Math.max(1,rect.width),height=Math.max(1,rect.height);if(model.width!==width||model.height!==height){model.width=width;model.height=height;model.renderer.setSize(width,height,false);model.camera.aspect=width/height;model.camera.updateProjectionMatrix()}
-  const geometry=model3dGeometry(),key=activeStackPage+'|'+displayLevels+'|'+(highlightsHidden?'plain':'color')+'|'+geometry.rows+'|'+geometry.boxes.map(box=>box.index+':'+box.item.text+':'+box.color).join(';');if(key!==model3dThreeKey)rebuildThreeModel3d(model,geometry,key);model.renderer.render(model.scene,model.camera);
+  const geometry=model3dGeometry(),key=activeStackPage+'|'+BAYS+'|'+displayLevels+'|'+(highlightsHidden?'plain':'color')+'|'+geometry.rows+'|'+geometry.boxes.map(box=>box.index+':'+box.item.text+':'+box.color).join(';');if(key!==model3dThreeKey)rebuildThreeModel3d(model,geometry,key);model.renderer.render(model.scene,model.camera);
 }
 function renderModel3d(){requestAnimationFrame(drawModel3d)}
 function resetModel3dView(){
   model3dView={...MODEL3D_DEFAULT_VIEW};
   if(model3dThree){setThreeModel3dDefaultView(model3dThree,model3dGeometry());model3dThree.renderer.render(model3dThree.scene,model3dThree.camera)}else{model3dThreeKey='';drawModel3d()}
 }
-function renderAll(options={}){const preservedView=options.preserveView?captureStackingViewPosition():null;refreshDuplicateUnitKeys();renderGrid();renderYard();renderModel3d();applyPageLayoutLabels();renderPoolColorKey();updateContainerTotal();fitStackingView(preservedView||false);updateDeleteButton();updateClipboardControls();renderWheelTargetList();}
+function renderAll(options={}){closeColumnContextMenu();const preservedView=options.preserveView?captureStackingViewPosition():null;refreshDuplicateUnitKeys();renderGrid();renderYard();renderModel3d();applyPageLayoutLabels();renderPoolColorKey();updateContainerTotal();fitStackingView(preservedView||false);updateDeleteButton();updateClipboardControls();renderWheelTargetList();}
 
 window.addEventListener('resize',fitStackingView,{passive:true});
 
@@ -3388,7 +3473,7 @@ function tierLabel(index){
 }
 function bayHeaderMarkup(view='grid'){
   const activeWorkBays=readActiveWorkBays();
-  const labels=Array.from({length:BAYS},(_,bay)=>{const label=stackBayLabel(bay),location=`L-${String(label).padStart(2,'0')}`,active=activeWorkBays.has(label);return `<span class="bay-header-label${active?' active-work-bay':''}" data-work-bay="${label}" role="button" tabindex="0" aria-pressed="${active?'true':'false'}" title="Toggle active work for ${location}">${location}</span>`}).join('');
+  const labels=Array.from({length:BAYS},(_,bay)=>{const label=stackBayLabel(bay),location=`L-${String(label).padStart(2,'0')}`,active=activeWorkBays.has(label);return `<span class="bay-header-label${active?' active-work-bay':''}" data-work-bay="${label}" data-stack-column="${bay}" role="button" tabindex="0" aria-pressed="${active?'true':'false'}" aria-haspopup="menu" title="Toggle active work for ${location}; right-click for column actions">${location}</span>`}).join('');
   return `<span class="bay-boundary-title">BACK FENCE</span><div class="bay-header-strip ${view==='yard'?'yard':''}" style="--bay-count:${BAYS}">${labels}</div>`;
 }
 
@@ -3832,8 +3917,61 @@ function closeBoxContextMenu(){
   contextIndex=null;
   contextClosestMatchKey='';
 }
+function resetColumnDeleteConfirmation(){
+  columnDeleteArmed=false;
+  clearTimeout(columnDeleteTimer);
+  columnDeleteTimer=0;
+  const button=document.getElementById('contextDeleteColumn');
+  if(!button)return;
+  button.classList.remove('confirming');
+  button.textContent=BAYS<=2?'Minimum 2 Columns':'Delete Column';
+}
+function closeColumnContextMenu(options={}){
+  const trigger=columnContextTrigger;
+  document.getElementById('columnContextMenu')?.classList.remove('open');
+  resetColumnDeleteConfirmation();
+  columnContextIndex=null;
+  columnContextPage=null;
+  columnContextLabel='';
+  columnContextTrigger=null;
+  if(options.restoreFocus&&trigger?.isConnected)trigger.focus({preventScroll:true});
+}
+function openColumnContextMenu(columnIndex,label,x,y,trigger=null){
+  const target=Number(columnIndex),bayLabel=Number(label);
+  if(!Number.isInteger(target)||target<0||target>=BAYS||!Number.isFinite(bayLabel))return;
+  closeBoxContextMenu();
+  closeColumnContextMenu();
+  cancelDelete();
+  columnContextIndex=target;
+  columnContextPage=activeStackPage;
+  columnContextLabel=`L-${String(bayLabel).padStart(2,'0')}`;
+  columnContextTrigger=trigger;
+  const count=columnItems(target).length;
+  const title=document.getElementById('columnContextTitle'),note=document.getElementById('columnContextNote'),button=document.getElementById('contextDeleteColumn'),menu=document.getElementById('columnContextMenu');
+  if(!menu||!button)return;
+  if(title)title.textContent=`Column ${columnContextLabel}`;
+  if(note)note.textContent=BAYS<=2?'The grid must keep at least two columns.':count?`${count} block${count===1?'':'s'} will be deleted with this column.`:'This column is empty.';
+  button.disabled=BAYS<=2;
+  button.textContent=BAYS<=2?'Minimum 2 Columns':'Delete Column';
+  menu.classList.add('open');
+  menu.style.left='0px';
+  menu.style.top='0px';
+  const rect=menu.getBoundingClientRect();
+  menu.style.left=Math.max(8,Math.min(x,window.innerWidth-rect.width-8))+'px';
+  menu.style.top=Math.max(8,Math.min(y,window.innerHeight-rect.height-8))+'px';
+  button.focus({preventScroll:true});
+}
+function armColumnDelete(){
+  if(columnContextPage!==activeStackPage||!Number.isInteger(columnContextIndex)||BAYS<=2)return;
+  columnDeleteArmed=true;
+  const count=columnItems(columnContextIndex).length,button=document.getElementById('contextDeleteColumn');
+  if(button){button.textContent=`Confirm Delete ${columnContextLabel}${count?` (${count})`:''}`;button.classList.add('confirming')}
+  clearTimeout(columnDeleteTimer);
+  columnDeleteTimer=setTimeout(resetColumnDeleteConfirmation,5000);
+}
 function openBoxContextMenu(i,x,y){
   if(!Number.isInteger(i)||i<0)return;
+  closeColumnContextMenu();
   contextIndex=i;
   selectedIndex=i;
   selectedIndexes.clear();
@@ -4012,6 +4150,9 @@ document.addEventListener('keydown',e=>{
   if(e.key==='Escape'&&document.getElementById('poolImportModal')?.classList.contains('open')){
     e.preventDefault();closePoolImport();return;
   }
+  if(e.key==='Escape'&&document.getElementById('columnContextMenu')?.classList.contains('open')){
+    e.preventDefault();closeColumnContextMenu({restoreFocus:true});return;
+  }
   if(e.key==='Escape'&&document.getElementById('boxContextMenu')?.classList.contains('open')){
     e.preventDefault();
     closeBoxContextMenu();
@@ -4050,12 +4191,24 @@ document.addEventListener('keydown',e=>{
 
 document.addEventListener('keydown',e=>{
   const bayHeader=e.target.closest?.('[data-work-bay]');
-  if(!bayHeader||(e.key!=='Enter'&&e.key!==' '))return;
+  if(!bayHeader)return;
+  if(e.key==='ContextMenu'||(e.shiftKey&&e.key==='F10')){
+    e.preventDefault();
+    const rect=bayHeader.getBoundingClientRect();
+    openColumnContextMenu(bayHeader.dataset.stackColumn,bayHeader.dataset.workBay,rect.left+(rect.width/2),rect.bottom,bayHeader);
+    return;
+  }
+  if(e.key!=='Enter'&&e.key!==' ')return;
   e.preventDefault();
   toggleActiveWorkBay(bayHeader.dataset.workBay);
 });
 
 document.addEventListener('click',e=>{
+  const columnContextMenu=document.getElementById('columnContextMenu');
+  if(columnContextMenu?.classList.contains('open')){
+    if(columnContextMenu.contains(e.target))return;
+    closeColumnContextMenu();
+  }
   const bayHeader=e.target.closest('[data-work-bay]');
   if(bayHeader){toggleActiveWorkBay(bayHeader.dataset.workBay);return}
   const layoutLabel=e.target.closest('[data-layout-label]');
@@ -4133,6 +4286,13 @@ document.addEventListener('pointerdown',e=>{
   targetEl.setPointerCapture?.(e.pointerId);
 });
 document.addEventListener('contextmenu',e=>{
+  const bayHeader=e.target.closest('.bay-header-label[data-stack-column]');
+  if(bayHeader){
+    e.preventDefault();
+    e.stopPropagation();
+    openColumnContextMenu(bayHeader.dataset.stackColumn,bayHeader.dataset.workBay,e.clientX,e.clientY,bayHeader);
+    return;
+  }
   const box=e.target.closest('.unit,.y-half,.y-container');
   if(!box)return;
   const i=Number(box.dataset.i);
@@ -4275,6 +4435,12 @@ document.getElementById('pasteBlocks').onclick=pasteCopiedUnits;
 document.getElementById('undo').onclick=undoLast;
 document.getElementById('highlightColor').onchange=e=>setHighlightMode(e.target.value);
 document.getElementById('boxContextMenu').addEventListener('click',e=>e.stopPropagation());
+document.getElementById('columnContextMenu').addEventListener('click',e=>e.stopPropagation());
+document.getElementById('contextDeleteColumn').onclick=()=>{
+  if(!columnDeleteArmed){armColumnDelete();return}
+  if(columnContextPage!==activeStackPage)return closeColumnContextMenu();
+  deleteStackColumnAt(columnContextIndex);
+};
 document.getElementById('contextEditText').onclick=()=>{
   const i=contextIndex;
   closeBoxContextMenu();
@@ -4308,6 +4474,8 @@ document.getElementById('contextSwapClosest').onclick=()=>{
 };
 window.addEventListener('resize',closeBoxContextMenu);
 window.addEventListener('blur',closeBoxContextMenu);
+window.addEventListener('resize',closeColumnContextMenu);
+window.addEventListener('blur',closeColumnContextMenu);
 buildBoxContextColors();
 document.getElementById('hideHighlights').onclick=()=>{
   highlightsHidden=!highlightsHidden;
@@ -4447,6 +4615,7 @@ document.getElementById('model3dEdit').addEventListener('click',event=>{if(event
 document.getElementById('model3dEditInput').addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();document.getElementById('model3dEditSave').click()}else if(event.key==='Escape'){event.preventDefault();closeModel3dEdit()}});
 window.addEventListener('resize',()=>requestAnimationFrame(drawModel3d),{passive:true});
 function activateStackView(view){
+  closeColumnContextMenu();
   const views={grid:document.getElementById('gridView'),yard:document.getElementById('yardView'),model:model3dViewElement};
   Object.entries(views).forEach(([name,element])=>element.style.display=name===view?'block':'none');
   document.getElementById('stackViewSelect').value=view;
