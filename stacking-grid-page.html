@@ -22,6 +22,10 @@ button,.mode{border:0;border-radius:8px;padding:10px 12px;font-weight:900;font-s
 .view-toggle-split .viewbtn:focus-visible{position:relative;z-index:1;outline:2px solid #fff;outline-offset:-3px}
 .stack-toolbar-select{display:inline-flex;align-items:center;gap:6px;padding:4px 7px;border:1px solid #657480;border-radius:9px;background:#0a1118;color:#9fb0c2;font-size:9px;font-weight:1000;letter-spacing:.08em;white-space:nowrap}.stack-toolbar-select select{min-width:104px;height:31px;padding:4px 30px 4px 10px;border:1px solid #657480;border-radius:7px;background:#263746;color:#fff;font-size:12px;font-weight:1000;letter-spacing:.03em;cursor:pointer}.stack-toolbar-select select:focus-visible{outline:2px solid #fbbf24;outline-offset:1px}.stack-toolbar-select.page select{min-width:62px;background:#7b5900;color:#fff3c4}
 .toolbar-action-select{height:31px;min-width:112px;padding:4px 30px 4px 10px;border:1px solid #657480;border-radius:7px;background:#263746;color:#fff;font-size:11px;font-weight:1000;letter-spacing:.025em;cursor:pointer}.toolbar-action-select:focus-visible{outline:2px solid #fbbf24;outline-offset:1px}.toolbar-action-select option{background:#172029;color:#fff}.action-proxy{display:none!important}
+#importExportSelect{width:140px!important;min-width:140px!important;max-width:140px!important}
+#stackViewSelect{width:88px!important;min-width:88px!important;max-width:88px!important}
+#transferModeSelect{width:118px!important;min-width:118px!important;max-width:118px!important}
+#pastePaidSelect{width:118px!important;min-width:118px!important;max-width:118px!important}
 .mode{background:#35424d;display:flex;align-items:center;gap:4px}
 .status{font-size:12px;font-weight:800;color:#9cf0a8;margin-bottom:6px}
 .viewport{width:100%;overflow:hidden;padding:0}
@@ -1520,7 +1524,22 @@ body.two-high #yardView .y-pair{
   cursor:pointer;
 }
 #boxContextMenu .context-color:hover,#boxContextMenu .context-color:focus{border-color:#fff;transform:translateY(-1px)}
-#boxContextMenu .context-clear{margin:7px 0 0;color:#f3c8c8;text-align:center}
+#boxContextMenu .context-clear{margin:7px 0 0;color:#7f1d1d!important;-webkit-text-fill-color:#7f1d1d!important;text-align:center}
+#boxContextMenu #contextDeleteBlock{
+  margin:0 0 7px;
+  border:1px solid #f87171!important;
+  background:#b91c1c!important;
+  color:#fff!important;
+  -webkit-text-fill-color:#fff!important;
+  font-weight:1000;
+  text-align:center;
+}
+#boxContextMenu #contextDeleteBlock:hover,#boxContextMenu #contextDeleteBlock:focus-visible,#boxContextMenu #contextDeleteBlock.delete-confirm{
+  border-color:#fecaca!important;
+  background:#7f1d1d!important;
+  color:#fff!important;
+  -webkit-text-fill-color:#fff!important;
+}
 #boxContextMenu .context-parsed{margin:0 0 8px;padding:8px;border:1px solid #37536b;border-radius:7px;background:#0a2438}
 #boxContextMenu .context-parsed[hidden]{display:none}
 #boxContextMenu .context-parsed-grid{display:grid;grid-template-columns:auto minmax(0,1fr);gap:5px 9px;font:800 10px/1.2 system-ui,sans-serif}
@@ -1568,8 +1587,12 @@ body.multi-selecting .unit,body.multi-selecting .y-half{cursor:crosshair!importa
 .unit.search-found,.y-container.search-found{z-index:45!important;overflow:visible!important;outline:4px solid #ffea00!important;box-shadow:0 0 0 3px #111,0 0 18px 8px rgba(255,234,0,.9)!important}.unit.search-found::before,.y-container.search-found::before{content:"➜";position:absolute;z-index:60;left:-42px;top:50%;display:flex;width:36px;height:36px;align-items:center;justify-content:center;border:2px solid #111;border-radius:50%;background:#ffea00;color:#111;transform:translateY(-50%);font:1000 27px/1 Arial,sans-serif;text-shadow:none;box-shadow:0 2px 8px #0009;pointer-events:none;animation:searchPointerPulse .7s ease-in-out infinite alternate}@keyframes searchPointerPulse{from{transform:translate(-3px,-50%)}to{transform:translate(3px,-50%)}}
 .duplicate-unit-badge{position:absolute;z-index:12;left:4px;top:50%;display:inline-flex;width:19px;height:19px;align-items:center;justify-content:center;border:1px solid #f5e9ff;border-radius:50%;background:#4c1d95;color:#fff;transform:translateY(-50%);font:1000 11px/1 Arial,sans-serif;box-shadow:0 1px 5px #0009;pointer-events:none}.unit.duplicate-unit{background:#7e22ce!important;border-color:#d8b4fe!important;box-shadow:inset 0 0 0 2px #a855f7!important}.unit.duplicate-unit .label{padding-left:29px!important;color:#fff!important;text-shadow:0 1px 2px #2e1065!important}.y-container.duplicate-unit{padding-left:29px!important;background:repeating-linear-gradient(90deg,rgba(255,255,255,.09) 0 3px,rgba(0,0,0,.09) 3px 7px),#7e22ce!important;border-color:#d8b4fe!important;color:#fff!important;box-shadow:inset 0 0 0 2px #a855f7,0 3px 7px #0008!important}.y-container .duplicate-unit-badge{left:5px;top:50%}
 /* stacking-grid-insert-between-rows-v1 */
-#gridView .bay-header-label,#yardView .bay-header-label{font-size:16px!important;line-height:1!important}
-#gridView .bay-header-label.active-work-bay::before,#yardView .bay-header-label.active-work-bay::before{top:-19px!important;font-size:13px!important;line-height:1!important}
+#gridView .bay-header-label,#yardView .bay-header-label{height:24px!important;font-size:20px!important;line-height:1!important;letter-spacing:.08em!important}
+#gridView .bay-header-label.active-work-bay::before,#yardView .bay-header-label.active-work-bay::before{top:-22px!important;font-size:13px!important;line-height:1!important}
+#gridView .unit .label{padding-right:30px!important;font-size:22px!important;line-height:1.05!important}
+#yardView .y-container{padding-right:28px!important;font-size:20px!important;line-height:1.05!important}
+#gridView .slot-inline-editor{font-size:20px!important}
+#yardView .slot-inline-editor{font-size:18px!important}
 #gridView .rowlabels,#yardView .y-right{position:relative!important;overflow:visible!important}
 #gridView .insert-row-button,#yardView .insert-row-button{
   position:absolute!important;
@@ -1634,6 +1657,8 @@ body.multi-selecting .unit,body.multi-selecting .y-half{cursor:crosshair!importa
 .pool-import-modal.open{display:flex}.pool-import-card{width:min(980px,96vw);max-height:90vh;overflow:auto;border:1px solid #52677d;border-radius:17px;background:#111b26;color:#f8fafc;box-shadow:0 30px 90px rgba(0,0,0,.55)}.pool-import-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:15px 17px;border-bottom:1px solid #334557}.pool-import-head h2{margin:0;font-size:18px}.pool-import-head p{margin:4px 0 0;color:#aebed0;font-size:11px}.pool-import-close{min-width:38px!important;padding:5px!important}.pool-import-body{padding:15px}.pool-import-body textarea{width:100%;height:330px;resize:vertical;padding:11px;border:1px solid #40556d;border-radius:10px;background:#050b12;color:#eef7ff;font:700 12px/1.35 Consolas,monospace;white-space:pre}.pool-import-result{margin-top:10px;min-height:44px;padding:10px 12px;border:1px solid #334a60;border-radius:10px;background:#0a131d;color:#b8c7d8;font-size:11px}.pool-import-result.good{border-color:#278764;color:#a7f3d0}.pool-import-result.warn{border-color:#b7791f;color:#fde68a}.pool-import-legend{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}.pool-import-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 8px;border:1px solid #40546a;border-radius:999px;background:#182432;font-size:10px}.pool-import-chip i{width:13px;height:13px;border-radius:3px;background:var(--chip)}.pool-import-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
 #poolImportModal{align-items:flex-start}
 #poolImportModal .pool-import-card{margin-top:0;max-height:calc(100% - 4px)}
+#poolImportClearList{border-color:#f87171!important;background:#b91c1c!important;color:#fff!important;-webkit-text-fill-color:#fff!important}
+#poolImportClearList:hover,#poolImportClearList:focus-visible,#poolImportClearList.confirming{border-color:#fecaca!important;background:#7f1d1d!important;color:#fff!important;-webkit-text-fill-color:#fff!important}
 .pool-import-modal.embedded-viewport{bottom:auto;height:var(--stack-modal-visible-height);padding:12px}
 .pool-import-modal.embedded-viewport .pool-import-card{max-height:calc(100% - 8px)}
 .pool-key-bar{position:relative;display:flex;min-height:48px;align-items:center;gap:14px;padding:6px clamp(18px,3vw,72px);border-bottom:1px solid #2f3d4b;background:#0b1219;white-space:nowrap}.pool-key-bar .container-counter{flex:none}.pool-key-search{position:absolute;left:50%;width:min(280px,22vw);transform:translateX(-50%)}.pool-key-search .unit-search-input{box-sizing:border-box;width:100%;min-height:30px;padding:5px 9px;text-align:center}.pool-color-key{display:flex;min-width:0;align-items:center;justify-content:flex-end;flex:none;flex-wrap:nowrap;gap:8px;margin-left:auto;padding-left:24px;white-space:nowrap}.pool-color-key[hidden]{display:none}.pool-color-key>strong{flex:none;color:#fff;font-size:12px;letter-spacing:.11em}.pool-color-key-item{display:inline-flex;flex:none;align-items:center;gap:7px;padding:6px 10px;border:1px solid #496078;border-radius:999px;background:#17222d;color:#fff;font-size:11px;font-weight:800;letter-spacing:.02em}.pool-color-key-item i{width:18px;height:18px;flex:none;border:1px solid rgba(255,255,255,.6);border-radius:4px;background:var(--key-color)}
@@ -1671,7 +1696,7 @@ body.multi-selecting .unit,body.multi-selecting .y-half{cursor:crosshair!importa
   <div class="single-toolbar"><div class="viewbar">
     <div class="toolbar-group compact" data-group-label="View">
     <label class="stack-toolbar-select">VIEW<select id="stackViewSelect" aria-label="Stacking grid view"><option value="grid">GRID</option><option value="yard">YARD</option><option value="model">3D VIEW</option></select></label>
-    <label class="stack-toolbar-select page">PAGE<select id="stackPageSelect" aria-label="Stacking grid page"><option value="1">B</option><option value="2">D</option><option value="3">J</option><option value="4">S</option></select></label>
+    <label class="stack-toolbar-select page"><select id="stackPageSelect" aria-label="Stacking grid page"><option value="1">B</option><option value="2">D</option><option value="3">J</option><option value="4">S</option></select></label>
     </div>
     <div class="toolbar-group grow" data-group-label="Find &amp; Layout">
     <label class="grid-size-control" for="gridSizeSlider">GRID SIZE <input id="gridSizeSlider" type="range" min="60" max="140" step="5" value="100"><output id="gridSizeValue" for="gridSizeSlider">100%</output></label>
@@ -1763,6 +1788,7 @@ PAD</div>
     <div class="context-parsed-grid" id="contextParsedInfoGrid"></div>
   </section>
   <button type="button" id="contextEditText" role="menuitem">Edit Text</button>
+  <button type="button" class="context-clear" id="contextDeleteBlock" role="menuitem">Delete Block</button>
   <div class="context-title">Change box color</div>
   <div class="context-colors" id="contextColors"></div>
   <button type="button" class="context-clear" id="contextClearColor" role="menuitem">Remove Color</button>
@@ -1783,7 +1809,7 @@ PAD</div>
 <div class="pool-import-modal" id="poolImportModal" aria-hidden="true">
   <section class="pool-import-card" role="dialog" aria-modal="true" aria-labelledby="poolImportTitle">
     <header class="pool-import-head"><div><h2 id="poolImportTitle">Pool / Length List</h2><p>Paste a report or import its Excel file. Matches equipment across all four stacking-grid pages and changes color only.</p></div><button type="button" class="pool-import-close" id="poolImportClose" aria-label="Close">X</button></header>
-    <div class="pool-import-body"><input id="poolImportFile" type="file" accept=".xlsx,.xls,.csv,.tsv" hidden><textarea id="poolImportText" placeholder="Paste the Equipment / Pool / Length report here, or choose IMPORT EXCEL below..."></textarea><div class="pool-import-result" id="poolImportResult">Waiting for pasted data or an Excel file.</div><div class="pool-import-legend" id="poolImportLegend"></div><section class="pool-import-missing" id="poolImportMissing"><h3 id="poolImportMissingTitle">UNITS NOT FOUND</h3><div class="pool-import-missing-list" id="poolImportMissingList"></div></section><div class="pool-import-actions"><button type="button" id="poolImportChoose">IMPORT EXCEL</button><button type="button" id="poolImportClear">REMOVE IMPORT COLORS</button><button type="button" id="poolImportApply">PARSE &amp; COLOR MATCHES</button></div></div>
+    <div class="pool-import-body"><input id="poolImportFile" type="file" accept=".xlsx,.xls,.csv,.tsv" hidden><textarea id="poolImportText" placeholder="Paste the Equipment / Pool / Length report here, or choose IMPORT EXCEL below..."></textarea><div class="pool-import-result" id="poolImportResult">Waiting for pasted data or an Excel file.</div><div class="pool-import-legend" id="poolImportLegend"></div><section class="pool-import-missing" id="poolImportMissing"><h3 id="poolImportMissingTitle">UNITS NOT FOUND</h3><div class="pool-import-missing-list" id="poolImportMissingList"></div></section><div class="pool-import-actions"><button type="button" id="poolImportChoose">IMPORT EXCEL</button><button type="button" id="poolImportClearList">CLEAR LIST</button><button type="button" id="poolImportClear">REMOVE IMPORT COLORS</button><button type="button" id="poolImportApply">PARSE &amp; COLOR MATCHES</button></div></div>
   </section>
 </div>
 <div class="pool-import-modal" id="paidSwingsModal" aria-hidden="true">
@@ -2070,11 +2096,12 @@ function itemHighlightStyle(item){
 }
 
 const BAYS_KEY=KEY+'_columns_v1';
+const MAX_BAYS=40;
 function stackBaysKey(page=activeStackPage){return `${BAYS_KEY}_page_${page}`}
 function readStackBays(page=activeStackPage){
   const scopedKey=stackBaysKey(page),scoped=Number(localStorage.getItem(scopedKey));
-  if(Number.isFinite(scoped)&&scoped>=2&&scoped<=12)return scoped;
-  const migrated=Math.min(12,Math.max(2,Number(localStorage.getItem(BAYS_KEY))||7));
+  if(Number.isFinite(scoped)&&scoped>=2&&scoped<=MAX_BAYS)return scoped;
+  const migrated=Math.min(MAX_BAYS,Math.max(2,Number(localStorage.getItem(BAYS_KEY))||7));
   localStorage.setItem(scopedKey,String(migrated));
   return migrated;
 }
@@ -2504,6 +2531,7 @@ function openPoolImport(){
   const modal=document.getElementById('poolImportModal');positionStackingModalInViewport(modal);modal.classList.add('open');modal.setAttribute('aria-hidden','false');const card=modal.querySelector('.pool-import-card');if(card)card.scrollTop=0;setTimeout(()=>document.getElementById('poolImportText').focus({preventScroll:true}),30);
 }
 function closePoolImport(){
+  resetClearPoolImportList();
   const modal=document.getElementById('poolImportModal');modal.classList.remove('open');modal.setAttribute('aria-hidden','true');resetStackingModalViewport(modal);
 }
 function readStackPageState(page){
@@ -2636,6 +2664,32 @@ function applyStackingPoolReport(){
   result.textContent=!rows.length?'No valid Equipment / Eqmt Pool ID / Length rows were detected.':`${rows.length} report units parsed · ${matched} grid containers colored across ${pagesMatched} of 4 pages · ${unmatched} report units not found on any page.`;
   renderPoolImportMissing(missingRows,rows.length);
 }
+let clearPoolImportListArmed=false,clearPoolImportListTimer=0;
+function resetClearPoolImportList(){
+  clearPoolImportListArmed=false;clearTimeout(clearPoolImportListTimer);
+  const button=document.getElementById('poolImportClearList');
+  if(button){button.textContent='CLEAR LIST';button.classList.remove('confirming')}
+}
+function clearPoolImportList(){
+  const button=document.getElementById('poolImportClearList');
+  if(!clearPoolImportListArmed){
+    clearPoolImportListArmed=true;
+    button.textContent='CONFIRM CLEAR LIST';button.classList.add('confirming');
+    clearPoolImportListTimer=setTimeout(resetClearPoolImportList,3500);
+    return;
+  }
+  resetClearPoolImportList();
+  document.getElementById('poolImportText').value='';
+  document.getElementById('poolImportFile').value='';
+  document.getElementById('poolImportLegend').innerHTML='';
+  const missing=document.getElementById('poolImportMissing');
+  missing.classList.remove('open');
+  document.getElementById('poolImportMissingTitle').textContent='UNITS NOT FOUND';
+  document.getElementById('poolImportMissingList').innerHTML='';
+  const result=document.getElementById('poolImportResult');
+  result.className='pool-import-result';result.textContent='List cleared. Import Excel or paste a new list.';
+  document.getElementById('poolImportText').focus({preventScroll:true});
+}
 function clearStackingPoolColors(){
   const pageStates={},updatedStates={};let affected=0,pagesAffected=0;
   for(let page=1;page<=STACK_PAGE_COUNT;page++){
@@ -2669,7 +2723,7 @@ function resetRemoveColumn(){removeColumnArmed=false;clearTimeout(removeColumnTi
 let removeRightColumnArmed=false,removeRightColumnTimer=0;
 function resetRemoveRightColumn(){removeRightColumnArmed=false;clearTimeout(removeRightColumnTimer);const button=document.getElementById('removeColumnRight');if(button){button.textContent='−';button.classList.remove('confirming');button.title='Remove the right column'}}
 function resizeActiveStackPage(nextBays,edge='left'){
-  const oldBays=BAYS,next=Math.min(12,Math.max(2,nextBays));if(next===oldBays)return;
+  const oldBays=BAYS,next=Math.min(MAX_BAYS,Math.max(2,nextBays));if(next===oldBays)return;
   rememberState();
   state=resizeStackColumns(state,oldBays,next,edge);
   BAYS=next;ROW_SIZE=BAYS*LEVELS;localStorage.setItem(stackBaysKey(),String(BAYS));
@@ -2678,7 +2732,7 @@ function resizeActiveStackPage(nextBays,edge='left'){
 function insertStackColumnAt(columnIndex){
   const insertAt=Number(columnIndex);
   const oldBays=BAYS;
-  if(!Number.isInteger(insertAt)||insertAt<=0||insertAt>=oldBays||oldBays>=12)return;
+  if(!Number.isInteger(insertAt)||insertAt<0||insertAt>=oldBays||oldBays>=MAX_BAYS)return;
   rememberState();
   const oldRowSize=oldBays*LEVELS;
   const rows=Math.max(1,Math.ceil(state.length/oldRowSize));
@@ -2926,9 +2980,7 @@ function downloadStackCanvas(canvas,filename){
 function stackExportSummary(){
   const total=state.reduce((count,item)=>count+(String(item?.text||'').trim()?1:0),0);
   const categories=[...new Set(state.filter(item=>item?.green&&item?.poolImportCategory).map(item=>importedItemKeyValue(item)).filter(Boolean))].sort();
-  const active=readActiveWorkBays();
-  const activeBays=Array.from({length:BAYS},(_,bay)=>stackBayLabel(bay)).filter(label=>active.has(label));
-  return{total,categories,activeBays,keyTitle:colorKeyMode==='shipper'?'SHIPPER COLOR KEY':'POOL COLOR KEY'};
+  return{total,categories,keyTitle:colorKeyMode==='shipper'?'SHIPPER COLOR KEY':'POOL COLOR KEY'};
 }
 function drawStackExportHeader(context,width,height,view){
   const summary=stackExportSummary();
@@ -2949,11 +3001,33 @@ function drawStackExportHeader(context,width,height,view){
     context.fillStyle='#17222d';context.strokeStyle='#52677d';context.fillRect(x,y,chipWidth,summaryH);context.strokeRect(x,y,chipWidth,summaryH);context.fillStyle=palette.grid;context.fillRect(x+Math.round(8*headerScale),y+(summaryH-swatch)/2,swatch,swatch);context.strokeStyle='#fff';context.strokeRect(x+Math.round(8*headerScale),y+(summaryH-swatch)/2,swatch,swatch);context.fillStyle='#fff';context.fillText(category,x+Math.round(30*headerScale),y+(summaryH/2));x+=chipWidth+Math.round(8*headerScale);
   });
   if(!summary.categories.length){context.fillStyle='#9fb2c5';context.fillText('NONE',x,y+(summaryH/2))}
-  if(summary.activeBays.length){context.fillStyle='#fbbf24';context.font=`900 ${summaryFont}px Arial`;context.fillText(`ACTIVE BAYS: ${summary.activeBays.join(', ')}`,24,height-17)}
+}
+function stackPngWrappedLines(context,value,maxWidth){
+  const words=String(value||'').trim().toUpperCase().split(/\s+/).filter(Boolean),lines=[];
+  words.forEach(word=>{
+    const current=lines[lines.length-1]||'';
+    const candidate=current?`${current} ${word}`:word;
+    if(current&&context.measureText(candidate).width>maxWidth)lines.push(word);else if(lines.length)lines[lines.length-1]=candidate;else lines.push(candidate);
+  });
+  return lines;
+}
+function drawStackPngCellText(context,value,x,y,width,height){
+  const drawWidth=width-22,wrapWidth=Math.min(drawWidth,Math.round(width*.58));
+  let fontSize=17,lines=[];
+  do{
+    context.font=`900 ${fontSize}px Arial`;
+    lines=stackPngWrappedLines(context,value,wrapWidth);
+    if(lines.length<=2)break;
+    fontSize-=1;
+  }while(fontSize>=10);
+  if(lines.length>2)lines=[lines[0],lines.slice(1).join(' ')];
+  const lineHeight=Math.min(18,fontSize+2),startY=y+(height/2)-((lines.length-1)*lineHeight/2);
+  context.textAlign='center';context.textBaseline='middle';
+  lines.forEach((line,index)=>context.fillText(line,x+(width/2),startY+(index*lineHeight),drawWidth));
 }
 async function exportStackDomPng(source,view){
   const levels=activeLevelIndexesFor(),rowSize=BAYS*LEVELS,rows=Math.max(1,Math.ceil(state.length/rowSize));
-  const cellW=176,cellH=42,gapX=8,gapY=4,left=110,right=110,titleH=128,fenceH=74,frontH=54,rowGap=14;
+  const cellW=176,cellH=42,gapX=8,gapY=4,left=110,right=110,titleH=104,fenceH=74,frontH=54,rowGap=14;
   const width=left+right+(BAYS*cellW)+((BAYS-1)*gapX),contentH=rows*((levels.length*cellH)+((levels.length-1)*gapY)+rowGap),height=titleH+fenceH+contentH+frontH,scale=2;
   const canvas=document.createElement('canvas');canvas.width=width*scale;canvas.height=height*scale;const context=canvas.getContext('2d');context.scale(scale,scale);
   const box=(x,y,w,h,r=5)=>{context.beginPath();context.roundRect(x,y,w,h,r);context.fill();context.stroke()};
@@ -2969,7 +3043,7 @@ async function exportStackDomPng(source,view){
       context.fillStyle=wheelOrder>=0?'#f7bd16':palette?palette.grid:item.text?'#e7ecf1':'#f8fafc';context.strokeStyle=wheelOrder>=0?'#fff1a6':palette?palette.border:'#87929a';context.lineWidth=wheelOrder>=0?4:2;box(x,y,cellW,cellH,3);
       if(activeWorkBays.has(stackBayLabel(bay))){context.strokeStyle='#fbbf24';context.lineWidth=4;context.strokeRect(x+2,y+2,cellW-4,cellH-4)}
       if(wheelOrder>=0){context.save();context.globalAlpha=.2;context.fillStyle='#fff';for(let stripe=x-40;stripe<x+cellW;stripe+=14)context.fillRect(stripe,y,5,cellH);context.restore()}
-      if(item.text){context.fillStyle=wheelOrder>=0?'#111':palette?palette.text:'#101820';context.font='900 18px Arial';context.textAlign='center';context.fillText(String(item.text).toUpperCase(),x+cellW/2,y+cellH/2,cellW-22)}
+      if(item.text){context.fillStyle=wheelOrder>=0?'#111':palette?palette.text:'#101820';drawStackPngCellText(context,item.text,x,y,cellW,cellH)}
       context.fillStyle='#16212c';context.font='900 10px Arial';context.textAlign='left';context.fillText(`ROW ${rows-row}`,10,y+cellH/2);context.textAlign='right';context.fillText(`LEVEL ${levels.length-levelPosition}`,width-10,y+cellH/2);
     }
   }
@@ -2981,7 +3055,7 @@ async function exportCurrentStackPagePng(){
   try{
     if(view==='3D'){
       renderModel3d();await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
-      const source=document.getElementById('model3dCanvas'),width=Math.max(1,source.width),height=Math.max(1,source.height),titleHeight=128,canvas=document.createElement('canvas');canvas.width=width;canvas.height=height+titleHeight;const context=canvas.getContext('2d');drawStackExportHeader(context,width,titleHeight,'3D');context.drawImage(source,0,titleHeight,width,height);await downloadStackCanvas(canvas,stackExportFilename(view));
+      const source=document.getElementById('model3dCanvas'),width=Math.max(1,source.width),height=Math.max(1,source.height),titleHeight=104,canvas=document.createElement('canvas');canvas.width=width;canvas.height=height+titleHeight;const context=canvas.getContext('2d');drawStackExportHeader(context,width,titleHeight,'3D');context.drawImage(source,0,titleHeight,width,height);await downloadStackCanvas(canvas,stackExportFilename(view));
     }else{
       const source=view==='YARD'?document.querySelector('#yardView .yard-shell'):document.querySelector('#gridView .sheet');if(!source)throw new Error('The current stacking page is not ready to capture.');await exportStackDomPng(source,view);
     }
@@ -3314,7 +3388,7 @@ function tierLabel(index){
 }
 function bayHeaderMarkup(view='grid'){
   const activeWorkBays=readActiveWorkBays();
-  const labels=Array.from({length:BAYS},(_,bay)=>{const label=stackBayLabel(bay),active=activeWorkBays.has(label);return `<span class="bay-header-label${active?' active-work-bay':''}" data-work-bay="${label}" role="button" tabindex="0" aria-pressed="${active?'true':'false'}" title="Toggle active work for Bay ${label}">BAY ${label}</span>`}).join('');
+  const labels=Array.from({length:BAYS},(_,bay)=>{const label=stackBayLabel(bay),location=`L-${String(label).padStart(2,'0')}`,active=activeWorkBays.has(label);return `<span class="bay-header-label${active?' active-work-bay':''}" data-work-bay="${label}" role="button" tabindex="0" aria-pressed="${active?'true':'false'}" title="Toggle active work for ${location}">${location}</span>`}).join('');
   return `<span class="bay-boundary-title">BACK FENCE</span><div class="bay-header-strip ${view==='yard'?'yard':''}" style="--bay-count:${BAYS}">${labels}</div>`;
 }
 
@@ -3338,20 +3412,24 @@ function rowInsertButton(rowIndex,boundaryTop){
 function installColumnInsertButtons(header){
   const strip=header?.querySelector('.bay-header-strip');
   const headers=strip?[...strip.querySelectorAll('.bay-header-label')]:[];
-  if(!strip||headers.length<2||BAYS>=12)return;
+  if(!strip||headers.length<1||BAYS>=MAX_BAYS)return;
   const gap=strip.classList.contains('yard')?18:8;
-  for(let columnIndex=1;columnIndex<headers.length;columnIndex++){
-    const previous=headers[columnIndex-1];
+  for(let columnIndex=0;columnIndex<headers.length;columnIndex++){
+    const previous=columnIndex?headers[columnIndex-1]:null;
     const next=headers[columnIndex];
-    const boundaryLeft=previous.offsetWidth
-      ?(previous.offsetLeft+previous.offsetWidth+next.offsetLeft)/2
-      :(columnIndex*(190+gap))-(gap/2);
+    const boundaryLeft=columnIndex===0
+      ?((next.offsetLeft||0)+10)
+      :(previous.offsetWidth
+        ?(previous.offsetLeft+previous.offsetWidth+next.offsetLeft)/2
+        :(columnIndex*(190+gap))-(gap/2));
     const button=document.createElement('button');
     button.type='button';
     button.className='insert-column-button';
     button.dataset.insertColumn=String(columnIndex);
     button.textContent='+';
-    button.title=`Insert a column between ${previous.textContent} and ${next.textContent}`;
+    button.title=columnIndex===0
+      ?`Insert a column before ${next.textContent}`
+      :`Insert a column between ${previous.textContent} and ${next.textContent}`;
     button.setAttribute('aria-label',button.title);
     button.style.left=`${boundaryLeft}px`;
     button.addEventListener('click',event=>{
@@ -3517,7 +3595,7 @@ function select(i){
 function updateContainerText(i,value){
   if(!Number.isInteger(i)||i<0)return;
   const previous=state[i]?.text||'',text=String(value||'').trim().toUpperCase();
-  if(text===previous){renderAll();return}
+  if(text===previous){renderAll({preserveView:true});return}
   rememberState();
   const previousEquipment=normalizePoolImportEquipment(previous),nextEquipment=normalizePoolImportEquipment(text);
   let next={...(state[i]||{}),text};
@@ -3534,7 +3612,7 @@ function updateContainerText(i,value){
   next=applySavedPoolAssignments([next]).items[0];
   state[i]=next;
   save();
-  renderAll();
+  renderAll({preserveView:true});
 }
 function beginInlineEdit(i){
   const gridVisible=getComputedStyle(document.getElementById('gridView')).display!=='none';
@@ -3561,14 +3639,14 @@ function beginInlineEdit(i){
     if(e.key==='Escape'){
       e.preventDefault();
       cancelled=true;
-      renderAll();
+      renderAll({preserveView:true});
     }
   });
   input.addEventListener('pointerdown',e=>e.stopPropagation());
   input.addEventListener('click',e=>e.stopPropagation());
   input.addEventListener('blur',finish,{once:true});
   slot.appendChild(input);
-  input.focus();
+  input.focus({preventScroll:true});
   input.select();
 }
 let model3dEditIndex=null;
@@ -3578,7 +3656,7 @@ function openModel3dEdit(i){
   model3dEditIndex=i;select(i);
   const modal=document.getElementById('model3dEdit'),input=document.getElementById('model3dEditInput');
   input.value=state[i]?.text||'';modal.classList.add('open');modal.setAttribute('aria-hidden','false');
-  requestAnimationFrame(()=>{input.focus();input.select()});
+  requestAnimationFrame(()=>{input.focus({preventScroll:true});input.select()});
 }
 function beginContainerEdit(i){
   if(getComputedStyle(document.getElementById('model3dView')).display!=='none')openModel3dEdit(i);else beginInlineEdit(i);
@@ -3625,6 +3703,8 @@ function cancelDelete(){
   clearTimeout(deleteTimer);
   deleteTimer=0;
   updateDeleteButton();
+  const contextDelete=document.getElementById('contextDeleteBlock');
+  if(contextDelete){contextDelete.textContent='Delete Block';contextDelete.classList.remove('delete-confirm')}
 }
 function armDelete(){
   if(![...selectedIndexes].some(i=>state[i]?.text))return;
@@ -3762,6 +3842,8 @@ function openBoxContextMenu(i,x,y){
   renderAll();
   const menu=document.getElementById('boxContextMenu');
   if(!menu)return;
+  const deleteButton=document.getElementById('contextDeleteBlock');
+  if(deleteButton)deleteButton.hidden=!String(state[i]?.text||'').trim();
   updateContextParsedInfo(i);
   updateContextClosestMatch(i);
   const wheelButton=document.getElementById('contextWheelTarget'),wheelUnit=normalizeGridUnit(state[i]?.text);
@@ -3996,7 +4078,7 @@ document.addEventListener('click',e=>{
     if(highlightMode){
       toggleGoldHighlight(i);
     }else{
-      if(copiedSelection?.cells?.length&&!String(state[i]?.text||'').trim())select(i);else selectOrCreate(i);
+      selectOrCreate(i);
     }
     return;
   }
@@ -4006,7 +4088,7 @@ document.addEventListener('click',e=>{
     if(highlightMode){
       toggleGoldHighlight(i);
     }else{
-      if(copiedSelection?.cells?.length&&!String(state[i]?.text||'').trim())select(i);else selectOrCreate(i);
+      selectOrCreate(i);
     }
   }
 });
@@ -4019,7 +4101,8 @@ document.addEventListener('pointerdown',e=>{
   if(selectionSlot&&(multiSelectMode||!transferMode)){
     e.preventDefault();
     cancelDelete();
-    selectionStart={x:e.clientX,y:e.clientY};
+    selectionStart={x:e.clientX,y:e.clientY,index:Number(selectionSlot.dataset.i)};
+    didDrag=false;
     selectionMarquee=document.createElement('div');
     selectionMarquee.className='selection-marquee';
     document.body.appendChild(selectionMarquee);
@@ -4080,7 +4163,17 @@ document.addEventListener('pointermove',e=>{
   if(t)t.classList.add('target');
 },{passive:false});
 document.addEventListener('pointerup',e=>{
-  if(selectionStart){e.preventDefault();finishMarquee();return;}
+  if(selectionStart){
+    e.preventDefault();
+    const clickedIndex=selectionStart.index,wasDrag=didDrag;
+    finishMarquee();
+    didDrag=false;
+    if(!wasDrag&&Number.isInteger(clickedIndex)&&!String(state[clickedIndex]?.text||'').trim()){
+      select(clickedIndex);
+      beginContainerEdit(clickedIndex);
+    }
+    return;
+  }
   if(dragIndex===null)return;
   if(didDrag){
     const t=document.elementFromPoint(e.clientX,e.clientY)?.closest('.unit,.y-half');
@@ -4190,6 +4283,16 @@ document.getElementById('contextEditText').onclick=()=>{
   renderAll();
   beginContainerEdit(i);
 };
+document.getElementById('contextDeleteBlock').onclick=()=>{
+  const button=document.getElementById('contextDeleteBlock');
+  if(!deleteArmed){
+    armDelete();
+    if(deleteArmed){button.textContent='Confirm Delete Block';button.classList.add('delete-confirm')}
+    return;
+  }
+  closeBoxContextMenu();
+  executeDelete();
+};
 document.getElementById('contextClearColor').onclick=()=>{
   const i=contextIndex;
   closeBoxContextMenu();
@@ -4227,6 +4330,7 @@ document.getElementById('poolImportClose').onclick=closePoolImport;
 document.getElementById('poolImportChoose').onclick=()=>document.getElementById('poolImportFile').click();
 document.getElementById('poolImportFile').onchange=event=>importStackingPoolFile(event.target.files);
 document.getElementById('poolImportApply').onclick=applyStackingPoolReport;
+document.getElementById('poolImportClearList').onclick=clearPoolImportList;
 document.getElementById('poolImportClear').onclick=clearStackingPoolColors;
 document.getElementById('poolImportModal').addEventListener('click',event=>{if(event.target===event.currentTarget)closePoolImport()});
 document.getElementById('paidSwingsBtn').onclick=openPaidSwings;

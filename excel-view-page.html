@@ -1887,9 +1887,40 @@
     border-bottom: 1px solid rgba(255,255,255,.78);
   }
   .inbound-summary-table .inbound-summary-day {
+    position: relative;
     width: 82px;
+    padding: 0;
     font-size: 14px;
     text-transform: uppercase;
+  }
+  /* excel-inbound-summary-day-chooser-v1 */
+  .inbound-summary-day-select {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    min-height: 42px;
+    box-sizing: border-box;
+    border: 0;
+    border-radius: 0;
+    padding: 5px 18px 5px 5px;
+    background: transparent;
+    color: inherit;
+    font: 900 14px/1.15 "Aptos Narrow", "Arial Narrow", Arial, sans-serif;
+    text-align: center;
+    text-align-last: center;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+  .inbound-summary-day-select:hover { background: rgba(255,255,255,.08); }
+  .inbound-summary-day-select:focus-visible { outline: 2px solid #facc15; outline-offset: -2px; }
+  .inbound-summary-day-select option,
+  .inbound-summary-day-select optgroup {
+    background: #0f172a;
+    color: #ffffff;
+    font: 800 13px/1.25 Arial, sans-serif;
+    text-align: left;
+    text-transform: none;
   }
   .inbound-summary-table .today,
   .inbound-summary-table .today td,
@@ -2155,6 +2186,7 @@
     letter-spacing: .14em;
     text-transform: uppercase;
   }
+  .inbound-train-section-hint { margin-left: 8px; color: #6f87a8; font-size: 8px; letter-spacing: .08em; }
   .inbound-train-field input,
   .inbound-train-field select {
     width: 100%;
@@ -2179,15 +2211,21 @@
   .inbound-train-track-list {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 10px;
+    gap: 8px;
     margin-top: 8px;
   }
   .inbound-train-track {
+    --inbound-space-accent: #aabbd2;
     position: relative;
-    min-height: 76px;
-    padding: 10px 42px 9px 12px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: 18px 18px 5px;
+    align-items: center;
+    gap: 2px 8px;
+    min-height: 59px;
+    padding: 7px 9px;
     border: 1px solid #3a4c69;
-    border-radius: 11px;
+    border-radius: 8px;
     background: linear-gradient(180deg, #17233a, #111a2b);
     color: #e7eef9;
     text-align: left;
@@ -2200,41 +2238,85 @@
     box-shadow: 0 0 0 2px rgba(244,185,30,.14), inset 0 1px rgba(255,255,255,.08);
   }
   .inbound-train-track strong {
-    display: block;
-    font: 950 15px Consolas, "Courier New", monospace;
+    grid-column: 1;
+    grid-row: 1;
+    min-width: 0;
+    font: 950 13px Consolas, "Courier New", monospace;
     letter-spacing: .05em;
   }
-  .inbound-train-track span {
-    display: block;
-    margin-top: 6px;
-    color: #aabbd2;
-    font-size: 9px;
-    font-weight: 800;
+  .inbound-train-track.space-open { --inbound-space-accent: #5eead4; }
+  .inbound-train-track.space-limited { --inbound-space-accent: #fde047; }
+  .inbound-train-track.space-tight { --inbound-space-accent: #fb923c; }
+  .inbound-train-track.space-over { --inbound-space-accent: #f87171; }
+  .inbound-train-track.selected.space-open { --inbound-space-accent: #99f6e4; }
+  .inbound-train-track.selected.space-limited { --inbound-space-accent: #fef08a; }
+  .inbound-train-track.selected.space-tight { --inbound-space-accent: #fdba74; }
+  .inbound-train-track.selected.space-over { --inbound-space-accent: #fecaca; }
+  .inbound-train-track .inbound-space-badge {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+    min-width: 42px;
+    margin: 0;
+    padding: 2px 6px;
+    border: 1px solid currentColor;
+    border-radius: 999px;
+    background: rgba(8,17,30,.48);
+    color: var(--inbound-space-accent);
+    font-size: 8px;
+    font-weight: 950;
+    line-height: 1;
+    letter-spacing: .06em;
+    text-align: center;
   }
-  .inbound-train-track .inbound-space-status { font-size: 13px; font-weight: 950; letter-spacing: .015em; }
-  .inbound-space-status.space-open { color: #5eead4; }
-  .inbound-space-status.space-limited { color: #fde047; }
-  .inbound-space-status.space-tight { color: #fb923c; }
-  .inbound-space-status.space-over { color: #f87171; }
-  .inbound-train-track.selected .inbound-space-status.space-open { color: #99f6e4; }
-  .inbound-train-track.selected .inbound-space-status.space-limited { color: #fef08a; }
-  .inbound-train-track.selected .inbound-space-status.space-tight { color: #fdba74; }
-  .inbound-train-track.selected .inbound-space-status.space-over { color: #fecaca; }
-  .inbound-train-track.selected span { color: #ffe399; }
+  .inbound-train-track .inbound-space-status {
+    grid-column: 1 / span 2;
+    grid-row: 2;
+    min-width: 0;
+    margin: 0;
+    overflow: hidden;
+    color: var(--inbound-space-accent);
+    font-size: 11px;
+    font-weight: 950;
+    line-height: 1;
+    letter-spacing: .01em;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .inbound-train-track.selected .inbound-space-badge,
+  .inbound-train-track.selected .inbound-space-status { color: var(--inbound-space-accent); }
+  .inbound-train-track .inbound-space-meter {
+    grid-column: 1 / span 2;
+    grid-row: 3;
+    display: block;
+    width: 100%;
+    height: 4px;
+    margin: 0;
+    overflow: hidden;
+    border-radius: 999px;
+    background: #2a3b53;
+  }
+  .inbound-train-track .inbound-space-meter b {
+    display: block;
+    width: var(--inbound-space-fill, 0%);
+    height: 100%;
+    border-radius: inherit;
+    background: var(--inbound-space-accent);
+  }
   .inbound-train-order {
     position: absolute;
-    top: 50%;
-    right: 11px;
+    top: 5px;
+    left: 55px;
     display: grid;
     place-items: center;
-    width: 26px;
-    height: 26px;
+    width: 18px;
+    height: 18px;
     border-radius: 50%;
     background: #ffc62b;
     color: #332000;
-    font-size: 12px;
+    font-size: 9px;
     font-weight: 950;
-    transform: translateY(-50%);
+    transform: none;
   }
   .inbound-train-preview {
     margin-top: 16px;
@@ -4367,7 +4449,7 @@
         </div>
       </div>
       <div class="inbound-train-preview empty" id="inboundTrainPreview">Enter footage and select landing tracks to preview the placement.</div>
-      <div class="inbound-train-section-label" style="margin-top:16px">Landing Tracks</div>
+      <div class="inbound-train-section-label" style="margin-top:16px">Landing Tracks <span class="inbound-train-section-hint">Available footage for spotting</span></div>
       <div class="inbound-train-track-list" id="inboundTrainTrackList"></div>
     </div>
     <footer class="inbound-train-actions">
@@ -6971,8 +7053,37 @@ https://github.com/nodeca/pako/blob/main/LICENSE
 
   function inboundSummaryTrainHtml(plan, groupDay) {
     const planIndex = state.inboundPlans.indexOf(plan);
+    /* excel-pierce-inbound-badge-v1 */
     const checked = plan && plan.onHandChecked === true;
-    return '<span class="inbound-summary-train"><button class="inbound-summary-train-toggle" data-inbound-on-hand-index="' + planIndex + '" type="button" aria-pressed="' + (checked ? 'true' : 'false') + '" title="' + (checked ? 'Already factored into current inventory; exclude from projection' : 'Mark this inbound as already factored into current inventory') + '"><span>' + escapeHtml(plan.train || "") + '</span>' + (checked ? '<span class="inbound-summary-train-check" aria-label="Already factored into current inventory">&#10003;</span>' : '') + '</button>' + inboundSummaryUpsPill(plan, groupDay) + '</span>';
+    const isPierce = /^03-[0-9]{3}$/i.test(clean(plan && plan.tag));
+    const displayTrain = clean(plan && plan.train) + (isPierce ? " [P]" : "");
+    return '<span class="inbound-summary-train"><button class="inbound-summary-train-toggle" data-inbound-on-hand-index="' + planIndex + '" type="button" aria-pressed="' + (checked ? 'true' : 'false') + '" title="' + (checked ? 'Already factored into current inventory; exclude from projection' : 'Mark this inbound as already factored into current inventory') + '"><span>' + escapeHtml(displayTrain) + '</span>' + (checked ? '<span class="inbound-summary-train-check" aria-label="Already factored into current inventory">&#10003;</span>' : '') + '</button>' + inboundSummaryUpsPill(plan, groupDay) + '</span>';
+  }
+
+  function inboundSummaryDayChooserHtml(day) {
+    const dayLabel = inboundSummaryDayLabel(day);
+    const pierceSources = inboundTrainSources().filter(entry => clean(entry.day).toUpperCase() === "PIERCE");
+    const pierceOptions = pierceSources.length
+      ? pierceSources.map(entry => {
+          const trainLabel = clean(entry.trackTrains) ? " — " + clean(entry.trackTrains) : "";
+          return '<option value="' + escapeAttr(entry.id) + '">' + escapeHtml(entry.train) + ' — ' + escapeHtml(fmtInt(entry.footage)) + ' FT' + escapeHtml(trainLabel) + ' (PIERCE)</option>';
+        }).join("")
+      : '<option value="" disabled>No Pierce tracks available</option>';
+    return '<select class="inbound-summary-day-select" data-inbound-summary-day="' + escapeAttr(day) + '" aria-label="Add an inbound or Pierce track to ' + escapeAttr(dayLabel) + '" title="Add an inbound or Pierce track"><option value="">' + escapeHtml(dayLabel) + '</option><option value="new">+ Add New Inbound</option><optgroup label="Pierce Tracks">' + pierceOptions + '</optgroup></select>';
+  }
+
+  function addPierceTrackToInboundDay(day, sourceId) {
+    const source = inboundTrainSources().find(entry => entry.id === sourceId && clean(entry.day).toUpperCase() === "PIERCE");
+    if (!source) return;
+    const footage = Math.max(0, Math.round(Number(source.footage) || 0));
+    if (!footage) return;
+    const plan = blankInboundPlan(day);
+    plan.train = clean(source.trackTrains) || clean(source.train);
+    plan.tag = clean(source.train);
+    plan.totalFt = String(footage);
+    plan.rows = [{block:clean(source.train), cars:"", loads:"", mty:"", wt:"", ft:String(footage)}];
+    state.inboundPlans.push(plan);
+    renderAll();
   }
 
   function renderInboundSummary() {
@@ -7015,7 +7126,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       const with803DisplayHtml = escapeHtml(fmtInt(currentWith803)) + ' <span class="projected-free-footage ' + projectedWith803Class + '">(' + escapeHtml(fmtInt(projectedWith803)) + ')</span>';
       group.plans.forEach((plan, index) => {
         body += '<tr class="' + dayClass + (index === group.plans.length - 1 ? ' inbound-summary-group-end' : '') + '">';
-        if (index === 0) body += '<td class="inbound-summary-day ' + dayClass + '" rowspan="' + group.plans.length + '">' + escapeHtml(inboundSummaryDayLabel(group.day)) + '</td>';
+        if (index === 0) body += '<td class="inbound-summary-day ' + dayClass + '" rowspan="' + group.plans.length + '">' + inboundSummaryDayChooserHtml(group.day) + '</td>';
         body += '<td>' + inboundSummaryTrainHtml(plan, group.day) + '</td>';
         body += '<td>' + escapeHtml("AWAITING ARRIVAL") + '</td>';
         body += '<td>' + escapeHtml(plan.eta || "") + '</td>';
@@ -8857,15 +8968,22 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       const signature = `${source.toUpperCase()}|${train.toUpperCase()}|${footage}`;
       if (seen.has(signature)) return;
       seen.add(signature);
-      entries.push({ id, train, footage, source, day:clean(plan && plan.day) });
+      entries.push({ id, train, footage, source, day:clean(plan && plan.day), trackTrains:clean(plan && plan.trackTrains) });
     };
-    normalizeInboundPlans(state.inboundPlans).forEach((plan, index) => add(plan, "Inbound popup", `plan:${index}`));
+    normalizeInboundPlans(state.inboundPlans)
+      .map((plan, index) => ({plan, index}))
+      .sort((a, b) => inboundDaySort(a.plan.day) - inboundDaySort(b.plan.day) || a.index - b.index)
+      .forEach(({plan, index}) => add(plan, "Inbound popup", `plan:${index}`));
     const addTrackSource = (group, label) => {
       const track = yardViewTrackLabel(group && group.track);
-      const footage = (group && Array.isArray(group.rows) ? group.rows : [])
+      const rows = group && Array.isArray(group.rows) ? group.rows : [];
+      const footage = rows
         .reduce((sum, entry) => sum + Math.max(0, Number(entry && entry.row && entry.row[4]) || 0), 0);
+      const trackTrains = label === "PIERCE"
+        ? [...new Set(rows.map(entry => clean(entry && entry.row && entry.row[10])).filter(Boolean))].join(" + ")
+        : "";
       if (!track || track === "UNASSIGNED" || !footage) return;
-      add({train:track, totalFt:footage, day:label}, `${label} track`, `${label.toLowerCase()}:${track}`);
+      add({train:track, totalFt:footage, day:label, trackTrains}, `${label} track`, `${label.toLowerCase()}:${track}`);
     };
     yardTrackGroups("yard").forEach(group => addTrackSource(group, "YARD"));
     yardTrackGroups("pierce").forEach(group => addTrackSource(group, "PIERCE"));
@@ -8924,7 +9042,10 @@ https://github.com/nodeca/pako/blob/main/LICENSE
                 : normalizedDay === "PIERCE"
                   ? "inbound-source-pierce"
                   : "";
-      return `<option class="${dayClass}" value="${escapeAttr(entry.id)}">${escapeHtml(entry.train)} — ${escapeHtml(fmtInt(entry.footage))} FT (${escapeHtml(context)})</option>`;
+      const trackTrainLabel = normalizedDay === "PIERCE" && entry.trackTrains
+        ? ` — ${escapeHtml(entry.trackTrains)}`
+        : "";
+      return `<option class="${dayClass}" value="${escapeAttr(entry.id)}">${escapeHtml(entry.train)} — ${escapeHtml(fmtInt(entry.footage))} FT${trackTrainLabel} (${escapeHtml(context)})</option>`;
     }).join("");
   }
 
@@ -8934,12 +9055,17 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     const result = inboundTrainAllocations();
     $("#inboundTrainTrackList").innerHTML = TRACKS.map(track => {
       const used = inboundTrainTrackUsage(model, track);
-      const available = (TRACK_CAPACITY_FT[track] || 0) - used;
       const capacity = TRACK_CAPACITY_FT[track] || 0;
+      const available = capacity - used;
       const availableRatio = capacity > 0 ? available / capacity : 0;
       const spaceClass = available < 0 ? "space-over" : availableRatio <= .1 ? "space-tight" : availableRatio <= .25 ? "space-limited" : "space-open";
+      const spaceLabel = available < 0 ? "OVER" : availableRatio <= .1 ? "TIGHT" : availableRatio <= .25 ? "LIMITED" : "ROOM";
+      const usedPercent = capacity > 0 ? Math.round(used / capacity * 100) : 0;
+      const fillPercent = Math.max(0, Math.min(100, usedPercent));
+      const availabilityText = available < 0 ? `${fmtInt(Math.abs(available))} over` : `${fmtInt(available)} available`;
+      const availabilityAria = available < 0 ? `${fmtInt(Math.abs(available))} feet over capacity` : `${fmtInt(available)} feet available`;
       const order = inboundTrainTrackOrder.indexOf(track);
-      return `<button class="inbound-train-track${order >= 0 ? " selected" : ""}" data-inbound-landing-track="${track}" type="button" aria-pressed="${order >= 0 ? "true" : "false"}"><strong>6-${track}</strong><span class="inbound-space-status ${spaceClass}">${fmtInt(used)} used · ${fmtInt(available)} available</span>${order >= 0 ? `<i class="inbound-train-order">${order + 1}</i>` : ""}</button>`;
+      return `<button class="inbound-train-track ${spaceClass}${order >= 0 ? " selected" : ""}" data-inbound-landing-track="${track}" type="button" aria-pressed="${order >= 0 ? "true" : "false"}" aria-label="Track 6-${track}, ${fmtInt(used)} feet used, ${availabilityAria}, ${spaceLabel}" style="--inbound-space-fill:${fillPercent}%"><strong>6-${track}</strong><span class="inbound-space-badge">${spaceLabel}</span><span class="inbound-space-status">${fmtInt(used)} used · ${availabilityText}</span><span class="inbound-space-meter" aria-hidden="true"><b></b></span>${order >= 0 ? `<i class="inbound-train-order">${order + 1}</i>` : ""}</button>`;
     }).join("");
 
     const preview = $("#inboundTrainPreview");
@@ -9137,11 +9263,12 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     const mhoasFinalStats = mhoasFinal.length ? weightedBlockStats(mhoasFinal) : stats.mhoas;
     const ihosaTotal = ihosaFinalStats.footage;
     const mhoasTotal = mhoasFinalStats.footage;
+    const finalTrackTotal = ihosaTotal + mhoasTotal;
     const ihosaWeightedText = ihosaFinalStats.weightedFootage ? fmtOne(ihosaFinalStats.average) + "H" : "0";
     const mhoasWeightedText = mhoasFinalStats.weightedFootage ? fmtOne(mhoasFinalStats.average) + "H" : "0";
     return [
       '<div class="third-summary-head">Track</div>',
-      '<div class="third-summary-head">0</div>',
+      '<div class="third-summary-head">' + fmtInt(finalTrackTotal) + '</div>',
       '<div class="third-summary-head third-summary-span">Outbound Departures</div>',
       '<div class="third-summary-head">Dwell Wt Average</div>',
       '<div class="third-summary-label">IHOSA [Final]</div>',
@@ -9153,7 +9280,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       finalSummaryZoneHtml("mhoas", mhoasFinal),
       '<div class="third-summary-average"><span>' + mhoasWeightedText + '</span><small>weighted</small></div>',
       '<div class="third-summary-head">Track</div>',
-      '<div class="third-summary-head">0</div>',
+      '<div class="third-summary-head">' + fmtInt(finalTrackTotal) + '</div>',
       '<div class="third-summary-head third-summary-note" aria-label="Blank header"></div>',
       copyAboveHeaderCell("three"),
       '<div class="third-summary-head">&Delta;</div>'
@@ -10045,6 +10172,17 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   $("#confirmInboundTrain").addEventListener("click", confirmInboundTrain);
   $("#inboundTrainModal").addEventListener("click", event => {
     if (event.target === event.currentTarget) closeInboundTrainModal();
+  });
+
+  document.addEventListener("change", event => {
+    const chooser = event.target.closest("[data-inbound-summary-day]");
+    if (!chooser) return;
+    const choice = chooser.value;
+    const day = chooser.dataset.inboundSummaryDay;
+    chooser.value = "";
+    if (!choice || !day) return;
+    if (choice === "new") addNewInbound(day);
+    else addPierceTrackToInboundDay(day, choice);
   });
 
   document.addEventListener("click", e => {
