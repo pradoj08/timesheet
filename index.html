@@ -5890,7 +5890,7 @@ body.excel-page-2{background:#f3f5f6!important;color:#101820!important}
 body.excel-page-2 .app{max-width:none!important;margin:0!important}
 body.excel-page-2 .main{max-width:none!important;padding:0!important}
 body.excel-page-2 #excelWorkspace{display:block!important;max-width:none!important;margin:0!important;padding:0!important}
-body.excel-page-2 #excelWorkspace.has-inbound{display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:0!important}
+body.excel-page-2 #excelWorkspace.has-inbound{display:grid!important;grid-template-columns:clamp(330px,24vw,390px) minmax(0,1fr)!important;gap:10px!important}
 body.excel-page-2 #excelWorkspace>.dashboard-panel{overflow:visible!important;border:0!important;border-radius:0!important;box-shadow:none!important;background:#f3f5f6!important}
 body.excel-page-2:not(.excel-page-2-tools-open)>.app>.topbar,
 body.excel-page-2:not(.excel-page-2-tools-open) #excelWorkspace>.dashboard-panel>.panel-head{display:none!important}
@@ -9278,7 +9278,6 @@ document.addEventListener("DOMContentLoaded",function(){
 .workspace.has-inbound .inbound-panel{position:sticky!important;top:8px!important;left:auto!important;right:auto!important;width:100%!important;height:calc(100vh - 16px)!important;min-width:0!important;max-width:none!important;max-height:none!important;align-self:start!important;z-index:12!important;box-shadow:0 8px 24px rgba(15,23,42,.20)!important}
 .workspace.has-inbound .inbound-popup-head{cursor:default!important}
 .workspace.has-inbound .inbound-popup-resize-grip{display:none!important}
-@media(max-width:900px){.workspace.has-inbound{grid-template-columns:minmax(0,1fr)!important}.workspace.has-inbound .inbound-panel{position:relative!important;top:auto!important;height:min(620px,calc(100vh - 90px))!important}}
 </style>`;
       return html.replace("</head>", style + "</head>");
     }
@@ -10345,6 +10344,7 @@ document.addEventListener('click',function(event){
         .replace('return gridId === "blankYardGridTwo" ? "secondaryGridThree" : "secondaryGridTwo";', 'return gridId === "blankYardGridThree" ? "secondaryGridFour" : (gridId === "blankYardGridTwo" ? "secondaryGridThree" : "secondaryGridTwo");')
         .replace('return target === "three" ? $("#blankYardGrid") : $("#yardGrid");', 'return target === "four" ? $("#blankYardGridTwo") : (target === "three" ? $("#blankYardGrid") : $("#yardGrid"));')
         .replace('["yardGrid", "blankYardGrid", "blankYardGridTwo"].forEach(gridId => {', '["yardGrid", "blankYardGrid", "blankYardGridTwo", "blankYardGridThree"].forEach(gridId => {')
+        .replace('document.querySelectorAll("#yardGrid [data-block-id], #blankYardGrid [data-block-id], #blankYardGridTwo [data-block-id]")', 'document.querySelectorAll("#yardGrid [data-block-id], #blankYardGrid [data-block-id], #blankYardGridTwo [data-block-id], #blankYardGridThree [data-block-id]")')
         .replace('inboundTrainTarget = target === "three" ? "three" : "two";', 'inboundTrainTarget = target === "four" ? "four" : (target === "three" ? "three" : "two");')
         .replace('$("#inboundTrainTargetLabel").textContent = inboundTrainTarget === "three" ? "Adding to Ramp After Switching" : "Adding to Ramp Overview";', '$("#inboundTrainTargetLabel").textContent = inboundTrainTarget === "four" ? "Adding to Additional Ramp Table" : (inboundTrainTarget === "three" ? "Adding to Ramp After Switching" : "Adding to Ramp Overview");')
         .replace('const target = clearSecondaryTableButton.dataset.clearSecondaryTable === "three" ? "three" : "two";', 'const requestedTarget = clearSecondaryTableButton.dataset.clearSecondaryTable;\n      const target = requestedTarget === "four" ? "four" : (requestedTarget === "three" ? "three" : "two");')
