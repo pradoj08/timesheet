@@ -758,6 +758,13 @@
       "conglobal-chassis-manual-forecast-days-v1",
       "conglobal-forecast-day-train-order-v1"
     ]);
+    const NONDESTRUCTIVE_EXCEL_FOLLOWUP_STORAGE_KEYS = new Set([
+      "settegast-excel-block-assignments-v1",
+      "settegast-excel-block-assignments-v1.updatedAt",
+      "conglobal-excel-selected-block-followups-v1",
+      "conglobal-excel-selected-block-followups-v1.updatedAt",
+      "conglobal-excel-consolidation-arrow-explanations-v1"
+    ]);
 
     function chassisStorageValueHasData(key, raw) {
       if (typeof raw !== "string" || !raw) return false;
@@ -789,11 +796,21 @@
       return incoming;
     }
 
+    function preserveLocalExcelFollowUpsDuringCloudApply(incoming) {
+      NONDESTRUCTIVE_EXCEL_FOLLOWUP_STORAGE_KEYS.forEach((key) => {
+        const localValue = localStorage.getItem(key);
+        if (localValue !== null) incoming[key] = localValue;
+      });
+      return incoming;
+    }
+
     function applyWorkbookStorageState(remoteState) {
       if (!remoteState || typeof remoteState !== "object" || Array.isArray(remoteState)) return;
       workbookSupabaseApplyingRemote = true;
       try {
-        const incoming = preserveLocalChassisStateDuringCloudApply({ ...remoteState });
+        const incoming = preserveLocalExcelFollowUpsDuringCloudApply(
+          preserveLocalChassisStateDuringCloudApply({ ...remoteState })
+        );
         const incomingKeys = new Set(Object.keys(incoming).filter(workbookSyncShouldIncludeKey));
         const existingKeys = [];
         for (let i = 0; i < localStorage.length; i++) {
@@ -801,7 +818,7 @@
           if (workbookSyncShouldIncludeKey(key)) existingKeys.push(key);
         }
         existingKeys.forEach((key) => {
-          if (!incomingKeys.has(key) && !NONDESTRUCTIVE_CHASSIS_STORAGE_KEYS.has(key)) localStorage.removeItem(key);
+          if (!incomingKeys.has(key) && !NONDESTRUCTIVE_CHASSIS_STORAGE_KEYS.has(key) && !NONDESTRUCTIVE_EXCEL_FOLLOWUP_STORAGE_KEYS.has(key)) localStorage.removeItem(key);
         });
         Object.entries(incoming).forEach(([key, value]) => {
           if (workbookSyncShouldIncludeKey(key)) {
@@ -1090,6 +1107,11 @@
     const EXCEL_COLOR_RULES_KEY = "rampBlockingControl.colorRules.v2";
     const EXCEL_COLOR_RULES_CANONICAL_KEY = "conglobal-device-excel-color-rules-canonical-v1";
     const EXCEL_INBOUND_STATE_KEY = "rampBlockingControl.inbounds.v1";
+    const EXCEL_BLOCK_ASSIGNMENTS_KEY = "settegast-excel-block-assignments-v1";
+    const EXCEL_BLOCK_ASSIGNMENTS_UPDATED_AT_KEY = "settegast-excel-block-assignments-v1.updatedAt";
+    const EXCEL_BLOCK_FOLLOWUPS_KEY = "conglobal-excel-selected-block-followups-v1";
+    const EXCEL_BLOCK_FOLLOWUPS_UPDATED_AT_KEY = "conglobal-excel-selected-block-followups-v1.updatedAt";
+    const EXCEL_LEGACY_BLOCK_FOLLOWUPS_KEY = "conglobal-excel-consolidation-arrow-explanations-v1";
     const SCHEDULE_STATE_KEY = "conglobal-roster-state-v1";
     const SCHEDULE_ADDITIONS_KEY = "conglobal-roster-additions-v1";
     const SCHEDULE_ROLES_KEY = "settegast-staff-role-preferences-v1";
@@ -1254,6 +1276,28 @@
         merged[SCHEDULE_UPDATED_AT_KEY] = localScheduleUpdatedAt;
         if (localScheduleAdditions) merged[SCHEDULE_ADDITIONS_KEY] = localScheduleAdditions;
         if (localScheduleRoles) merged[SCHEDULE_ROLES_KEY] = localScheduleRoles;
+        keptLocal = true;
+      }
+      /* excel-assignment-refresh-cloud-merge-v1 */
+      [
+        [EXCEL_BLOCK_ASSIGNMENTS_KEY, EXCEL_BLOCK_ASSIGNMENTS_UPDATED_AT_KEY],
+        [EXCEL_BLOCK_FOLLOWUPS_KEY, EXCEL_BLOCK_FOLLOWUPS_UPDATED_AT_KEY]
+      ].forEach(([valueKey, updatedAtKey]) => {
+        const localValue = localStorage.getItem(valueKey);
+        if (localValue === null) return;
+        const localStamp = localStorage.getItem(updatedAtKey) || "";
+        const cloudStamp = String(merged[updatedAtKey] || "");
+        const localTime = Date.parse(localStamp) || 0;
+        const cloudTime = Date.parse(cloudStamp) || 0;
+        if (!Object.prototype.hasOwnProperty.call(merged, valueKey) || localTime >= cloudTime) {
+          if (String(merged[valueKey] == null ? "" : merged[valueKey]) !== localValue || localStamp !== cloudStamp) keptLocal = true;
+          merged[valueKey] = localValue;
+          if (localStamp) merged[updatedAtKey] = localStamp;
+        }
+      });
+      const localLegacyFollowUps = localStorage.getItem(EXCEL_LEGACY_BLOCK_FOLLOWUPS_KEY);
+      if (localLegacyFollowUps !== null && !Object.prototype.hasOwnProperty.call(merged, EXCEL_LEGACY_BLOCK_FOLLOWUPS_KEY)) {
+        merged[EXCEL_LEGACY_BLOCK_FOLLOWUPS_KEY] = localLegacyFollowUps;
         keptLocal = true;
       }
       return { state: merged, keptLocal };
@@ -9493,6 +9537,14 @@ document.addEventListener("DOMContentLoaded",function(){
   .block-context-menu .excel-context-flyout[data-open="true"]>.excel-context-flyout-options{display:flex}
   .block-context-menu .excel-context-flyout-options>button{margin-top:0}
   .block-context-menu #clearSelectedAssignment{margin-top:4px}
+  .block-context-menu{gap:2px!important;padding:3px!important}
+  .block-context-menu>button,.block-context-menu>.excel-context-flyout>.excel-context-flyout-trigger{min-height:24px!important;margin-top:0!important;padding:4px 7px!important;font-size:10px!important;line-height:1!important}
+  .block-context-menu .excel-context-flyout-trigger>span{font-size:16px}
+  .block-context-menu .excel-context-flyout-options>button{min-height:24px!important;margin-top:0!important;padding:4px 7px!important;font-size:10px!important;line-height:1!important}
+  .block-context-menu.excel-context-menu-compact{gap:2px;padding:3px}
+  .block-context-menu.excel-context-menu-compact>button,.block-context-menu.excel-context-menu-compact>.excel-context-flyout>.excel-context-flyout-trigger{min-height:24px!important;margin-top:0!important;padding:4px 7px!important;font-size:10px!important}
+  .block-context-menu.excel-context-menu-compact .excel-context-flyout-trigger>span{font-size:16px}
+  .block-context-menu .excel-context-flyout-options.excel-context-flyout-compact>button{min-height:24px!important;margin-top:0!important;padding:4px 7px!important;font-size:10px!important}
 </style>`;
       const script = `<scr${""}ipt id="${marker}">
 (function(){
@@ -9500,6 +9552,7 @@ document.addEventListener("DOMContentLoaded",function(){
   var menu=document.getElementById("blockContextMenu");
   if(!menu)return;
   var flyouts=Array.from(menu.querySelectorAll(".excel-context-flyout"));
+  var lastContextPoint=null;
   if(!flyouts.length)return;
   function triggerFor(flyout){return flyout.querySelector(".excel-context-flyout-trigger")}
   function visibleOptions(flyout){return Array.from(flyout.querySelectorAll(".excel-context-flyout-options>button")).filter(function(button){return !button.hidden})}
@@ -9542,7 +9595,10 @@ document.addEventListener("DOMContentLoaded",function(){
     var trigger=triggerFor(flyout),options=flyout.querySelector(".excel-context-flyout-options");
     if(!trigger||!options)return;
     reserveRightSide();
-    var bounds=visibleBounds(),triggerRect=trigger.getBoundingClientRect(),panelRect=options.getBoundingClientRect();
+    var bounds=visibleBounds(),availableHeight=Math.max(80,bounds.bottom-bounds.top-12);
+    options.style.maxHeight=availableHeight+"px";options.style.overflowY="auto";
+    options.classList.toggle("excel-context-flyout-compact",options.scrollHeight>availableHeight);
+    var triggerRect=trigger.getBoundingClientRect(),panelRect=options.getBoundingClientRect();
     var left=triggerRect.right+4;
     if(left+panelRect.width>bounds.right-6)left=Math.max(bounds.left+6,triggerRect.left-panelRect.width-4);
     var top=Math.max(bounds.top+6,Math.min(triggerRect.top-5,bounds.bottom-panelRect.height-6));
@@ -9550,6 +9606,20 @@ document.addEventListener("DOMContentLoaded",function(){
     options.style.top=top+"px";
   }
   function positionOpenFlyouts(){flyouts.forEach(positionFlyout)}
+  function fitMainMenu(point){
+    if(menu.hidden)return;
+    var bounds=visibleBounds(),availableHeight=Math.max(48,bounds.bottom-bounds.top-12);
+    menu.classList.remove("excel-context-menu-compact");
+    if(menu.scrollHeight>availableHeight)menu.classList.add("excel-context-menu-compact");
+    menu.style.maxHeight=availableHeight+"px";menu.style.overflowY="auto";
+    if(point){
+      var rect=menu.getBoundingClientRect();
+      var height=Math.min(rect.height,availableHeight);
+      var left=Math.max(bounds.left+6,Math.min(point.clientX,bounds.right-rect.width-6));
+      var top=Math.max(bounds.top+6,Math.min(point.clientY,bounds.bottom-height-6));
+      menu.style.left=left+"px";menu.style.top=top+"px";
+    }
+  }
   function syncFlyouts(){
     flyouts.forEach(function(flyout){
       var hidden=!visibleOptions(flyout).length;
@@ -9579,9 +9649,19 @@ document.addEventListener("DOMContentLoaded",function(){
     });
     options.addEventListener("click",function(event){if(event.target.closest("button"))setOpen(flyout,false,false)});
   });
-  document.addEventListener("contextmenu",function(){requestAnimationFrame(syncFlyouts)});
-  window.addEventListener("resize",positionOpenFlyouts);
-  new MutationObserver(function(){requestAnimationFrame(syncFlyouts)}).observe(menu,{subtree:true,attributes:true,attributeFilter:["hidden"]});
+  function forceMenuOnScreen(){
+    if(menu.hidden||!lastContextPoint)return;
+    syncFlyouts();fitMainMenu(lastContextPoint);positionOpenFlyouts();
+  }
+  document.addEventListener("contextmenu",function(event){
+    lastContextPoint={clientX:event.clientX,clientY:event.clientY};
+    requestAnimationFrame(function(){requestAnimationFrame(forceMenuOnScreen)});
+    setTimeout(forceMenuOnScreen,40);
+  });
+  window.addEventListener("resize",forceMenuOnScreen);
+  window.addEventListener("scroll",forceMenuOnScreen,true);
+  try{if(window.parent!==window)window.parent.addEventListener("scroll",forceMenuOnScreen,true)}catch(_){}
+  new MutationObserver(function(){requestAnimationFrame(function(){syncFlyouts();if(!menu.hidden)forceMenuOnScreen()})}).observe(menu,{subtree:true,attributes:true,attributeFilter:["hidden"]});
   syncFlyouts();
 })();
 </scr${""}ipt>`;
@@ -9636,7 +9716,7 @@ document.addEventListener("DOMContentLoaded",function(){
       );
       swap(
         '  const MANUAL_BLOCK_SEGMENT_INDEX = COLUMN_NAMES.length;',
-        '  const MANUAL_BLOCK_SEGMENT_INDEX = COLUMN_NAMES.length;\n  const BLOCK_SHOW_TRACK_INDEX = MANUAL_BLOCK_SEGMENT_INDEX + 1;'
+        '  const MANUAL_BLOCK_SEGMENT_INDEX = COLUMN_NAMES.length;\n  const BLOCK_SHOW_TRACK_INDEX = MANUAL_BLOCK_SEGMENT_INDEX + 1;\n  const BLOCK_ORIGINAL_TRACK_INDEX = BLOCK_SHOW_TRACK_INDEX + 1;'
       );
       swap(
         '  function blockContentForDisplay(value) {\n    const html = String(value || "");\n    if (!state.hideTrackIds || !html) return html;',
@@ -9647,9 +9727,10 @@ document.addEventListener("DOMContentLoaded",function(){
         [
           '  function secondaryBlockContentForDisplay(block) {',
           '    const forceTrack = block && block.showTrack === true;',
+          '    const displayTrack = Number(block && block.originalTrack) || Number(block && block.track);',
           '    let html = blockContentForDisplay(block && block.content, forceTrack);',
           '    if (!state.hideTrackIds || forceTrack) {',
-          '      const track = Number(block && block.track);',
+          '      const track = displayTrack;',
           '      const visibleText = clean(textFromCellHtml(`<div>${html}</div>`)).replace(/\\s+/g, " ");',
           '      const hasTrack = visibleText.includes(`[${track}]`) || visibleText.toUpperCase().includes(`[TRACK ${track}]`) || visibleText.includes(`→ 6-${track}`) || visibleText.includes(`-> 6-${track}`);',
           '      if (TRACKS.includes(track) && !hasTrack) html += ` [${track}]`;',
@@ -9658,19 +9739,23 @@ document.addEventListener("DOMContentLoaded",function(){
       );
       swap(
         '    const out = new Array(COLUMN_NAMES.length + 1).fill("");',
-        '    const out = new Array(BLOCK_SHOW_TRACK_INDEX + 1).fill("");'
+        '    const out = new Array(BLOCK_ORIGINAL_TRACK_INDEX + 1).fill("");'
       );
       swap(
         '      group.hoursSinceArrival = hoursBetween(now, group.arrival);\n      group.baseDisplay = buildCurrentDisplay(group);',
-        '      group.hoursSinceArrival = hoursBetween(now, group.arrival);\n      group.showTrack = group.rows.some(row => ["1", "true", "yes"].includes(clean(row[BLOCK_SHOW_TRACK_INDEX]).toLowerCase()));\n      group.baseDisplay = buildCurrentDisplay(group);'
+        '      group.hoursSinceArrival = hoursBetween(now, group.arrival);\n      group.showTrack = group.rows.some(row => ["1", "true", "yes"].includes(clean(row[BLOCK_SHOW_TRACK_INDEX]).toLowerCase()));\n      group.originalTrack = Number((group.rows.find(row => Number(row[BLOCK_ORIGINAL_TRACK_INDEX])) || [])[BLOCK_ORIGINAL_TRACK_INDEX]) || 0;\n      group.baseDisplay = buildCurrentDisplay(group);\n      if (group.originalTrack && group.originalTrack !== group.track) group.baseDisplay = String(group.baseDisplay).replace(new RegExp("\\\\[" + group.track + "\\\\]", "g"), "[" + group.originalTrack + "]");'
       );
       swap(
         '      inboundSequence:Math.max(0, Number(cell.dataset.inboundSequence) || 0),\n      className:String(cell.className || "cut-cell gray")',
-        '      inboundSequence:Math.max(0, Number(cell.dataset.inboundSequence) || 0),\n      showTrack:cell.dataset.showTrack === "true",\n      className:String(cell.className || "cut-cell gray")'
+        '      inboundSequence:Math.max(0, Number(cell.dataset.inboundSequence) || 0),\n      showTrack:cell.dataset.showTrack === "true",\n      originalTrack:Number(cell.dataset.originalTrack) || Number(cell.dataset.track) || 0,\n      className:String(cell.className || "cut-cell gray")'
       );
       swap(
         '    next.inboundSequence = Math.max(0, Math.round(Number(next.inboundSequence) || 0));\n    next.className = String(next.className || "cut-cell gray")',
-        '    next.inboundSequence = Math.max(0, Math.round(Number(next.inboundSequence) || 0));\n    next.showTrack = next.showTrack === true || String(next.showTrack || "").toLowerCase() === "true" || String(next.showTrack || "") === "1";\n    next.className = String(next.className || "cut-cell gray")'
+        '    next.inboundSequence = Math.max(0, Math.round(Number(next.inboundSequence) || 0));\n    next.showTrack = next.showTrack === true || String(next.showTrack || "").toLowerCase() === "true" || String(next.showTrack || "") === "1";\n    next.originalTrack = Number(next.originalTrack) || Number(track) || 0;\n    next.className = String(next.className || "cut-cell gray")'
+      );
+      swap(
+        '    next.content = String(next.content || "")\n      .replace(/\\u25B2/g, "(??)")\n      .replace(/\\[\\d{3}\\]/g, `[${track}]`);\n    next.title = String(next.title || "").replace(/\\[\\d{3}\\]/g, `[${track}]`);',
+        '    const displayTrack = Number(next.originalTrack) || Number(track);\n    next.content = String(next.content || "")\n      .replace(/\\u25B2/g, "(??)")\n      .replace(/\\[\\d{3}\\]/g, `[${displayTrack}]`);\n    next.title = String(next.title || "").replace(/\\[\\d{3}\\]/g, `[${displayTrack}]`);'
       );
       swap(
         '    next.sourceRows = Array.isArray(next.sourceRows) ? next.sourceRows.map(row => Array.isArray(row) ? row.slice() : []) : [];\n    try {',
@@ -9678,19 +9763,19 @@ document.addEventListener("DOMContentLoaded",function(){
       );
       swap(
         '        inboundSequence:Number(cell.dataset.inboundSequence) || 0,\n        className: cell.className,',
-        '        inboundSequence:Number(cell.dataset.inboundSequence) || 0,\n        showTrack:cell.dataset.showTrack === "true" || Boolean(group && group.showTrack),\n        className: cell.className,'
+        '        inboundSequence:Number(cell.dataset.inboundSequence) || 0,\n        showTrack:cell.dataset.showTrack === "true" || Boolean(group && group.showTrack),\n        originalTrack:Number(cell.dataset.originalTrack) || Number(group && group.originalTrack) || Number(cell.dataset.track) || 0,\n        className: cell.className,'
       );
       swap(
         '  function syntheticPrimaryRow(block, track, stamp) {\n    const row = new Array(COLUMN_NAMES.length + 1).fill("");',
-        '  function syntheticPrimaryRow(block, track, stamp) {\n    const row = new Array(BLOCK_SHOW_TRACK_INDEX + 1).fill("");'
+        '  function syntheticPrimaryRow(block, track, stamp) {\n    const row = new Array(BLOCK_ORIGINAL_TRACK_INDEX + 1).fill("");'
       );
       swap(
         '    row[MANUAL_BLOCK_SEGMENT_INDEX] = stamp;\n    return row;',
-        '    row[MANUAL_BLOCK_SEGMENT_INDEX] = stamp;\n    row[BLOCK_SHOW_TRACK_INDEX] = block && block.showTrack ? "1" : "";\n    return row;'
+        '    row[MANUAL_BLOCK_SEGMENT_INDEX] = stamp;\n    row[BLOCK_SHOW_TRACK_INDEX] = block && block.showTrack ? "1" : "";\n    row[BLOCK_ORIGINAL_TRACK_INDEX] = Number(block && block.originalTrack) || Number(track) || "";\n    return row;'
       );
       swap(
         '        while (row.length <= MANUAL_BLOCK_SEGMENT_INDEX) row.push("");\n        row[0] = track;\n        row[MANUAL_BLOCK_SEGMENT_INDEX] = stamp;',
-        '        while (row.length <= BLOCK_SHOW_TRACK_INDEX) row.push("");\n        row[0] = track;\n        row[MANUAL_BLOCK_SEGMENT_INDEX] = stamp;\n        row[BLOCK_SHOW_TRACK_INDEX] = block.showTrack ? "1" : "";'
+        '        while (row.length <= BLOCK_ORIGINAL_TRACK_INDEX) row.push("");\n        row[BLOCK_ORIGINAL_TRACK_INDEX] = Number(block.originalTrack) || Number(row[BLOCK_ORIGINAL_TRACK_INDEX]) || Number(row[0]) || Number(track);\n        row[0] = track;\n        row[MANUAL_BLOCK_SEGMENT_INDEX] = stamp;\n        row[BLOCK_SHOW_TRACK_INDEX] = block.showTrack ? "1" : "";'
       );
 
       const contextAnchor = [
@@ -9805,7 +9890,7 @@ document.addEventListener("DOMContentLoaded",function(){
       );
       swap(
         '? `data-block-id="${escapeAttr(group.blockId)}" data-track="${track}" data-footage="${Number(group.footage) || 0}" role="button" aria-selected="false"`',
-        '? `data-block-id="${escapeAttr(group.blockId)}" data-track="${track}" data-footage="${Number(group.footage) || 0}"${showTrack ? \' data-show-track="true"\' : ""} role="button" aria-selected="false"`'
+        '? `data-block-id="${escapeAttr(group.blockId)}" data-track="${track}" data-original-track="${Number(group.originalTrack) || track}" data-footage="${Number(group.footage) || 0}"${showTrack ? \' data-show-track="true"\' : ""} role="button" aria-selected="false"`'
       );
       replaceAllRequired(
         'const displayTitle = state.hideTrackIds ? stripBlockTrackIds(block.title) : block.title;',
@@ -9813,7 +9898,7 @@ document.addEventListener("DOMContentLoaded",function(){
       );
       swap(
         'data-footage="${Number(block.footage) || 0}"${shoveOrder ? ` data-shove-order="${shoveOrder}"` : ""}',
-        'data-footage="${Number(block.footage) || 0}"${block.showTrack ? \' data-show-track="true"\' : ""}${shoveOrder ? ` data-shove-order="${shoveOrder}"` : ""}'
+        'data-original-track="${Number(block.originalTrack) || track}" data-footage="${Number(block.footage) || 0}"${block.showTrack ? \' data-show-track="true"\' : ""}${shoveOrder ? ` data-shove-order="${shoveOrder}"` : ""}'
       );
       swap(
         '  $("#viewRawBlock").addEventListener("click", openRawTrackModalForBlock);',
@@ -9917,6 +10002,47 @@ document.addEventListener("DOMContentLoaded",function(){
       if (!valid) return html;
       const stamp = '<meta name="' + marker + '" content="enabled">\n<style id="excel-block-show-track-menu-style">#showBlockTrack{background:#0f766e!important;border-color:#5eead4!important;color:#fff!important}#showBlockTrack:hover{background:#0d9488!important}</style>';
       return updated.replace(/<\/head>/i, stamp + '\n</head>');
+    }
+
+    function withExcelCopyPasteOriginalTrack(html) {
+      const marker = "excel-copy-paste-original-track-v1";
+      if (!html || typeof html !== "string" || html.includes(marker)) return html;
+      let updated = html;
+      const swap = (before, after) => { if (updated.includes(before)) updated = updated.replace(before, after); };
+      swap(
+        '  const MANUAL_BLOCK_SEGMENT_INDEX = COLUMN_NAMES.length;',
+        '  const MANUAL_BLOCK_SEGMENT_INDEX = COLUMN_NAMES.length;\n  const BLOCK_COPY_ORIGINAL_TRACK_INDEX = MANUAL_BLOCK_SEGMENT_INDEX + 2;'
+      );
+      swap(
+        '      shoveOrder:Math.max(0, Number(cell.dataset.shoveOrder) || 0),\n      className:String(cell.className || "cut-cell gray")',
+        '      shoveOrder:Math.max(0, Number(cell.dataset.shoveOrder) || 0),\n      originalTrack:Number((String(cell.title || cell.textContent || "").match(/\\[(\\d{3})\\]/) || [])[1]) || Number(cell.dataset.track) || 0,\n      className:String(cell.className || "cut-cell gray")'
+      );
+      swap(
+        '      group.hoursSinceArrival = hoursBetween(now, group.arrival);\n      group.baseDisplay = buildCurrentDisplay(group);',
+        '      group.hoursSinceArrival = hoursBetween(now, group.arrival);\n      group.originalTrack = Number((group.rows.find(row => Number(row[BLOCK_COPY_ORIGINAL_TRACK_INDEX])) || [])[BLOCK_COPY_ORIGINAL_TRACK_INDEX]) || 0;\n      group.baseDisplay = buildCurrentDisplay(group);\n      if (group.originalTrack && group.originalTrack !== group.track) group.baseDisplay = String(group.baseDisplay).replace(new RegExp("\\\\[" + group.track + "\\\\]", "g"), "[" + group.originalTrack + "]");'
+      );
+      swap(
+        '  function syntheticPrimaryRow(block, track, stamp) {\n    const row = new Array(COLUMN_NAMES.length + 1).fill("");',
+        '  function syntheticPrimaryRow(block, track, stamp) {\n    const row = new Array(BLOCK_COPY_ORIGINAL_TRACK_INDEX + 1).fill("");'
+      );
+      swap(
+        '    row[MANUAL_BLOCK_SEGMENT_INDEX] = stamp;\n    return row;',
+        '    row[MANUAL_BLOCK_SEGMENT_INDEX] = stamp;\n    row[BLOCK_COPY_ORIGINAL_TRACK_INDEX] = Number(block && block.originalTrack) || Number(track) || "";\n    return row;'
+      );
+      swap(
+        '        while (row.length <= MANUAL_BLOCK_SEGMENT_INDEX) row.push("");\n        row[0] = track;\n        row[MANUAL_BLOCK_SEGMENT_INDEX] = stamp;',
+        '        while (row.length <= BLOCK_COPY_ORIGINAL_TRACK_INDEX) row.push("");\n        row[BLOCK_COPY_ORIGINAL_TRACK_INDEX] = Number(block.originalTrack) || Number(row[BLOCK_COPY_ORIGINAL_TRACK_INDEX]) || Number(row[0]) || Number(track);\n        row[0] = track;\n        row[MANUAL_BLOCK_SEGMENT_INDEX] = stamp;'
+      );
+      swap(
+        '    next.track = Number(track);\n    next.footage = Math.max(0, Number(next.footage) || 0);',
+        '    next.track = Number(track);\n    next.originalTrack = Number(next.originalTrack) || Number(track) || 0;\n    next.footage = Math.max(0, Number(next.footage) || 0);'
+      );
+      swap(
+        '      .replace(/\\[\\d{3}\\]/g, `[${track}]`);\n    next.title = String(next.title || "").replace(/\\[\\d{3}\\]/g, `[${track}]`);',
+        '      .replace(/\\[\\d{3}\\]/g, `[${next.originalTrack}]`);\n    next.title = String(next.title || "").replace(/\\[\\d{3}\\]/g, `[${next.originalTrack}]`);'
+      );
+      if (updated === html) return html;
+      return updated.replace("</head>", '<meta name="' + marker + '" content="1"></head>');
     }
 
     function withExcelConsolidationArrowExplanations(html) {
@@ -10383,7 +10509,7 @@ document.addEventListener("DOMContentLoaded",function(){
   /* excel-assignment-colors-all-tables-v1 */
   function inferredAssignment(cell){var original=cell.dataset.assignmentOriginalTitle||cell.title||cell.textContent||"";var match=String(original).toUpperCase().match(/(IHOSA|MHOAS|PIERCE)/);return match?match[1].toLowerCase():""}
   function applyAssignments(){document.querySelectorAll(".yard-grid .cut-cell:not(.empty)").forEach(function(cell){var id=assignmentId(cell);var value=(id&&assignments[id])||inferredAssignment(cell);if(cell.dataset.blockAssignment!==value){if(value)cell.dataset.blockAssignment=value;else cell.removeAttribute("data-block-assignment")}syncAssignmentLabel(cell,value)})}
-  function saveAssignments(){try{localStorage.setItem(assignmentKey,JSON.stringify(assignments))}catch(_){}applyAssignments()}
+  function saveAssignments(){try{localStorage.setItem(assignmentKey,JSON.stringify(assignments));localStorage.setItem(assignmentKey+".updatedAt",new Date().toISOString())}catch(_){}applyAssignments()}
   document.addEventListener("excel-secondary-table-cleared",function(event){var gridId=event&&event.detail&&event.detail.gridId;if(!gridId)return;var prefix=gridId+"::";var changed=false;Object.keys(assignments).forEach(function(id){if(id.indexOf(prefix)===0){delete assignments[id];changed=true}});if(changed)saveAssignments()});
   /* excel-er-import-clears-assignments-v1 */
   document.addEventListener("excel-er-imported",function(){assignments={};saveAssignments()});
@@ -11505,13 +11631,18 @@ document.addEventListener('click',function(event){
         '  function confirmInboundTrain() {\n    const train = clean($("#inboundTrainName").value).toUpperCase();\n    const displayTrain = train + (inboundTrainSourceIsPierce && !/\\[P\\]/i.test(train) ? " [P]" : "");'
       );
       updated = updated.split("const inboundSequence = Math.min(3, inboundGroups.size + 1);").join("const inboundSequence = inboundGroups.size + 1;");
-      updated = updated.replace(
-        '      const label = `${fmtInt(item.assigned)} ${train} [${item.track}]`;',
+      updated = updated.split(
+        '      const label = `${fmtInt(item.assigned)} ${train} [${item.track}]`;'
+      ).join(
         '      const label = `${fmtInt(item.assigned)} ${displayTrain} [${item.track}]`;'
       );
       updated = updated.replace(
         "      inboundSequence,\n        className:",
         "      inboundSequence,\n      isPierceInbound:inboundTrainSourceIsPierce,\n        className:"
+      );
+      updated = updated.replace(
+        '        shoveOrder:index + 1,\n        className:',
+        '        shoveOrder:index + 1,\n        isPierceInbound:inboundTrainSourceIsPierce,\n        className:'
       );
       updated = updated.replace(
         '    next.inboundSequence = Math.max(0, Math.round(Number(next.inboundSequence) || 0));\n    next.showTrack =',
@@ -11520,6 +11651,10 @@ document.addEventListener('click',function(event){
       updated = updated.replace(
         '    next.title = String(next.title || "").replace(/\\[\\d{3}\\]/g, `[${track}]`);',
         '    next.title = String(next.title || "").replace(/\\[\\d{3}\\]/g, `[${track}]`);\n    if (next.isPierceInbound) {\n      if (!/\\[P\\]/i.test(next.content)) next.content = next.content.replace(/\\s*(\\[\\d{3}\\])\\s*$/, " [P] $1");\n      if (!/\\[P\\]/i.test(next.title)) next.title = next.title.replace(/\\s*(\\[\\d{3}\\])\\s*$/, " [P] $1");\n    }'
+      );
+      updated = updated.replace(
+        '    next.title = String(next.title || "").replace(/\\[\\d{3}\\]/g, `[${next.originalTrack}]`);',
+        '    next.title = String(next.title || "").replace(/\\[\\d{3}\\]/g, `[${next.originalTrack}]`);\n    if (next.isPierceInbound) {\n      if (!/\\[P\\]/i.test(next.content)) next.content = next.content.replace(/\\s*(\\[\\d{3}\\])\\s*$/, " [P] $1");\n      if (!/\\[P\\]/i.test(next.title)) next.title = next.title.replace(/\\s*(\\[\\d{3}\\])\\s*$/, " [P] $1");\n    }'
       );
       updated = updated.split('${inboundSequence ? ` data-inbound-sequence="${inboundSequence}"` : ""} role="button"').join('${inboundSequence ? ` data-inbound-sequence="${inboundSequence}"` : ""}${block.isPierceInbound ? \' data-pierce-inbound="true"\' : ""} role="button"');
       updated = updated.replace(
@@ -18516,7 +18651,7 @@ function scenarioTrainReadyForStorage(train) {
 var amounts={},pending=0,lastPrimaryPlan=null,baseRender=renderInboundTrainPlacement,baseOpen=openInboundTrainModal,baseClose=closeInboundTrainModal,shoveOrderIndex=15,inboundSequenceIndex=16;
 function reset(){amounts={};pending=0;inboundTrainTrackOrder=[]}
 inboundTrainAllocations=function(){var footage=Math.max(0,Math.round(parseInboundFt($("#inboundTrainFootage").value))),model=inboundTrainPreviewModel(),allocated=0;var allocations=inboundTrainTrackOrder.map(function(track){var capacity=TRACK_CAPACITY_FT[track]||0,used=inboundTrainTrackUsage(model,track),available=capacity-used,assigned=Math.max(0,Math.round(Number(amounts[track])||0));allocated+=assigned;return{track:track,capacity:capacity,used:used,available:available,assigned:assigned,projected:available-assigned}});if(footage-allocated===1&&allocations.length){var last=allocations[allocations.length-1];last.assigned+=1;last.projected-=1;allocated+=1}return{footage:footage,allocations:allocations,allocated:allocated,unallocated:Math.max(0,footage-allocated),invalidRequest:allocated>footage}};
-renderInboundTrainPlacement=function(){baseRender();var result=inboundTrainAllocations(),preview=$("#inboundTrainPreview"),label=preview&&preview.querySelector(".inbound-train-section-label");if(label&&result.allocations.length)label.textContent="Placement Preview · "+fmtInt(result.unallocated)+" FT left to assign";else if(preview&&result.footage&&!result.allocations.length)preview.textContent="Click a landing track to assign the first shove.";$("#confirmInboundTrain").disabled=$("#confirmInboundTrain").disabled||result.invalidRequest||result.unallocated!==0};
+renderInboundTrainPlacement=function(){baseRender();var result=inboundTrainAllocations(),preview=$("#inboundTrainPreview"),label=preview&&preview.querySelector(".inbound-train-section-label"),left=result.footage;if(preview){var rows=preview.querySelectorAll(".inbound-train-preview-row"),visible=result.allocations.filter(function(item){return item.assigned>0});rows.forEach(function(row,index){var item=visible[index];if(!item)return;left=Math.max(0,left-item.assigned);var status=row.lastElementChild;if(status){status.className=left>0?"projected-bad":"projected-good";status.textContent=fmtInt(left)+" FT left to shove"}})}if(label&&result.allocations.length)label.textContent="Placement Preview · "+fmtInt(result.unallocated)+" FT left to assign";else if(preview&&result.footage&&!result.allocations.length)preview.textContent="Click a landing track to assign the first shove.";$("#confirmInboundTrain").disabled=$("#confirmInboundTrain").disabled||result.invalidRequest||result.unallocated!==0};
 function setValue(value){var range=$("#inboundShoveRange"),maximum=Math.max(1,Number(range.max)||1),amount=Math.max(1,Math.min(maximum,Math.round(Number(value)||1)));range.value=String(amount);$("#inboundShoveNumber").value=String(amount);$("#inboundShoveValue").textContent=fmtInt(amount)+" FT"}
 function close(){$("#inboundShoveModal").hidden=true;pending=0}
 function open(track){var total=Math.max(0,Math.round(parseInboundFt($("#inboundTrainFootage").value)));if(!total){$("#inboundTrainPreview").textContent="Enter the inbound total footage before selecting a track.";return}var current=Math.max(0,Number(amounts[track])||0),elsewhere=inboundTrainTrackOrder.reduce(function(sum,item){return item===track?sum:sum+Math.max(0,Number(amounts[item])||0)},0),remaining=Math.max(0,total-elsewhere);if(!remaining)return;var model=inboundTrainPreviewModel(),available=(TRACK_CAPACITY_FT[track]||0)-inboundTrainTrackUsage(model,track),suggested=current||Math.min(remaining,Math.max(1,available));pending=track;$("#inboundShoveTitle").textContent=(current?"Edit":"Add")+" shove to 6-"+track;$("#inboundShoveHelp").textContent=fmtInt(remaining)+" FT of the inbound is available to assign. Track 6-"+track+" currently has "+fmtInt(available)+" FT available.";$("#inboundShoveRange").max=String(remaining);$("#inboundShoveNumber").max=String(remaining);$("#removeInboundShove").hidden=!current;$("#confirmInboundShove").textContent=current?"Update Shove":"Add Shove";setValue(Math.min(remaining,suggested));$("#inboundShoveModal").hidden=false;requestAnimationFrame(function(){$("#inboundShoveRange").focus()})}
@@ -18544,7 +18679,7 @@ $("#inboundTrainSource").addEventListener("change",function(){reset();renderInbo
       if (!html.includes('id="blockContextMenu"') || !html.includes('id="yardGrid"')) return html;
       const styles = `<meta name="${marker}" content="enabled">
 <style>
-.block-context-menu .tomorrow-inbound-menu-action{border-color:#facc15!important;background:#854d0e!important}.block-context-menu .tomorrow-inbound-menu-action:hover{background:#a16207!important}.yard-grid .cut-cell.tomorrow-inbound-block{z-index:18!important;box-shadow:inset 0 0 0 2px #facc15!important}.tomorrow-inbound-callout{position:absolute;z-index:10030;display:inline-flex;align-items:center;gap:4px;padding:4px 7px;border:1px solid #facc15;border-radius:5px;background:#111827;color:#fef08a;box-shadow:0 3px 10px rgba(15,23,42,.35);font:900 10px/1 "Segoe UI",Arial,sans-serif;white-space:nowrap;pointer-events:none}body.modal-open .tomorrow-inbound-callout{display:none!important}.tomorrow-inbound-callout:before{content:"\\2190";color:#facc15;font-size:15px;line-height:1}
+.block-context-menu .tomorrow-inbound-menu-action{border-color:#facc15!important;background:#854d0e!important}.block-context-menu .tomorrow-inbound-menu-action:hover{background:#a16207!important}.yard-grid .cut-cell.tomorrow-inbound-block{z-index:18!important;box-shadow:inset 0 0 0 2px #facc15!important}.tomorrow-inbound-callout{position:absolute;z-index:15;display:inline-flex;align-items:center;gap:4px;padding:4px 7px;border:1px solid #facc15;border-radius:5px;background:#111827;color:#fef08a;box-shadow:0 3px 10px rgba(15,23,42,.35);font:900 10px/1 "Segoe UI",Arial,sans-serif;white-space:nowrap;pointer-events:none}body.modal-open .tomorrow-inbound-callout,body:has(#blockContextMenu:not([hidden])) .tomorrow-inbound-callout{display:none!important}.tomorrow-inbound-callout:before{content:"\\2190";color:#facc15;font-size:15px;line-height:1}
 </style>`;
       const button = '<button class="tomorrow-inbound-menu-action" id="markTomorrowInbound" type="button" role="menuitem" hidden>Mark Tomorrow\'s Inbound</button>';
       const script = `/* excel-tomorrow-inbound-marker-runtime-v1 */
@@ -18589,6 +18724,8 @@ addEventListener("scroll",schedule,true);addEventListener("resize",schedule);try
       const marker = "excel-selected-block-follow-up-menu-v1";
       if (!html || typeof html !== "string" || html.includes(marker)) return html;
       if (!html.includes('id="assignActionsFlyout"') || !html.includes('id="blockContextMenu"')) return html;
+      const undoStackAnchor = '  const excelViewUndoStack = [];';
+      if (html.includes(undoStackAnchor)) html = html.replace(undoStackAnchor, undoStackAnchor + '\n  window.excelViewUndoStackBridge = excelViewUndoStack;');
       const flyoutAnchor = '<div class="excel-context-flyout-options" id="assignActionsFlyout" role="menu" aria-labelledby="assignActionsFlyoutButton">';
       const controls = `
     <button id="assignSelectedSwingToYard" type="button" role="menuitem">Swing to Yard</button>
@@ -18597,39 +18734,49 @@ addEventListener("scroll",schedule,true);addEventListener("resize",schedule);try
     <button id="assignSelectedDeparting" type="button" role="menuitem">Departing From Here</button>
     <button id="assignSelectedRemoveFollowUp" type="button" role="menuitem">Remove</button>`;
       html = html.replace(flyoutAnchor, flyoutAnchor + controls);
-      const script = `<style id="${marker}-styles">#assignActionsFlyout .selected-block-move-tracks{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;margin:0;padding:4px;border:1px solid #334155;border-radius:4px;background:#020617}#assignActionsFlyout .selected-block-move-tracks[hidden]{display:none!important}#assignActionsFlyout .selected-block-move-tracks button{min-height:24px;margin:0;padding:4px;text-align:center}#assignSelectedSwingToYard,#assignSelectedMoveToTrack,#assignSelectedDeparting{border-color:#475569!important;background:#1e293b!important;color:#fff!important}#assignSelectedSwingToYard:hover,#assignSelectedMoveToTrack:hover,#assignSelectedDeparting:hover{background:#334155!important}.yard-grid>.cut-cell.selected-block-followup-host,body.excel-page-2 #yardGrid>.cut-cell.selected-block-followup-host,body.excel-page-2 .excel-page2-secondary-grid>.cut-cell.selected-block-followup-host{overflow:visible!important;z-index:16!important}.selected-block-followup-arrow,.selected-block-followup-target,.selected-block-departing-label{position:absolute;z-index:17}.selected-block-followup-arrow,.selected-block-followup-target{pointer-events:none}.selected-block-departing-label{pointer-events:auto;cursor:context-menu}.selected-block-followup-arrow{left:calc(100% + 2px);top:0;bottom:0;width:29px;display:flex;align-items:center;justify-content:center;color:#050505;font:800 25px/1 Arial,sans-serif}.selected-block-followup-target{left:calc(100% + 31px);top:calc(5px * var(--excel-table-scale,1));bottom:calc(5px * var(--excel-table-scale,1));display:flex;flex-direction:column;align-items:flex-start;justify-content:center;overflow:hidden;padding:calc(4px * var(--excel-table-scale,1)) 5px;border:1px solid rgba(15,23,42,.14);border-radius:3px;background:#334155;color:#fff;font-family:var(--grid-block-font,"Roboto Condensed","Arial Narrow",Arial,sans-serif);font-size:var(--grid-block-size,12px);font-weight:var(--grid-block-weight,700);line-height:1;letter-spacing:-.01em;white-space:nowrap;box-shadow:0 1px 1px rgba(15,23,42,.08)}.selected-block-followup-target[data-label="IHOSA"]{background:var(--ihosa-block-color,#166534)!important}.selected-block-followup-target[data-label="MHOAS"]{background:var(--mhoas-block-color,#4338ca)!important}.selected-block-followup-target[data-label="SS"]{background:#7e22ce!important}.selected-block-followup-target[data-label="PIERCE"]{background:var(--pierce-block-color,#be185d)!important}.selected-block-followup-target strong,.selected-block-followup-target small{display:block;max-width:100%;overflow:hidden;font-weight:var(--grid-block-weight,700);line-height:1;text-overflow:ellipsis;white-space:nowrap}.selected-block-followup-target small{font-size:max(7px,calc(var(--grid-block-size,12px) - 2px))}.selected-block-departing-label{left:calc(100% + 7px);top:50%;display:inline-flex;align-items:center;padding:4px 7px;border:1px solid #64748b;border-radius:5px;background:#111827;color:#e2e8f0;box-shadow:0 3px 10px rgba(15,23,42,.35);font:900 10px/1 "Segoe UI",Arial,sans-serif;white-space:nowrap;transform:translateY(-50%)}.selected-block-departing-label.selected-block-followup-slot{left:7px}.selected-block-departing-label[data-label="IHOSA"]{border-color:#22c55e!important;background:#052e16!important;color:#86efac!important}.selected-block-departing-label[data-label="MHOAS"]{border-color:#3b82f6!important;background:#172554!important;color:#93c5fd!important}.selected-block-followup-remove-menu{position:fixed;z-index:2147483647;display:block;min-width:120px;padding:5px;border:1px solid #475569;border-radius:6px;background:#0f172a;box-shadow:0 10px 28px rgba(15,23,42,.45)}.selected-block-followup-remove-menu[hidden]{display:none!important}.selected-block-followup-remove-menu button{display:block;width:100%;margin:0;padding:7px 10px;border:1px solid #ef4444;border-radius:4px;background:#991b1b;color:#fff;font:800 11px/1 "Segoe UI",Arial,sans-serif;text-align:left}</style><script id="${marker}">(function(){
+      const script = `<style id="${marker}-styles">#assignActionsFlyout .selected-block-move-tracks{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;margin:0;padding:4px;border:1px solid #334155;border-radius:4px;background:#020617}#assignActionsFlyout .selected-block-move-tracks[hidden]{display:none!important}#assignActionsFlyout .selected-block-move-tracks button{min-height:24px;margin:0;padding:4px;text-align:center}#assignSelectedSwingToYard,#assignSelectedMoveToTrack,#assignSelectedDeparting{border-color:#475569!important;background:#1e293b!important;color:#fff!important}#assignSelectedSwingToYard:hover,#assignSelectedMoveToTrack:hover,#assignSelectedDeparting:hover{background:#334155!important}.yard-grid>.cut-cell.selected-block-followup-host,body.excel-page-2 #yardGrid>.cut-cell.selected-block-followup-host,body.excel-page-2 .excel-page2-secondary-grid>.cut-cell.selected-block-followup-host{overflow:visible!important;z-index:16!important}.selected-block-followup-arrow,.selected-block-followup-target,.selected-block-departing-label{position:absolute;z-index:17}.selected-block-followup-arrow,.selected-block-followup-target{pointer-events:none}.selected-block-departing-label{pointer-events:auto;cursor:context-menu}.selected-block-followup-arrow{left:calc(100% + 2px);top:0;bottom:0;width:29px;display:flex;align-items:center;justify-content:center;color:#050505;font:800 25px/1 Arial,sans-serif}.selected-block-followup-target{left:calc(100% + 31px);top:calc(5px * var(--excel-table-scale,1));bottom:calc(5px * var(--excel-table-scale,1));display:flex;flex-direction:column;align-items:flex-start;justify-content:center;overflow:hidden;padding:calc(4px * var(--excel-table-scale,1)) 5px;border:1px solid rgba(15,23,42,.14);border-radius:3px;background:#334155;color:#fff;font-family:var(--grid-block-font,"Roboto Condensed","Arial Narrow",Arial,sans-serif);font-size:var(--grid-block-size,12px);font-weight:var(--grid-block-weight,700);line-height:1;letter-spacing:-.01em;white-space:nowrap;box-shadow:0 1px 1px rgba(15,23,42,.08)}.selected-block-followup-target[data-label="IHOSA"]{background:var(--ihosa-block-color,#166534)!important}.selected-block-followup-target[data-label="MHOAS"]{background:var(--mhoas-block-color,#4338ca)!important}.selected-block-followup-target[data-label="SS"]{background:#7e22ce!important}.selected-block-followup-target[data-label="PIERCE"]{background:var(--pierce-block-color,#be185d)!important}.selected-block-followup-target strong,.selected-block-followup-target small{display:block;max-width:100%;overflow:hidden;font-weight:var(--grid-block-weight,700);line-height:1;text-overflow:ellipsis;white-space:nowrap}.selected-block-followup-target small{font-size:max(7px,calc(var(--grid-block-size,12px) - 2px))}.selected-block-departing-label{left:calc(100% + 7px);top:50%;display:inline-flex;align-items:center;padding:4px 7px;border:1px solid #64748b;border-radius:5px;background:#111827;color:#e2e8f0;box-shadow:0 3px 10px rgba(15,23,42,.35);font:900 10px/1 "Segoe UI",Arial,sans-serif;white-space:nowrap;transform:translateY(-50%)}.selected-block-departing-label.selected-block-followup-slot{left:7px}.selected-block-departing-label[data-label="IHOSA"]{border-color:#22c55e!important;background:#052e16!important;color:#86efac!important}.selected-block-departing-label[data-label="MHOAS"]{border-color:#3b82f6!important;background:#172554!important;color:#93c5fd!important}.selected-block-followup-remove-menu{position:fixed;z-index:2147483647;display:block;min-width:145px;padding:5px;border:1px solid #475569;border-radius:6px;background:#0f172a;box-shadow:0 10px 28px rgba(15,23,42,.45)}.selected-block-followup-remove-menu[hidden]{display:none!important}.selected-block-followup-remove-menu button{display:block;width:100%;margin:0 0 4px;padding:7px 10px;border:1px solid #475569;border-radius:4px;background:#1e293b;color:#fff;font:800 11px/1 "Segoe UI",Arial,sans-serif;text-align:left}.selected-block-followup-remove-menu button:last-child{margin-bottom:0}.selected-block-followup-remove-menu [data-followup-color="MHOAS"]{border-color:#3b82f6;background:#172554;color:#93c5fd}.selected-block-followup-remove-menu [data-followup-color="IHOSA"]{border-color:#22c55e;background:#052e16;color:#86efac}.selected-block-followup-remove-menu [data-followup-remove]{border-color:#ef4444;background:#991b1b;color:#fff}</style><script id="${marker}">(function(){
 var host=document.getElementById("assignActionsFlyout");if(!host)return;
 var key="conglobal-excel-consolidation-arrow-explanations-v1",directKey="conglobal-excel-selected-block-followups-v1";
 var targetGridId="",targetBlockId="",targetLabel="";
-var removeKey="",removeMenu=document.createElement("div");removeMenu.className="selected-block-followup-remove-menu";removeMenu.hidden=true;removeMenu.innerHTML='<button type="button">Remove</button>';document.body.appendChild(removeMenu);
+var removeKey="",removeMenu=document.createElement("div");removeMenu.className="selected-block-followup-remove-menu";removeMenu.hidden=true;removeMenu.innerHTML='<button type="button" data-followup-color="MHOAS">Blue</button><button type="button" data-followup-color="IHOSA">Green</button><button type="button" data-followup-color="BLOCK">Neutral</button><button type="button" data-followup-remove>Remove</button>';document.body.appendChild(removeMenu);
 function button(id,label){var node=document.createElement("button");node.type="button";node.id=id;node.textContent=label;return node}
 var swing=document.getElementById("assignSelectedSwingToYard"),move=document.getElementById("assignSelectedMoveToTrack"),departing=document.getElementById("assignSelectedDeparting"),tracks=host.querySelector(".selected-block-move-tracks");if(!swing||!move||!departing||!tracks)return;
 function contextCells(){var capturedGrid=targetGridId&&document.getElementById(targetGridId);if(capturedGrid&&targetBlockId){var captured=Array.from(capturedGrid.querySelectorAll(".cut-cell[data-block-id]")).find(function(cell){return String(cell.dataset.blockId||"")===targetBlockId});if(captured)return [captured]}try{var gridId=typeof blockContextGridId!=="undefined"?String(blockContextGridId||""):"",blockId=typeof blockContextBlockId!=="undefined"?String(blockContextBlockId||""):"",grid=gridId&&document.getElementById(gridId);if(grid&&blockId){var exact=Array.from(grid.querySelectorAll(".cut-cell[data-block-id]")).find(function(cell){return String(cell.dataset.blockId||"")===blockId});if(exact)return [exact]}}catch(_){}return Array.from(document.querySelectorAll(".yard-grid .cut-cell.block-selected[data-block-id]")).slice(0,1)}
 function selectedIds(){return contextCells().map(function(cell){return String(cell.dataset.blockId||"")}).filter(Boolean)}
 function directRead(){try{var value=JSON.parse(localStorage.getItem(directKey)||"{}");return value&&typeof value==="object"&&!Array.isArray(value)?value:{}}catch(_){return{}}}
+function directUndoEntry(raw){return JSON.stringify({__excelSelectedBlockFollowUpsUndo:true,value:raw})}
+function syncUndoButton(){var stack=window.excelViewUndoStackBridge,button=document.getElementById("undoExcelView");if(!Array.isArray(stack)||!button)return;button.disabled=stack.length===0;button.textContent=stack.length?"Undo ("+stack.length+")":"Undo"}
+function pushDirectUndo(raw){try{var stack=window.excelViewUndoStackBridge;if(!Array.isArray(stack))return;stack.push(directUndoEntry(raw));if(stack.length>80)stack.shift();syncUndoButton()}catch(_){}}
+function writeDirect(value){var previous=localStorage.getItem(directKey),next=JSON.stringify(value&&typeof value==="object"?value:{});if(previous===next)return false;pushDirectUndo(previous);localStorage.setItem(directKey,next);localStorage.setItem(directKey+".updatedAt",new Date().toISOString());syncUndoButton();return true}
 function directRecordKey(gridId,blockId){return String(gridId||"")+"::"+String(blockId||"")}
+/* excel-followup-stable-refresh-locator-v1 */
+function followUpSignature(cell){var raw=String(cell&&cell.getAttribute("data-page2-primary")||cell&&cell.dataset&&cell.dataset.assignmentOriginalTitle||cell&&cell.title||cell&&cell.textContent||"").toUpperCase();return raw.split("→")[0].replace(/\[[^\]]*\]/g,"").replace(/\([^)]*\)/g,"").replace(/\b(IHOSA|MHOAS|PIERCE)\b/g,"").replace(/[^A-Z0-9]+/g," ").trim()}
+function followUpLocator(cell){if(!cell)return null;var grid=cell.closest(".yard-grid"),track=String(cell.dataset.track||"").trim(),footage=String(Number(cell.dataset.footage)||0),signature=followUpSignature(cell);if(!track){var host=cell.closest("[data-track]");track=String(host&&host.dataset.track||"").trim()}var peers=grid?Array.from(grid.querySelectorAll(".cut-cell[data-block-id]")).filter(function(peer){var peerTrack=String(peer.dataset.track||"").trim();if(!peerTrack){var peerHost=peer.closest("[data-track]");peerTrack=String(peerHost&&peerHost.dataset.track||"").trim()}return peerTrack===track&&String(Number(peer.dataset.footage)||0)===footage&&followUpSignature(peer)===signature}):[];return {track:track,footage:footage,signature:signature,occurrence:Math.max(0,peers.indexOf(cell))}}
+function locateFollowUpCell(grid,blockId,value){var cells=Array.from(grid.querySelectorAll(".cut-cell[data-block-id]")),exact=cells.find(function(item){return String(item.dataset.blockId||"")===blockId});if(exact)return exact;var locator=value&&value._locator;if(!locator)return null;var matches=cells.filter(function(cell){var current=followUpLocator(cell);return current&&current.track===String(locator.track||"")&&current.footage===String(locator.footage||"")&&current.signature===String(locator.signature||"")});return matches[Math.max(0,Number(locator.occurrence)||0)]||matches[0]||null}
 function directDetail(value){return value.type==="swing"?"SWING TO YARD":value.type==="departing"?"DEPARTING FROM HERE":value.type==="move"?"MOVING TO "+String(value.track||""):""}
 function directLabelText(value){return value.type==="swing"?"← Swing to Yard":value.type==="departing"?"← Departing From Here":value.type==="move"?"← Moving to Track "+String(value.track||""):""}
 function directBlockLabel(cell,blockId,value){var saved=String(value&&value.label||"").toUpperCase();if(saved==="IHOSA"||saved==="MHOAS")return saved;var assignment=String(cell&&cell.dataset&&cell.dataset.blockAssignment||"").toUpperCase();if(assignment==="IHOSA"||assignment==="MHOAS")return assignment;try{var assignments=JSON.parse(localStorage.getItem("settegast-excel-block-assignments-v1")||"{}");assignment=String(assignments&&assignments[String(blockId||"")]||"").toUpperCase();if(assignment==="IHOSA"||assignment==="MHOAS")return assignment}catch(_){}var primary=String(cell&&cell.getAttribute("data-page2-primary")||"")+" "+String(cell&&cell.getAttribute("data-page2-secondary")||"")+" "+String(cell&&cell.title||"")+" "+String(cell&&cell.textContent||"");var match=primary.toUpperCase().match(/\b(IHOSA|MHOAS)\b/);return match?match[1]:""}
 function clearLegacyFollowUps(ids){var records=[];try{records=JSON.parse(localStorage.getItem(key)||"[]")}catch(_){}if(!Array.isArray(records)||!ids.length)return;var changed=false;records.forEach(function(item){var recordId=String(item&&item.id||""),blockIds=Array.isArray(item&&item.blockIds)?item.blockIds.map(String):[],matches=ids.some(function(id){return id==="arrow-copy-"+recordId||blockIds.indexOf(id)>=0});if(matches&&item.followUp){delete item.followUp;changed=true}});if(!changed)return;var oldValue=localStorage.getItem(key),newValue=JSON.stringify(records);localStorage.setItem(key,newValue);try{window.dispatchEvent(new StorageEvent("storage",{key:key,oldValue:oldValue,newValue:newValue,storageArea:localStorage,url:location.href}))}catch(_){window.dispatchEvent(new Event("storage"))}}
+function backfillFollowUpLocators(){var records=directRead(),changed=false;Object.keys(records).forEach(function(recordKey){var split=recordKey.indexOf("::"),grid=split>=0?document.getElementById(recordKey.slice(0,split)):null,blockId=split>=0?recordKey.slice(split+2):"",value=records[recordKey];if(!grid||!blockId||!value||value._locator)return;var cell=Array.from(grid.querySelectorAll(".cut-cell[data-block-id]")).find(function(item){return String(item.dataset.blockId||"")===blockId});if(cell){value._locator=followUpLocator(cell);changed=true}});if(changed){localStorage.setItem(directKey,JSON.stringify(records));localStorage.setItem(directKey+".updatedAt",new Date().toISOString())}return records}
 function renderDirect(){
-  var records=directRead(),wanted={},usedSlots={};Object.keys(records).forEach(function(recordKey){var split=recordKey.indexOf("::"),gridId=split>=0?recordKey.slice(0,split):"",blockId=split>=0?recordKey.slice(split+2):"",grid=document.getElementById(gridId);if(!grid||!blockId)return;var cell=Array.from(grid.querySelectorAll(".cut-cell[data-block-id]")).find(function(item){return String(item.dataset.blockId||"")===blockId});if(!cell)return;var value=records[recordKey]||{},detail=directDetail(value);if(!detail)return;var track=String(cell.dataset.track||""),slotKey=gridId+"::"+track,emptyCells=Array.from(grid.children).filter(function(item){return item.classList&&item.classList.contains("cut-cell")&&item.classList.contains("empty")&&String(item.dataset.dropEndTrack||item.dataset.track||"")===track}),slotIndex=usedSlots[slotKey]||0,displayCell=emptyCells[slotIndex]||cell;if(displayCell!==cell)usedSlots[slotKey]=slotIndex+1;wanted[recordKey]=true;displayCell.classList.add("selected-block-followup-host");var selector='[data-followup-key="'+recordKey.replace(/"/g,'\\"')+'"]',oldNodes=grid.querySelectorAll('.selected-block-followup-arrow'+selector+',.selected-block-followup-target'+selector+',.selected-block-departing-label'+selector),labelName=directBlockLabel(cell,blockId,value);
-    var labelText=directLabelText(value),pill=displayCell.querySelector(':scope > .selected-block-departing-label'+selector);oldNodes.forEach(function(node){if(node!==pill)node.remove()});if(!pill){pill=document.createElement("span");pill.className="selected-block-departing-label";pill.dataset.followupKey=recordKey;displayCell.appendChild(pill)}pill.classList.toggle("selected-block-followup-slot",displayCell!==cell);pill.dataset.label=labelName||"BLOCK";if(pill.textContent!==labelText)pill.textContent=labelText
+  var records=directRead(),wanted={},usedSlots={};Object.keys(records).forEach(function(recordKey){var split=recordKey.indexOf("::"),gridId=split>=0?recordKey.slice(0,split):"",blockId=split>=0?recordKey.slice(split+2):"",grid=document.getElementById(gridId),value=records[recordKey]||{};if(!grid||!blockId)return;var cell=locateFollowUpCell(grid,blockId,value);if(!cell)return;var detail=directDetail(value);if(!detail)return;var track=String(cell.dataset.track||""),slotKey=gridId+"::"+track,emptyCells=Array.from(grid.children).filter(function(item){return item.classList&&item.classList.contains("cut-cell")&&item.classList.contains("empty")&&String(item.dataset.dropEndTrack||item.dataset.track||"")===track}),slotIndex=usedSlots[slotKey]||0,displayCell=emptyCells[slotIndex]||cell;if(displayCell!==cell)usedSlots[slotKey]=slotIndex+1;wanted[recordKey]=true;displayCell.classList.add("selected-block-followup-host");var selector='[data-followup-key="'+recordKey.replace(/"/g,'\\"')+'"]',oldNodes=grid.querySelectorAll('.selected-block-followup-arrow'+selector+',.selected-block-followup-target'+selector+',.selected-block-departing-label'+selector),labelName=directBlockLabel(cell,String(cell.dataset.blockId||blockId),value);
+    var labelText=directLabelText(value),pill=displayCell.querySelector(':scope > .selected-block-departing-label'+selector);oldNodes.forEach(function(node){if(node!==pill)node.remove()});if(!pill){pill=document.createElement("span");pill.className="selected-block-departing-label";pill.dataset.followupKey=recordKey;displayCell.appendChild(pill)}pill.classList.toggle("selected-block-followup-slot",displayCell!==cell);pill.dataset.label=String(value.labelColor||labelName||"BLOCK").toUpperCase();if(pill.textContent!==labelText)pill.textContent=labelText
   });document.querySelectorAll(".selected-block-followup-arrow,.selected-block-followup-target,.selected-block-departing-label").forEach(function(node){if(!wanted[String(node.dataset.followupKey||"")])node.remove()});document.querySelectorAll(".selected-block-followup-host").forEach(function(cell){if(!cell.querySelector(":scope > .selected-block-followup-arrow,:scope > .selected-block-followup-target,:scope > .selected-block-departing-label"))cell.classList.remove("selected-block-followup-host")})
 }
 function saveFollowUp(value){
-  var cells=contextCells();if(!cells.length)return false;var direct=directRead();cells.forEach(function(cell){var grid=cell.closest(".yard-grid"),blockId=String(cell.dataset.blockId||""),label=targetLabel||directBlockLabel(cell,blockId,value);if(grid&&grid.id&&blockId)direct[directRecordKey(grid.id,blockId)]=Object.assign({},value,label?{label:label}:{})});localStorage.setItem(directKey,JSON.stringify(direct));renderDirect();
+  var cells=contextCells();if(!cells.length)return false;var direct=directRead();cells.forEach(function(cell){var grid=cell.closest(".yard-grid"),blockId=String(cell.dataset.blockId||""),label=targetLabel||directBlockLabel(cell,blockId,value),recordKey=grid&&grid.id&&blockId?directRecordKey(grid.id,blockId):"",previous=recordKey&&direct[recordKey]||{};if(recordKey)direct[recordKey]=Object.assign({},value,{_locator:followUpLocator(cell)},label?{label:label}:{},previous.labelColor?{labelColor:previous.labelColor}:{})});writeDirect(direct);renderDirect();
   clearLegacyFollowUps(selectedIds());
   return true
 }
 function finish(value){if(!saveFollowUp(value))return;targetGridId="";targetBlockId="";targetLabel="";var menu=document.getElementById("blockContextMenu");if(menu)menu.hidden=true}
-function removeCaptured(){var cells=contextCells(),direct=directRead(),changed=false;cells.forEach(function(cell){var grid=cell.closest(".yard-grid"),blockId=String(cell.dataset.blockId||""),recordKey=grid&&grid.id&&blockId?directRecordKey(grid.id,blockId):"";if(recordKey&&Object.prototype.hasOwnProperty.call(direct,recordKey)){delete direct[recordKey];changed=true}});if(changed)localStorage.setItem(directKey,JSON.stringify(direct));renderDirect();targetGridId="";targetBlockId="";targetLabel="";var menu=document.getElementById("blockContextMenu");if(menu)menu.hidden=true}
+function removeCaptured(){var cells=contextCells(),direct=directRead(),changed=false;cells.forEach(function(cell){var grid=cell.closest(".yard-grid"),blockId=String(cell.dataset.blockId||""),recordKey=grid&&grid.id&&blockId?directRecordKey(grid.id,blockId):"";if(recordKey&&Object.prototype.hasOwnProperty.call(direct,recordKey)){delete direct[recordKey];changed=true}});if(changed)writeDirect(direct);renderDirect();targetGridId="";targetBlockId="";targetLabel="";var menu=document.getElementById("blockContextMenu");if(menu)menu.hidden=true}
 document.addEventListener("contextmenu",function(event){var cell=event.target.closest&&event.target.closest(".yard-grid .cut-cell[data-block-id]");if(!cell)return;var grid=cell.closest(".yard-grid");targetGridId=grid&&grid.id?grid.id:"";targetBlockId=String(cell.dataset.blockId||"");targetLabel=directBlockLabel(cell,targetBlockId,{})},true);
 document.addEventListener("contextmenu",function(event){var label=event.target.closest&&event.target.closest(".selected-block-departing-label[data-followup-key]");if(!label)return;event.preventDefault();event.stopImmediatePropagation();removeKey=String(label.dataset.followupKey||"");removeMenu.hidden=false;removeMenu.style.left=Math.max(6,Math.min(event.clientX,innerWidth-removeMenu.offsetWidth-6))+"px";removeMenu.style.top=Math.max(6,Math.min(event.clientY,innerHeight-removeMenu.offsetHeight-6))+"px"},true);
-removeMenu.querySelector("button").addEventListener("click",function(){if(removeKey){var direct=directRead();delete direct[removeKey];localStorage.setItem(directKey,JSON.stringify(direct));renderDirect()}removeKey="";removeMenu.hidden=true});
+removeMenu.addEventListener("click",function(event){var button=event.target.closest("button");if(!button||!removeKey)return;var direct=directRead();if(button.hasAttribute("data-followup-remove"))delete direct[removeKey];else if(button.dataset.followupColor&&direct[removeKey])direct[removeKey].labelColor=button.dataset.followupColor;writeDirect(direct);renderDirect();removeKey="";removeMenu.hidden=true});
+document.addEventListener("click",function(event){var undo=event.target.closest&&event.target.closest("#undoExcelView");if(!undo)return;try{var stack=window.excelViewUndoStackBridge;if(!Array.isArray(stack)||!stack.length)return;var parsed=JSON.parse(stack[stack.length-1]);if(!parsed||parsed.__excelSelectedBlockFollowUpsUndo!==true)return;event.preventDefault();event.stopImmediatePropagation();stack.pop();if(parsed.value===null||typeof parsed.value==="undefined")localStorage.removeItem(directKey);else localStorage.setItem(directKey,String(parsed.value));localStorage.setItem(directKey+".updatedAt",new Date().toISOString());renderDirect();syncUndoButton()}catch(_){}},true);
 document.addEventListener("pointerdown",function(event){if(!removeMenu.hidden&&!removeMenu.contains(event.target)){removeKey="";removeMenu.hidden=true}},true);
 document.addEventListener("click",function(event){var action=event.target.closest&&event.target.closest("#assignSelectedSwingToYard,#assignSelectedMoveToTrack,#assignSelectedDeparting,#assignSelectedRemoveFollowUp,[data-selected-move-track]");if(!action)return;if(action.id==="assignSelectedMoveToTrack"){event.preventDefault();event.stopImmediatePropagation();tracks.hidden=!tracks.hidden;move.setAttribute("aria-expanded",tracks.hidden?"false":"true");return}if(action.id==="assignSelectedSwingToYard"){event.preventDefault();event.stopImmediatePropagation();finish({type:"swing"});return}if(action.id==="assignSelectedDeparting"){event.preventDefault();event.stopImmediatePropagation();finish({type:"departing"});return}if(action.id==="assignSelectedRemoveFollowUp"){event.preventDefault();event.stopImmediatePropagation();removeCaptured();return}if(action.dataset.selectedMoveTrack){event.preventDefault();event.stopImmediatePropagation();finish({type:"move",track:"6-"+action.dataset.selectedMoveTrack})}},true);
-var directFrame=0;function scheduleDirect(){if(!directFrame)directFrame=requestAnimationFrame(function(){directFrame=0;renderDirect()})}new MutationObserver(function(records){var external=records.some(function(record){return Array.from(record.addedNodes).concat(Array.from(record.removedNodes)).some(function(node){return !(node.nodeType===1&&(node.matches&&node.matches(".selected-block-followup-arrow,.selected-block-followup-target,.selected-block-departing-label")||node.closest&&node.closest(".selected-block-followup-arrow,.selected-block-followup-target,.selected-block-departing-label")))})});if(external)scheduleDirect()}).observe(document.body,{childList:true,subtree:true});window.addEventListener("storage",function(event){if(event.key===directKey)scheduleDirect()});var savedDirect=directRead(),savedIds=Object.keys(savedDirect).map(function(recordKey){var split=recordKey.indexOf("::");return split>=0?recordKey.slice(split+2):""}).filter(Boolean);clearLegacyFollowUps(savedIds);renderDirect();
+var directFrame=0;function scheduleDirect(){if(!directFrame)directFrame=requestAnimationFrame(function(){directFrame=0;renderDirect()})}new MutationObserver(function(records){var external=records.some(function(record){return Array.from(record.addedNodes).concat(Array.from(record.removedNodes)).some(function(node){return !(node.nodeType===1&&(node.matches&&node.matches(".selected-block-followup-arrow,.selected-block-followup-target,.selected-block-departing-label")||node.closest&&node.closest(".selected-block-followup-arrow,.selected-block-followup-target,.selected-block-departing-label")))})});if(external)scheduleDirect()}).observe(document.body,{childList:true,subtree:true});window.addEventListener("storage",function(event){if(event.key===directKey)scheduleDirect()});var savedDirect=backfillFollowUpLocators(),savedIds=Object.keys(savedDirect).map(function(recordKey){var split=recordKey.indexOf("::");return split>=0?recordKey.slice(split+2):""}).filter(Boolean);clearLegacyFollowUps(savedIds);renderDirect();
 })();<\/script>`;
       const close = html.toLowerCase().lastIndexOf("</body>");
       return close >= 0 ? html.slice(0, close) + script + "\n" + html.slice(close) : html + script;
@@ -18773,6 +18920,7 @@ var directFrame=0;function scheduleDirect(){if(!directFrame)directFrame=requestA
           pageHtml = withExcelContextActionFlyouts(pageHtml);
           pageHtml = withExcelOutsideTableBlockDeselect(pageHtml);
           pageHtml = withExcelBlockShowTrack(pageHtml);
+          pageHtml = withExcelCopyPasteOriginalTrack(pageHtml);
           pageHtml = withExcelConsolidationArrowExplanations(pageHtml);
           pageHtml = withExcelSelectedBlockFollowUpMenu(pageHtml);
           pageHtml = withExcelRampStageHeadings(pageHtml);
