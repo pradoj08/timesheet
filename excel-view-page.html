@@ -1523,6 +1523,29 @@
   .track-import-row .meta { color:#cbd5e1; font-size:10px; font-weight:800; text-align:center; }
   .track-label[data-track] { cursor:pointer; }
   .track-label[data-track]:hover { background:#dbeafe; color:#1d4ed8; box-shadow:inset 0 0 0 2px #60a5fa; }
+  #trackRowHighlightMenu { position:fixed; z-index:2800; display:none; width:210px; padding:9px; border:1px solid #64748b; border-radius:10px; background:#0f172a; color:#f8fafc; box-shadow:0 18px 48px rgba(0,0,0,.48); }
+  #trackRowHighlightMenu.open { display:grid; gap:6px; }
+  #trackRowHighlightMenu .track-highlight-title { padding:2px 4px 5px; color:#cbd5e1; font-size:10px; font-weight:900; letter-spacing:.08em; text-transform:uppercase; }
+  #trackRowHighlightMenu button { display:flex; align-items:center; gap:8px; width:100%; min-height:32px; padding:6px 8px; border:1px solid #475569; border-radius:6px; background:#1e293b; color:#f8fafc; font:900 11px Arial,sans-serif; text-align:left; cursor:pointer; }
+  #trackRowHighlightMenu button:hover,#trackRowHighlightMenu button[aria-pressed="true"] { border-color:#93c5fd; background:#334155; }
+  #trackRowHighlightMenu .track-highlight-swatch { width:18px; height:18px; flex:0 0 18px; border:1px solid rgba(15,23,42,.4); border-radius:4px; background:var(--track-highlight-swatch); }
+  #trackRowHighlightMenu .track-highlight-divider { height:1px; margin:2px 0; background:#334155; }
+  body.excel-page-2 .yard-grid > [data-track-row-highlight="blue"] { --excel-page2-row:#dbeafe!important; }
+  body.excel-page-2 .yard-grid > [data-track-row-highlight="orange"] { --excel-page2-row:#fed7aa!important; }
+  body.excel-page-2 .yard-grid > [data-track-row-highlight="red"] { --excel-page2-row:#fecaca!important; }
+  body.excel-page-2 .yard-grid > [data-track-row-highlight="yellow"] { --excel-page2-row:#fef3c7!important; }
+  body.excel-page-2 .yard-grid > [data-track-row-highlight="purple"] { --excel-page2-row:#e9d5ff!important; }
+  body:not(.excel-page-2) .yard-grid > [data-track-row-highlight]:not(.cut-cell),
+  body:not(.excel-page-2) .yard-grid > .cut-cell[data-track-row-highlight]:not([data-block-id]) { background:var(--track-row-highlight-color)!important; }
+  .yard-grid > [data-track-row-highlight="blue"] { --track-row-highlight-color:#dbeafe; }
+  .yard-grid > [data-track-row-highlight="orange"] { --track-row-highlight-color:#fed7aa; }
+  .yard-grid > [data-track-row-highlight="red"] { --track-row-highlight-color:#fecaca; }
+  .yard-grid > [data-track-row-highlight="yellow"] { --track-row-highlight-color:#fef3c7; }
+  .yard-grid > [data-track-row-highlight="purple"] { --track-row-highlight-color:#e9d5ff; }
+  body.excel-page-2 .yard-grid > .track-remaining.over,
+  body.excel-page-2 .yard-grid > .track-remaining.excel-page2-over { background:var(--excel-page2-row,#f6f8f9)!important; color:#fff!important; }
+  body.excel-page-2 .yard-grid > .track-remaining.over:before,
+  body.excel-page-2 .yard-grid > .track-remaining.excel-page2-over:before { background:#b21422!important; }
   .split-block-summary {
     min-height: 42px; padding: 9px 13px; display: flex; align-items: center;
     justify-content: space-between; gap: 14px; border: 1px solid #35445f;
@@ -3023,6 +3046,7 @@
     padding-right: 27px;
   }
   .inbound-shove-flag {
+    --inbound-shove-hue: 38;
     position: absolute;
     right: 5px;
     top: 50%;
@@ -3031,24 +3055,20 @@
     height: 19px;
     align-items: center;
     justify-content: center;
-    border: 1px solid #ffe17a;
+    border: 1px solid hsl(var(--inbound-shove-hue) 92% 78%);
     border-radius: 50%;
-    background: #fbbf24;
-    color: #251500;
+    background: hsl(var(--inbound-shove-hue) 76% 40%);
+    color: #fff;
     font: italic 950 10px/1 Arial, sans-serif;
     box-shadow: 0 1px 4px rgba(0,0,0,.34);
     transform: translateY(-50%);
     pointer-events: none;
   }
   .inbound-shove-flag.inbound-sequence-two {
-    border-color: #93c5fd;
-    background: #2563eb;
-    color: #fff;
+    --inbound-shove-hue: 218;
   }
   .inbound-shove-flag.inbound-sequence-three {
-    border-color: #86efac;
-    background: #16a34a;
-    color: #fff;
+    --inbound-shove-hue: 142;
   }
   .status-strip {
     margin-top: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
@@ -4251,7 +4271,7 @@
       <section class="panel dashboard-panel">
         <div class="panel-head">
           <div class="dashboard-title-row">
-            <div class="panel-title">Nine-Track Ramp Grid</div>
+            <div class="panel-title">Current Ramp Overview</div>
             <button class="btn btn-white btn-small grid-color-tab-btn" id="colorTabBtn" type="button">Color Tab</button>
             <button class="btn btn-white btn-small" id="removeAllBlockTags" type="button" title="Clear all IHOSA and MHOAS Final assignments">Remove Tags</button>
             <button class="btn btn-white btn-small" id="importFileBtnTop" type="button" onclick="document.getElementById('inventoryFileTop').click()">IMPORT ER</button>
@@ -4296,10 +4316,10 @@
         </div>
         <div class="grid-wrap">
           <div class="yard-grid" id="yardGrid"></div>
-          <div class="blank-grid-separator"><strong class="blank-grid-title">Ramp Overview</strong></div>
-          <div class="yard-grid blank-yard-grid" id="blankYardGrid" aria-label="Ramp Overview"></div>
           <div class="blank-grid-separator"><strong class="blank-grid-title">Ramp After Switching</strong></div>
-          <div class="yard-grid blank-yard-grid" id="blankYardGridTwo" aria-label="Ramp After Switching"></div>
+          <div class="yard-grid blank-yard-grid" id="blankYardGrid" aria-label="Ramp After Switching"></div>
+          <div class="blank-grid-separator"><strong class="blank-grid-title">Ramp Post Switching</strong></div>
+          <div class="yard-grid blank-yard-grid" id="blankYardGridTwo" aria-label="Ramp Post Switching"></div>
           <div class="blank-grid-separator" aria-hidden="true"></div>
           <div id="inboundSummaryHost" class="inbound-summary-host" aria-label="Inbound summary table"></div>
         </div>
@@ -4451,7 +4471,7 @@
 <div class="inbound-train-backdrop" id="inboundTrainModal" role="dialog" aria-modal="true" aria-labelledby="inboundTrainTitle" hidden>
   <section class="inbound-train-dialog">
     <header class="inbound-train-head">
-      <div class="inbound-train-title" id="inboundTrainTitle">Add Inbound Train<small id="inboundTrainTargetLabel">Ramp Overview</small></div>
+      <div class="inbound-train-title" id="inboundTrainTitle">Add Inbound Train<small id="inboundTrainTargetLabel">Ramp After Switching</small></div>
       <button class="inbound-train-close" id="closeInboundTrain" type="button" aria-label="Close Add Inbound Train">&times;</button>
     </header>
     <div class="inbound-train-body">
@@ -4845,6 +4865,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   let inboundArchivePreviewId = "";
   let inboundTrainTarget = "two";
   let inboundTrainTrackOrder = [];
+  let inboundTrainSourceIsPierce = false;
 
   function defaultInboundPlans() {
     return [
@@ -7605,6 +7626,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       footage:Math.max(0, Number(cell.dataset.footage) || 0),
       shoveOrder:Math.max(0, Number(cell.dataset.shoveOrder) || 0),
       inboundSequence:Math.max(0, Number(cell.dataset.inboundSequence) || 0),
+      isPierceInbound:cell.dataset.pierceInbound === "true" || /\[P\]/i.test(`${cell.title || ""} ${cell.textContent || ""}`),
       showTrack:cell.dataset.showTrack === "true",
       className:String(cell.className || "cut-cell gray")
         .replace(/\b(?:block-selected|block-paste-target|block-drag-target)\b/g, "")
@@ -8141,6 +8163,10 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     const inboundIdMatch = next.id.match(/^inbound-\d+-\d+-(\d+)$/);
     next.shoveOrder = Math.max(0, Math.round(Number(next.shoveOrder) || (inboundIdMatch ? Number(inboundIdMatch[1]) + 1 : 0)));
     next.inboundSequence = Math.max(0, Math.round(Number(next.inboundSequence) || 0));
+    next.isPierceInbound = next.isPierceInbound === true ||
+      String(next.isPierceInbound || "").toLowerCase() === "true" ||
+      /(?:^|\s)0?3-\d{1,3}(?:\s|$)/i.test(`${next.title || ""} ${next.content || ""}`) ||
+      /\[P\]/i.test(`${next.title || ""} ${next.content || ""}`);
     next.showTrack = next.showTrack === true || String(next.showTrack || "").toLowerCase() === "true" || String(next.showTrack || "") === "1";
     next.className = String(next.className || "cut-cell gray")
       .replace(/\b(?:block-selected|block-paste-target|block-drag-target|inbound-added-block)\b/g, "")
@@ -8152,6 +8178,10 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       .replace(/\u25B2/g, "(??)")
       .replace(/\[\d{3}\]/g, `[${track}]`);
     next.title = String(next.title || "").replace(/\[\d{3}\]/g, `[${track}]`);
+    if (next.isPierceInbound) {
+      if (!/\[P\]/i.test(next.content)) next.content = next.content.replace(/\s*(\[\d{3}\])\s*$/, " [P] $1");
+      if (!/\[P\]/i.test(next.title)) next.title = next.title.replace(/\s*(\[\d{3}\])\s*$/, " [P] $1");
+    }
     next.sourceRows = Array.isArray(next.sourceRows) ? next.sourceRows.map(row => Array.isArray(row) ? row.slice() : []) : [];
     next.showTrack = next.showTrack || next.sourceRows.some(row =>
       ["1", "true", "yes"].includes(clean(row[BLOCK_SHOW_TRACK_INDEX]).toLowerCase())
@@ -8208,6 +8238,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         footage,
         shoveOrder:Number(cell.dataset.shoveOrder) || 0,
         inboundSequence:Number(cell.dataset.inboundSequence) || 0,
+        isPierceInbound:cell.dataset.pierceInbound === "true" || /\[P\]/i.test(`${cell.title || ""} ${cell.textContent || ""}`),
         showTrack:cell.dataset.showTrack === "true" || Boolean(group && group.showTrack),
         className: cell.className,
         content: cleanBlockCellContent(cell),
@@ -9198,6 +9229,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
 
   function renderInboundTrainPlacement() {
     const train = clean($("#inboundTrainName").value);
+    const displayTrain = train + (inboundTrainSourceIsPierce && !/\[P\]/i.test(train) ? " [P]" : "");
     const model = inboundTrainPreviewModel();
     const result = inboundTrainAllocations();
     $("#inboundTrainTrackList").innerHTML = TRACKS.map(track => {
@@ -9221,7 +9253,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       preview.textContent = "Enter footage and select landing tracks to preview the placement.";
     } else {
       preview.className = "inbound-train-preview";
-      preview.innerHTML = `<div class="inbound-train-section-label">Placement Preview</div>${result.allocations.filter(item => item.assigned > 0).map(item => `<div class="inbound-train-preview-row"><b>${fmtInt(item.assigned)} FT</b><span>${escapeHtml(train || "Inbound train")} [${item.track}]</span><span>6-${item.track}</span><span class="${item.projected < 0 ? "projected-bad" : "projected-good"}">${fmtInt(item.projected)} FT remaining</span></div>`).join("")}${result.allocations.some(item => item.projected < 0) ? `<div class="inbound-train-overflow">The last selected track will exceed its available footage by ${fmtInt(Math.abs(Math.min(...result.allocations.map(item => item.projected))))} FT.</div>` : ""}`;
+      preview.innerHTML = `<div class="inbound-train-section-label">Placement Preview</div>${result.allocations.filter(item => item.assigned > 0).map(item => `<div class="inbound-train-preview-row"><b>${fmtInt(item.assigned)} FT</b><span>${escapeHtml(displayTrain || "Inbound train")} [${item.track}]</span><span>6-${item.track}</span><span class="${item.projected < 0 ? "projected-bad" : "projected-good"}">${fmtInt(item.projected)} FT remaining</span></div>`).join("")}${result.allocations.some(item => item.projected < 0) ? `<div class="inbound-train-overflow">The last selected track will exceed its available footage by ${fmtInt(Math.abs(Math.min(...result.allocations.map(item => item.projected))))} FT.</div>` : ""}`;
     }
     $("#confirmInboundTrain").disabled = !(train && result.footage > 0 && result.allocations.some(item => item.assigned > 0));
   }
@@ -9229,7 +9261,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   function openInboundTrainModal(target) {
     inboundTrainTarget = target === "three" ? "three" : "two";
     inboundTrainTrackOrder = [];
-    $("#inboundTrainTargetLabel").textContent = inboundTrainTarget === "three" ? "Adding to Ramp After Switching" : "Adding to Ramp Overview";
+    inboundTrainSourceIsPierce = false;
+    $("#inboundTrainTargetLabel").textContent = inboundTrainTarget === "three" ? "Adding to Ramp Post Switching" : "Adding to Ramp After Switching";
     $("#inboundTrainName").value = "";
     $("#inboundTrainFootage").value = "";
     populateInboundTrainSources();
@@ -9251,9 +9284,14 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   }
 
   function selectInboundTrainSource(value) {
-    if (!value) return;
+    if (!value) {
+      inboundTrainSourceIsPierce = false;
+      renderInboundTrainPlacement();
+      return;
+    }
     const entry = inboundTrainSources().find(item => item.id === value);
     if (!entry) return;
+    inboundTrainSourceIsPierce = clean(entry.day).toUpperCase() === "PIERCE";
     $("#inboundTrainName").value = entry.train;
     $("#inboundTrainFootage").value = fmtInt(entry.footage);
     renderInboundTrainPlacement();
@@ -9279,6 +9317,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
 
   function confirmInboundTrain() {
     const train = clean($("#inboundTrainName").value).toUpperCase();
+    const displayTrain = train + (inboundTrainSourceIsPierce && !/\[P\]/i.test(train) ? " [P]" : "");
     const result = inboundTrainAllocations();
     if (!train || !result.footage || !result.allocations.length) return;
     const model = ensureInboundTrainTargetModel();
@@ -9290,16 +9329,17 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         if (match) inboundGroups.add(match[1]);
       });
     });
-    const inboundSequence = Math.min(3, inboundGroups.size + 1);
+    const inboundSequence = inboundGroups.size + 1;
     let added = 0;
     result.allocations.forEach((item, index) => {
       if (item.assigned <= 0) return;
-      const label = `${fmtInt(item.assigned)} ${train} [${item.track}]`;
+      const label = `${fmtInt(item.assigned)} ${displayTrain} [${item.track}]`;
       model.tracks[item.track].push(normalizeSecondaryBlock({
         id:`inbound-${stamp}-${item.track}-${index}`,
       footage:item.assigned,
       shoveOrder:index + 1,
       inboundSequence,
+      isPierceInbound:inboundTrainSourceIsPierce,
         className:"cut-cell orange block-reorderable",
         content:escapeHtml(label),
         title:label,
@@ -9441,6 +9481,10 @@ https://github.com/nodeca/pako/blob/main/LICENSE
 
   function secondaryGridBodyCells(model) {
     const cells = [];
+    const inboundKeys = [...new Set(Object.values(model.tracks || {}).flatMap(blocks =>
+      (Array.isArray(blocks) ? blocks : []).map(block => (String(block && block.id || "").match(/^inbound-(\d+)-/) || [])[1]).filter(Boolean)
+    ))].sort((a, b) => Number(a) - Number(b));
+    const inboundSequenceByKey = new Map(inboundKeys.map((key, index) => [key, index + 1]));
     TRACKS.forEach(track => {
       const blocks = (Array.isArray(model.tracks[track]) ? model.tracks[track] : []).map(block => normalizeSecondaryBlock(block, track));
       model.tracks[track] = blocks;
@@ -9451,7 +9495,10 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         const block = blocks[i];
         if (block) {
           const shoveOrder = Math.max(0, Number(block.shoveOrder) || 0);
-          const inboundSequence = Math.max(0, Number(block.inboundSequence) || 0);
+          const inboundKey = (String(block.id || "").match(/^inbound-(\d+)-/) || [])[1];
+          const inboundSequence = inboundSequenceByKey.get(inboundKey) || Math.max(0, Number(block.inboundSequence) || 0);
+          const inboundSequenceHue = Math.round((((Math.max(1, inboundSequence) - 1) * 137.508) + 38) % 360);
+          block.inboundSequence = inboundSequence;
           const inboundSequenceClass = inboundSequence === 2
             ? " inbound-sequence-two"
             : inboundSequence >= 3 ? " inbound-sequence-three" : "";
@@ -9459,7 +9506,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
           const displayTitle = state.hideTrackIds && !block.showTrack ? stripBlockTrackIds(block.title) : block.title;
           const currentClassName = classNameWithCurrentColor(block.className, block.title || textFromCellHtml(`<div>${block.content}</div>`));
           const currentStyle = styleWithCurrentColorRule(block.title || textFromCellHtml(`<div>${block.content}</div>`));
-          cells.push(`<div class="${escapeAttr(currentClassName)}"${currentStyle ? ` style="${escapeAttr(currentStyle)}"` : ""} data-block-id="${escapeAttr(block.id)}" data-track="${track}" data-footage="${Number(block.footage) || 0}"${block.showTrack ? ' data-show-track="true"' : ""}${shoveOrder ? ` data-shove-order="${shoveOrder}"` : ""}${inboundSequence ? ` data-inbound-sequence="${inboundSequence}"` : ""} role="button" aria-selected="false" title="${escapeAttr(displayTitle)}">${displayContent}${shoveOrder ? `<span class="inbound-shove-flag${inboundSequenceClass}" aria-label="Shove ${shoveOrder}, inbound ${inboundSequence || 1}">${shoveOrder}</span>` : ""}${i === 7 && blocks.length > 8 ? `<span class="overflow">+${blocks.length - 8}</span>` : ""}</div>`);
+          cells.push(`<div class="${escapeAttr(currentClassName)}"${currentStyle ? ` style="${escapeAttr(currentStyle)}"` : ""} data-block-id="${escapeAttr(block.id)}" data-track="${track}" data-footage="${Number(block.footage) || 0}"${block.showTrack ? ' data-show-track="true"' : ""}${shoveOrder ? ` data-shove-order="${shoveOrder}"` : ""}${inboundSequence ? ` data-inbound-sequence="${inboundSequence}"` : ""}${block.isPierceInbound ? ' data-pierce-inbound="true"' : ""} role="button" aria-selected="false" title="${escapeAttr(displayTitle)}">${displayContent}${shoveOrder ? `<span class="inbound-shove-flag${inboundSequenceClass}" style="--inbound-shove-hue:${inboundSequenceHue}" aria-label="Shove ${shoveOrder}, inbound ${inboundSequence || 1}">${shoveOrder}</span>` : ""}${i === 7 && blocks.length > 8 ? `<span class="overflow">+${blocks.length - 8}</span>` : ""}</div>`);
         } else {
           cells.push(`<div class="cut-cell empty block-drop-end" data-drop-end-track="${track}" title="Place selected blocks at end of Track ${track}">0</div>`);
         }
@@ -10297,13 +10344,157 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   $("#splitBlockModal").addEventListener("click", event => {
     if (event.target === $("#splitBlockModal")) closeSplitBlockModal();
   });
+  (() => {
+    const STORAGE_KEY = "conglobal-excel-track-row-highlights-v1";
+    const GRID_IDS = ["yardGrid", "blankYardGrid", "blankYardGridTwo", "blankYardGridThree"];
+    const COLORS = { blue:"#dbeafe", orange:"#fed7aa", red:"#fecaca", yellow:"#fef3c7", purple:"#e9d5ff" };
+    const TRACK_CAPACITY = { 801:1750, 802:1750, 803:2200, 804:2500, 805:2500, 806:2600, 807:2750, 808:2500, 809:2500 };
+    let state = loadState();
+    let active = null;
+    let applyFrame = 0;
+
+    function loadState() {
+      try {
+        const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+        return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
+      } catch (_) { return {}; }
+    }
+    function saveState() {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (_) {}
+    }
+    function rowCells(label) {
+      const cells = [label];
+      let node = label.nextElementSibling;
+      while (node && !(node.matches && node.matches(".track-label[data-track]"))) {
+        cells.push(node);
+        node = node.nextElementSibling;
+      }
+      return cells;
+    }
+    function ensureRemainingNumbers(grid) {
+      grid.querySelectorAll(":scope > .track-label[data-track]").forEach(label => {
+        const row = rowCells(label);
+        const remaining = row.find(cell => cell.classList.contains("track-remaining"));
+        if (!remaining || String(remaining.textContent || "").trim()) return;
+        const total = row.find(cell => cell.classList.contains("track-total"));
+        const used = Number(String(total?.getAttribute("data-page2-used") || total?.textContent || "0").replace(/[^\d.-]/g, "")) || 0;
+        const capacity = TRACK_CAPACITY[Number(label.dataset.track)] || 0;
+        const open = Math.round(capacity - used);
+        remaining.textContent = open.toLocaleString("en-US");
+        remaining.classList.toggle("over", open < 0);
+      });
+    }
+    function applyHighlights() {
+      applyFrame = 0;
+      GRID_IDS.forEach(gridId => {
+        const grid = document.getElementById(gridId);
+        if (!grid) return;
+        ensureRemainingNumbers(grid);
+        grid.querySelectorAll(":scope > [data-track-row-highlight]").forEach(cell => cell.removeAttribute("data-track-row-highlight"));
+        grid.querySelectorAll(":scope > .track-label[data-track]").forEach(label => {
+          const color = state[gridId] && state[gridId][String(label.dataset.track || "")];
+          if (!COLORS[color]) return;
+          rowCells(label).forEach(cell => cell.setAttribute("data-track-row-highlight", color));
+        });
+      });
+    }
+    function scheduleApply() {
+      if (!applyFrame) applyFrame = requestAnimationFrame(applyHighlights);
+    }
+    function ensureMenu() {
+      let menu = document.getElementById("trackRowHighlightMenu");
+      if (menu) return menu;
+      menu = document.createElement("div");
+      menu.id = "trackRowHighlightMenu";
+      menu.setAttribute("role", "dialog");
+      menu.setAttribute("aria-label", "Track highlight options");
+      menu.innerHTML = '<div class="track-highlight-title"></div>' +
+        '<button type="button" data-track-highlight-color="blue"><span class="track-highlight-swatch" style="--track-highlight-swatch:#dbeafe"></span>LIGHT BLUE</button>' +
+        '<button type="button" data-track-highlight-color="orange"><span class="track-highlight-swatch" style="--track-highlight-swatch:#fed7aa"></span>ORANGE</button>' +
+        '<button type="button" data-track-highlight-color="red"><span class="track-highlight-swatch" style="--track-highlight-swatch:#fecaca"></span>RED</button>' +
+        '<button type="button" data-track-highlight-color="yellow"><span class="track-highlight-swatch" style="--track-highlight-swatch:#fef3c7"></span>YELLOW</button>' +
+        '<button type="button" data-track-highlight-color="purple"><span class="track-highlight-swatch" style="--track-highlight-swatch:#e9d5ff"></span>LIGHT PURPLE</button>' +
+        '<button type="button" data-track-highlight-color="clear">CLEAR HIGHLIGHT</button>' +
+        '<div class="track-highlight-divider"></div>' +
+        '<button type="button" data-track-highlight-action="import">IMPORT CARS TO TRACK</button>';
+      menu.addEventListener("click", event => {
+        const button = event.target.closest("button");
+        if (!button || !active) return;
+        const color = button.dataset.trackHighlightColor;
+        if (color) {
+          const gridState = state[active.gridId] && typeof state[active.gridId] === "object" ? state[active.gridId] : {};
+          if (COLORS[color]) gridState[String(active.track)] = color;
+          else delete gridState[String(active.track)];
+          if (Object.keys(gridState).length) state[active.gridId] = gridState;
+          else delete state[active.gridId];
+          saveState();
+          applyHighlights();
+          closeMenu();
+          return;
+        }
+        if (button.dataset.trackHighlightAction === "import") {
+          const importTrack = active.importTrack;
+          const track = active.track;
+          closeMenu();
+          if (typeof importTrack === "function") importTrack(track);
+        }
+      });
+      document.body.appendChild(menu);
+      return menu;
+    }
+    function closeMenu() {
+      const menu = document.getElementById("trackRowHighlightMenu");
+      if (menu) menu.classList.remove("open");
+      active = null;
+    }
+    function openMenu(label, track, importTrack) {
+      const grid = label.closest(".yard-grid");
+      if (!grid || !grid.id) { if (typeof importTrack === "function") importTrack(track); return; }
+      active = { gridId:grid.id, track, importTrack };
+      const menu = ensureMenu();
+      const current = state[grid.id] && state[grid.id][String(track)];
+      const title = clean(label.textContent) || ("TRACK " + track);
+      menu.querySelector(".track-highlight-title").textContent = title + " OPTIONS";
+      menu.querySelectorAll("[data-track-highlight-color]").forEach(button => {
+        button.setAttribute("aria-pressed", button.dataset.trackHighlightColor === current ? "true" : "false");
+      });
+      const rect = label.getBoundingClientRect();
+      menu.style.left = "8px";
+      menu.style.top = "8px";
+      menu.classList.add("open");
+      const menuRect = menu.getBoundingClientRect();
+      menu.style.left = Math.max(8, Math.min(rect.left, innerWidth - menuRect.width - 8)) + "px";
+      menu.style.top = Math.max(8, Math.min(rect.bottom + 5, innerHeight - menuRect.height - 8)) + "px";
+      const first = menu.querySelector("button");
+      if (first) first.focus({ preventScroll:true });
+    }
+    window.conglobalOpenTrackHighlightMenu = openMenu;
+    document.addEventListener("pointerdown", event => {
+      const menu = document.getElementById("trackRowHighlightMenu");
+      if (menu && menu.classList.contains("open") && !menu.contains(event.target) && !event.target.closest(".track-label[data-track]")) closeMenu();
+    });
+    document.addEventListener("keydown", event => { if (event.key === "Escape") closeMenu(); });
+    window.addEventListener("storage", event => { if (event.key === STORAGE_KEY) { state = loadState(); scheduleApply(); } });
+    document.addEventListener("excel-er-imported", () => {
+      state = {};
+      try { localStorage.removeItem(STORAGE_KEY); } catch (_) {}
+      applyHighlights();
+    });
+    GRID_IDS.forEach(gridId => {
+      const grid = document.getElementById(gridId);
+      if (grid) new MutationObserver(scheduleApply).observe(grid, { childList:true });
+    });
+    applyHighlights();
+  })();
   document.addEventListener("click", event => {
     const label=event.target.closest(".track-label");
     if (!label) return;
-    const textMatch=clean(label.textContent).match(/6\s*-\s*(80[1-9])/i);
+    const textMatch=String(label.textContent || "").trim().match(/6\s*-\s*(80[1-9])/i);
     const track=Number(label.dataset.track||(textMatch&&textMatch[1]));
-    if (!TRACKS.includes(track)) return;
-    event.preventDefault();event.stopImmediatePropagation();openTrackImport(track);
+    if (!Number.isInteger(track) || track < 801 || track > 809) return;
+    event.preventDefault();event.stopImmediatePropagation();
+    if (typeof window.conglobalOpenTrackHighlightMenu === "function") window.conglobalOpenTrackHighlightMenu(label, track, openTrackImport);
+    else openTrackImport(track);
   }, true);
   $("#trackImportPaste").addEventListener("paste", event => {
     const text=event.clipboardData && event.clipboardData.getData("text/plain");

@@ -5941,6 +5941,7 @@ tfoot .lph-target-pill.below-target{background:#fecaca;color:#7f1d1d}
           <div class="excel-page2-heading">
             <h2>YARD OVERVIEW</h2>
             <button type="button" id="excelPage2ExportPng">EXPORT PNG</button>
+            <button type="button" id="excelPage2RowShadingToggle" aria-pressed="true" title="Remove the alternating grey and negative-track red row shading">GREY ROWS ON</button>
           </div>
           <div class="excel-page2-metrics" aria-label="Yard capacity summary">
             <div class="excel-page2-metric"><span>ON TRACKS</span><strong><span id="excelPage2OnTracks">0</span> <small>ft</small></strong><em id="excelPage2Utilization">0% of capacity</em></div>
@@ -6004,6 +6005,8 @@ body.excel-page-2 #assignmentLabelToolbarToggle{display:none!important}
 .excel-page2-heading h2{margin:0;transform:translateY(4px);font-size:32px;line-height:.92;font-weight:950;letter-spacing:-.035em}
 .excel-page2-heading #excelPage2ExportPng{min-height:28px;margin-top:4px;padding:5px 10px;border:1px solid #f6c447;border-radius:4px;background:#f6c447;color:#101820;font:950 9px/1 "Arial Narrow","Segoe UI",Arial,sans-serif;letter-spacing:.05em;cursor:pointer}
 .excel-page2-heading #excelPage2ExportPng:hover,.excel-page2-heading #excelPage2ExportPng:focus-visible{border-color:#fff3bd;background:#ffd765;outline:2px solid #fff;outline-offset:1px}.excel-page2-heading #excelPage2ExportPng:disabled{opacity:.65;cursor:wait}
+.excel-page2-heading #excelPage2RowShadingToggle{min-height:28px;margin-top:4px;padding:5px 10px;border:1px solid #aab8c2;border-radius:4px;background:#f8fafc;color:#101820;font:950 9px/1 "Arial Narrow","Segoe UI",Arial,sans-serif;letter-spacing:.05em;cursor:pointer}
+.excel-page2-heading #excelPage2RowShadingToggle:hover,.excel-page2-heading #excelPage2RowShadingToggle:focus-visible{border-color:#fff;background:#fff;outline:2px solid #fff;outline-offset:1px}.excel-page2-heading #excelPage2RowShadingToggle[aria-pressed="true"]{border-color:#cbd5e1;background:#dfe4e8}
 .excel-page2-metrics{display:grid;grid-template-columns:repeat(3,minmax(115px,1fr));gap:16px;align-self:start}
 .excel-page2-metric{display:flex;min-width:0;flex-direction:column;align-items:flex-start}
 .excel-page2-capacity-toggle{cursor:pointer;border-radius:3px;outline:0}.excel-page2-capacity-toggle:hover,.excel-page2-capacity-toggle:focus-visible{box-shadow:0 0 0 2px #f6c447}.excel-page2-capacity-toggle[aria-pressed="true"]{background:rgba(246,196,71,.12)}
@@ -6037,7 +6040,7 @@ body.excel-page-2 #excelPage2QuickControls{display:flex!important}
 body.excel-page-2 .grid-wrap{overflow-x:auto!important;padding:0!important;background:#f3f5f6!important}
 body.excel-page-2:not(.excel-page-2-tools-open) #yardGrid~*{display:none!important}
 body.excel-page-2:not(.excel-page-2-tools-open) .main>:not(#excelWorkspace){display:none!important}
-body.excel-page-2 #yardGrid{position:relative!important;display:grid!important;grid-template-columns:68px 231px repeat(10,127.776px) minmax(0,1fr) 98px!important;grid-auto-flow:row!important;min-width:1674.76px!important;width:100%!important;margin:0 0 8px!important;border:0!important;border-radius:0!important;background:#f6f8f9!important;box-shadow:none!important;overflow:visible!important;font-family:"Arial Narrow","Segoe UI",Arial,sans-serif}
+body.excel-page-2 #yardGrid{position:relative!important;display:grid!important;grid-template-columns:68px 231px repeat(10,140.5536px) minmax(0,1fr) 98px!important;grid-auto-flow:row!important;min-width:1802.536px!important;width:100%!important;margin:0 0 8px!important;border:0!important;border-radius:0!important;background:#f6f8f9!important;box-shadow:none!important;overflow:visible!important;font-family:"Arial Narrow","Segoe UI",Arial,sans-serif}
 body.excel-page-2 #yardGrid>.grid-head{min-height:calc(38px * var(--excel-table-scale,1))!important;padding:calc(7px * var(--excel-table-scale,1)) 6px calc(5px * var(--excel-table-scale,1))!important;justify-content:flex-start!important;align-items:flex-end!important;border:0!important;border-bottom:2px solid #111!important;background:#f6f8f9!important;color:transparent!important;font-family:var(--grid-header-font,"Roboto Condensed","Arial Narrow",Arial,sans-serif)!important;font-size:0!important;font-weight:var(--grid-header-weight,700)!important;line-height:1.2!important;letter-spacing:.08em!important;text-transform:uppercase!important}
 body.excel-page-2 #yardGrid>.grid-head{display:none!important}
 body.excel-page-2 #yardGrid>.grid-head.excel-page2-ruler-head{position:relative!important;display:block!important;padding:9px 16px 5px!important}
@@ -6073,17 +6076,19 @@ body.excel-page-2 #yardGrid>.cut-cell.excel-page2-empty.block-drop-end:hover{box
 body.excel-page-2 #yardGrid>.cut-cell.block-paste-target:before,body.excel-page-2 #yardGrid>.cut-cell.block-drag-target:before{box-shadow:inset 0 0 0 3px #f59e0b,0 0 0 2px #7c2d12!important}
 body.excel-page-2 #yardGrid>.track-label.block-paste-target,body.excel-page-2 #yardGrid>.track-total.block-paste-target,body.excel-page-2 #yardGrid>.track-remaining.block-paste-target{box-shadow:inset 0 0 0 3px #f59e0b,0 0 0 2px #7c2d12!important}
 body.excel-page-2 #yardGrid>.cut-cell.block-drag-target:before,body.excel-page-2 #yardGrid>.track-remaining.block-drag-target{filter:brightness(1.1)}
-body.excel-page-2 #yardGrid>.track-remaining{position:relative!important;z-index:0!important;display:flex!important;flex-direction:column!important;justify-content:center!important;align-items:flex-end!important;margin:0!important;min-height:calc(44px * var(--excel-table-scale,1))!important;padding:5px 12px!important;border:0!important;border-radius:0!important;background:var(--excel-page2-row,#f6f8f9)!important;color:#101820!important;font-family:var(--grid-header-font,"Roboto Condensed","Arial Narrow",Arial,sans-serif)!important;font-size:max(13px,calc(var(--grid-header-size,11px) + 4px))!important;font-weight:var(--grid-header-weight,700)!important;line-height:1!important;box-shadow:none!important}
-body.excel-page-2 #yardGrid>.track-remaining:before{content:"";position:absolute;z-index:-1;top:0;right:0;bottom:0;left:auto;width:98px;height:100%;transform:none;box-sizing:border-box;border-radius:0;background:var(--excel-page2-remaining-bg,#dfe9e3)}
+body.excel-page-2 #yardGrid>.track-remaining{position:relative!important;z-index:1!important;display:flex!important;flex-direction:column!important;justify-content:center!important;align-items:flex-end!important;margin:0!important;min-height:calc(44px * var(--excel-table-scale,1))!important;padding:5px 12px!important;border:0!important;border-radius:0!important;background:linear-gradient(90deg,var(--excel-page2-row,#f6f8f9) 0 calc(100% - 98px),var(--excel-page2-remaining-bg,#dfe9e3) calc(100% - 98px) 100%)!important;color:#101820!important;font-family:var(--grid-header-font,"Roboto Condensed","Arial Narrow",Arial,sans-serif)!important;font-size:max(13px,calc(var(--grid-header-size,11px) + 4px))!important;font-weight:var(--grid-header-weight,700)!important;line-height:1!important;box-shadow:none!important}
+body.excel-page-2 #yardGrid>.track-remaining:before{content:none;display:none}
 body.excel-page-2 #yardGrid>.track-remaining:after{content:none;display:none}
-body.excel-page-2 #yardGrid>.track-remaining.excel-page2-tight{--excel-page2-remaining-bg:#f6c447}body.excel-page-2 #yardGrid>.track-remaining.excel-page2-over{--excel-page2-remaining-bg:#b21422;color:#fff!important}
+body.excel-page-2 #yardGrid>.track-remaining.excel-page2-tight{--excel-page2-remaining-bg:#f6c447}body.excel-page-2 #yardGrid>.track-remaining.over,body.excel-page-2 #yardGrid>.track-remaining.excel-page2-over{--excel-page2-remaining-bg:#b21422;background:linear-gradient(90deg,var(--excel-page2-row,#f6f8f9) 0 calc(100% - 98px),var(--excel-page2-remaining-bg) calc(100% - 98px) 100%)!important;color:#fff!important}
 body.excel-page-2 #yardGrid>.track-remaining.block-paste-target{box-shadow:inset 0 0 0 3px #f59e0b,0 0 0 2px #7c2d12!important}body.excel-page-2 #yardGrid>.track-remaining.block-drag-target{box-shadow:inset 0 0 0 3px #f59e0b,0 0 0 2px #7c2d12!important;filter:brightness(1.1)}
 body.excel-page-2 #yardGrid>.excel-page2-row-alt{--excel-page2-row:#e7eaed}
 body.excel-page-2 #yardGrid>.excel-page2-row-over{--excel-page2-row:#fbeceb}
+body.excel-page-2.excel-page-2-no-alternate-shading #yardGrid>.excel-page2-row-alt:not([data-track-row-highlight]),body.excel-page-2.excel-page-2-no-alternate-shading #yardGrid>.excel-page2-row-over:not([data-track-row-highlight]),body.excel-page-2.excel-page-2-no-alternate-shading #yardGrid>.excel-page2-row-over[data-track-row-highlight="red"]{--excel-page2-row:#f6f8f9!important}
 body.excel-page-2 #yardGrid>.excel-page2-row-hidden{display:none!important}
 body.excel-page-2 #yardGrid>.cut-cell.block-selected{outline:0!important}body.excel-page-2 #yardGrid>.cut-cell.block-selected:before{box-shadow:inset 0 0 0 3px #f6c744,0 0 0 1px #7c2d12!important;filter:brightness(1.04)}
 body.excel-page-2 #yardGrid>.excel-page2-row-band{position:absolute;left:0;right:0;z-index:0;background:#fbeceb;pointer-events:none}
 body.excel-page-2 #yardGrid>.excel-page2-row-band[hidden]{display:none!important}
+body.excel-page-2.excel-page-2-no-alternate-shading #yardGrid>.excel-page2-row-band{display:none!important}
 body.excel-page-2 #yardGrid>.grid-head,body.excel-page-2 #yardGrid>.track-label,body.excel-page-2 #yardGrid>.track-total,body.excel-page-2 #yardGrid>.track-remaining,body.excel-page-2 #yardGrid>.cut-cell{position:relative;z-index:1}
 body.excel-page-2 .blank-grid-separator:first-of-type{margin-top:10px!important}
 @media(max-width:1650px){.excel-page2-legend{align-items:flex-start;flex-wrap:wrap}.excel-page2-legend-actions{margin-left:auto}.excel-page2-quick-controls{order:3;width:100%;padding:5px 0 0;border-left:0;border-top:1px solid #c7d0d6}}
@@ -6108,8 +6113,25 @@ body.excel-page-2 .blank-grid-separator:first-of-type{margin-top:10px!important}
   var attentionButton=document.getElementById("excelPage2AttentionToggle");
   var capacityToggle=document.getElementById("excelPage2CapacityToggle");
   var exportPngButton=document.getElementById("excelPage2ExportPng");
+  var rowShadingButton=document.getElementById("excelPage2RowShadingToggle");
+  var rowShadingStorageKey="conglobal-excel-page2-alternate-row-shading-v1";
+  var alternateRowShading=true;
+  try{alternateRowShading=localStorage.getItem(rowShadingStorageKey)!=="off"}catch(error){}
   var quickControls=document.getElementById("excelPage2QuickControls");
   var quickControlHomes=[];
+  function applyAlternateRowShading(){
+    document.body.classList.toggle("excel-page-2-no-alternate-shading",!alternateRowShading);
+    if(!rowShadingButton)return;
+    rowShadingButton.setAttribute("aria-pressed",String(alternateRowShading));
+    rowShadingButton.textContent=alternateRowShading?"GREY ROWS ON":"GREY ROWS OFF";
+    rowShadingButton.title=alternateRowShading?"Remove the alternating grey and negative-track red row shading":"Restore the alternating grey and negative-track red row shading";
+  }
+  function toggleAlternateRowShading(){
+    alternateRowShading=!alternateRowShading;
+    try{localStorage.setItem(rowShadingStorageKey,alternateRowShading?"on":"off")}catch(error){}
+    applyAlternateRowShading();
+    scheduleUpdate();
+  }
   function revealPage2WhenReady(){
     if(!page2Enabled||readyFrame||!document.body.classList.contains("excel-page-2-pending"))return;
     readyFrame=requestAnimationFrame(function(){
@@ -6306,6 +6328,8 @@ body.excel-page-2 .blank-grid-separator:first-of-type{margin-top:10px!important}
           var clonedLegend=clonedDocument.getElementById("excelPage2Legend");
           var clonedButton=clonedDocument.getElementById("excelPage2ExportPng");
           if(clonedButton)clonedButton.remove();
+          var clonedShadingButton=clonedDocument.getElementById("excelPage2RowShadingToggle");
+          if(clonedShadingButton)clonedShadingButton.remove();
           [clonedOverview,clonedLegend].forEach(function(element){if(element){element.style.setProperty("position","static","important");element.style.setProperty("top","auto","important")}});
           if(clonedWorkspace){clonedWorkspace.style.setProperty("display","block","important");clonedWorkspace.style.setProperty("width",width+"px","important");clonedWorkspace.style.setProperty("max-width","none","important")}
           if(clonedPanel){clonedPanel.style.setProperty("width",width+"px","important");clonedPanel.style.setProperty("max-width","none","important");clonedPanel.style.setProperty("overflow","visible","important")}
@@ -6326,7 +6350,19 @@ body.excel-page-2 .blank-grid-separator:first-of-type{margin-top:10px!important}
     }
   }
   if(exportPngButton)exportPngButton.addEventListener("click",exportPage2Png);
+  if(rowShadingButton)rowShadingButton.addEventListener("click",toggleAlternateRowShading);
+  applyAlternateRowShading();
   function formatNumber(value){return Math.round(Number(value)||0).toLocaleString("en-US")}
+  function paintRemainingCell(cell,open){
+    if(!cell)return;
+    var over=open<0,tight=!over&&open<=200,palette=over?"#b21422":tight?"#f6c447":"#dfe9e3",textColor=over?"#fff":"#101820";
+    cell.style.setProperty("--excel-page2-remaining-bg",palette,"important");
+    cell.style.setProperty("background","linear-gradient(90deg,var(--excel-page2-row,#f6f8f9) 0 calc(100% - 98px),"+palette+" calc(100% - 98px) 100%)","important");
+    cell.style.setProperty("color",textColor,"important");
+    cell.style.setProperty("-webkit-text-fill-color",textColor,"important");
+    cell.style.setProperty("visibility","visible","important");
+    cell.style.setProperty("opacity","1","important");
+  }
   function numericText(value){var match=String(value||"").replace(/,/g,"").match(/-?\\d+(?:\\.\\d+)?/);return match?Number(match[0]):0}
   function trackNumber(label){return Number(String(label&&label.dataset&&label.dataset.track||"").replace(/\\D/g,""))}
   function capacityFor(track,remaining){
@@ -6714,10 +6750,13 @@ body.excel-page-2 .blank-grid-separator:first-of-type{margin-top:10px!important}
         total.style.setProperty("--excel-page2-ruler-dots",paint.dots);
       }
       if(remaining){
+        remaining.textContent=formatNumber(open);
         remaining.style.setProperty("grid-column","13 / 15","important");
+        remaining.classList.toggle("over",over);
         remaining.classList.toggle("excel-page2-tight",!over&&open<=200);
         remaining.classList.toggle("excel-page2-over",over);
         remaining.setAttribute("data-page2-caption",over?"ft over":open<=200?"ft open · tight":"ft open");
+        paintRemainingCell(remaining,open);
       }
     });
     var thirdTableSummary=overviewSummaryFor(summaryGrid);
@@ -6765,6 +6804,7 @@ body.excel-page-2 .blank-grid-separator:first-of-type{margin-top:10px!important}
     }
     document.body.classList.toggle("excel-page-2",page2Enabled);
     document.body.classList.toggle("excel-page-2-tools-open",page2Enabled);
+    applyAlternateRowShading();
     if(alreadyApplied){if(page2Enabled)scheduleUpdate();scheduleStickyHeaderMetrics();return}
     if(overview)overview.hidden=!page2Enabled;
     if(legend)legend.hidden=!page2Enabled;
@@ -6777,6 +6817,7 @@ body.excel-page-2 .blank-grid-separator:first-of-type{margin-top:10px!important}
   if(attentionButton)attentionButton.addEventListener("click",function(){attentionOnly=!attentionOnly;scheduleUpdate()});
   function toggleTrack803(){includeTrack803=!includeTrack803;scheduleUpdate()}
   if(capacityToggle){capacityToggle.addEventListener("click",toggleTrack803);capacityToggle.addEventListener("keydown",function(event){if(event.key==="Enter"||event.key===" "){event.preventDefault();toggleTrack803()}})}
+  window.addEventListener("storage",function(event){if(event.key!==rowShadingStorageKey)return;alternateRowShading=event.newValue!=="off";applyAlternateRowShading();scheduleUpdate()});
   if(grid)new MutationObserver(scheduleUpdate).observe(grid,{childList:true});
   if(summaryGrid)new MutationObserver(scheduleUpdate).observe(summaryGrid,{childList:true});
   if(typeof ResizeObserver==="function"){
@@ -6823,7 +6864,7 @@ body.excel-page-2 .excel-page2-stage-separator{position:relative!important;z-ind
 body.excel-page-2 .excel-page2-stage-separator>strong{position:relative!important;z-index:1!important;display:flex!important;height:100%!important;align-items:center!important;align-self:stretch!important;margin:0!important;padding:0!important;overflow:visible!important;color:#fff!important;font:950 13px/1.1 "Arial Narrow","Segoe UI",Arial,sans-serif!important;letter-spacing:.04em!important;white-space:nowrap!important}
 body.excel-page-2 .excel-page2-stage-separator>.copy-grid-actions{position:static!important;inset:auto!important;display:flex!important;height:25px!important;margin:0 0 0 auto!important;align-items:center!important;align-self:center!important;justify-content:flex-end!important;gap:5px!important;overflow:visible!important}
 body.excel-page-2 .excel-page2-stage-separator>.copy-grid-actions>button{width:auto!important;max-width:none!important;min-height:25px!important;height:25px!important;padding:0 9px!important;border-radius:3px!important;font:950 8px/1 "Arial Narrow","Segoe UI",Arial,sans-serif!important;letter-spacing:.04em!important;white-space:nowrap!important}
-body.excel-page-2 .excel-page2-secondary-grid{position:relative!important;grid-template-columns:68px 231px repeat(10,127.776px) minmax(0,1fr) 98px!important;grid-auto-flow:row!important;min-width:1674.76px!important;width:100%!important;margin:0 0 8px!important;border:0!important;border-radius:0!important;background:#f6f8f9!important;box-shadow:none!important;overflow:visible!important;font-family:"Arial Narrow","Segoe UI",Arial,sans-serif!important}
+body.excel-page-2 .excel-page2-secondary-grid{position:relative!important;grid-template-columns:68px 231px repeat(10,140.5536px) minmax(0,1fr) 98px!important;grid-auto-flow:row!important;min-width:1802.536px!important;width:100%!important;margin:0 0 8px!important;border:0!important;border-radius:0!important;background:#f6f8f9!important;box-shadow:none!important;overflow:visible!important;font-family:"Arial Narrow","Segoe UI",Arial,sans-serif!important}
 body.excel-page-2 #blankYardGridTwo.excel-page2-secondary-grid:before{content:"";display:block!important;grid-column:1/-1!important;grid-row:4!important;height:8px!important;min-height:8px!important;margin:0!important;padding:0!important;background:#050505!important;pointer-events:none!important}
 body.excel-page-2 #excelWorkspace .excel-page2-secondary-grid>.excel-page2-track-head,
 body.excel-page-2 #excelWorkspace .excel-page2-secondary-grid>.excel-page2-ruler-head,
@@ -6866,13 +6907,14 @@ body.excel-page-2 .excel-page2-secondary-grid>.cut-cell.excel-page2-empty{backgr
 body.excel-page-2 .excel-page2-secondary-grid>.cut-cell.excel-page2-empty.block-drop-end:hover{box-shadow:inset 3px 8px 0 #d6a329,inset -3px -8px 0 #d6a329!important}
 body.excel-page-2 .excel-page2-secondary-grid>.cut-cell.block-paste-target:before,
 body.excel-page-2 .excel-page2-secondary-grid>.cut-cell.block-drag-target:before{box-shadow:inset 0 0 0 3px #f59e0b,0 0 0 2px #7c2d12!important}
-body.excel-page-2 .excel-page2-secondary-grid>.track-remaining{display:flex!important;flex-direction:column!important;justify-content:center!important;align-items:flex-end!important;margin:0!important;padding:5px 12px!important;border:0!important;border-radius:0!important;background:var(--excel-page2-row,#f6f8f9)!important;color:#101820!important;font:950 17px/1 Consolas,"Courier New",monospace!important;box-shadow:none!important}
-body.excel-page-2 .excel-page2-secondary-grid>.track-remaining:before{content:"";position:absolute;z-index:-1;top:0;right:0;bottom:0;left:auto;width:98px;height:100%;transform:none;box-sizing:border-box;border-radius:0;background:var(--excel-page2-remaining-bg,#dfe9e3)}
+body.excel-page-2 .excel-page2-secondary-grid>.track-remaining{display:flex!important;flex-direction:column!important;justify-content:center!important;align-items:flex-end!important;margin:0!important;padding:5px 12px!important;border:0!important;border-radius:0!important;background:linear-gradient(90deg,var(--excel-page2-row,#f6f8f9) 0 calc(100% - 98px),var(--excel-page2-remaining-bg,#dfe9e3) calc(100% - 98px) 100%)!important;color:#101820!important;font:950 17px/1 Consolas,"Courier New",monospace!important;box-shadow:none!important}
+body.excel-page-2 .excel-page2-secondary-grid>.track-remaining:before{content:none;display:none}
 body.excel-page-2 .excel-page2-secondary-grid>.track-remaining:after{content:none;display:none}
 body.excel-page-2 .excel-page2-secondary-grid>.track-remaining.excel-page2-tight{--excel-page2-remaining-bg:#f6c447}
-body.excel-page-2 .excel-page2-secondary-grid>.track-remaining.excel-page2-over{--excel-page2-remaining-bg:#b21422;color:#fff!important}
+body.excel-page-2 #blankYardGrid>.track-remaining.over,body.excel-page-2 #blankYardGrid>.track-remaining.excel-page2-over,body.excel-page-2 #blankYardGridTwo>.track-remaining.over,body.excel-page-2 #blankYardGridTwo>.track-remaining.excel-page2-over,body.excel-page-2 #blankYardGridThree>.track-remaining.over,body.excel-page-2 #blankYardGridThree>.track-remaining.excel-page2-over{--excel-page2-remaining-bg:#b21422;background:linear-gradient(90deg,var(--excel-page2-row,#f6f8f9) 0 calc(100% - 98px),var(--excel-page2-remaining-bg) calc(100% - 98px) 100%)!important;color:#fff!important}
 body.excel-page-2 .excel-page2-secondary-grid>.excel-page2-row-alt{--excel-page2-row:#e7eaed}
 body.excel-page-2 .excel-page2-secondary-grid>.excel-page2-row-over{--excel-page2-row:#fbeceb}
+body.excel-page-2.excel-page-2-no-alternate-shading .excel-page2-secondary-grid>.excel-page2-row-alt:not([data-track-row-highlight]),body.excel-page-2.excel-page-2-no-alternate-shading .excel-page2-secondary-grid>.excel-page2-row-over:not([data-track-row-highlight]),body.excel-page-2.excel-page-2-no-alternate-shading .excel-page2-secondary-grid>.excel-page2-row-over[data-track-row-highlight="red"]{--excel-page2-row:#f6f8f9!important}
 body.excel-page-2 .excel-page2-secondary-grid>.excel-page2-row-hidden{display:none!important}
 body.excel-page-2 .excel-page2-secondary-grid>.cut-cell.block-selected{outline:0!important}
 body.excel-page-2 .excel-page2-secondary-grid>.cut-cell.block-selected:before{box-shadow:inset 0 0 0 3px #f6c744,0 0 0 1px #7c2d12!important;filter:brightness(1.04)}
@@ -6902,6 +6944,16 @@ body.excel-page-2 #blankYardGridTwo .final-summary-block[data-block-assignment]{
   var frame=0;
   function numberText(value){var match=String(value||"").replace(/,/g,"").match(/-?\\d+(?:\\.\\d+)?/);return match?Number(match[0]):0}
   function formatNumber(value){return Math.round(Number(value)||0).toLocaleString("en-US")}
+  function paintRemainingCell(cell,open){
+    if(!cell)return;
+    var over=open<0,tight=!over&&open<=200,palette=over?"#b21422":tight?"#f6c447":"#dfe9e3",textColor=over?"#fff":"#101820";
+    cell.style.setProperty("--excel-page2-remaining-bg",palette,"important");
+    cell.style.setProperty("background","linear-gradient(90deg,var(--excel-page2-row,#f6f8f9) 0 calc(100% - 98px),"+palette+" calc(100% - 98px) 100%)","important");
+    cell.style.setProperty("color",textColor,"important");
+    cell.style.setProperty("-webkit-text-fill-color",textColor,"important");
+    cell.style.setProperty("visibility","visible","important");
+    cell.style.setProperty("opacity","1","important");
+  }
   function trackNumber(label){return Number(String(label&&label.dataset&&label.dataset.track||"").replace(/\\D/g,""))}
   function capacityFor(track,remaining){var match=String(remaining&&remaining.getAttribute("title")||"").match(/([\\d,]+)\\s*ft capacity/i);return match?numberText(match[1]):(fallbackCapacity[track]||0)}
   function footageFor(cell){var direct=Number(cell&&cell.dataset&&cell.dataset.footage);if(Number.isFinite(direct)&&direct>0)return direct;var match=String(cell&&cell.getAttribute("title")||cell&&cell.textContent||"").match(/([\\d,]+)\\s*ft\\b/i);return match?numberText(match[1]):0}
@@ -6986,7 +7038,7 @@ body.excel-page-2 #blankYardGridTwo .final-summary-block[data-block-assignment]{
       if(cutFootage<used)entries.push({footage:used-cutFootage,category:"other"});
       row.forEach(function(cell){cell.classList.toggle("excel-page2-row-alt",rowIndex%2===1);cell.classList.toggle("excel-page2-row-over",over);cell.classList.toggle("excel-page2-row-hidden",attentionOnly&&!needsAttention)});
       if(total){var paint=rulerPaint(entries,capacity);total.setAttribute("data-page2-used",formatNumber(used));total.setAttribute("data-page2-capacity",formatNumber(capacity));total.setAttribute("data-page2-percent",String(percent));total.setAttribute("data-page2-over",String(over));total.style.setProperty("--excel-page2-ruler-segments",paint.segments);total.style.setProperty("--excel-page2-ruler-dots",paint.dots)}
-      if(remaining){remaining.style.setProperty("grid-column","13 / 15","important");remaining.classList.toggle("excel-page2-tight",!over&&open<=200);remaining.classList.toggle("excel-page2-over",over);remaining.setAttribute("data-page2-caption",over?"ft over":open<=200?"ft open · tight":"ft open")}
+      if(remaining){remaining.textContent=formatNumber(open);remaining.style.setProperty("grid-column","13 / 15","important");remaining.classList.toggle("over",over);remaining.classList.toggle("excel-page2-tight",!over&&open<=200);remaining.classList.toggle("excel-page2-over",over);remaining.setAttribute("data-page2-caption",over?"ft over":open<=200?"ft open · tight":"ft open");paintRemainingCell(remaining,open)}
     });
   }
   function stabilizeTrackRows(grid){
@@ -9900,6 +9952,8 @@ document.addEventListener("DOMContentLoaded",function(){
   .consolidation-explanation-target{pointer-events:auto;cursor:context-menu}
   .consolidation-explanation-arrow{left:1px;top:4px;bottom:4px;width:29px;display:flex;align-items:center;justify-content:center;color:#050505!important;font:800 25px/1 Arial,sans-serif!important}
   .consolidation-explanation-target{left:31px;right:auto;width:calc(100% - 4px);max-width:none!important;top:calc(5px * var(--excel-table-scale,1));bottom:calc(5px * var(--excel-table-scale,1));display:flex;flex-direction:column;align-items:flex-start;justify-content:center;overflow:hidden;padding:calc(4px * var(--excel-table-scale,1)) 5px;border:1px solid rgba(15,23,42,.14);border-radius:3px;color:#fff!important;font-family:var(--grid-block-font,"Roboto Condensed","Arial Narrow",Arial,sans-serif)!important;font-size:var(--grid-block-size,12px);font-weight:var(--grid-block-weight,700)!important;line-height:1!important;letter-spacing:-.01em;white-space:nowrap;box-shadow:0 1px 1px rgba(15,23,42,.08)}
+  .consolidation-explanation-followup-arrow{left:calc(100% + 31px)}
+  .consolidation-explanation-followup-target{left:calc(100% + 61px)}
   .consolidation-explanation-target strong{max-width:100%;overflow:hidden;font-size:var(--grid-block-size,12px);font-weight:var(--grid-block-weight,700);text-overflow:ellipsis}
   .consolidation-explanation-target small{max-width:100%;overflow:hidden;font-size:max(7px,calc(var(--grid-block-size,12px) - 2px));font-weight:var(--grid-block-weight,700);text-overflow:ellipsis}
   body.excel-page-2 .consolidation-explanation-target{padding:0 5px!important}
@@ -9909,10 +9963,15 @@ document.addEventListener("DOMContentLoaded",function(){
   .consolidation-explanation-target[data-label="SS"]{background:#7e22ce!important}
   .consolidation-explanation-target[data-label="PIERCE"]{background:var(--pierce-block-color,#be185d)!important}
   .yard-grid>.cut-cell.consolidation-explanation-host{overflow:visible!important;z-index:7!important}
-  .consolidation-explanation-delete-menu{position:fixed;z-index:10040;width:150px;padding:5px;border:1px solid #475569;border-radius:6px;background:#0f172a;box-shadow:0 14px 35px rgba(15,23,42,.42)}
+  .consolidation-explanation-delete-menu{position:fixed;z-index:10040;width:190px;padding:5px;border:1px solid #475569;border-radius:6px;background:#0f172a;box-shadow:0 14px 35px rgba(15,23,42,.42)}
   .consolidation-explanation-delete-menu[hidden]{display:none!important}
-  .consolidation-explanation-delete-menu button{width:100%;min-height:29px;padding:5px 9px;border:1px solid #ef4444;border-radius:4px;background:#7f1d1d;color:#fff;font:850 10px/1 "Arial Narrow","Segoe UI",Arial,sans-serif;text-align:left;cursor:pointer}
-  .consolidation-explanation-delete-menu button[data-confirming="true"]{background:#dc2626}
+  .consolidation-explanation-delete-menu button{width:100%;min-height:29px;margin:0 0 4px;padding:5px 9px;border:1px solid #475569;border-radius:4px;background:#1e293b;color:#fff;font:850 10px/1 "Arial Narrow","Segoe UI",Arial,sans-serif;text-align:left;cursor:pointer}
+  .consolidation-explanation-delete-menu button:hover,.consolidation-explanation-delete-menu button:focus-visible{background:#334155}
+  .consolidation-explanation-delete-menu button[data-action="delete"]{margin-bottom:0;border-color:#ef4444;background:#7f1d1d}
+  .consolidation-explanation-delete-menu button[data-action="delete"][data-confirming="true"]{background:#dc2626}
+  .consolidation-explanation-move-tracks{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;margin:-1px 0 4px;padding:4px;border:1px solid #334155;border-radius:4px;background:#020617}
+  .consolidation-explanation-move-tracks[hidden]{display:none!important}
+  .consolidation-explanation-move-tracks button{min-height:24px;margin:0;padding:4px;text-align:center}
   body.excel-page-2 .yard-grid>.cut-cell:has(>.consolidation-explanation-arrow),body.excel-page-2 .yard-grid>.cut-cell:has(>.consolidation-explanation-target){overflow:visible!important}
 </style>`;
       const script = `<scr${""}ipt id="${marker}">
@@ -9920,8 +9979,9 @@ document.addEventListener("DOMContentLoaded",function(){
   "use strict";
   var storageKey="conglobal-excel-consolidation-arrow-explanations-v1";
   var applying=false,scheduled=false;
-  var deleteMenu=document.createElement("div");deleteMenu.className="consolidation-explanation-delete-menu";deleteMenu.hidden=true;deleteMenu.innerHTML='<button type="button">Delete block</button>';document.body.appendChild(deleteMenu);
-  var deleteButton=deleteMenu.querySelector("button"),deleteId="",deleteTimer=0;
+  var deleteMenu=document.createElement("div");deleteMenu.className="consolidation-explanation-delete-menu";deleteMenu.hidden=true;deleteMenu.innerHTML='<button type="button" data-action="swing">Swing to Yard</button><button type="button" data-action="move" aria-expanded="false">Move to...</button><div class="consolidation-explanation-move-tracks" hidden></div><button type="button" data-action="departing">Departing From Here</button><button type="button" data-action="delete">Delete block</button>';document.body.appendChild(deleteMenu);
+  var deleteButton=deleteMenu.querySelector('[data-action="delete"]'),moveButton=deleteMenu.querySelector('[data-action="move"]'),moveTracks=deleteMenu.querySelector(".consolidation-explanation-move-tracks"),deleteId="",deleteTimer=0,menuAnchorX=0,menuAnchorY=0;
+  for(var moveTrack=801;moveTrack<=809;moveTrack+=1){var moveTrackButton=document.createElement("button");moveTrackButton.type="button";moveTrackButton.dataset.moveTrack=String(moveTrack);moveTrackButton.textContent=String(moveTrack);moveTracks.appendChild(moveTrackButton)}
   function read(){try{var value=JSON.parse(localStorage.getItem(storageKey)||"[]");return Array.isArray(value)?value:[]}catch(_){return []}}
   function write(value){try{localStorage.setItem(storageKey,JSON.stringify(value))}catch(_){}}
   function number(value){var parsed=Number(String(value||"").replace(/[^0-9.-]/g,""));return Number.isFinite(parsed)?parsed:0}
@@ -9944,10 +10004,10 @@ document.addEventListener("DOMContentLoaded",function(){
     var labels=Array.from(grid.querySelectorAll(":scope > .track-label[data-track]"));
     var label=labels.find(function(item){return String(item.dataset.track||"")===String(track)});if(!label)return null;
     var cells=[],node=label.nextElementSibling;
-    while(node&&cells.length<12){cells.push(node);node=node.nextElementSibling}
-    return cells.length>=12?{label:label,cuts:cells.slice(1,11)}:null;
+    while(node&&!(node.matches&&node.matches(".track-label[data-track]"))){if(node.matches&&node.matches(".cut-cell"))cells.push(node);node=node.nextElementSibling}
+    return cells.length?{label:label,cuts:cells}:null;
   }
-  function clearVisuals(){document.querySelectorAll(".consolidation-explanation-arrow,.consolidation-explanation-target").forEach(function(node){node.remove()});document.querySelectorAll(".consolidation-explanation-host").forEach(function(cell){cell.classList.remove("consolidation-explanation-host");cell.style.removeProperty("overflow");cell.style.removeProperty("z-index")})}
+  function clearVisuals(){document.querySelectorAll(".consolidation-explanation-arrow,.consolidation-explanation-target").forEach(function(node){node.remove()});document.querySelectorAll(".consolidation-explanation-host").forEach(function(cell){cell.classList.remove("consolidation-explanation-host");cell.style.removeProperty("overflow");cell.style.removeProperty("z-index")});document.querySelectorAll(".consolidation-explanation-reserved").forEach(function(cell){cell.classList.remove("consolidation-explanation-reserved")})}
   function apply(){
     scheduled=false;if(applying)return;applying=true;
     try{
@@ -9957,7 +10017,7 @@ document.addEventListener("DOMContentLoaded",function(){
         var row=rowFor(grid,item.track);if(!row)return;
         var last=-1;
         row.cuts.forEach(function(cell,index){if(cell.dataset.blockId||(!cell.classList.contains("empty")&&String(cell.textContent||"").trim()))last=index});
-        row.cuts.forEach(function(cell,index){if(cell.querySelector(".consolidation-explanation-arrow,.consolidation-explanation-target"))last=Math.max(last,index)});
+        row.cuts.forEach(function(cell,index){if(cell.classList.contains("consolidation-explanation-reserved")||cell.querySelector(".consolidation-explanation-arrow,.consolidation-explanation-target"))last=Math.max(last,index)});
         var arrowIndex=last+1,targetIndex=last+1;
         if(targetIndex<0||targetIndex>=row.cuts.length)return;
         row.cuts[targetIndex].classList.add("consolidation-explanation-host");row.cuts[targetIndex].style.setProperty("overflow","visible","important");row.cuts[targetIndex].style.setProperty("z-index","7","important");
@@ -9973,22 +10033,58 @@ document.addEventListener("DOMContentLoaded",function(){
         var storedTrack=String(item.track||"").trim(),displayTrack=String(row.label&&row.label.textContent||"").replace(/\\s+/g," ").trim()||(storedTrack?(storedTrack.indexOf("-")>=0?storedTrack:"6-"+storedTrack):"TRACK");
         var displayDetail=destinationLabel==="IHOSA"||destinationLabel==="MHOAS"?displayTrack:displaySource;
         target.innerHTML="<strong>"+format(item.footage)+" "+destinationLabel+"</strong><small>→ "+displayDetail.replace(/[&<>]/g,function(character){return {"&":"&amp;","<":"&lt;",">":"&gt;"}[character]})+"</small>";
+        var liveCardWidth=visibleCardWidth(sourceCell),storedCardWidth=number(item.cardWidth);
+        var cardWidth=document.body.classList.contains("excel-page-2")?(liveCardWidth||storedCardWidth||Math.max(0,row.cuts[targetIndex].getBoundingClientRect().width-4)):(storedCardWidth||liveCardWidth||Math.max(0,row.cuts[targetIndex].getBoundingClientRect().width-4));
+        if(cardWidth>0)target.style.width=cardWidth+"px";
         if(sourceCell){
           var strong=target.querySelector("strong"),small=target.querySelector("small");
           if(strong){strong.style.fontSize=sourceCardStyle.fontSize;strong.style.fontWeight=sourceCardStyle.fontWeight;strong.style.lineHeight=sourceCardStyle.lineHeight}
           if(small&&parseFloat(sourceSecondaryStyle.fontSize)>0){small.style.fontSize=sourceSecondaryStyle.fontSize;small.style.fontWeight=sourceSecondaryStyle.fontWeight;small.style.lineHeight=sourceSecondaryStyle.lineHeight}
         }
         row.cuts[targetIndex].appendChild(target);
+        if(item.followUp&&item.followUp.type){
+          var followUpTrack=String(item.followUp.track||"").trim();
+          var followUpDetail=item.followUp.type==="swing"?"SWING TO YARD":item.followUp.type==="move"&&/^6-80[1-9]$/.test(followUpTrack)?followUpTrack:item.followUp.type==="departing"?"DEPARTING FROM HERE":"";
+          if(followUpDetail){
+            var followUpArrow=document.createElement("span");followUpArrow.className="consolidation-explanation-arrow consolidation-explanation-followup-arrow";followUpArrow.textContent="⟶";
+            if(cardWidth>0)followUpArrow.style.left=35+cardWidth+"px";
+            row.cuts[targetIndex].appendChild(followUpArrow);
+            var followUpTarget=document.createElement("span");followUpTarget.className="consolidation-explanation-target consolidation-explanation-followup-target";followUpTarget.dataset.label=destinationLabel;followUpTarget.dataset.explanationId=String(item.id||"");
+            if(cardWidth>0){followUpTarget.style.left=65+cardWidth+"px";followUpTarget.style.width=cardWidth+"px"}
+            followUpTarget.innerHTML="<strong>"+format(item.footage)+" "+destinationLabel+"</strong><small>→ "+followUpDetail.replace(/[&<>]/g,function(character){return {"&":"&amp;","<":"&lt;",">":"&gt;"}[character]})+"</small>";
+            if(sourceCell){
+              var followUpStrong=followUpTarget.querySelector("strong"),followUpSmall=followUpTarget.querySelector("small");
+              if(followUpStrong){followUpStrong.style.fontSize=sourceCardStyle.fontSize;followUpStrong.style.fontWeight=sourceCardStyle.fontWeight;followUpStrong.style.lineHeight=sourceCardStyle.lineHeight}
+              if(followUpSmall&&parseFloat(sourceSecondaryStyle.fontSize)>0){followUpSmall.style.fontSize=sourceSecondaryStyle.fontSize;followUpSmall.style.fontWeight=sourceSecondaryStyle.fontWeight;followUpSmall.style.lineHeight=sourceSecondaryStyle.lineHeight}
+            }
+            row.cuts[targetIndex].appendChild(followUpTarget);
+          }
+        }
+        var chainStart=(arrow||target).getBoundingClientRect().left,chainEnd=(followUpTarget||target).getBoundingClientRect().right,reservedAny=false;
+        row.cuts.forEach(function(cell,index){var rect=cell.getBoundingClientRect();if(rect.width>0&&rect.right>chainStart&&rect.left<chainEnd){cell.classList.add("consolidation-explanation-reserved");reservedAny=true}});
+        if(!reservedAny){var hostWidth=row.cuts[targetIndex].getBoundingClientRect().width||cardWidth+4||1,chainWidth=(followUpTarget?65+2*cardWidth:31+cardWidth),reserveCount=Math.max(1,Math.ceil(chainWidth/hostWidth));for(var reserveIndex=targetIndex;reserveIndex<Math.min(row.cuts.length,targetIndex+reserveCount);reserveIndex+=1)row.cuts[reserveIndex].classList.add("consolidation-explanation-reserved")}
       });
     }finally{applying=false}
   }
   function schedule(){if(scheduled)return;scheduled=true;requestAnimationFrame(apply)}
   function selectedCells(){return Array.from(document.querySelectorAll(".yard-grid .cut-cell.block-selected[data-block-id]"))}
-  function closeDeleteMenu(){deleteMenu.hidden=true;deleteId="";deleteButton.textContent="Delete block";deleteButton.dataset.confirming="false";if(deleteTimer){clearTimeout(deleteTimer);deleteTimer=0}}
+  function closeDeleteMenu(){deleteMenu.hidden=true;deleteId="";deleteButton.textContent="Delete block";deleteButton.dataset.confirming="false";moveTracks.hidden=true;moveButton.setAttribute("aria-expanded","false");if(deleteTimer){clearTimeout(deleteTimer);deleteTimer=0}}
+  function positionDeleteMenu(clientX,clientY){
+    var visibleLeft=0,visibleTop=0,visibleRight=innerWidth,visibleBottom=innerHeight;
+    try{var frameRect=window.frameElement&&window.frameElement.getBoundingClientRect();if(frameRect&&window.parent!==window){visibleLeft=Math.max(0,-frameRect.left);visibleTop=Math.max(0,-frameRect.top);visibleRight=Math.min(visibleRight,window.parent.innerWidth-frameRect.left);visibleBottom=Math.min(visibleBottom,window.parent.innerHeight-frameRect.top)}}catch(_){}
+    deleteMenu.style.maxWidth=Math.max(100,visibleRight-visibleLeft-12)+"px";deleteMenu.style.maxHeight=Math.max(80,visibleBottom-visibleTop-12)+"px";deleteMenu.style.overflowY="auto";deleteMenu.style.overscrollBehavior="contain";
+    var rect=deleteMenu.getBoundingClientRect(),menuWidth=rect.width||190,menuHeight=rect.height||150,minLeft=visibleLeft+6,minTop=visibleTop+6,maxLeft=Math.max(minLeft,visibleRight-menuWidth-6),maxTop=Math.max(minTop,visibleBottom-menuHeight-6);
+    deleteMenu.style.left=Math.max(minLeft,Math.min(maxLeft,clientX))+"px";deleteMenu.style.top=Math.max(minTop,Math.min(maxTop,clientY))+"px";
+  }
   function openDeleteMenu(target,event){
     closeDeleteMenu();deleteId=String(target.dataset.explanationId||"");if(!deleteId)return;
-    deleteMenu.hidden=false;deleteMenu.style.left="0px";deleteMenu.style.top="0px";
-    var rect=deleteMenu.getBoundingClientRect();deleteMenu.style.left=Math.max(6,Math.min(innerWidth-rect.width-6,event.clientX))+"px";deleteMenu.style.top=Math.max(6,Math.min(innerHeight-rect.height-6,event.clientY))+"px";
+    menuAnchorX=event.clientX;menuAnchorY=event.clientY;deleteMenu.hidden=false;deleteMenu.style.left="0px";deleteMenu.style.top="0px";positionDeleteMenu(menuAnchorX,menuAnchorY);
+  }
+  function setFollowUp(followUp){
+    if(!deleteId)return;
+    var changed=false,records=read();
+    records.forEach(function(item){if(String(item.id||"")===deleteId){item.followUp=followUp;changed=true}});
+    if(changed){write(records);closeDeleteMenu();schedule()}
   }
   function add(label){
     var cells=selectedCells();if(!cells.length)return;
@@ -10048,12 +10144,17 @@ document.addEventListener("DOMContentLoaded",function(){
   };
   document.querySelectorAll("[data-consolidation-arrow-label]").forEach(function(button){button.addEventListener("click",function(){add(button.dataset.consolidationArrowLabel)})});
   document.addEventListener("contextmenu",function(event){var target=event.target.closest&&event.target.closest(".consolidation-explanation-target");if(!target)return;event.preventDefault();event.stopImmediatePropagation();openDeleteMenu(target,event)},true);
+  deleteMenu.querySelector('[data-action="swing"]').addEventListener("click",function(){setFollowUp({type:"swing"})});
+  deleteMenu.querySelector('[data-action="departing"]').addEventListener("click",function(){setFollowUp({type:"departing"})});
+  moveButton.addEventListener("click",function(){moveTracks.hidden=!moveTracks.hidden;moveButton.setAttribute("aria-expanded",moveTracks.hidden?"false":"true");positionDeleteMenu(menuAnchorX,menuAnchorY)});
+  moveTracks.addEventListener("click",function(event){var button=event.target.closest&&event.target.closest("[data-move-track]");if(button)setFollowUp({type:"move",track:"6-"+button.dataset.moveTrack})});
   deleteButton.addEventListener("click",function(){
     if(!deleteId)return;
     if(deleteButton.dataset.confirming!=="true"){deleteButton.dataset.confirming="true";deleteButton.textContent="Confirm delete";deleteTimer=setTimeout(closeDeleteMenu,3000);return}
     write(read().filter(function(item){return String(item.id||"")!==deleteId}));closeDeleteMenu();schedule();
   });
   document.addEventListener("pointerdown",function(event){if(!deleteMenu.hidden&&!deleteMenu.contains(event.target))closeDeleteMenu()});
+  document.addEventListener("keydown",function(event){if(event.key==="Escape"&&!deleteMenu.hidden)closeDeleteMenu()});
   document.addEventListener("contextmenu",function(){requestAnimationFrame(function(){
     var hidden=!selectedCells().length;
     ["consolidateSelectedToIhosa","consolidateSelectedToMhoas","consolidateSelectedToSs","consolidateSelectedToPierce"].forEach(function(id){var button=document.getElementById(id);if(button)button.hidden=hidden});
@@ -10067,7 +10168,7 @@ document.addEventListener("DOMContentLoaded",function(){
   document.addEventListener("change",function(event){
     if(event.target&&event.target.id==="inventoryFileTop"&&event.target.files&&event.target.files.length){write([]);closeDeleteMenu();schedule()}
   },true);
-  document.addEventListener("excel-er-imported",function(){write([]);schedule()});
+  document.addEventListener("excel-er-imported",function(){write([]);closeDeleteMenu();schedule()});
   window.addEventListener("storage",function(event){if(event.key===storageKey)schedule()});
   schedule();
 })();
@@ -11318,9 +11419,104 @@ document.addEventListener('click',function(event){
         .replace('</style>', '.tb-reset-btn.confirming{border-color:#ef4444!important;background:#ef4444!important;color:#fff!important;box-shadow:0 0 0 2px rgba(239,68,68,.24);}\n</style>');
     }
 
+    function withExcelRampStageHeadings(html) {
+      const marker = "excel-ramp-stage-headings-v1";
+      if (!html || typeof html !== "string" || html.includes(marker)) return html;
+      const replacements = [
+        ['<div class="panel-title">Nine-Track Ramp Grid</div>', '<div class="panel-title">Current Ramp Overview</div>'],
+        ['<strong class="blank-grid-title">Ramp After Switching</strong>', '<strong class="blank-grid-title">Ramp Post Switching</strong>'],
+        ['id="blankYardGridTwo" aria-label="Ramp After Switching"', 'id="blankYardGridTwo" aria-label="Ramp Post Switching"'],
+        ['<strong class="blank-grid-title">Ramp Overview</strong>', '<strong class="blank-grid-title">Ramp After Switching</strong>'],
+        ['id="blankYardGrid" aria-label="Ramp Overview"', 'id="blankYardGrid" aria-label="Ramp After Switching"'],
+        ['<small id="inboundTrainTargetLabel">Ramp Overview</small>', '<small id="inboundTrainTargetLabel">Ramp After Switching</small>'],
+        ['$("#inboundTrainTargetLabel").textContent = inboundTrainTarget === "four" ? "Adding to Additional Ramp Table" : (inboundTrainTarget === "three" ? "Adding to Ramp After Switching" : "Adding to Ramp Overview");', '$("#inboundTrainTargetLabel").textContent = inboundTrainTarget === "four" ? "Adding to Additional Ramp Table" : (inboundTrainTarget === "three" ? "Adding to Ramp Post Switching" : "Adding to Ramp After Switching");'],
+        ['$("#inboundTrainTargetLabel").textContent = inboundTrainTarget === "three" ? "Adding to Ramp After Switching" : "Adding to Ramp Overview";', '$("#inboundTrainTargetLabel").textContent = inboundTrainTarget === "three" ? "Adding to Ramp Post Switching" : "Adding to Ramp After Switching";']
+      ];
+      let updated = html;
+      replacements.forEach(([before, after]) => { updated = updated.split(before).join(after); });
+      if (updated === html) return html;
+      const stamp = `<meta name="${marker}" content="enabled">`;
+      return updated.replace(/<\/head>/i, stamp + "\n</head>");
+    }
+
+    function withExcelInboundPaletteAndPierceMarkers(html) {
+      const marker = "excel-inbound-palette-pierce-markers-v1";
+      if (!html || typeof html !== "string" || html.includes(marker)) return html;
+      if (!html.includes('class="inbound-shove-flag') || !html.includes("function confirmInboundTrain()")) return html;
+      let updated = html;
+      updated = updated.replace(
+        "  let inboundTrainTrackOrder = [];",
+        "  let inboundTrainTrackOrder = [];\n  let inboundTrainSourceIsPierce = false;"
+      );
+      updated = updated.replace(
+        /(function openInboundTrainModal\(target\) \{[\s\S]*?inboundTrainTrackOrder = \[\];)/,
+        "$1\n    inboundTrainSourceIsPierce = false;"
+      );
+      updated = updated.replace(
+        '  function selectInboundTrainSource(value) {\n    if (!value) return;\n    const entry = inboundTrainSources().find(item => item.id === value);\n    if (!entry) return;',
+        '  function selectInboundTrainSource(value) {\n    if (!value) { inboundTrainSourceIsPierce = false; renderInboundTrainPlacement(); return; }\n    const entry = inboundTrainSources().find(item => item.id === value);\n    if (!entry) return;\n    inboundTrainSourceIsPierce = clean(entry.day).toUpperCase() === "PIERCE";'
+      );
+      updated = updated.replace(
+        '  function renderInboundTrainPlacement() {\n    const train = clean($("#inboundTrainName").value);',
+        '  function renderInboundTrainPlacement() {\n    const train = clean($("#inboundTrainName").value);\n    const displayTrain = train + (inboundTrainSourceIsPierce && !/\\[P\\]/i.test(train) ? " [P]" : "");'
+      );
+      updated = updated.replace(
+        '${escapeHtml(train || "Inbound train")} [${item.track}]',
+        '${escapeHtml(displayTrain || "Inbound train")} [${item.track}]'
+      );
+      updated = updated.replace(
+        '  function confirmInboundTrain() {\n    const train = clean($("#inboundTrainName").value).toUpperCase();',
+        '  function confirmInboundTrain() {\n    const train = clean($("#inboundTrainName").value).toUpperCase();\n    const displayTrain = train + (inboundTrainSourceIsPierce && !/\\[P\\]/i.test(train) ? " [P]" : "");'
+      );
+      updated = updated.split("const inboundSequence = Math.min(3, inboundGroups.size + 1);").join("const inboundSequence = inboundGroups.size + 1;");
+      updated = updated.replace(
+        '      const label = `${fmtInt(item.assigned)} ${train} [${item.track}]`;',
+        '      const label = `${fmtInt(item.assigned)} ${displayTrain} [${item.track}]`;'
+      );
+      updated = updated.replace(
+        "      inboundSequence,\n        className:",
+        "      inboundSequence,\n      isPierceInbound:inboundTrainSourceIsPierce,\n        className:"
+      );
+      updated = updated.replace(
+        '    next.inboundSequence = Math.max(0, Math.round(Number(next.inboundSequence) || 0));\n    next.showTrack =',
+        '    next.inboundSequence = Math.max(0, Math.round(Number(next.inboundSequence) || 0));\n    next.isPierceInbound = next.isPierceInbound === true || String(next.isPierceInbound || "").toLowerCase() === "true" || /(?:^|\\s)0?3-\\d{1,3}(?:\\s|$)/i.test(String(next.title || "") + " " + String(next.content || "")) || /\\[P\\]/i.test(String(next.title || "") + " " + String(next.content || ""));\n    next.showTrack ='
+      );
+      updated = updated.replace(
+        '    next.title = String(next.title || "").replace(/\\[\\d{3}\\]/g, `[${track}]`);',
+        '    next.title = String(next.title || "").replace(/\\[\\d{3}\\]/g, `[${track}]`);\n    if (next.isPierceInbound) {\n      if (!/\\[P\\]/i.test(next.content)) next.content = next.content.replace(/\\s*(\\[\\d{3}\\])\\s*$/, " [P] $1");\n      if (!/\\[P\\]/i.test(next.title)) next.title = next.title.replace(/\\s*(\\[\\d{3}\\])\\s*$/, " [P] $1");\n    }'
+      );
+      updated = updated.split('${inboundSequence ? ` data-inbound-sequence="${inboundSequence}"` : ""} role="button"').join('${inboundSequence ? ` data-inbound-sequence="${inboundSequence}"` : ""}${block.isPierceInbound ? \' data-pierce-inbound="true"\' : ""} role="button"');
+      updated = updated.replace(
+        '    var source=String(cell&&cell.getAttribute("title")||cell&&cell.textContent||"").replace(/\\s+/g," ").toUpperCase();\n    var blockId=',
+        '    var source=String(cell&&cell.getAttribute("title")||cell&&cell.textContent||"").replace(/\\s+/g," ").toUpperCase();\n    var pierceInbound=!!(cell&&cell.dataset&&cell.dataset.pierceInbound==="true")||/\\[P\\]/i.test(source)||/(?:^|\\s)0?3-\\d{1,3}(?:\\s|$)/i.test(source);\n    var blockId='
+      );
+      updated = updated.replace(
+        'formatNumber(footage)+" "+train+(!wrapperHideTrackIds&&wrapperTrack?" ["+wrapperTrack+"]":"")',
+        'formatNumber(footage)+" "+train+(pierceInbound?" [P]":"")+(!wrapperHideTrackIds&&wrapperTrack?" ["+wrapperTrack+"]":"")'
+      );
+      if (updated === html) return html;
+      const style = `<meta name="${marker}" content="enabled">
+<style id="${marker}-styles">
+.inbound-shove-flag[data-inbound-palette="true"]{border-color:hsl(var(--inbound-shove-hue) 92% 78%)!important;background:hsl(var(--inbound-shove-hue) 76% 40%)!important;color:#fff!important}
+</style>`;
+      const script = `<scr${""}ipt id="${marker}-script">(function(){
+  var gridIds=["blankYardGrid","blankYardGridTwo","blankYardGridThree"],frame=0;
+  function inboundKey(cell){var match=String(cell&&cell.dataset&&cell.dataset.blockId||"").match(/^inbound-(\\d+)-/);return match?"stamp:"+match[1]:"sequence:"+String(cell&&cell.dataset&&cell.dataset.inboundSequence||"1")}
+  function apply(){frame=0;var cells=[];gridIds.forEach(function(id){var grid=document.getElementById(id);if(grid)cells=cells.concat(Array.prototype.slice.call(grid.querySelectorAll(":scope > .cut-cell[data-shove-order]")))});var keys=[];cells.forEach(function(cell){var key=inboundKey(cell);if(keys.indexOf(key)<0)keys.push(key)});keys.sort(function(a,b){var av=Number(a.split(":")[1])||0,bv=Number(b.split(":")[1])||0;return av-bv||a.localeCompare(b)});cells.forEach(function(cell){var sequence=Math.max(1,keys.indexOf(inboundKey(cell))+1),hue=Math.round((((sequence-1)*137.508)+38)%360),flag=cell.querySelector(".inbound-shove-flag");cell.dataset.inboundSequence=String(sequence);if(flag){flag.style.setProperty("--inbound-shove-hue",String(hue));flag.setAttribute("data-inbound-palette","true")}})}
+  function schedule(){if(!frame)frame=requestAnimationFrame(apply)}
+  gridIds.forEach(function(id){var grid=document.getElementById(id);if(grid)new MutationObserver(schedule).observe(grid,{childList:true})});
+  window.conglobalApplyInboundShovePalette=apply;apply();
+})();</scr${""}ipt>`;
+      updated = updated.replace(/<\/head>/i, style + "\n</head>");
+      const close = updated.toLowerCase().lastIndexOf("</body>");
+      return close >= 0 ? updated.slice(0, close) + script + "\n" + updated.slice(close) : updated + script;
+    }
+
     function withExcelFourthRampTable(html) {
       if (!html || typeof html !== "string" || html.includes("excel-fourth-ramp-table")) return html;
-      const tableThreeMarkup = '<div class="yard-grid blank-yard-grid" id="blankYardGridTwo" aria-label="Ramp After Switching"></div>';
+      const legacyTableThreeMarkup = '<div class="yard-grid blank-yard-grid" id="blankYardGridTwo" aria-label="Ramp After Switching"></div>';
+      const currentTableThreeMarkup = '<div class="yard-grid blank-yard-grid" id="blankYardGridTwo" aria-label="Ramp Post Switching"></div>';
+      const tableThreeMarkup = html.includes(currentTableThreeMarkup) ? currentTableThreeMarkup : legacyTableThreeMarkup;
       const tableFourMarkup = tableThreeMarkup + '\n          <div class="blank-grid-separator fourth-ramp-separator" id="fourthRampSeparator" role="button" tabindex="0" aria-controls="blankYardGridThree" aria-expanded="false" title="Show or hide the additional ramp table"><strong class="blank-grid-title">Additional Ramp Table</strong></div>\n          <div class="yard-grid blank-yard-grid fourth-ramp-grid" id="blankYardGridThree" aria-label="Additional Ramp Table" hidden></div>';
       const renderMarker = '  function renderAll() {';
       const fourthTableCode = `
@@ -11385,6 +11581,7 @@ document.addEventListener('click',function(event){
         .replace('document.querySelectorAll("#yardGrid [data-block-id], #blankYardGrid [data-block-id], #blankYardGridTwo [data-block-id]")', 'document.querySelectorAll("#yardGrid [data-block-id], #blankYardGrid [data-block-id], #blankYardGridTwo [data-block-id], #blankYardGridThree [data-block-id]")')
         .replace('inboundTrainTarget = target === "three" ? "three" : "two";', 'inboundTrainTarget = target === "four" ? "four" : (target === "three" ? "three" : "two");')
         .replace('$("#inboundTrainTargetLabel").textContent = inboundTrainTarget === "three" ? "Adding to Ramp After Switching" : "Adding to Ramp Overview";', '$("#inboundTrainTargetLabel").textContent = inboundTrainTarget === "four" ? "Adding to Additional Ramp Table" : (inboundTrainTarget === "three" ? "Adding to Ramp After Switching" : "Adding to Ramp Overview");')
+        .replace('$("#inboundTrainTargetLabel").textContent = inboundTrainTarget === "three" ? "Adding to Ramp Post Switching" : "Adding to Ramp After Switching";', '$("#inboundTrainTargetLabel").textContent = inboundTrainTarget === "four" ? "Adding to Additional Ramp Table" : (inboundTrainTarget === "three" ? "Adding to Ramp Post Switching" : "Adding to Ramp After Switching");')
         .replace('const target = clearSecondaryTableButton.dataset.clearSecondaryTable === "three" ? "three" : "two";', 'const requestedTarget = clearSecondaryTableButton.dataset.clearSecondaryTable;\n      const target = requestedTarget === "four" ? "four" : (requestedTarget === "three" ? "three" : "two");')
         .replace('const tableNumber = target === "three" ? 3 : 2;', 'const tableNumber = target === "four" ? 4 : (target === "three" ? 3 : 2);')
         .replace('document.dispatchEvent(new CustomEvent("excel-secondary-table-cleared", { detail: { gridId: target === "three" ? "blankYardGridTwo" : "blankYardGrid" } }));', 'document.dispatchEvent(new CustomEvent("excel-secondary-table-cleared", { detail: { gridId: target === "four" ? "blankYardGridThree" : (target === "three" ? "blankYardGridTwo" : "blankYardGrid") } }));')
@@ -17417,6 +17614,67 @@ function duplicateForecastTrainDay(train,day){
       return html.replace("</body>", patch + "\n</body>");
     }
 
+    function withExcelTrackRowHighlights(html) {
+      const marker = "excel-track-row-highlights-v1";
+      if (!html || typeof html !== "string" || html.includes(marker)) return html;
+      const oldHandler = "event.preventDefault();event.stopImmediatePropagation();openTrackImport(track);";
+      if (!html.includes(oldHandler)) return html;
+      const oldTrackLookup = 'const textMatch=clean(label.textContent).match(/6\\s*-\\s*(80[1-9])/i);\n    const track=Number(label.dataset.track||(textMatch&&textMatch[1]));\n    if (!TRACKS.includes(track)) return;';
+      const safeTrackLookup = 'const textMatch=String(label.textContent || "").trim().match(/6\\s*-\\s*(80[1-9])/i);\n    const track=Number(label.dataset.track||(textMatch&&textMatch[1]));\n    if (!Number.isInteger(track) || track < 801 || track > 809) return;';
+      if (html.includes(oldTrackLookup)) html = html.replace(oldTrackLookup, safeTrackLookup);
+      const newHandler = 'event.preventDefault();event.stopImmediatePropagation();\n    if (typeof window.conglobalOpenTrackHighlightMenu === "function") window.conglobalOpenTrackHighlightMenu(label, track, openTrackImport);\n    else openTrackImport(track);';
+      html = html.replace(oldHandler, newHandler);
+      const patch = `<style id="${marker}-styles">
+#trackRowHighlightMenu{position:fixed;z-index:2800;display:none;width:210px;padding:9px;border:1px solid #64748b;border-radius:10px;background:#0f172a;color:#f8fafc;box-shadow:0 18px 48px rgba(0,0,0,.48)}
+#trackRowHighlightMenu.open{display:grid;gap:6px}
+#trackRowHighlightMenu .track-highlight-title{padding:2px 4px 5px;color:#cbd5e1;font-size:10px;font-weight:900;letter-spacing:.08em;text-transform:uppercase}
+#trackRowHighlightMenu button{display:flex;align-items:center;gap:8px;width:100%;min-height:32px;padding:6px 8px;border:1px solid #475569;border-radius:6px;background:#1e293b;color:#f8fafc;font:900 11px Arial,sans-serif;text-align:left;cursor:pointer}
+#trackRowHighlightMenu button:hover,#trackRowHighlightMenu button[aria-pressed="true"]{border-color:#93c5fd;background:#334155}
+#trackRowHighlightMenu .track-highlight-swatch{width:18px;height:18px;flex:0 0 18px;border:1px solid rgba(15,23,42,.4);border-radius:4px;background:var(--track-highlight-swatch)}
+#trackRowHighlightMenu .track-highlight-divider{height:1px;margin:2px 0;background:#334155}
+body.excel-page-2 .yard-grid>[data-track-row-highlight="blue"]{--excel-page2-row:#dbeafe!important}
+body.excel-page-2 .yard-grid>[data-track-row-highlight="orange"]{--excel-page2-row:#fed7aa!important}
+body.excel-page-2 .yard-grid>[data-track-row-highlight="red"]{--excel-page2-row:#fecaca!important}
+body.excel-page-2 .yard-grid>[data-track-row-highlight="yellow"]{--excel-page2-row:#fef3c7!important}
+body.excel-page-2 .yard-grid>[data-track-row-highlight="purple"]{--excel-page2-row:#e9d5ff!important}
+body:not(.excel-page-2) .yard-grid>[data-track-row-highlight]:not(.cut-cell),body:not(.excel-page-2) .yard-grid>.cut-cell[data-track-row-highlight]:not([data-block-id]){background:var(--track-row-highlight-color)!important}
+.yard-grid>[data-track-row-highlight="blue"]{--track-row-highlight-color:#dbeafe}
+.yard-grid>[data-track-row-highlight="orange"]{--track-row-highlight-color:#fed7aa}
+.yard-grid>[data-track-row-highlight="red"]{--track-row-highlight-color:#fecaca}
+.yard-grid>[data-track-row-highlight="yellow"]{--track-row-highlight-color:#fef3c7}
+.yard-grid>[data-track-row-highlight="purple"]{--track-row-highlight-color:#e9d5ff}
+body.excel-page-2 .yard-grid>.track-remaining.over,body.excel-page-2 .yard-grid>.track-remaining.excel-page2-over{--excel-page2-remaining-bg:#b21422!important;background:linear-gradient(90deg,var(--excel-page2-row,#f6f8f9) 0 calc(100% - 98px),var(--excel-page2-remaining-bg) calc(100% - 98px) 100%)!important;color:#fff!important}
+</style>
+<script id="${marker}">
+(function(){
+  var STORAGE_KEY="conglobal-excel-track-row-highlights-v1";
+  var GRID_IDS=["yardGrid","blankYardGrid","blankYardGridTwo","blankYardGridThree"];
+  var COLORS={blue:"#dbeafe",orange:"#fed7aa",red:"#fecaca",yellow:"#fef3c7",purple:"#e9d5ff"};
+  var TRACK_CAPACITY={801:1750,802:1750,803:2200,804:2500,805:2500,806:2600,807:2750,808:2500,809:2500};
+  var state=loadState(),active=null,applyFrame=0;
+  function loadState(){try{var parsed=JSON.parse(localStorage.getItem(STORAGE_KEY)||"{}");return parsed&&typeof parsed==="object"&&!Array.isArray(parsed)?parsed:{}}catch(_){return {}}}
+  function saveState(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(state))}catch(_){}}
+  function rowCells(label){var cells=[label],node=label.nextElementSibling;while(node&&!(node.matches&&node.matches(".track-label[data-track]"))){cells.push(node);node=node.nextElementSibling}return cells}
+  function ensureRemainingNumbers(grid){grid.querySelectorAll(":scope > .track-label[data-track]").forEach(function(label){var row=rowCells(label),remaining=row.find(function(cell){return cell.classList.contains("track-remaining")});if(!remaining||String(remaining.textContent||"").trim())return;var total=row.find(function(cell){return cell.classList.contains("track-total")}),used=Number(String(total&&total.getAttribute("data-page2-used")||total&&total.textContent||"0").replace(/[^\\d.-]/g,""))||0,capacity=TRACK_CAPACITY[Number(label.dataset.track)]||0,open=Math.round(capacity-used);remaining.textContent=open.toLocaleString("en-US");remaining.classList.toggle("over",open<0)})}
+  function paintRemainingPalette(grid){grid.querySelectorAll(":scope > .track-remaining").forEach(function(remaining){var value=Number(String(remaining.textContent||"").replace(/[^\\d.-]/g,"")),over=remaining.classList.contains("over")||remaining.classList.contains("excel-page2-over")||Number.isFinite(value)&&value<0,tight=!over&&(remaining.classList.contains("excel-page2-tight")||Number.isFinite(value)&&value<=200),palette=over?"#b21422":tight?"#f6c447":"#dfe9e3",textColor=over?"#fff":"#101820";remaining.style.setProperty("--excel-page2-remaining-bg",palette,"important");remaining.style.setProperty("background","linear-gradient(90deg,var(--excel-page2-row,#f6f8f9) 0 calc(100% - 98px),var(--excel-page2-remaining-bg) calc(100% - 98px) 100%)","important");remaining.style.setProperty("color",textColor,"important");remaining.style.setProperty("-webkit-text-fill-color",textColor,"important");remaining.style.setProperty("visibility","visible","important");remaining.style.setProperty("opacity","1","important")})}
+  function applyHighlights(){applyFrame=0;GRID_IDS.forEach(function(gridId){var grid=document.getElementById(gridId);if(!grid)return;ensureRemainingNumbers(grid);paintRemainingPalette(grid);grid.querySelectorAll(":scope > [data-track-row-highlight]").forEach(function(cell){cell.removeAttribute("data-track-row-highlight")});grid.querySelectorAll(":scope > .track-label[data-track]").forEach(function(label){var color=state[gridId]&&state[gridId][String(label.dataset.track||"")];if(!COLORS[color])return;rowCells(label).forEach(function(cell){cell.setAttribute("data-track-row-highlight",color)})})})}
+  function scheduleApply(){if(!applyFrame)applyFrame=requestAnimationFrame(applyHighlights)}
+  function ensureMenu(){var menu=document.getElementById("trackRowHighlightMenu");if(menu)return menu;menu=document.createElement("div");menu.id="trackRowHighlightMenu";menu.setAttribute("role","dialog");menu.setAttribute("aria-label","Track highlight options");menu.innerHTML='<div class="track-highlight-title"></div><button type="button" data-track-highlight-color="blue"><span class="track-highlight-swatch" style="--track-highlight-swatch:#dbeafe"></span>LIGHT BLUE</button><button type="button" data-track-highlight-color="orange"><span class="track-highlight-swatch" style="--track-highlight-swatch:#fed7aa"></span>ORANGE</button><button type="button" data-track-highlight-color="red"><span class="track-highlight-swatch" style="--track-highlight-swatch:#fecaca"></span>RED</button><button type="button" data-track-highlight-color="yellow"><span class="track-highlight-swatch" style="--track-highlight-swatch:#fef3c7"></span>YELLOW</button><button type="button" data-track-highlight-color="purple"><span class="track-highlight-swatch" style="--track-highlight-swatch:#e9d5ff"></span>LIGHT PURPLE</button><button type="button" data-track-highlight-color="clear">CLEAR HIGHLIGHT</button><div class="track-highlight-divider"></div><button type="button" data-track-highlight-action="import">IMPORT CARS TO TRACK</button>';menu.addEventListener("click",function(event){var button=event.target.closest("button");if(!button||!active)return;var color=button.dataset.trackHighlightColor;if(color){var gridState=state[active.gridId]&&typeof state[active.gridId]==="object"?state[active.gridId]:{};if(COLORS[color])gridState[String(active.track)]=color;else delete gridState[String(active.track)];if(Object.keys(gridState).length)state[active.gridId]=gridState;else delete state[active.gridId];saveState();applyHighlights();closeMenu();return}if(button.dataset.trackHighlightAction==="import"){var importTrack=active.importTrack,track=active.track;closeMenu();if(typeof importTrack==="function")importTrack(track)}});document.body.appendChild(menu);return menu}
+  function closeMenu(){var menu=document.getElementById("trackRowHighlightMenu");if(menu)menu.classList.remove("open");active=null}
+  function openMenu(label,track,importTrack){var grid=label.closest(".yard-grid");if(!grid||!grid.id){if(typeof importTrack==="function")importTrack(track);return}active={gridId:grid.id,track:track,importTrack:importTrack};var menu=ensureMenu(),current=state[grid.id]&&state[grid.id][String(track)],title=(typeof clean==="function"?clean(label.textContent):String(label.textContent||"").trim())||("TRACK "+track);menu.querySelector(".track-highlight-title").textContent=title+" OPTIONS";menu.querySelectorAll("[data-track-highlight-color]").forEach(function(button){button.setAttribute("aria-pressed",button.dataset.trackHighlightColor===current?"true":"false")});var rect=label.getBoundingClientRect();menu.style.left="8px";menu.style.top="8px";menu.classList.add("open");var menuRect=menu.getBoundingClientRect();menu.style.left=Math.max(8,Math.min(rect.left,innerWidth-menuRect.width-8))+"px";menu.style.top=Math.max(8,Math.min(rect.bottom+5,innerHeight-menuRect.height-8))+"px";var first=menu.querySelector("button");if(first)first.focus({preventScroll:true})}
+  window.conglobalOpenTrackHighlightMenu=openMenu;
+  document.addEventListener("pointerdown",function(event){var menu=document.getElementById("trackRowHighlightMenu");if(menu&&menu.classList.contains("open")&&!menu.contains(event.target)&&!event.target.closest(".track-label[data-track]"))closeMenu()});
+  document.addEventListener("keydown",function(event){if(event.key==="Escape")closeMenu()});
+  window.addEventListener("storage",function(event){if(event.key===STORAGE_KEY){state=loadState();scheduleApply()}});
+  document.addEventListener("excel-er-imported",function(){state={};try{localStorage.removeItem(STORAGE_KEY)}catch(_){}applyHighlights()});
+  GRID_IDS.forEach(function(gridId){var grid=document.getElementById(gridId);if(grid)new MutationObserver(scheduleApply).observe(grid,{childList:true})});
+  applyHighlights();
+})();
+</scr${""}ipt>`;
+      const close = html.toLowerCase().lastIndexOf("</body>");
+      return close >= 0 ? html.slice(0, close) + patch + "\n" + html.slice(close) : html + patch;
+    }
+
     function withExcelInboundBetweenRowInsert(html) {
       const marker = 'data-excel-inbound-between-row-insert-v1';
       if (!html || html.includes(marker)) return html;
@@ -18308,6 +18566,7 @@ function scenarioTrainReadyForStorage(train) {
           pageHtml = withExcelAllTableBlockSplit(pageHtml);
           pageHtml = withExcelSemanticContextMenuPalette(pageHtml);
           pageHtml = withExcelTrackCarImport(pageHtml);
+          pageHtml = withExcelTrackRowHighlights(pageHtml);
           pageHtml = withExcelEmptyRowPasteContext(pageHtml);
           pageHtml = withExcelConsolidateToSs(pageHtml);
           pageHtml = withExcelSingleBlockConsolidation(pageHtml);
@@ -18332,6 +18591,8 @@ function scenarioTrainReadyForStorage(train) {
           pageHtml = withExcelOutsideTableBlockDeselect(pageHtml);
           pageHtml = withExcelBlockShowTrack(pageHtml);
           pageHtml = withExcelConsolidationArrowExplanations(pageHtml);
+          pageHtml = withExcelRampStageHeadings(pageHtml);
+          pageHtml = withExcelInboundPaletteAndPierceMarkers(pageHtml);
         }
         // The embedded chassisStatus document is a supplied, self-contained baseline.
         // Do not layer the legacy chassis transformer chain over it.
