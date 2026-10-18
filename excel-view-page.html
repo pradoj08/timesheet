@@ -99,7 +99,7 @@
   .btn-danger { background: #fff0f0; color: var(--danger); border-color: #ffc9c9; }
   .btn-small { min-height: 29px; padding: 5px 9px; font-size: 11px; }
   .footage-calc {
-    position: fixed;
+    position: absolute;
     top: 112px;
     left: 50%;
     width: min(560px, calc(100vw - 28px));
@@ -2616,6 +2616,39 @@
     background: #075985;
   }
   .block-context-menu .raw-menu-action:hover { background: #0369a1; }
+  .block-context-menu .tomorrow-inbound-menu-action {
+    border-color: #facc15;
+    background: #854d0e;
+  }
+  .block-context-menu .tomorrow-inbound-menu-action:hover { background: #a16207; }
+  .yard-grid .cut-cell.tomorrow-inbound-block {
+    overflow: visible !important;
+    z-index: 18;
+    box-shadow: inset 0 0 0 2px #facc15 !important;
+  }
+  .tomorrow-inbound-callout {
+    position: fixed;
+    z-index: 10030;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 7px;
+    border: 1px solid #facc15;
+    border-radius: 5px;
+    background: #111827;
+    color: #fef08a;
+    box-shadow: 0 3px 10px rgba(15,23,42,.35);
+    font: 900 10px/1 "Segoe UI", Arial, sans-serif;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+  body.modal-open .tomorrow-inbound-callout { display: none !important; }
+  .tomorrow-inbound-callout::before {
+    content: "\2190";
+    color: #facc15;
+    font-size: 15px;
+    line-height: 1;
+  }
   .block-context-menu .copy-menu-action,
   .block-context-menu .paste-menu-action {
     margin-bottom: 0;
@@ -2983,6 +3016,10 @@
   .cut-cell.blue { background: linear-gradient(135deg,#0b2f5b,#1d4ed8,#38bdf8); color: #fff; }
   .cut-cell.green { background: linear-gradient(135deg,#052e16,#15803d,#22c55e); color: #fff; }
   .cut-cell.yellow { background: linear-gradient(135deg,#3f2f03,#a16207,#f59e0b); color: #fff7cc; }
+  html body.excel-page-2 .yard-grid > .cut-cell.yellow {
+    --excel-page2-source-bg: linear-gradient(135deg,#3f2f03,#a16207,#f59e0b);
+    --excel-page2-source-fg: #fff7cc;
+  }
   .cut-cell.orange { background: linear-gradient(135deg,#431407,#c2410c,#fb923c); color: #fff; }
   .cut-cell.purple { background: linear-gradient(135deg,#2e1065,#7e22ce,#c084fc); color: #fff; }
   .cut-cell.pink { background: linear-gradient(135deg,#500724,#be185d,#f472b6); color: #fff; }
@@ -4423,6 +4460,7 @@
 <div class="block-context-menu" id="blockContextMenu" role="menu" hidden>
   <button class="raw-menu-action" id="viewRawBlock" type="button" role="menuitem">View raw</button>
   <button class="raw-menu-action" id="showBlockTrack" type="button" role="menuitem" hidden>Show Track</button>
+  <button class="tomorrow-inbound-menu-action" id="markTomorrowInbound" type="button" role="menuitem" hidden>Mark Tomorrow's Inbound</button>
   <button class="copy-menu-action" id="copySelectedBlocksBtn" type="button" role="menuitem">Copy selected (Ctrl+C)</button>
   <button class="paste-menu-action" id="pasteCopiedBlocksBtn" type="button" role="menuitem">Paste here (Ctrl+V)</button>
   <button class="copy-menu-action" id="splitSelectedBlockBtn" type="button" role="menuitem">Split block...</button>
@@ -4683,6 +4721,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   const BLOCK_SHOW_TRACK_INDEX = MANUAL_BLOCK_SEGMENT_INDEX + 1;
   const INBOUND_SHOVE_ORDER_INDEX = BLOCK_SHOW_TRACK_INDEX + 1;
   const INBOUND_SEQUENCE_INDEX = INBOUND_SHOVE_ORDER_INDEX + 1;
+  const TOMORROW_INBOUND_INDEX = INBOUND_SEQUENCE_INDEX + 1;
+  const TOMORROW_INBOUND_MARKERS_KEY = "settegast-excel-tomorrow-inbound-markers-v1";
   const VIEW_DESCRIPTIONS = {
     "CURRENT RAMP BLOCKING": "Current cut grouping with live dwell and arrival-to-hold tags",
     "LONG SHORT / BREAKDOWN": "Physical runs of long wells (68 ft+) and short wells by track",
@@ -5556,7 +5596,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   }
 
   function normalizeRow(row) {
-    const out = new Array(INBOUND_SEQUENCE_INDEX + 1).fill("");
+    const out = new Array(TOMORROW_INBOUND_INDEX + 1).fill("");
     for (let i=0; i<out.length; i++) out[i] = row[i] ?? "";
     out[0] = normalizeTrackValue(out[0]);
     out[1] = numberOrBlank(out[1]);
@@ -5651,6 +5691,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       group.showTrack = group.rows.some(row => ["1", "true", "yes"].includes(clean(row[BLOCK_SHOW_TRACK_INDEX]).toLowerCase()));
       group.shoveOrder = Math.max(0, ...group.rows.map(row => Number(row[INBOUND_SHOVE_ORDER_INDEX]) || 0));
       group.inboundSequence = Math.max(0, ...group.rows.map(row => Number(row[INBOUND_SEQUENCE_INDEX]) || 0));
+      group.tomorrowInbound = group.rows.some(row => ["1", "true", "yes"].includes(clean(row[TOMORROW_INBOUND_INDEX]).toLowerCase()));
       group.baseDisplay = buildCurrentDisplay(group);
     });
 
@@ -6055,6 +6096,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       if (t.includes("DAY")) return "green";
       if (t.includes("HR")) return "yellow";
     }
+    if (/\bSS\b/.test(t) && !/\b(?:BO|DB|DK|BBCT|AVDS)\b/.test(t)) return "solid-yellow";
     const rules = normalizeColorRules(state.colorRules);
     const activeRules = rules.length ? rules : DEFAULT_COLOR_RULES.map(rule => ({...rule}));
     const match = activeRules.find(rule => ruleMatchesText(rule, raw, t));
@@ -6074,6 +6116,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   function styleWithCurrentColorRule(text) {
     const raw = clean(text);
     const upper = raw.toUpperCase();
+    if (/\bSS\b/.test(upper) && !/\b(?:BO|DB|DK|BBCT|AVDS)\b/.test(upper)) return "";
     const rules = normalizeColorRules(state.colorRules);
     const activeRules = rules.length ? rules : DEFAULT_COLOR_RULES.map(rule => ({...rule}));
     const match = activeRules.find(rule => ruleMatchesText(rule, raw, upper));
@@ -6942,6 +6985,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     updateFootageCalcTotals();
     updateCurrentWorkForecast();
     scheduleInboundDayRollover();
+    decorateTomorrowInboundBlocks();
     saveState();
   }
 
@@ -8319,7 +8363,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   }
 
   function syntheticPrimaryRow(block, track, stamp) {
-    const row = new Array(INBOUND_SEQUENCE_INDEX + 1).fill("");
+    const row = new Array(TOMORROW_INBOUND_INDEX + 1).fill("");
     const text = clean(block.title || textFromCellHtml(`<div>${block.content || ""}</div>`));
     const trainMatch = text.match(/\bZ[LP]BHO\s+\d+\b/i);
     const statusMatch = text.match(/\b(SS|BO|DB|DK|BBCT|IHOSA|MHOAS|SADS|FXSI|ICTF|SIDS|LDDS|CU|RAMP)\b/i);
@@ -8582,6 +8626,62 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     }
     return false;
   }
+  function tomorrowInboundMarkerId(gridId, blockId) {
+    return `${String(gridId || "")}::${String(blockId || "")}`;
+  }
+  function readTomorrowInboundMarkers() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(TOMORROW_INBOUND_MARKERS_KEY) || "{}");
+      return saved && typeof saved === "object" && !Array.isArray(saved) ? saved : {};
+    } catch (_) { return {}; }
+  }
+  function contextBlockIsTomorrowInbound(gridId, blockId) {
+    return Boolean(readTomorrowInboundMarkers()[tomorrowInboundMarkerId(gridId, blockId)]);
+  }
+  function setContextBlockTomorrowInbound(gridId, blockId, marked) {
+    if (!gridId || !blockId || !document.querySelector(`#${CSS.escape(gridId)} .cut-cell[data-block-id="${CSS.escape(String(blockId))}"]`)) return false;
+    const markers = readTomorrowInboundMarkers();
+    const id = tomorrowInboundMarkerId(gridId, blockId);
+    if (marked) markers[id] = true;
+    else delete markers[id];
+    localStorage.setItem(TOMORROW_INBOUND_MARKERS_KEY, JSON.stringify(markers));
+    return true;
+  }
+  function decorateTomorrowInboundBlocks() {
+    const markers = readTomorrowInboundMarkers();
+    const rowOffsets = {};
+    document.querySelectorAll("body > .tomorrow-inbound-callout").forEach(label => label.remove());
+    document.querySelectorAll(".yard-grid .cut-cell[data-block-id]").forEach(cell => {
+      const grid = cell.closest(".yard-grid");
+      const marked = Boolean(grid && markers[tomorrowInboundMarkerId(grid.id, cell.dataset.blockId)]);
+      cell.classList.toggle("tomorrow-inbound-block", marked);
+      cell.querySelectorAll(":scope > .tomorrow-inbound-callout").forEach(label => label.remove());
+      if (!marked) return;
+      const rect = cell.getBoundingClientRect();
+      if (!cell.offsetParent || rect.width < 1 || rect.height < 1 || rect.bottom <= 0 || rect.right <= 0 || rect.top >= innerHeight || rect.left >= innerWidth) return;
+      try {
+        if (window.parent !== window && window.frameElement) {
+          const frameRect = window.frameElement.getBoundingClientRect();
+          if (frameRect.top + rect.bottom <= 0 || frameRect.top + rect.top >= window.parent.innerHeight) return;
+        }
+      } catch (_) {}
+      const label = document.createElement("span");
+      label.className = "tomorrow-inbound-callout";
+      label.setAttribute("aria-label", "Tomorrow's Inbound");
+      label.textContent = "Tomorrow's Inbound";
+      document.body.appendChild(label);
+      const labelRect = label.getBoundingClientRect();
+      const track = String(cell.dataset.track || "");
+      const rowKey = `${grid.id}::${track}`;
+      const rightmost = Array.from(grid.querySelectorAll(".cut-cell[data-block-id]"))
+        .filter(item => String(item.dataset.track || "") === track && item.offsetParent)
+        .reduce((right, item) => Math.max(right, item.getBoundingClientRect().right), rect.right);
+      const offset = rowOffsets[rowKey] || 0;
+      label.style.left = `${window.scrollX + rightmost + 7 + offset}px`;
+      label.style.top = `${window.scrollY + rect.top + (rect.height - labelRect.height) / 2}px`;
+      rowOffsets[rowKey] = offset + labelRect.width + 7;
+    });
+  }
   function positionBlockContextMenu(menu, event) {
     // The Excel iframe grows taller than the visible workbook viewport.
     // Keep the menu inside the portion of that iframe the user can actually see.
@@ -8626,6 +8726,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       const deleteButton = $("#deleteSelectedBlocks");
       rawButton.hidden = true;
       trackButton.hidden = true;
+      $("#markTomorrowInbound").hidden = true;
       copyButton.hidden = true;
       pasteButton.hidden = false;
       pasteButton.disabled = !validBlockClipboard(blockClipboard);
@@ -8651,6 +8752,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       const menu = $("#blockContextMenu");
       $("#viewRawBlock").hidden = true;
       $("#showBlockTrack").hidden = true;
+      $("#markTomorrowInbound").hidden = true;
       $("#copySelectedBlocksBtn").hidden = true;
       const pasteButton = $("#pasteCopiedBlocksBtn");
       pasteButton.hidden = false;
@@ -8688,6 +8790,13 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       const trackShown = contextBlockTrackIsShown(grid.id, id);
       trackButton.hidden = !state.hideTrackIds;
       trackButton.textContent = trackShown ? "Hide Track" : "Show Track";
+    }
+    const tomorrowButton = $("#markTomorrowInbound");
+    if (tomorrowButton) {
+      tomorrowButton.hidden = false;
+      tomorrowButton.textContent = contextBlockIsTomorrowInbound(grid.id, id)
+        ? "Remove Tomorrow's Inbound"
+        : "Mark Tomorrow's Inbound";
     }
     const copyButton = $("#copySelectedBlocksBtn");
     if (copyButton) copyButton.hidden = false;
@@ -9066,6 +9175,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         const group = trackGroups[i] || null;
         const showTrack = Boolean(group && group.showTrack);
         const shoveOrder = Math.max(0, Number(group && group.shoveOrder) || 0);
+        const tomorrowInbound = Boolean(group && group.tomorrowInbound);
         const inboundKey = primaryInboundKeyForGroup(group);
         const inboundSequence = primaryInboundSequenceByKey.get(inboundKey) || Math.max(1, Number(group && group.inboundSequence) || 1);
         const inboundSequenceHue = Math.round((((inboundSequence - 1) * 137.508) + 38) % 360);
@@ -9076,7 +9186,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
           ? `${baseDisplayText} (${inboundTrain})`
           : baseDisplayText;
         const interactiveClass = group
-          ? ` block-reorderable${shoveOrder ? " inbound-added-block" : ""}`
+          ? ` block-reorderable${shoveOrder ? " inbound-added-block" : ""}${tomorrowInbound ? " tomorrow-inbound-block" : ""}`
           : (!text && blockReorderingAvailable() ? " block-drop-end" : "");
         const moveAttrs = group
           ? `data-block-id="${escapeAttr(group.blockId)}" data-track="${track}" data-footage="${Number(group.footage) || 0}"${showTrack ? ' data-show-track="true"' : ""}${shoveOrder ? ` data-shove-order="${shoveOrder}"` : ""}${group.inboundSequence ? ` data-inbound-sequence="${inboundSequence}"` : ""} role="button" aria-selected="false"`
@@ -9084,6 +9194,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         cells.push(`<div class="cut-cell ${cls}${interactiveClass}" ${moveAttrs} style="${escapeAttr(ruleStyle)}" title="${escapeHtml(displayText || (blockReorderingAvailable() ? "Place selected blocks at end of Track " + track : ""))}">
           ${displayText ? escapeHtml(displayText) : (text ? "" : "0")}
           ${shoveOrder ? `<span class="inbound-shove-flag${inboundSequenceClass}" style="--inbound-shove-hue:${inboundSequenceHue}" aria-label="Shove ${shoveOrder}, inbound ${inboundSequence}">${shoveOrder}</span>` : ""}
+          ${tomorrowInbound ? `<span class="tomorrow-inbound-callout" aria-label="Tomorrow's Inbound">Tomorrow's Inbound</span>` : ""}
           ${i===7 && overflow ? `<span class="overflow">+${overflow}</span>` : ""}
         </div>`);
       }
@@ -10435,6 +10546,18 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     hideBlockContextMenu();
     if (setContextBlockTrackShown(gridId, blockId, !shown)) renderAll();
   });
+  $("#markTomorrowInbound").addEventListener("click", () => {
+    const gridId = blockContextGridId;
+    const blockId = blockContextBlockId;
+    const marked = contextBlockIsTomorrowInbound(gridId, blockId);
+    hideBlockContextMenu();
+    if (setContextBlockTomorrowInbound(gridId, blockId, !marked)) decorateTomorrowInboundBlocks();
+  });
+  window.addEventListener("scroll", () => requestAnimationFrame(decorateTomorrowInboundBlocks), true);
+  window.addEventListener("resize", () => requestAnimationFrame(decorateTomorrowInboundBlocks));
+  try {
+    if (window.parent !== window) window.parent.addEventListener("scroll", () => requestAnimationFrame(decorateTomorrowInboundBlocks), true);
+  } catch (_) {}
   $("#copySelectedBlocksBtn").addEventListener("click", () => {
     copySelectedBlocks();
     hideBlockContextMenu();
