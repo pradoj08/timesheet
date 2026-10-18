@@ -4152,15 +4152,133 @@ body.forecast-view .forecast-hero-card {
 }
 .forecast-pool-resolver-panel {
   display: none;
-  margin-top: 10px;
-  border: 1px solid rgba(56,189,248,.24);
-  background: rgba(15,23,42,.58);
-  border-radius: 16px;
-  padding: 10px;
+  position: fixed;
+  inset: 0;
+  z-index: 12000;
+  margin: 0;
+  padding: 22px;
+  overflow: auto;
+  background: rgba(2,6,23,.82);
+  backdrop-filter: blur(8px);
 }
 .forecast-pool-resolver-panel.open {
+  display: block;
+}
+.forecast-pool-resolver-dialog {
+  width: min(1180px, 100%);
+  margin: 0 auto;
+  border: 1px solid rgba(216,180,254,.48);
+  border-radius: 18px;
+  padding: 16px;
+  background: #10182a;
+  box-shadow: 0 28px 80px rgba(0,0,0,.58);
+}
+.forecast-pool-resolver-dialog-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+.forecast-pool-resolver-dialog-head h3 {
+  margin: 0 0 4px;
+  color: #fff;
+  font-size: 23px;
+}
+.forecast-pool-resolver-dialog-head .forecast-pool-resolver-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.forecast-pool-resolver-dialog-head button {
+  min-height: 34px;
+  padding: 7px 12px;
+  border-color: rgba(216,180,254,.42);
+  background: rgba(126,34,206,.24);
+  color: #fdf4ff;
+  font-weight: 1000;
+}
+.forecast-known-pool-bank {
+  margin-bottom: 14px;
+  border: 1px solid rgba(96,165,250,.25);
+  border-radius: 14px;
+  overflow: hidden;
+  background: rgba(15,23,42,.86);
+}
+.forecast-known-pool-bank-head {
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(96,165,250,.20);
+  color: #bfdbfe;
+  font-size: 12px;
+  font-weight: 1000;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+.forecast-known-pool-list {
   display: grid;
-  gap: 10px;
+  grid-template-columns: minmax(0,1fr);
+  gap: 0;
+  padding: 10px;
+}
+.forecast-known-pool-columns,
+.forecast-known-pool-row {
+  display: grid;
+  grid-template-columns: minmax(190px,1.6fr) minmax(90px,.65fr) repeat(4,minmax(78px,.7fr));
+  gap: 8px;
+  align-items: center;
+  padding: 9px 12px;
+}
+.forecast-known-pool-columns {
+  color: #93c5fd;
+  font-size: 10px;
+  font-weight: 1000;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+.forecast-known-pool-row {
+  min-height: 46px;
+  border-top: 1px solid rgba(148,163,184,.18);
+  background: rgba(30,41,59,.72);
+}
+.forecast-known-pool-row:nth-child(odd) { background:rgba(15,23,42,.68); }
+.forecast-known-pool-row strong { color:#f8fafc; font-size:13px; }
+.forecast-known-pool-saved {
+  display:inline-flex;
+  justify-self:start;
+  padding:4px 8px;
+  border:1px solid rgba(167,139,250,.35);
+  border-radius:999px;
+  background:rgba(124,58,237,.18);
+  color:#e9d5ff;
+  font-size:11px;
+  font-weight:1000;
+}
+.forecast-known-pool-match { color:#67e8f9; font-size:12px; font-weight:1000; }
+.forecast-known-pool-export {
+  margin-left:auto;
+  min-height:30px;
+  padding:5px 10px;
+  border-color:rgba(103,232,249,.38);
+  background:rgba(8,145,178,.18);
+  color:#cffafe;
+  font-size:11px;
+  font-weight:1000;
+}
+.forecast-known-pool-bank-head {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+}
+@media(max-width:700px){
+  .forecast-pool-resolver-panel { padding: 8px; }
+  .forecast-pool-resolver-dialog { padding: 12px; }
+  .forecast-pool-resolver-dialog-head { flex-direction: column; }
+  .forecast-pool-resolver-dialog-head .forecast-pool-resolver-actions { justify-content: flex-start; }
+  .forecast-known-pool-list { overflow-x:auto; }
+  .forecast-known-pool-columns,
+  .forecast-known-pool-row { min-width:720px; }
 }
 .forecast-pool-resolver-list {
   display: grid;
@@ -4240,7 +4358,7 @@ body.forecast-view .forecast-hero-card {
   width: 100% !important;
 }
 .forecast-pool-resolver-panel.open {
-  width: 100% !important;
+  width: auto !important;
 }
 .forecast-pool-group {
   width: 100% !important;
@@ -6336,13 +6454,30 @@ body.forecast-view .forecast-bottom-controls {
         <div class="forecast-pool-resolver-head">
           <span class="forecast-pool-resolver-title">Resolve Unknown Pools</span>
           <div class="forecast-pool-resolver-actions">
-            <button id="forecastPoolResolverModeBtn" type="button">Edit Saved</button>
-            <button id="forecastResolvePoolsBtn" type="button">Resolve / Save Bank</button>
+            <button id="forecastResolvePoolsBtn" type="button">Resolve Unknown Pools</button>
           </div>
         </div>
         <div id="forecastPoolResolverCount" class="forecast-pool-resolver-count">No unresolved pools visible.</div>
-        <div id="forecastPoolResolverPanel" class="forecast-pool-resolver-panel">
-          <div class="forecast-resolver-bulkbar">
+        <div id="forecastPoolResolverPanel" class="forecast-pool-resolver-panel" role="dialog" aria-modal="true" aria-labelledby="forecastPoolResolverDialogTitle" aria-hidden="true">
+          <div class="forecast-pool-resolver-dialog">
+            <div class="forecast-pool-resolver-dialog-head">
+              <div>
+                <h3 id="forecastPoolResolverDialogTitle">Resolve Unknown Pools</h3>
+                <div id="forecastPoolResolverDialogCount" class="forecast-pool-resolver-count">No unresolved pools visible.</div>
+              </div>
+              <div class="forecast-pool-resolver-actions">
+                <button id="forecastPoolResolverModeBtn" type="button">Edit Saved</button>
+                <button id="forecastPoolResolverCloseBtn" class="forecast-pool-close-btn" type="button">Close</button>
+              </div>
+            </div>
+            <section class="forecast-known-pool-bank" aria-labelledby="forecastKnownPoolBankTitle">
+              <div id="forecastKnownPoolBankTitle" class="forecast-known-pool-bank-head">
+                <span>Current known pools and matching chassis pools</span>
+                <button id="forecastKnownPoolExportBtn" class="forecast-known-pool-export" type="button">Export List</button>
+              </div>
+              <div id="forecastKnownPoolMatchList" class="forecast-known-pool-list"></div>
+            </section>
+            <div class="forecast-resolver-bulkbar">
             <button id="forecastResolverSelectAllBtn" type="button">Select Visible</button>
             <button id="forecastResolverClearSelectedBtn" type="button">Clear Selection</button>
             <input id="forecastResolverBulkPoolInput" type="text" placeholder="change selected pool, ex: dcli / tgrp / trailer">
@@ -6350,8 +6485,8 @@ body.forecast-view .forecast-bottom-controls {
             <button id="forecastResolverForgetBtn" type="button">Forget Selected</button>
             <span id="forecastResolverSelectedCount">0 selected</span>
           </div>
-          <div id="forecastPoolResolverList" class="forecast-pool-resolver-list"></div>
-          <button id="forecastPoolResolverCloseBtn" class="forecast-pool-close-btn" type="button">Close Resolver</button>
+            <div id="forecastPoolResolverList" class="forecast-pool-resolver-list"></div>
+          </div>
         </div>
       </div>
 
@@ -14004,21 +14139,26 @@ function renderForecastPoolResolver(){
   const panel=$("forecastPoolResolverPanel");
   const list=$("forecastPoolResolverList");
   const count=$("forecastPoolResolverCount");
+  const dialogCount=$("forecastPoolResolverDialogCount");
+  const knownList=$("forecastKnownPoolMatchList");
   const btn=$("forecastResolvePoolsBtn");
   const modeBtn=$("forecastPoolResolverModeBtn");
   if(!panel || !list)return;
   const groups=getForecastPoolResolverGroups(forecastPoolResolverShowAll);
   const unresolvedUnitCount=getForecastUnknownPoolUnits().length;
-  if(count){
+  if(count || dialogCount){
     const unitCount=groups.reduce((sum,g)=>sum+g.units.length,0);
+    let countText="";
     if(forecastPoolResolverShowAll){
-      count.textContent=unitCount ? `Edit mode: ${unitCount} visible unit${unitCount===1?"":"s"} across ${groups.length} consignee group${groups.length===1?"":"s"}. ${unresolvedUnitCount} still unresolved.` : "No visible imported units to edit.";
+      countText=unitCount ? `Edit mode: ${unitCount} visible unit${unitCount===1?"":"s"} across ${groups.length} consignee group${groups.length===1?"":"s"}. ${unresolvedUnitCount} still unresolved.` : "No visible imported units to edit.";
     }else{
-      count.textContent=unitCount ? `${unitCount} unresolved unit${unitCount===1?"":"s"} across ${groups.length} consignee group${groups.length===1?"":"s"}.` : "No unresolved pools visible.";
+      countText=unitCount ? `${unitCount} unresolved unit${unitCount===1?"":"s"} across ${groups.length} consignee group${groups.length===1?"":"s"}.` : "No unresolved pools visible.";
     }
+    if(count)count.textContent=countText;
+    if(dialogCount)dialogCount.textContent=countText;
   }
   if(btn){
-    btn.textContent=forecastPoolResolverOpen ? "Hide Resolver" : "Resolve / Save Bank";
+    btn.textContent="Resolve Unknown Pools";
     btn.classList.toggle("active",forecastPoolResolverOpen);
   }
   if(modeBtn){
@@ -14026,7 +14166,21 @@ function renderForecastPoolResolver(){
     modeBtn.classList.toggle("active",forecastPoolResolverShowAll);
   }
   panel.classList.toggle("open",forecastPoolResolverOpen);
+  panel.setAttribute("aria-hidden",String(!forecastPoolResolverOpen));
   if(!forecastPoolResolverOpen)return;
+  if(knownList){
+    const knownEntries=Object.entries(FORECAST_CONSIGNEE_POOL_BANK)
+      .map(([consignee,pool])=>[consignee,normalizeForecastPoolLabel(pool).toUpperCase()])
+      .filter(([consignee,pool])=>consignee!=="BLANK" && pool)
+      .sort((a,b)=>a[0].localeCompare(b[0]));
+    knownList.innerHTML=knownEntries.length ? `<div class="forecast-known-pool-columns"><span>Consignee</span><span>Saved pool</span><span>20' chassis</span><span>40' chassis</span><span>45' chassis</span><span>53' chassis</span></div>`+knownEntries.map(([consignee,pool])=>{
+      const matches=["20","40","45","53"].map(size=>{
+        const pair=normalizeInventoryPoolSizePair(pool,size);
+        return pair.pool;
+      });
+      return `<div class="forecast-known-pool-row"><strong>${escapeHtml(consignee)}</strong><span class="forecast-known-pool-saved">${escapeHtml(pool)}</span>${matches.map(match=>`<span class="forecast-known-pool-match">${escapeHtml(match)}</span>`).join("")}</div>`;
+    }).join("") : `<div class="forecast-pool-empty">No saved pool matches are available yet.</div>`;
+  }
   list.innerHTML=groups.length ? groups.map(g=>{
     const saved=normalizeForecastPoolLabel(FORECAST_CONSIGNEE_POOL_BANK[g.key]||"");
     const unresolvedText=g.unresolved ? `${g.unresolved} unresolved` : "mapped";
@@ -14106,10 +14260,6 @@ function clearForecastPoolResolution(consigneeKey){
 function jumpForecastUnknownToResolver(train,day,label){
   forecastPoolResolverOpen=true;
   renderForecastPoolResolver();
-  const resolverCard=document.querySelector(".forecast-pool-resolver-card");
-  if(resolverCard){
-    resolverCard.scrollIntoView({behavior:"smooth",block:"start"});
-  }
   const safeTrain=String(train||"");
   const safeDay=String(day||"");
   const safeLabel=String(label||"");
@@ -14135,10 +14285,34 @@ function jumpForecastUnknownToResolver(train,day,label){
 function toggleForecastPoolResolver(){
   forecastPoolResolverOpen=!forecastPoolResolverOpen;
   renderForecastPoolResolver();
+  if(forecastPoolResolverOpen)setTimeout(()=>$("forecastPoolResolverCloseBtn")?.focus(),0);
 }
 function closeForecastPoolResolver(){
   forecastPoolResolverOpen=false;
   renderForecastPoolResolver();
+}
+function exportForecastKnownPoolList(){
+  const rows=Object.entries(FORECAST_CONSIGNEE_POOL_BANK)
+    .map(([consignee,pool])=>[consignee,normalizeForecastPoolLabel(pool).toUpperCase()])
+    .filter(([consignee,pool])=>consignee!=="BLANK" && pool)
+    .sort((a,b)=>a[0].localeCompare(b[0]));
+  const csvRows=[["Consignee","Saved Pool","20 Chassis Pool","40 Chassis Pool","45 Chassis Pool","53 Chassis Pool"]];
+  rows.forEach(([consignee,pool])=>csvRows.push([
+    consignee,
+    pool,
+    ...["20","40","45","53"].map(size=>normalizeInventoryPoolSizePair(pool,size).pool)
+  ]));
+  const csv=csvRows.map(row=>row.map(value=>`"${String(value??"").replace(/"/g,'""')}"`).join(",")).join("\r\n");
+  const blob=new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8"});
+  const url=URL.createObjectURL(blob);
+  const link=document.createElement("a");
+  link.href=url;
+  link.download=`chassis-pool-matches-${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+  if(typeof showArchiveToast==="function")showArchiveToast(`${rows.length} known pool mappings exported.`);
 }
 
 
@@ -15528,6 +15702,9 @@ async function init(){
   const forecastResolverApplyPoolBtn=$("forecastResolverApplyPoolBtn"); if(forecastResolverApplyPoolBtn)forecastResolverApplyPoolBtn.onclick=applyPoolToSelectedForecastUnits;
   const forecastResolverForgetBtn=$("forecastResolverForgetBtn"); if(forecastResolverForgetBtn)forecastResolverForgetBtn.onclick=forgetSelectedForecastUnits;
   const forecastPoolResolverCloseBtn=$("forecastPoolResolverCloseBtn"); if(forecastPoolResolverCloseBtn)forecastPoolResolverCloseBtn.onclick=closeForecastPoolResolver;
+  const forecastKnownPoolExportBtn=$("forecastKnownPoolExportBtn"); if(forecastKnownPoolExportBtn)forecastKnownPoolExportBtn.onclick=exportForecastKnownPoolList;
+  const forecastPoolResolverPanel=$("forecastPoolResolverPanel"); if(forecastPoolResolverPanel)forecastPoolResolverPanel.addEventListener("click",e=>{if(e.target===forecastPoolResolverPanel)closeForecastPoolResolver();});
+  document.addEventListener("keydown",e=>{if(e.key==="Escape" && forecastPoolResolverOpen)closeForecastPoolResolver();});
   const forecastRequestSortButton=$("forecastRequestSortButton");
   const forecastRequestSortMenu=$("forecastRequestSortMenu");
   if(forecastRequestSortButton && forecastRequestSortMenu){
