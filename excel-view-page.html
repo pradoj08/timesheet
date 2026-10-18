@@ -501,6 +501,19 @@
     text-transform: uppercase;
   }
   .yard-view-section-title:not(:first-child) { margin-top: 12px; }
+  .yard-view-section-title.yard-view-section-title-with-total {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .yard-view-total-footage {
+    margin-left: auto;
+    font-size: 11px;
+    letter-spacing: .04em;
+    white-space: nowrap;
+  }
+  .yard-view-total-footage strong { font-variant-numeric: tabular-nums; }
   .yard-view-table {
     display:grid;
     grid-template-columns:88px 86px minmax(500px,1fr) 68px;
@@ -2582,6 +2595,8 @@
   .block-context-menu { width: 220px; gap: 3px; padding: 5px; border-color: #475569; }
   .block-context-menu button { min-height: 31px; border-color: transparent; font-size: 11px; }
   #viewRawBlock { background: #075985; border-color: #38bdf8; }
+  #showBlockTrack { background: #0f766e; border-color: #5eead4; }
+  #showBlockTrack:hover { background: #0d9488; }
   #copySelectedBlocksBtn { background: #1d4ed8; border-color: #60a5fa; }
   #pasteCopiedBlocksBtn { background: #15803d; border-color: #4ade80; }
   #splitSelectedBlockBtn { margin-top: 4px; background: #b45309; border-color: #fbbf24; color: #fff7d6; }
@@ -4373,6 +4388,7 @@
 
 <div class="block-context-menu" id="blockContextMenu" role="menu" hidden>
   <button class="raw-menu-action" id="viewRawBlock" type="button" role="menuitem">View raw</button>
+  <button class="raw-menu-action" id="showBlockTrack" type="button" role="menuitem" hidden>Show Track</button>
   <button class="copy-menu-action" id="copySelectedBlocksBtn" type="button" role="menuitem">Copy selected (Ctrl+C)</button>
   <button class="paste-menu-action" id="pasteCopiedBlocksBtn" type="button" role="menuitem">Paste here (Ctrl+V)</button>
   <button class="copy-menu-action" id="splitSelectedBlockBtn" type="button" role="menuitem">Split block...</button>
@@ -4620,6 +4636,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     "Hold Start","Days","Hours","Inbound Train","Arrival","Yard Block"
   ];
   const MANUAL_BLOCK_SEGMENT_INDEX = COLUMN_NAMES.length;
+  const BLOCK_SHOW_TRACK_INDEX = MANUAL_BLOCK_SEGMENT_INDEX + 1;
   const VIEW_DESCRIPTIONS = {
     "CURRENT RAMP BLOCKING": "Current cut grouping with live dwell and arrival-to-hold tags",
     "LONG SHORT / BREAKDOWN": "Physical runs of long wells (68 ft+) and short wells by track",
@@ -5254,26 +5271,36 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   function stripBlockDwell(value) {
     return String(value || "").replace(/\s*\((?:\?\?|\d+(?:\.\d+)?H?)\)/gi, "").replace(/\s{2,}/g, " ").trim();
   }
-  function blockTextForDisplay(value) {
+  function blockTextForDisplay(value, forceTrack = false) {
     let text = String(value || "");
-    if (state.hideTrackIds) text = stripBlockTrackIds(text);
+    if (state.hideTrackIds && !forceTrack) text = stripBlockTrackIds(text);
     if (state.hideDwell) text = stripBlockDwell(text);
     return text;
   }
-  function blockContentForDisplay(value) {
+  function blockContentForDisplay(value, forceTrack = false) {
     const html = String(value || "");
-    if ((!state.hideTrackIds && !state.hideDwell) || !html) return html;
+    if (((!state.hideTrackIds || forceTrack) && !state.hideDwell) || !html) return html;
     const host = document.createElement("div");
     host.innerHTML = html;
     const walker = document.createTreeWalker(host, NodeFilter.SHOW_TEXT);
     const textNodes = [];
     while (walker.nextNode()) textNodes.push(walker.currentNode);
-    textNodes.forEach(node => { node.nodeValue = blockTextForDisplay(node.nodeValue); });
+    textNodes.forEach(node => { node.nodeValue = blockTextForDisplay(node.nodeValue, forceTrack); });
     return host.innerHTML;
   }
 
   function secondaryBlockContentForDisplay(block) {
-    const html = blockContentForDisplay(block && block.content);
+    const forceTrack = block && block.showTrack === true;
+    let html = blockContentForDisplay(block && block.content, forceTrack);
+    if (!state.hideTrackIds || forceTrack) {
+      const track = Number(block && block.track);
+      const visibleText = clean(textFromCellHtml(`<div>${html}</div>`)).replace(/\s+/g, " ");
+      const hasTrack = visibleText.includes(`[${track}]`) ||
+        visibleText.toUpperCase().includes(`[TRACK ${track}]`) ||
+        visibleText.includes(`→ 6-${track}`) ||
+        visibleText.includes(`-> 6-${track}`);
+      if (TRACKS.includes(track) && !hasTrack) html += ` [${track}]`;
+    }
     try {
       const labelReader = typeof inboundTrainLabel === "function" ? inboundTrainLabel : () => "";
       const train = clean(block && (block.inboundTrain || labelReader(block.sourceRows)));
@@ -5480,7 +5507,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   }
 
   function normalizeRow(row) {
-    const out = new Array(COLUMN_NAMES.length + 1).fill("");
+    const out = new Array(BLOCK_SHOW_TRACK_INDEX + 1).fill("");
     for (let i=0; i<out.length; i++) out[i] = row[i] ?? "";
     out[0] = normalizeTrackValue(out[0]);
     out[1] = numberOrBlank(out[1]);
@@ -5572,6 +5599,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         ? "??" : `${Math.round(group.arrivalToHold)}H`;
       group.hoursInHold = hoursBetween(now, group.holdStart);
       group.hoursSinceArrival = hoursBetween(now, group.arrival);
+      group.showTrack = group.rows.some(row => ["1", "true", "yes"].includes(clean(row[BLOCK_SHOW_TRACK_INDEX]).toLowerCase()));
       group.baseDisplay = buildCurrentDisplay(group);
     });
 
@@ -6467,8 +6495,10 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     return `<div class="yard-view-car cut-cell ${tone}" title="${escapeAttr(`${equipment} · ${details}`)}"><strong class="yard-view-car-details">${detailParts}</strong><small class="yard-view-car-id">${escapeHtml(equipment)}</small></div>`;
   }
 
-  function yardViewTableHtml(label, groups, emptyText) {
-    const heading = `<div class="yard-view-section-title">${escapeHtml(label)}</div>`;
+  function yardViewTableHtml(label, groups, emptyText, totalFootage = null) {
+    const heading = Number.isFinite(totalFootage)
+      ? `<div class="yard-view-section-title yard-view-section-title-with-total"><span>${escapeHtml(label)}</span><span class="yard-view-total-footage">TOTAL FOOTAGE: <strong>${fmtInt(totalFootage)} FT</strong></span></div>`
+      : `<div class="yard-view-section-title">${escapeHtml(label)}</div>`;
     if (!groups.length) return `${heading}<div class="yard-view-empty">${escapeHtml(emptyText)}</div>`;
     const cells = [
       '<div class="yard-view-head">Track</div>',
@@ -6494,6 +6524,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     const pierceGroups = yardTrackGroups("pierce");
     const allGroups = yardGroups.concat(pierceGroups);
     const carCount = allGroups.reduce((total, group) => total + group.rows.length, 0);
+    const pierceFootage = pierceGroups.reduce((total, group) =>
+      total + group.rows.reduce((groupTotal, entry) => groupTotal + (Number(entry.row[4]) || 0), 0), 0);
     const button = $("#toggleYardView");
     if (button) {
       button.textContent = `Yard (${yardGroups.length}) / Pierce (${pierceGroups.length})`;
@@ -6504,7 +6536,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     if (summary) summary.textContent = `· YARD ${yardGroups.length} · PIERCE ${pierceGroups.length} · ${carCount} CARS`;
     host.innerHTML =
       yardViewTableHtml("YARD VIEW", yardGroups, "No cars were found in non-ramp yard tracks.") +
-      yardViewTableHtml("PIERCE VIEW · 03-XXX TRACKS", pierceGroups, "No cars were found in Pierce tracks 03-xxx.");
+      yardViewTableHtml("PIERCE VIEW · 03-XXX TRACKS", pierceGroups, "No cars were found in Pierce tracks 03-xxx.", pierceFootage);
   }
 
   function openYardView() {
@@ -7573,6 +7605,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       footage:Math.max(0, Number(cell.dataset.footage) || 0),
       shoveOrder:Math.max(0, Number(cell.dataset.shoveOrder) || 0),
       inboundSequence:Math.max(0, Number(cell.dataset.inboundSequence) || 0),
+      showTrack:cell.dataset.showTrack === "true",
       className:String(cell.className || "cut-cell gray")
         .replace(/\b(?:block-selected|block-paste-target|block-drag-target)\b/g, "")
         .replace(/\s+/g, " ").trim(),
@@ -8108,6 +8141,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     const inboundIdMatch = next.id.match(/^inbound-\d+-\d+-(\d+)$/);
     next.shoveOrder = Math.max(0, Math.round(Number(next.shoveOrder) || (inboundIdMatch ? Number(inboundIdMatch[1]) + 1 : 0)));
     next.inboundSequence = Math.max(0, Math.round(Number(next.inboundSequence) || 0));
+    next.showTrack = next.showTrack === true || String(next.showTrack || "").toLowerCase() === "true" || String(next.showTrack || "") === "1";
     next.className = String(next.className || "cut-cell gray")
       .replace(/\b(?:block-selected|block-paste-target|block-drag-target|inbound-added-block)\b/g, "")
       .replace(/\s+/g, " ").trim();
@@ -8119,6 +8153,9 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       .replace(/\[\d{3}\]/g, `[${track}]`);
     next.title = String(next.title || "").replace(/\[\d{3}\]/g, `[${track}]`);
     next.sourceRows = Array.isArray(next.sourceRows) ? next.sourceRows.map(row => Array.isArray(row) ? row.slice() : []) : [];
+    next.showTrack = next.showTrack || next.sourceRows.some(row =>
+      ["1", "true", "yes"].includes(clean(row[BLOCK_SHOW_TRACK_INDEX]).toLowerCase())
+    );
     try {
       const labelReader = typeof inboundTrainLabel === "function" ? inboundTrainLabel : () => "";
       next.inboundTrain = clean(next.inboundTrain || labelReader(next.sourceRows));
@@ -8171,6 +8208,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         footage,
         shoveOrder:Number(cell.dataset.shoveOrder) || 0,
         inboundSequence:Number(cell.dataset.inboundSequence) || 0,
+        showTrack:cell.dataset.showTrack === "true" || Boolean(group && group.showTrack),
         className: cell.className,
         content: cleanBlockCellContent(cell),
         title: cell.title,
@@ -8220,7 +8258,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   }
 
   function syntheticPrimaryRow(block, track, stamp) {
-    const row = new Array(COLUMN_NAMES.length + 1).fill("");
+    const row = new Array(BLOCK_SHOW_TRACK_INDEX + 1).fill("");
     const text = clean(block.title || textFromCellHtml(`<div>${block.content || ""}</div>`));
     const trainMatch = text.match(/\bZ[LP]BHO\s+\d+\b/i);
     const statusMatch = text.match(/\b(SS|BO|DB|DK|BBCT|IHOSA|MHOAS|SADS|FXSI|ICTF|SIDS|LDDS|CU|RAMP)\b/i);
@@ -8235,6 +8273,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       row[12] = statusMatch ? statusMatch[1].toUpperCase() : "PASTED";
     }
     row[MANUAL_BLOCK_SEGMENT_INDEX] = stamp;
+    row[BLOCK_SHOW_TRACK_INDEX] = block && block.showTrack ? "1" : "";
     return row;
   }
 
@@ -8253,9 +8292,10 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         ? block.sourceRows.map(source => Array.isArray(source) ? source.slice() : [])
         : [syntheticPrimaryRow(block, track, stamp)];
       rows.forEach(row => {
-        while (row.length <= MANUAL_BLOCK_SEGMENT_INDEX) row.push("");
+        while (row.length <= BLOCK_SHOW_TRACK_INDEX) row.push("");
         row[0] = track;
         row[MANUAL_BLOCK_SEGMENT_INDEX] = stamp;
+        row[BLOCK_SHOW_TRACK_INDEX] = block.showTrack ? "1" : "";
       });
       return {track, sourceRows:rows};
     }).filter(group => group.sourceRows.length);
@@ -8441,6 +8481,46 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     blockContextGridId = "";
     blockContextBlockId = "";
   }
+  function contextBlockTrackIsShown(gridId, blockId) {
+    if (!gridId || !blockId) return false;
+    if (gridId === "yardGrid") {
+      const group = computed && computed.groups.find(item => String(item.blockId) === String(blockId));
+      return Boolean(group && group.showTrack);
+    }
+    const model = state[secondaryGridStateKey(gridId)];
+    if (!validSecondaryModel(model)) return false;
+    return TRACKS.some(track => (Array.isArray(model.tracks[track]) ? model.tracks[track] : [])
+      .some(block => String(block && block.id) === String(blockId) && block.showTrack === true));
+  }
+  function setContextBlockTrackShown(gridId, blockId, shown) {
+    if (!gridId || !blockId) return false;
+    if (gridId === "yardGrid") {
+      const group = computed && computed.groups.find(item => String(item.blockId) === String(blockId));
+      if (!group) return false;
+      group.sourceIndexes.forEach(index => {
+        const row = state.rows[index];
+        if (!Array.isArray(row)) return;
+        while (row.length <= BLOCK_SHOW_TRACK_INDEX) row.push("");
+        row[BLOCK_SHOW_TRACK_INDEX] = shown ? "1" : "";
+      });
+      return true;
+    }
+    const model = state[secondaryGridStateKey(gridId)];
+    if (!validSecondaryModel(model)) return false;
+    for (const track of TRACKS) {
+      const block = (Array.isArray(model.tracks[track]) ? model.tracks[track] : [])
+        .find(item => String(item && item.id) === String(blockId));
+      if (!block) continue;
+      block.showTrack = shown === true;
+      (Array.isArray(block.sourceRows) ? block.sourceRows : []).forEach(row => {
+        if (!Array.isArray(row)) return;
+        while (row.length <= BLOCK_SHOW_TRACK_INDEX) row.push("");
+        row[BLOCK_SHOW_TRACK_INDEX] = shown ? "1" : "";
+      });
+      return true;
+    }
+    return false;
+  }
   function positionBlockContextMenu(menu, event) {
     // The Excel iframe grows taller than the visible workbook viewport.
     // Keep the menu inside the portion of that iframe the user can actually see.
@@ -8477,12 +8557,14 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       syncBlockSelectionUi();
       const menu = $("#blockContextMenu");
       const rawButton = $("#viewRawBlock");
+      const trackButton = $("#showBlockTrack");
       const copyButton = $("#copySelectedBlocksBtn");
       const pasteButton = $("#pasteCopiedBlocksBtn");
       const splitButton = $("#splitSelectedBlockBtn");
       const clearButton = $("#clearFinalZoneBtn");
       const deleteButton = $("#deleteSelectedBlocks");
       rawButton.hidden = true;
+      trackButton.hidden = true;
       copyButton.hidden = true;
       pasteButton.hidden = false;
       pasteButton.disabled = !validBlockClipboard(blockClipboard);
@@ -8507,6 +8589,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       syncBlockSelectionUi();
       const menu = $("#blockContextMenu");
       $("#viewRawBlock").hidden = true;
+      $("#showBlockTrack").hidden = true;
       $("#copySelectedBlocksBtn").hidden = true;
       const pasteButton = $("#pasteCopiedBlocksBtn");
       pasteButton.hidden = false;
@@ -8539,6 +8622,12 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     const menu = $("#blockContextMenu");
     const rawButton = $("#viewRawBlock");
     if (rawButton) rawButton.hidden = grid.id !== "yardGrid";
+    const trackButton = $("#showBlockTrack");
+    if (trackButton) {
+      const trackShown = contextBlockTrackIsShown(grid.id, id);
+      trackButton.hidden = !state.hideTrackIds;
+      trackButton.textContent = trackShown ? "Hide Track" : "Show Track";
+    }
     const copyButton = $("#copySelectedBlocksBtn");
     if (copyButton) copyButton.hidden = false;
     const pasteButton = $("#pasteCopiedBlocksBtn");
@@ -8603,6 +8692,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     const selected = computed.groups.filter(group => selectedBlockIds.has(group.blockId));
     if (!selected.length) return false;
     const targetTrack = Number(selected[0].track);
+    const showTrack = selected.some(group => group.showTrack === true);
     const stamp = `manual-consolidate-${label.toLowerCase()}-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
     const mergedRows = [];
     selected.forEach(group => {
@@ -8610,12 +8700,13 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         const source = state.rows[index];
         if (!source) return;
         const row = source.slice();
-        while (row.length <= MANUAL_BLOCK_SEGMENT_INDEX) row.push("");
+        while (row.length <= BLOCK_SHOW_TRACK_INDEX) row.push("");
         row[0] = targetTrack;
         row[5] = "";
         row[6] = "";
         row[12] = label;
         row[MANUAL_BLOCK_SEGMENT_INDEX] = stamp;
+        row[BLOCK_SHOW_TRACK_INDEX] = showTrack ? "1" : "";
         mergedRows.push(row);
       });
       if (state.dwellOverrides && typeof state.dwellOverrides === "object") delete state.dwellOverrides[dwellOverrideKey(group)];
@@ -8654,6 +8745,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     if (!selected.length) return false;
     const targetTrack = Number(selected[0].track);
     const total = selected.reduce((sum, item) => sum + (Number(item.block.footage) || 0), 0);
+    const showTrack = selected.some(item => item.block && item.block.showTrack === true);
     const sourceRows = selected.flatMap(item => Array.isArray(item.block.sourceRows) ? item.block.sourceRows.map(row => row.slice()) : []);
     TRACKS.forEach(track => {
       model.tracks[track] = (Array.isArray(model.tracks[track]) ? model.tracks[track] : [])
@@ -8663,6 +8755,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     const insertAt = Math.min(selected[0].index, destination.length);
     destination.splice(insertAt, 0, normalizeSecondaryBlock({
       id:"", footage:total,
+      showTrack,
       className:`cut-cell ${label === "IHOSA" ? "green" : label === "MHOAS" ? "blue" : label === "PIERCE" ? "pink" : "purple"} block-reorderable`,
       content:`${fmtInt(total)} ${label} [${targetTrack}]`,
       title:`${fmtInt(total)} ${label} [${targetTrack}]`, sourceRows
@@ -8897,7 +8990,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         const cls = classifyCell(text, view);
         const ruleStyle = view === "CURRENT RAMP BLOCKING" ? styleWithCurrentColorRule(text) : "";
         const group = trackGroups[i] || null;
-        const baseDisplayText = blockTextForDisplay(text);
+        const showTrack = Boolean(group && group.showTrack);
+        const baseDisplayText = blockTextForDisplay(text, showTrack);
         const inboundTrain = inboundTrainLabel(group && group.rows) || clean(trackInboundTrains[i]);
         const displayText = baseDisplayText && state.showInboundTrain && inboundTrain
           ? `${baseDisplayText} (${inboundTrain})`
@@ -8906,7 +9000,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
           ? " block-reorderable"
           : (!text && blockReorderingAvailable() ? " block-drop-end" : "");
         const moveAttrs = group
-          ? `data-block-id="${escapeAttr(group.blockId)}" data-track="${track}" data-footage="${Number(group.footage) || 0}" role="button" aria-selected="false"`
+          ? `data-block-id="${escapeAttr(group.blockId)}" data-track="${track}" data-footage="${Number(group.footage) || 0}"${showTrack ? ' data-show-track="true"' : ""} role="button" aria-selected="false"`
           : (!text && blockReorderingAvailable() ? `data-drop-end-track="${track}"` : "");
         cells.push(`<div class="cut-cell ${cls}${interactiveClass}" ${moveAttrs} style="${escapeAttr(ruleStyle)}" title="${escapeHtml(displayText || (blockReorderingAvailable() ? "Place selected blocks at end of Track " + track : ""))}">
           ${displayText ? escapeHtml(displayText) : (text ? "" : "0")}
@@ -9296,7 +9390,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     const content = items.length
       ? items.map(block => {
           const displayContent = block.assignment === "ihosa" || block.assignment === "mhoas" ? String(block.content || "") : secondaryBlockContentForDisplay(block);
-          const displayTitle = state.hideTrackIds ? stripBlockTrackIds(block.title) : block.title;
+          const displayTitle = state.hideTrackIds && !block.showTrack ? stripBlockTrackIds(block.title) : block.title;
           const currentClassName = classNameWithCurrentColor(block.className, block.title || textFromCellHtml(`<div>${block.content}</div>`));
           const currentStyle = styleWithCurrentColorRule(block.title || textFromCellHtml(`<div>${block.content}</div>`));
           const assignment = block.assignment === "ihosa" || block.assignment === "mhoas" ? ` data-block-assignment="${block.assignment}"` : "";
@@ -9362,10 +9456,10 @@ https://github.com/nodeca/pako/blob/main/LICENSE
             ? " inbound-sequence-two"
             : inboundSequence >= 3 ? " inbound-sequence-three" : "";
           const displayContent = secondaryBlockContentForDisplay(block);
-          const displayTitle = state.hideTrackIds ? stripBlockTrackIds(block.title) : block.title;
+          const displayTitle = state.hideTrackIds && !block.showTrack ? stripBlockTrackIds(block.title) : block.title;
           const currentClassName = classNameWithCurrentColor(block.className, block.title || textFromCellHtml(`<div>${block.content}</div>`));
           const currentStyle = styleWithCurrentColorRule(block.title || textFromCellHtml(`<div>${block.content}</div>`));
-          cells.push(`<div class="${escapeAttr(currentClassName)}"${currentStyle ? ` style="${escapeAttr(currentStyle)}"` : ""} data-block-id="${escapeAttr(block.id)}" data-track="${track}" data-footage="${Number(block.footage) || 0}"${shoveOrder ? ` data-shove-order="${shoveOrder}"` : ""}${inboundSequence ? ` data-inbound-sequence="${inboundSequence}"` : ""} role="button" aria-selected="false" title="${escapeAttr(displayTitle)}">${displayContent}${shoveOrder ? `<span class="inbound-shove-flag${inboundSequenceClass}" aria-label="Shove ${shoveOrder}, inbound ${inboundSequence || 1}">${shoveOrder}</span>` : ""}${i === 7 && blocks.length > 8 ? `<span class="overflow">+${blocks.length - 8}</span>` : ""}</div>`);
+          cells.push(`<div class="${escapeAttr(currentClassName)}"${currentStyle ? ` style="${escapeAttr(currentStyle)}"` : ""} data-block-id="${escapeAttr(block.id)}" data-track="${track}" data-footage="${Number(block.footage) || 0}"${block.showTrack ? ' data-show-track="true"' : ""}${shoveOrder ? ` data-shove-order="${shoveOrder}"` : ""}${inboundSequence ? ` data-inbound-sequence="${inboundSequence}"` : ""} role="button" aria-selected="false" title="${escapeAttr(displayTitle)}">${displayContent}${shoveOrder ? `<span class="inbound-shove-flag${inboundSequenceClass}" aria-label="Shove ${shoveOrder}, inbound ${inboundSequence || 1}">${shoveOrder}</span>` : ""}${i === 7 && blocks.length > 8 ? `<span class="overflow">+${blocks.length - 8}</span>` : ""}</div>`);
         } else {
           cells.push(`<div class="cut-cell empty block-drop-end" data-drop-end-track="${track}" title="Place selected blocks at end of Track ${track}">0</div>`);
         }
@@ -10005,6 +10099,46 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   }
   function escapeAttr(value) { return escapeHtml(value).replace(/`/g,"&#096;"); }
 
+  function clearBlockTrackOverridesAfterErImport() {
+    (Array.isArray(state.rows) ? state.rows : []).forEach(row => {
+      if (Array.isArray(row) && row.length > BLOCK_SHOW_TRACK_INDEX) row[BLOCK_SHOW_TRACK_INDEX] = "";
+    });
+    ["secondaryGridTwo", "secondaryGridThree", "secondaryGridFour"].forEach(key => {
+      const model = state[key];
+      if (!model || !model.tracks) return;
+      TRACKS.forEach(track => {
+        (Array.isArray(model.tracks[track]) ? model.tracks[track] : []).forEach(block => {
+          if (!block) return;
+          block.showTrack = false;
+          (Array.isArray(block.sourceRows) ? block.sourceRows : []).forEach(row => {
+            if (Array.isArray(row) && row.length > BLOCK_SHOW_TRACK_INDEX) row[BLOCK_SHOW_TRACK_INDEX] = "";
+          });
+        });
+      });
+      ["ihosa", "mhoas"].forEach(zone => {
+        const blocks = model.finalBlocks && Array.isArray(model.finalBlocks[zone]) ? model.finalBlocks[zone] : [];
+        blocks.forEach(block => {
+          if (!block) return;
+          block.showTrack = false;
+          (Array.isArray(block.sourceRows) ? block.sourceRows : []).forEach(row => {
+            if (Array.isArray(row) && row.length > BLOCK_SHOW_TRACK_INDEX) row[BLOCK_SHOW_TRACK_INDEX] = "";
+          });
+        });
+      });
+    });
+    if (validBlockClipboard(blockClipboard)) {
+      blockClipboard.blocks.forEach(block => {
+        if (!block) return;
+        block.showTrack = false;
+        (Array.isArray(block.sourceRows) ? block.sourceRows : []).forEach(row => {
+          if (Array.isArray(row) && row.length > BLOCK_SHOW_TRACK_INDEX) row[BLOCK_SHOW_TRACK_INDEX] = "";
+        });
+      });
+      saveBlockClipboard(blockClipboard);
+    }
+  }
+  document.addEventListener("excel-er-imported", clearBlockTrackOverridesAfterErImport);
+
   $("#inventoryFileTop").addEventListener("change", async e => {
     const file=e.target.files && e.target.files[0];
     if (!file) return;
@@ -10107,6 +10241,13 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     pasteCopiedBlocks(event);
   });
   $("#viewRawBlock").addEventListener("click", openRawTrackModalForBlock);
+  $("#showBlockTrack").addEventListener("click", () => {
+    const gridId = blockContextGridId;
+    const blockId = blockContextBlockId;
+    const shown = contextBlockTrackIsShown(gridId, blockId);
+    hideBlockContextMenu();
+    if (setContextBlockTrackShown(gridId, blockId, !shown)) renderAll();
+  });
   $("#copySelectedBlocksBtn").addEventListener("click", () => {
     copySelectedBlocks();
     hideBlockContextMenu();
@@ -10238,6 +10379,16 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     if (choice === "new") addNewInbound(day);
     else addPierceTrackToInboundDay(day, choice);
   });
+
+  /* excel-outside-table-block-deselect-v1 */
+  document.addEventListener("click", e => {
+    const blockWorkflowSurface = e.target.closest(".yard-grid, #blockContextMenu, .consolidation-explanation-delete-menu");
+    if (e.button === 0 && (selectedBlockIds.size || blockPasteTarget) && !blockWorkflowSurface && !blockDragSelection && !suppressBlockClick && !document.body.classList.contains("block-cell-dragging")) {
+      clearBlockSelection();
+      blockPasteTarget = null;
+      syncBlockPasteTargetUi();
+    }
+  }, true);
 
   document.addEventListener("click", e => {
     if (!e.target.closest("#blockContextMenu")) hideBlockContextMenu();

@@ -170,6 +170,7 @@
 
 - Table 1 population is foundational. Parsing or Yard/Pierce changes must not cause it to become empty.
 - Excel Page 2 is an alternate presentation of the existing nine-track grid. Never implement it as another iframe or cloned Excel document; switching `excelView`/`excelView2` must not reload the live Excel frame.
+- Ordinary ramp blocks have a per-block `Show Track` / `Hide Track` context action. Preserve its row metadata and secondary-block `showTrack` flag through moves, splits, copies, and consolidation; Page 2 renders the forced track as a second-line arrow, and a new ER import clears all per-block track overrides. Page 2 must also retain the persisted shove-order badges for Pierce (`03-xxx`) sources as well as conventional inbound train names.
 - Yard/Pierce classification:
   - `06-xxx` is Yard;
   - `03-xxx` is Pierce;
