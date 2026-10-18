@@ -2083,6 +2083,12 @@
     position: absolute;
     right: 6px;
   }
+  .final-assigned-main,
+  .final-assigned-source { display:block; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .final-assigned-source { margin-top:1px; font-size:.82em; font-weight:850; line-height:1; }
+  .final-summary-block[data-block-assignment] { display:flex !important; min-height:28px; padding:2px 5px; flex-direction:column !important; align-items:flex-start !important; justify-content:center !important; overflow:hidden; line-height:1 !important; text-align:left !important; }
+  .final-summary-block[data-block-assignment] .final-assigned-main,
+  .final-summary-block[data-block-assignment] .final-assigned-source { width:100%; flex:0 0 auto; }
   .add-inbound-train-btn {
     height: 21px;
     padding: 0 8px;
@@ -8933,7 +8939,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   function copyAboveHeaderCell(target = "two") {
     const id = target === "three" ? "copyTableTwoToThree" : "copyTableOneToTwo";
     const headerClass = target === "three" ? "third-summary-head copy-grid-head" : "grid-head copy-grid-head";
-    return '<div class="' + headerClass + '"><div class="copy-grid-actions"><button class="copy-grid-btn" id="' + id + '" type="button">COPY ABOVE</button><button class="add-inbound-train-btn" data-open-inbound-train="' + target + '" type="button">ADD INBOUND TRAIN</button></div></div>';
+    const assignmentCopy = target === "three" ? '<button class="copy-grid-btn" id="copyAssignedFinalBlocks" type="button">COPY IHOSA/MHOAS BLOCKS</button>' : '';
+    return '<div class="' + headerClass + '"><div class="copy-grid-actions">' + assignmentCopy + '<button class="copy-grid-btn" id="' + id + '" type="button">COPY ABOVE</button><button class="add-inbound-train-btn" data-open-inbound-train="' + target + '" type="button">ADD INBOUND TRAIN</button></div></div>';
   }
 
   function copyTableOneToTwo() {
@@ -8950,6 +8957,52 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     state.secondaryGridThree = snapshotGrid(sourceGrid);
     state.secondaryGridThree.finalBlocks = normalizeFinalBlocks(finalBlocks);
     renderAll();
+  }
+
+  function copyAssignedBlocksToFinalTracks() {
+    const source = validSecondaryModel(state.secondaryGridTwo) ? state.secondaryGridTwo : null;
+    let savedAssignments = {};
+    try { savedAssignments = JSON.parse(localStorage.getItem("settegast-excel-block-assignments-v1") || "{}"); } catch (_) {}
+    const visibleAssignments = {};
+    document.querySelectorAll("#blankYardGrid .cut-cell[data-block-id]").forEach(cell => {
+      const text = clean(cell.title || cell.textContent).toLowerCase();
+      const assignment = clean(cell.dataset.blockAssignment).toLowerCase();
+      visibleAssignments[String(cell.dataset.blockId)] = assignment === "ihosa" || assignment === "mhoas"
+        ? assignment
+        : /\bihosa\b/.test(text) ? "ihosa" : /\bmhoas\b/.test(text) ? "mhoas" : "";
+    });
+    const finalBlocks = {ihosa:[], mhoas:[]};
+    if (source) {
+      TRACKS.forEach(track => {
+        (Array.isArray(source.tracks[track]) ? source.tracks[track] : []).forEach(block => {
+          const blockText = clean(`${block.title || ""} ${textFromCellHtml(`<div>${block.content || ""}</div>`)}`).toLowerCase();
+          const storedZone = clean(savedAssignments[String(block.id)]).toLowerCase();
+          const zone = storedZone === "ihosa" || storedZone === "mhoas"
+            ? storedZone
+            : visibleAssignments[String(block.id)] || (/\bihosa\b/.test(blockText) ? "ihosa" : /\bmhoas\b/.test(blockText) ? "mhoas" : "");
+          if (zone !== "ihosa" && zone !== "mhoas") return;
+          let inbound = clean(block.inboundTrain);
+          try { if (!inbound) inbound = clean(inboundTrainLabel(block.sourceRows)); } catch (_) {}
+          if (!inbound) inbound = clean((blockText.match(/\b(?:ZLBHO|ZPBHO|ILBHOX)\s+\d+\b/i) || [])[0]).toUpperCase();
+          const mainLabel = `${fmtInt(block.footage)} ${zone.toUpperCase()} [${track}]`;
+          const sourceLabel = inbound || "INBOUND";
+          finalBlocks[zone].push(normalizeFinalBlock({
+            ...block,
+            id:"",
+            assignment:zone,
+            content:`<span class="final-assigned-main">${escapeHtml(mainLabel)}</span><span class="final-assigned-source">&rarr;${escapeHtml(sourceLabel)}</span>`,
+            title:`${mainLabel} -> ${sourceLabel}`,
+            sourceRows:Array.isArray(block.sourceRows) ? block.sourceRows.map(row => row.slice()) : []
+          }));
+        });
+      });
+    }
+    const target = validSecondaryModel(state.secondaryGridThree) ? state.secondaryGridThree : emptySecondaryModel();
+    target.finalBlocks = finalBlocks;
+    state.secondaryGridThree = target;
+    renderAll();
+    const copied = finalBlocks.ihosa.length + finalBlocks.mhoas.length;
+    ssShowToast(copied ? `Copied ${copied} assigned block${copied === 1 ? "" : "s"} to the final tracks.` : "No IHOSA or MHOAS assignments found in Table 2.");
   }
 
   function inboundPlanFootage(plan) {
@@ -9242,11 +9295,12 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     const items = (Array.isArray(blocks) ? blocks : []).map(normalizeFinalBlock);
     const content = items.length
       ? items.map(block => {
-          const displayContent = secondaryBlockContentForDisplay(block);
+          const displayContent = block.assignment === "ihosa" || block.assignment === "mhoas" ? String(block.content || "") : secondaryBlockContentForDisplay(block);
           const displayTitle = state.hideTrackIds ? stripBlockTrackIds(block.title) : block.title;
           const currentClassName = classNameWithCurrentColor(block.className, block.title || textFromCellHtml(`<div>${block.content}</div>`));
           const currentStyle = styleWithCurrentColorRule(block.title || textFromCellHtml(`<div>${block.content}</div>`));
-          return `<div class="${escapeAttr(currentClassName)}"${currentStyle ? ` style="${escapeAttr(currentStyle)}"` : ""} data-final-block-id="${escapeAttr(block.id)}" data-footage="${Number(block.footage) || 0}" title="${escapeAttr(displayTitle)}">${displayContent}</div>`;
+          const assignment = block.assignment === "ihosa" || block.assignment === "mhoas" ? ` data-block-assignment="${block.assignment}"` : "";
+          return `<div class="${escapeAttr(currentClassName)}"${currentStyle ? ` style="${escapeAttr(currentStyle)}"` : ""}${assignment} data-final-block-id="${escapeAttr(block.id)}" data-footage="${Number(block.footage) || 0}" title="${escapeAttr(displayTitle)}">${displayContent}</div>`;
         }).join("")
       : '<span class="final-paste-hint">Click here, then press Ctrl+V to paste blocks</span>';
     return `<div class="third-summary-blank third-summary-span final-paste-zone" data-summary-paste-zone="${zone}" tabindex="0" title="Paste copied blocks into ${zone.toUpperCase()} Final"><div class="final-block-list">${content}</div></div>`;
@@ -10223,6 +10277,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     if (addInboundTrain) { openInboundTrainModal(addInboundTrain.dataset.openInboundTrain); return; }
     if (e.target.closest("#copyTableOneToTwo")) copyTableOneToTwo();
     if (e.target.closest("#copyTableTwoToThree")) copyTableTwoToThree();
+    if (e.target.closest("#copyAssignedFinalBlocks")) copyAssignedBlocksToFinalTracks();
     if (e.target.closest("#toggleInboundPlanner")) {
       state.inboundPlannerVisible = state.inboundPlannerVisible === false;
       renderAll();
