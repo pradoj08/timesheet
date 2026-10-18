@@ -2419,6 +2419,19 @@
   }
   .inbound-train-action.confirm { border-color: #4d82dd; background: #204f9e; color: #fff; }
   .inbound-train-action:disabled { opacity: .42; cursor: not-allowed; }
+  .inbound-shove-backdrop { position: fixed; inset: 0; z-index: 2600; display: grid; place-items: center; padding: 18px; background: rgba(3,10,20,.72); }
+  .inbound-shove-backdrop[hidden] { display: none !important; }
+  .inbound-shove-dialog { width: min(520px, calc(100vw - 36px)); padding: 18px; border: 1px solid #45658e; border-radius: 12px; background: #101d31; color: #f4f8ff; box-shadow: 0 22px 70px rgba(0,0,0,.58); }
+  .inbound-shove-dialog h4 { margin: 0 0 7px; font-size: 18px; }
+  .inbound-shove-dialog p { margin: 0 0 16px; color: #a9bbd4; font-size: 12px; line-height: 1.45; }
+  .inbound-shove-readout { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 12px; }
+  .inbound-shove-readout strong { color: #62f0dc; font-size: 24px; }
+  #inboundShoveRange { width: 100%; accent-color: #34d6bd; cursor: pointer; }
+  .inbound-shove-number { width: 118px; padding: 9px 10px; border: 1px solid #45658e; border-radius: 7px; background: #091426; color: #fff; font-weight: 900; text-align: right; }
+  .inbound-shove-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
+  .inbound-shove-actions button { min-height: 36px; padding: 8px 13px; border: 1px solid #526b8e; border-radius: 7px; background: #162842; color: #fff; font-weight: 900; cursor: pointer; }
+  .inbound-shove-actions .remove { margin-right: auto; border-color: #8e3547; background: #3a1620; }
+  .inbound-shove-actions .confirm { border-color: #2da88f; background: #087b67; }
   @media (max-width: 680px) {
     .inbound-train-field-grid { grid-template-columns: 1fr; }
     .inbound-train-field.source { grid-column: auto; }
@@ -4272,9 +4285,10 @@
         <div class="panel-head">
           <div class="dashboard-title-row">
             <div class="panel-title">Current Ramp Overview</div>
-            <button class="btn btn-white btn-small grid-color-tab-btn" id="colorTabBtn" type="button">Color Tab</button>
+            <button class="btn btn-white btn-small grid-color-tab-btn" id="colorTabBtn" type="button">Block Font &amp; Colors</button>
             <button class="btn btn-white btn-small" id="removeAllBlockTags" type="button" title="Clear all IHOSA and MHOAS Final assignments">Remove Tags</button>
             <button class="btn btn-white btn-small" id="importFileBtnTop" type="button" onclick="document.getElementById('inventoryFileTop').click()">IMPORT ER</button>
+            <button class="btn btn-white btn-small" id="addInboundTableOneBtn" data-open-inbound-train="one" type="button">ADD INBOUND TRAIN</button>
             <div class="panel-subtitle" id="viewDescription"></div>
           </div>
           <div class="dashboard-controls">
@@ -4300,7 +4314,7 @@
               </div>
             </div>
             <label class="track-id-toggle" title="Hide bracketed track IDs like [805] inside block labels">
-              <input id="hideTrackIdsToggle" type="checkbox" checked>
+              <input id="hideTrackIdsToggle" type="checkbox">
               Hide track IDs
             </label>
             <label class="track-id-toggle" title="Hide dwell tags inside ramp block labels">
@@ -4475,7 +4489,7 @@
       <button class="inbound-train-close" id="closeInboundTrain" type="button" aria-label="Close Add Inbound Train">&times;</button>
     </header>
     <div class="inbound-train-body">
-      <div class="inbound-train-note">Choose a current inbound or a Yard/Pierce track, or enter a name and footage manually. Tracks fill in the order selected; the last selected track carries any overflow so the full footage is preserved.</div>
+      <div class="inbound-train-note">Choose a current inbound or a Yard/Pierce track, then click each landing track and use the slider to assign that shove. Continue until all inbound footage is allocated.</div>
       <div class="inbound-train-field-grid">
         <div class="inbound-train-field source">
           <label for="inboundTrainSource">Select current inbound / track</label>
@@ -4498,6 +4512,16 @@
       <button class="inbound-train-action" id="cancelInboundTrain" type="button">Cancel</button>
       <button class="inbound-train-action confirm" id="confirmInboundTrain" type="button" disabled>Add Inbound Train</button>
     </footer>
+  </section>
+</div>
+
+<div class="inbound-shove-backdrop" id="inboundShoveModal" role="dialog" aria-modal="true" aria-labelledby="inboundShoveTitle" hidden>
+  <section class="inbound-shove-dialog">
+    <h4 id="inboundShoveTitle">Assign shove footage</h4>
+    <p id="inboundShoveHelp"></p>
+    <div class="inbound-shove-readout"><strong id="inboundShoveValue">0 FT</strong><input class="inbound-shove-number" id="inboundShoveNumber" type="number" min="1" step="1" aria-label="Shove footage"></div>
+    <input id="inboundShoveRange" type="range" min="1" max="1" step="1" value="1" aria-label="Shove footage slider">
+    <div class="inbound-shove-actions"><button class="remove" id="removeInboundShove" type="button" hidden>Remove Track</button><button id="cancelInboundShove" type="button">Cancel</button><button class="confirm" id="confirmInboundShove" type="button">Add Shove</button></div>
   </section>
 </div>
 
@@ -4657,6 +4681,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   ];
   const MANUAL_BLOCK_SEGMENT_INDEX = COLUMN_NAMES.length;
   const BLOCK_SHOW_TRACK_INDEX = MANUAL_BLOCK_SEGMENT_INDEX + 1;
+  const INBOUND_SHOVE_ORDER_INDEX = BLOCK_SHOW_TRACK_INDEX + 1;
+  const INBOUND_SEQUENCE_INDEX = INBOUND_SHOVE_ORDER_INDEX + 1;
   const VIEW_DESCRIPTIONS = {
     "CURRENT RAMP BLOCKING": "Current cut grouping with live dwell and arrival-to-hold tags",
     "LONG SHORT / BREAKDOWN": "Physical runs of long wells (68 ft+) and short wells by track",
@@ -4789,7 +4815,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     headerSize:11,
     headerBold:true
   });
-  const GRID_DISPLAY_BASELINE_VERSION = 1;
+  const GRID_DISPLAY_BASELINE_VERSION = 2;
   const COLOR_KEY_BASELINE_VERSION = 1;
 
   function normalizeGridTypography(value) {
@@ -4819,7 +4845,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     const next = target && typeof target === "object" ? target : defaultState();
     const savedVersion = Number(savedSource && savedSource.gridDisplayBaselineVersion) || 0;
     if (savedVersion >= GRID_DISPLAY_BASELINE_VERSION) return next;
-    next.hideTrackIds = true;
+    next.hideTrackIds = false;
     next.gridTypography = {...DEFAULT_GRID_TYPOGRAPHY};
     next.gridDisplayBaselineVersion = GRID_DISPLAY_BASELINE_VERSION;
     return next;
@@ -4865,6 +4891,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   let inboundArchivePreviewId = "";
   let inboundTrainTarget = "two";
   let inboundTrainTrackOrder = [];
+  let inboundTrainTrackAmounts = {};
+  let inboundTrainPendingTrack = 0;
   let inboundTrainSourceIsPierce = false;
 
   function defaultInboundPlans() {
@@ -5018,7 +5046,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       ihosaTarget: 3850,
       mhoasTarget: 4700,
       trackTarget: 2500,
-      hideTrackIds: true,
+      hideTrackIds: false,
       hideDwell: false,
       showInboundTrain: false,
       tableDensity: 50,
@@ -5528,7 +5556,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   }
 
   function normalizeRow(row) {
-    const out = new Array(BLOCK_SHOW_TRACK_INDEX + 1).fill("");
+    const out = new Array(INBOUND_SEQUENCE_INDEX + 1).fill("");
     for (let i=0; i<out.length; i++) out[i] = row[i] ?? "";
     out[0] = normalizeTrackValue(out[0]);
     out[1] = numberOrBlank(out[1]);
@@ -5621,6 +5649,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       group.hoursInHold = hoursBetween(now, group.holdStart);
       group.hoursSinceArrival = hoursBetween(now, group.arrival);
       group.showTrack = group.rows.some(row => ["1", "true", "yes"].includes(clean(row[BLOCK_SHOW_TRACK_INDEX]).toLowerCase()));
+      group.shoveOrder = Math.max(0, ...group.rows.map(row => Number(row[INBOUND_SHOVE_ORDER_INDEX]) || 0));
+      group.inboundSequence = Math.max(0, ...group.rows.map(row => Number(row[INBOUND_SEQUENCE_INDEX]) || 0));
       group.baseDisplay = buildCurrentDisplay(group);
     });
 
@@ -8289,7 +8319,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   }
 
   function syntheticPrimaryRow(block, track, stamp) {
-    const row = new Array(BLOCK_SHOW_TRACK_INDEX + 1).fill("");
+    const row = new Array(INBOUND_SEQUENCE_INDEX + 1).fill("");
     const text = clean(block.title || textFromCellHtml(`<div>${block.content || ""}</div>`));
     const trainMatch = text.match(/\bZ[LP]BHO\s+\d+\b/i);
     const statusMatch = text.match(/\b(SS|BO|DB|DK|BBCT|IHOSA|MHOAS|SADS|FXSI|ICTF|SIDS|LDDS|CU|RAMP)\b/i);
@@ -9000,6 +9030,19 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       : computed.futureByTrack;
     const target = Number(state.trackTarget) || 0;
     const inboundTrainLabels = inboundTrainLabelsByTrack(view);
+    const primaryInboundKeyForGroup = group => (Array.isArray(group && group.sourceIndexes) ? group.sourceIndexes : [])
+      .map(index => {
+        const row = state.rows[index];
+        const stampMatch = String(row && row[MANUAL_BLOCK_SEGMENT_INDEX] || "").match(/^inbound-(\d+)-/i) ||
+          String(row && row[2] || "").match(/^INBOUND-(\d+)-/i);
+        const train = clean(row && row[10]).toUpperCase();
+        if (stampMatch) return `stamp:${stampMatch[1]}${train ? `|train:${train}` : ""}`;
+        return train ? `train:${train}` : "";
+      })
+      .find(Boolean) || "";
+    const primaryInboundKeys = [...new Set(computed.groups.map(primaryInboundKeyForGroup).filter(Boolean))]
+      .sort((a, b) => a.localeCompare(b, undefined, {numeric:true}));
+    const primaryInboundSequenceByKey = new Map(primaryInboundKeys.map((key, index) => [key, index + 1]));
     const cells = [
       `<div class="grid-head">Track</div>`,
       `<div class="grid-head">Current</div>`,
@@ -9022,19 +9065,25 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         const ruleStyle = view === "CURRENT RAMP BLOCKING" ? styleWithCurrentColorRule(text) : "";
         const group = trackGroups[i] || null;
         const showTrack = Boolean(group && group.showTrack);
+        const shoveOrder = Math.max(0, Number(group && group.shoveOrder) || 0);
+        const inboundKey = primaryInboundKeyForGroup(group);
+        const inboundSequence = primaryInboundSequenceByKey.get(inboundKey) || Math.max(1, Number(group && group.inboundSequence) || 1);
+        const inboundSequenceHue = Math.round((((inboundSequence - 1) * 137.508) + 38) % 360);
+        const inboundSequenceClass = inboundSequence === 2 ? " inbound-sequence-two" : inboundSequence >= 3 ? " inbound-sequence-three" : "";
         const baseDisplayText = blockTextForDisplay(text, showTrack);
         const inboundTrain = inboundTrainLabel(group && group.rows) || clean(trackInboundTrains[i]);
         const displayText = baseDisplayText && state.showInboundTrain && inboundTrain
           ? `${baseDisplayText} (${inboundTrain})`
           : baseDisplayText;
         const interactiveClass = group
-          ? " block-reorderable"
+          ? ` block-reorderable${shoveOrder ? " inbound-added-block" : ""}`
           : (!text && blockReorderingAvailable() ? " block-drop-end" : "");
         const moveAttrs = group
-          ? `data-block-id="${escapeAttr(group.blockId)}" data-track="${track}" data-footage="${Number(group.footage) || 0}"${showTrack ? ' data-show-track="true"' : ""} role="button" aria-selected="false"`
+          ? `data-block-id="${escapeAttr(group.blockId)}" data-track="${track}" data-footage="${Number(group.footage) || 0}"${showTrack ? ' data-show-track="true"' : ""}${shoveOrder ? ` data-shove-order="${shoveOrder}"` : ""}${group.inboundSequence ? ` data-inbound-sequence="${inboundSequence}"` : ""} role="button" aria-selected="false"`
           : (!text && blockReorderingAvailable() ? `data-drop-end-track="${track}"` : "");
         cells.push(`<div class="cut-cell ${cls}${interactiveClass}" ${moveAttrs} style="${escapeAttr(ruleStyle)}" title="${escapeHtml(displayText || (blockReorderingAvailable() ? "Place selected blocks at end of Track " + track : ""))}">
           ${displayText ? escapeHtml(displayText) : (text ? "" : "0")}
+          ${shoveOrder ? `<span class="inbound-shove-flag${inboundSequenceClass}" style="--inbound-shove-hue:${inboundSequenceHue}" aria-label="Shove ${shoveOrder}, inbound ${inboundSequence}">${shoveOrder}</span>` : ""}
           ${i===7 && overflow ? `<span class="overflow">+${overflow}</span>` : ""}
         </div>`);
       }
@@ -9169,15 +9218,18 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   }
 
   function inboundTrainTargetKey(target = inboundTrainTarget) {
+    if (target === "one") return "";
     return target === "three" ? "secondaryGridThree" : "secondaryGridTwo";
   }
 
   function inboundTrainSourceGrid(target = inboundTrainTarget) {
+    if (target === "one") return $("#yardGrid");
     return target === "three" ? $("#blankYardGrid") : $("#yardGrid");
   }
 
   function inboundTrainPreviewModel() {
     const key = inboundTrainTargetKey();
+    if (!key) return snapshotGrid($("#yardGrid"));
     if (validSecondaryModel(state[key])) return state[key];
     return snapshotGrid(inboundTrainSourceGrid());
   }
@@ -9188,19 +9240,25 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   }
 
   function inboundTrainAllocations() {
-    const footage = Math.max(0, Math.round(parseInboundFt($("#inboundTrainFootage").value)));
+    const totalFootage = Math.max(0, Math.round(parseInboundFt($("#inboundTrainFootage").value)));
     const model = inboundTrainPreviewModel();
-    let unallocated = footage;
-    const allocations = inboundTrainTrackOrder.map((track, index) => {
+    let allocated = 0;
+    const allocations = inboundTrainTrackOrder.map(track => {
       const capacity = TRACK_CAPACITY_FT[track] || 0;
       const used = inboundTrainTrackUsage(model, track);
       const available = capacity - used;
-      const isLast = index === inboundTrainTrackOrder.length - 1;
-      const assigned = isLast ? unallocated : Math.min(unallocated, Math.max(0, available));
-      unallocated = Math.max(0, unallocated - assigned);
+      const assigned = Math.max(0, Math.round(Number(inboundTrainTrackAmounts[track]) || 0));
+      allocated += assigned;
       return { track, capacity, used, available, assigned, projected:available - assigned };
     });
-    return { footage, allocations, unallocated };
+    // Absorb a one-foot source/capacity rounding difference into the final shove.
+    if (totalFootage - allocated === 1 && allocations.length) {
+      const last = allocations[allocations.length - 1];
+      last.assigned += 1;
+      last.projected -= 1;
+      allocated += 1;
+    }
+    return { footage:totalFootage, allocations, allocated, unallocated:Math.max(0, totalFootage - allocated), invalidRequest:allocated > totalFootage };
   }
 
   function populateInboundTrainSources() {
@@ -9250,19 +9308,23 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     const preview = $("#inboundTrainPreview");
     if (!result.footage || !result.allocations.length) {
       preview.className = "inbound-train-preview empty";
-      preview.textContent = "Enter footage and select landing tracks to preview the placement.";
+      preview.textContent = "Enter footage, then click a landing track to assign the first shove.";
     } else {
       preview.className = "inbound-train-preview";
-      preview.innerHTML = `<div class="inbound-train-section-label">Placement Preview</div>${result.allocations.filter(item => item.assigned > 0).map(item => `<div class="inbound-train-preview-row"><b>${fmtInt(item.assigned)} FT</b><span>${escapeHtml(displayTrain || "Inbound train")} [${item.track}]</span><span>6-${item.track}</span><span class="${item.projected < 0 ? "projected-bad" : "projected-good"}">${fmtInt(item.projected)} FT remaining</span></div>`).join("")}${result.allocations.some(item => item.projected < 0) ? `<div class="inbound-train-overflow">The last selected track will exceed its available footage by ${fmtInt(Math.abs(Math.min(...result.allocations.map(item => item.projected))))} FT.</div>` : ""}`;
+      preview.innerHTML = `<div class="inbound-train-section-label">Placement Preview · ${fmtInt(result.unallocated)} FT left to assign</div>${result.allocations.filter(item => item.assigned > 0).map(item => `<div class="inbound-train-preview-row"><b>${fmtInt(item.assigned)} FT</b><span>${escapeHtml(displayTrain || "Inbound train")} [${item.track}]</span><span>6-${item.track}</span><span class="${item.projected < 0 ? "projected-bad" : "projected-good"}">${fmtInt(item.projected)} FT remaining</span></div>`).join("")}${result.allocations.some(item => item.projected < 0) ? `<div class="inbound-train-overflow">A selected track exceeds its available footage.</div>` : ""}`;
     }
-    $("#confirmInboundTrain").disabled = !(train && result.footage > 0 && result.allocations.some(item => item.assigned > 0));
+    $("#confirmInboundTrain").disabled = !(train && !result.invalidRequest && result.footage > 0 && result.unallocated === 0 && result.allocations.some(item => item.assigned > 0));
   }
 
   function openInboundTrainModal(target) {
-    inboundTrainTarget = target === "three" ? "three" : "two";
+    inboundTrainTarget = target === "one" ? "one" : target === "three" ? "three" : "two";
     inboundTrainTrackOrder = [];
+    inboundTrainTrackAmounts = {};
+    inboundTrainPendingTrack = 0;
     inboundTrainSourceIsPierce = false;
-    $("#inboundTrainTargetLabel").textContent = inboundTrainTarget === "three" ? "Adding to Ramp Post Switching" : "Adding to Ramp After Switching";
+    $("#inboundTrainTargetLabel").textContent = inboundTrainTarget === "one"
+      ? "Adding to Table 1 · Current Ramp"
+      : inboundTrainTarget === "three" ? "Adding to Ramp Post Switching" : "Adding to Ramp After Switching";
     $("#inboundTrainName").value = "";
     $("#inboundTrainFootage").value = "";
     populateInboundTrainSources();
@@ -9280,6 +9342,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     modal.classList.remove("open");
     modal.hidden = true;
     inboundTrainTrackOrder = [];
+    inboundTrainTrackAmounts = {};
+    closeInboundShoveModal();
     document.body.classList.remove("modal-open");
   }
 
@@ -9294,15 +9358,71 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     inboundTrainSourceIsPierce = clean(entry.day).toUpperCase() === "PIERCE";
     $("#inboundTrainName").value = entry.train;
     $("#inboundTrainFootage").value = fmtInt(entry.footage);
+    inboundTrainTrackOrder = [];
+    inboundTrainTrackAmounts = {};
     renderInboundTrainPlacement();
   }
 
   function toggleInboundLandingTrack(trackValue) {
     const track = Number(trackValue);
     if (!TRACKS.includes(track)) return;
-    const index = inboundTrainTrackOrder.indexOf(track);
-    if (index >= 0) inboundTrainTrackOrder.splice(index, 1);
-    else inboundTrainTrackOrder.push(track);
+    openInboundShoveModal(track);
+  }
+
+  function setInboundShoveValue(value) {
+    const range = $("#inboundShoveRange");
+    const maximum = Math.max(1, Number(range.max) || 1);
+    const amount = Math.max(1, Math.min(maximum, Math.round(Number(value) || 1)));
+    range.value = String(amount);
+    $("#inboundShoveNumber").value = String(amount);
+    $("#inboundShoveValue").textContent = `${fmtInt(amount)} FT`;
+  }
+
+  function openInboundShoveModal(track) {
+    const total = Math.max(0, Math.round(parseInboundFt($("#inboundTrainFootage").value)));
+    if (!total) {
+      $("#inboundTrainPreview").textContent = "Enter the inbound total footage before selecting a track.";
+      return;
+    }
+    const current = Math.max(0, Number(inboundTrainTrackAmounts[track]) || 0);
+    const assignedElsewhere = inboundTrainTrackOrder.reduce((sum, item) => item === track ? sum : sum + Math.max(0, Number(inboundTrainTrackAmounts[item]) || 0), 0);
+    const remaining = Math.max(0, total - assignedElsewhere);
+    if (!remaining) return;
+    const model = inboundTrainPreviewModel();
+    const available = (TRACK_CAPACITY_FT[track] || 0) - inboundTrainTrackUsage(model, track);
+    const suggested = current || Math.min(remaining, Math.max(1, available));
+    inboundTrainPendingTrack = track;
+    $("#inboundShoveTitle").textContent = `${current ? "Edit" : "Add"} shove to 6-${track}`;
+    $("#inboundShoveHelp").textContent = `${fmtInt(remaining)} FT of the inbound is available to assign. Track 6-${track} currently has ${fmtInt(available)} FT available.`;
+    $("#inboundShoveRange").max = String(remaining);
+    $("#inboundShoveNumber").max = String(remaining);
+    $("#removeInboundShove").hidden = !current;
+    $("#confirmInboundShove").textContent = current ? "Update Shove" : "Add Shove";
+    setInboundShoveValue(Math.min(remaining, suggested));
+    $("#inboundShoveModal").hidden = false;
+    requestAnimationFrame(() => $("#inboundShoveRange").focus());
+  }
+
+  function closeInboundShoveModal() {
+    $("#inboundShoveModal").hidden = true;
+    inboundTrainPendingTrack = 0;
+  }
+
+  function confirmInboundShove() {
+    const track = inboundTrainPendingTrack;
+    if (!TRACKS.includes(track)) return;
+    const amount = Math.max(1, Math.round(Number($("#inboundShoveRange").value) || 1));
+    if (!inboundTrainTrackOrder.includes(track)) inboundTrainTrackOrder.push(track);
+    inboundTrainTrackAmounts[track] = amount;
+    closeInboundShoveModal();
+    renderInboundTrainPlacement();
+  }
+
+  function removeInboundShove() {
+    const track = inboundTrainPendingTrack;
+    inboundTrainTrackOrder = inboundTrainTrackOrder.filter(item => item !== track);
+    delete inboundTrainTrackAmounts[track];
+    closeInboundShoveModal();
     renderInboundTrainPlacement();
   }
 
@@ -9320,8 +9440,28 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     const displayTrain = train + (inboundTrainSourceIsPierce && !/\[P\]/i.test(train) ? " [P]" : "");
     const result = inboundTrainAllocations();
     if (!train || !result.footage || !result.allocations.length) return;
-    const model = ensureInboundTrainTargetModel();
     const stamp = Date.now();
+    if (inboundTrainTarget === "one") {
+      const inboundSequence = Math.max(0, ...state.rows.map(row => Number(row && row[INBOUND_SEQUENCE_INDEX]) || 0)) + 1;
+      let added = 0;
+      result.allocations.forEach((item,index)=>{
+        if (item.assigned <= 0) return;
+        const label = `${fmtInt(item.assigned)} ${displayTrain} [${item.track}]`;
+        const row = syntheticPrimaryRow({footage:item.assigned,title:label,content:escapeHtml(label)},item.track,`inbound-${stamp}-${item.track}-${index}`);
+        row[2] = `INBOUND-${stamp}-${index + 1}`;
+        row[6] = "CU";
+        row[10] = displayTrain;
+        row[INBOUND_SHOVE_ORDER_INDEX] = index + 1;
+        row[INBOUND_SEQUENCE_INDEX] = inboundSequence;
+        state.rows.push(row);
+        added += 1;
+      });
+      closeInboundTrainModal();
+      renderAll();
+      ssShowToast(`${train} added to Table 1 across ${added} track${added === 1 ? "" : "s"}.`);
+      return;
+    }
+    const model = ensureInboundTrainTargetModel();
     const inboundGroups = new Set();
     Object.values(model.tracks || {}).forEach(blocks => {
       (Array.isArray(blocks) ? blocks : []).forEach(block => {
@@ -10548,7 +10688,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   });
   $("#inboundTrainSource").addEventListener("change", event => selectInboundTrainSource(event.target.value));
   $("#inboundTrainName").addEventListener("input", renderInboundTrainPlacement);
-  $("#inboundTrainFootage").addEventListener("input", renderInboundTrainPlacement);
+  $("#inboundTrainFootage").addEventListener("input", () => { inboundTrainTrackOrder = []; inboundTrainTrackAmounts = {}; renderInboundTrainPlacement(); });
   $("#inboundTrainTrackList").addEventListener("click", event => {
     const track = event.target.closest("[data-inbound-landing-track]");
     if (track) toggleInboundLandingTrack(track.dataset.inboundLandingTrack);
@@ -10556,6 +10696,12 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   $("#closeInboundTrain").addEventListener("click", closeInboundTrainModal);
   $("#cancelInboundTrain").addEventListener("click", closeInboundTrainModal);
   $("#confirmInboundTrain").addEventListener("click", confirmInboundTrain);
+  $("#inboundShoveRange").addEventListener("input", event => setInboundShoveValue(event.target.value));
+  $("#inboundShoveNumber").addEventListener("input", event => setInboundShoveValue(event.target.value));
+  $("#cancelInboundShove").addEventListener("click", closeInboundShoveModal);
+  $("#confirmInboundShove").addEventListener("click", confirmInboundShove);
+  $("#removeInboundShove").addEventListener("click", removeInboundShove);
+  $("#inboundShoveModal").addEventListener("click", event => { if (event.target === event.currentTarget) closeInboundShoveModal(); });
   $("#inboundTrainModal").addEventListener("click", event => {
     if (event.target === event.currentTarget) closeInboundTrainModal();
   });
@@ -11409,6 +11555,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     if (e.key !== "Escape") return;
     hideBlockContextMenu();
     if ($("#excelInputMenuOverlay").classList.contains("open")) closeLphInputMenu();
+    else if (!$("#inboundShoveModal").hidden) closeInboundShoveModal();
     else if (!$("#inboundTrainModal").hidden) closeInboundTrainModal();
     else if (!$("#rawTrackModal").hidden) closeRawTrackModal();
     else if (!$("#inboundArchivePreview").hidden) closeInboundArchivePreview();
