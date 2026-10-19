@@ -10951,8 +10951,8 @@ function applyForecastExcelViewSettings(){
   page.style.setProperty("--forecast-excel-unplanned-column-size",`${unplannedColumnText}px`);
   page.style.setProperty("--forecast-excel-notes-train-scale",String(notesTrain/16));
   page.style.setProperty("--forecast-excel-notes-height",`${notesHeight}px`);
-  page.style.setProperty("--forecast-excel-left-width",`${leftWidth*.56}fr`);
-  page.style.setProperty("--forecast-excel-right-width",`${rightWidth*.44}fr`);
+  page.style.setProperty("--forecast-excel-left-width",`calc(${leftWidth*56/100}% - 3px)`);
+  page.style.setProperty("--forecast-excel-right-width",`calc(${rightWidth*44/100}% - 3px)`);
   page.style.setProperty("--forecast-excel-height-scale",String(height/100));
   page.style.setProperty("--forecast-excel-calc-header-opacity",String(headerOpacity/100));
   page.style.width="100%";
@@ -23149,7 +23149,7 @@ body.forecast-excel-view-open{
   text-shadow:0 0 10px rgba(255,255,255,.22);
 }
 .forecast-excel-page.modern-table-view .forecast-excel-columns{
-  grid-template-columns:minmax(0,51.5%) minmax(0,48.5%);
+  grid-template-columns:minmax(0,var(--forecast-excel-left-width,calc(56% - 3px))) minmax(0,var(--forecast-excel-right-width,calc(44% - 3px)));
   gap:10px;
 }
 .forecast-excel-page.modern-table-view .forecast-excel-left,
@@ -23324,7 +23324,7 @@ body.forecast-excel-view-open{
 }
 .forecast-excel-columns{
   display:grid;
-  grid-template-columns:minmax(0,var(--forecast-excel-left-width,56fr)) minmax(0,var(--forecast-excel-right-width,44fr));
+  grid-template-columns:minmax(0,var(--forecast-excel-left-width,calc(56% - 3px))) minmax(0,var(--forecast-excel-right-width,calc(44% - 3px)));
   gap:6px;
   align-items:stretch;
 }
@@ -23696,7 +23696,7 @@ body.forecast-excel-view-open{
   min-width:76px;
   max-width:76px;
 }
-.forecast-excel-columns:has(.forecast-request-unplanned-cell){grid-template-columns:minmax(0,var(--forecast-excel-left-width,56fr)) minmax(0,var(--forecast-excel-right-width,44fr))}
+.forecast-excel-columns:has(.forecast-request-unplanned-cell){grid-template-columns:minmax(0,var(--forecast-excel-left-width,calc(56% - 3px))) minmax(0,var(--forecast-excel-right-width,calc(44% - 3px)))}
 .forecast-excel-block.request .forecast-excel-table:has(.forecast-request-unplanned-cell){width:100%!important;overflow:visible!important}
 .forecast-excel-block.request .forecast-excel-table:has(.forecast-request-unplanned-cell) tr > :last-child{position:relative;overflow:visible!important}
 .forecast-excel-page.modern-table-view .forecast-excel-block.request:has(.forecast-request-unplanned-cell){overflow:visible!important}
@@ -24070,7 +24070,7 @@ body.forecast-excel-view-open{
   display:none;
 }
 #forecastExcelView .forecast-excel-page.modern-table-view .forecast-excel-columns{
-  grid-template-columns:minmax(0,56%) minmax(0,44%);
+  grid-template-columns:minmax(0,var(--forecast-excel-left-width,calc(56% - 3px))) minmax(0,var(--forecast-excel-right-width,calc(44% - 3px)));
   gap:6px;
 }
 #forecastExcelView .forecast-excel-page.modern-table-view .forecast-excel-left,
@@ -27210,9 +27210,10 @@ body #forecastExcelView :is(.forecast-excel-block.hours24,.forecast-excel-block.
 #forecastExcelView .forecast-excel-page.forecast-24h-focus .forecast-excel-block.hours48,
 #forecastExcelView .forecast-excel-page.forecast-24h-focus .forecast-excel-block.request,
 #forecastExcelView .forecast-excel-page.forecast-24h-focus .forecast-excel-notes{display:none!important}
-#forecastExcelView .forecast-excel-page.forecast-24h-focus .forecast-excel-columns{grid-template-columns:minmax(0,1.45fr) minmax(320px,.75fr)!important;align-items:start!important}
+#forecastExcelView .forecast-excel-page.forecast-24h-focus .forecast-excel-columns{grid-template-columns:minmax(0,var(--forecast-excel-left-width,calc(56% - 3px))) minmax(0,var(--forecast-excel-right-width,calc(44% - 3px)))!important;align-items:start!important;justify-content:start!important}
 #forecastExcelView .forecast-excel-page.forecast-24h-focus .forecast-excel-right{display:block!important}
-@media(max-width:900px){#forecastExcelView .forecast-excel-page.forecast-24h-focus .forecast-excel-columns{grid-template-columns:1fr!important}}
+#forecastExcelView .forecast-excel-page.forecast-24h-focus{min-height:max(720px,calc(100vh - 12px))}
+#forecastExcelView .forecast-excel-page.forecast-24h-focus .forecast-excel-toolbar{max-height:calc(100vh - 20px);overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable}
 </style>
 <script id="chassis-24h-focus-toggle-v1">
 (function(){
@@ -27230,11 +27231,13 @@ body #forecastExcelView :is(.forecast-excel-block.hours24,.forecast-excel-block.
     button.setAttribute("aria-pressed",String(enabled));
     button.textContent=enabled?"Full View":"24H Focus";
     button.title=enabled?"Show the complete 72-hour forecast":"Show only the Train ID table and 24-hour chassis calculator";
+    applyLabels();
   }
   function applyLabels(){
     const tracksTitle=page.querySelector(".forecast-excel-left h1 span");
     const calculatorTitle=page.querySelector(".forecast-excel-block.hours24 h3 span");
-    if(tracksTitle&&tracksTitle.textContent!=="CHASSIS FORECAST (72H)")tracksTitle.textContent="CHASSIS FORECAST (72H)";
+    const tracksTitleText=page.classList.contains("forecast-24h-focus")?"CURRENT TRACK STATUS":"CHASSIS FORECAST (72H)";
+    if(tracksTitle&&tracksTitle.textContent!==tracksTitleText)tracksTitle.textContent=tracksTitleText;
     if(calculatorTitle&&calculatorTitle.textContent!=="Chassis Calculator")calculatorTitle.textContent="Chassis Calculator";
   }
   button.onclick=()=>{
