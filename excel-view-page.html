@@ -1680,6 +1680,11 @@
   .dashboard-controls {
     display: flex; align-items: center; gap: 8px; flex-wrap: nowrap; justify-content: flex-end; min-width: 0;
   }
+  #moveFollowUpLabels {
+    width: auto;
+    min-width: 112px;
+    white-space: nowrap;
+  }
   .table-density-control {
     min-width: 132px;
     height: 34px;
@@ -1853,15 +1858,18 @@
   .final-block-list {
     width: 100%;
     display: grid;
-    grid-template-columns: repeat(8, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 3px;
     align-items: stretch;
   }
   .final-summary-block {
     width: 100%;
     min-width: 0;
-    min-height: 24px;
+    height: 30px;
+    min-height: 30px;
+    max-height: 30px;
     padding: 2px 5px;
+    box-sizing: border-box;
   }
   .final-paste-hint {
     width: 100%;
@@ -2122,7 +2130,7 @@
   .final-assigned-main,
   .final-assigned-source { display:block; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .final-assigned-source { margin-top:1px; font-size:.82em; font-weight:850; line-height:1; }
-  .final-summary-block[data-block-assignment] { display:flex !important; min-height:28px; padding:2px 5px; flex-direction:column !important; align-items:flex-start !important; justify-content:center !important; overflow:hidden; line-height:1 !important; text-align:left !important; }
+  .final-summary-block[data-block-assignment] { display:flex !important; height:30px; min-height:30px; max-height:30px; padding:2px 5px; box-sizing:border-box; flex-direction:column !important; align-items:flex-start !important; justify-content:center !important; overflow:hidden; line-height:1 !important; text-align:left !important; }
   .final-summary-block[data-block-assignment] .final-assigned-main,
   .final-summary-block[data-block-assignment] .final-assigned-source { width:100%; flex:0 0 auto; }
   .add-inbound-train-btn {
@@ -2252,7 +2260,7 @@
   #inboundTrainSource option.inbound-source-pierce { background: #5b21b6; color: #ffffff; }
   .inbound-train-track-list {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr);
     gap: 8px;
     margin-top: 8px;
   }
@@ -3837,11 +3845,11 @@
   .inbound-day-heading-toggle { margin-top:0; padding:3px 5px; border:1px solid #64748b; border-radius:5px; background:#18263a; color:#dce8f7; font-size:8px; font-weight:900; letter-spacing:.02em; text-transform:uppercase; white-space:nowrap; cursor:pointer; }
   .inbound-day-heading-toggle[aria-pressed="true"] { border-color:#38bdf8; background:#075985; color:#fff; }
   .inbound-add-new { width:23px; height:23px; display:grid; place-items:center; margin:0; padding:0; border:1px solid #f4c430; border-radius:5px; background:#f4c430; color:#111827; font-size:16px; line-height:1; font-weight:900; cursor:pointer; }
-  .inbound-popup-close { min-width:100px; padding-left:6px; padding-right:6px; }
+  .inbound-popup-close { min-width:56px; padding-left:6px; padding-right:6px; }
   .inbound-add-new:hover,.inbound-add-new:focus-visible { background:#ffe16b; border-color:#ffe16b; outline:2px solid rgba(244,196,48,.32); outline-offset:1px; }
   #inboundPanel.hide-inbound-day-headings .inbound-group-label { display:none; }
   .inbound-popup-close {
-    min-width: 112px;
+    min-width: 56px;
     height: 30px;
     border: 1px solid #53647a;
     border-radius: 5px;
@@ -4136,7 +4144,6 @@
         <button class="btn btn-light" id="inboundArchiveBtn" type="button">Inbound Archive</button>
       </div>
       <div class="top-action-group top-action-group-green" aria-label="Daily coordination tools">
-        <button class="btn btn-light" id="toggleTodayRoster" type="button">Today's Roster</button>
         <button class="btn btn-light" id="toggleCompactChecklist" type="button">Checklist</button>
         <button class="btn btn-light" id="toggleUrgentNotes" type="button" aria-pressed="false">Morning Meeting</button>
       </div>
@@ -4313,7 +4320,7 @@
             <div class="inbound-title-actions"><div class="inbound-popup-title">Inbounds</div><button class="inbound-add-new" id="addNewInbound" type="button" title="Add new inbound" aria-label="Add new inbound">+</button></div>
             <button class="inbound-day-heading-toggle" id="toggleInboundDayHeadings" type="button" aria-pressed="true">Date Headers On</button>
           </div>
-          <button class="inbound-popup-close" id="closeInboundPlanner" type="button" aria-label="Hide Inbounds">Hide Inbounds</button>
+          <button class="inbound-popup-close" id="closeInboundPlanner" type="button" aria-label="Hide Inbounds">Hide</button>
         </header>
         <div class="inbound-body" id="inboundPlannerList"></div>
         <div class="inbound-popup-resize-grip" id="inboundPopupResizeGrip" title="Drag to resize" aria-label="Resize Inbounds"></div>
@@ -4329,7 +4336,7 @@
             <div class="panel-subtitle" id="viewDescription"></div>
           </div>
           <div class="dashboard-controls">
-            <button class="btn btn-white btn-small" id="openMatrixView" type="button">Matrix View</button>
+            <button class="btn btn-white btn-small" id="moveFollowUpLabels" type="button" aria-pressed="false">Move Labels Right</button>
             <label class="table-density-control" title="Condense or expand all ramp tables">
               <span>Table space</span>
               <input id="tableDensityRange" type="range" min="0" max="100" step="1" value="50" aria-label="Table spacing from condensed to expanded">
@@ -10502,11 +10509,29 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   });
 
   $("#undoExcelView").addEventListener("click", undoExcelViewChange);
-  /* excel-open-actual-matrix-v1 */
-  $("#openMatrixView").addEventListener("click",()=>{
-    publishLiveSnapshot();
-    if(window.parent&&window.parent!==window)window.parent.postMessage({type:"conglobal-open-excel-matrix-overlay"},"*");
-  });
+  /* excel-move-followup-labels-v1 */
+  (()=>{
+    const storageKey="conglobal-excel-followup-labels-right-v1";
+    const apply=()=>{
+      let right=false;
+      try{right=localStorage.getItem(storageKey)==="right"}catch(_){}
+      document.body.classList.toggle("excel-followup-labels-right",right);
+      const button=$("#moveFollowUpLabels");
+      if(button){
+        button.setAttribute("aria-pressed",String(right));
+        button.textContent=right?"Move Labels Left":"Move Labels Right";
+      }
+      requestAnimationFrame(()=>requestAnimationFrame(()=>document.dispatchEvent(new CustomEvent("excel-followup-label-position-change",{detail:{right}}))));
+    };
+    document.addEventListener("click",event=>{
+      if(!event.target.closest("#moveFollowUpLabels"))return;
+      const right=!document.body.classList.contains("excel-followup-labels-right");
+      try{localStorage.setItem(storageKey,right?"right":"left")}catch(_){}
+      apply();
+    });
+    window.addEventListener("storage",event=>{if(event.key===storageKey)apply()});
+    apply();
+  })();
   ["yardGrid", "blankYardGrid", "blankYardGridTwo"].forEach(gridId => {
     const grid = document.getElementById(gridId);
     grid.addEventListener("pointerdown", setBlockPasteTarget);

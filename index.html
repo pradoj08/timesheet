@@ -5832,7 +5832,7 @@ tfoot .lph-target-pill.below-target{background:#fecaca;color:#7f1d1d}
       const marker = "excel-add-new-inbound-v1";
       if (!html || typeof html !== "string" || html.includes(marker)) return html;
       if (!html.includes('id="toggleInboundDayHeadings"') || !html.includes("function blankInboundPlan")) return html;
-      html = html.replace('</head>', '<style id="excel-add-new-inbound-style">.inbound-popup-head{gap:6px!important;padding-left:8px!important;padding-right:8px!important}.inbound-popup-head>div:not(.inbound-title-actions){flex-direction:row!important;align-items:center!important;gap:6px!important}.inbound-title-actions{display:flex!important;flex-direction:row!important;align-items:center!important;gap:7px!important}.inbound-day-heading-toggle{padding:3px 5px!important;font-size:8px!important;letter-spacing:.02em!important}.inbound-add-new{width:23px;height:23px;display:grid;place-items:center;margin:0;padding:0;border:1px solid #f4c430;border-radius:5px;background:#f4c430;color:#111827;font-size:16px;line-height:1;font-weight:900;cursor:pointer}.inbound-add-new:hover,.inbound-add-new:focus-visible{background:#ffe16b;border-color:#ffe16b;outline:2px solid rgba(244,196,48,.32);outline-offset:1px}.inbound-popup-close{min-width:100px!important;padding-left:6px!important;padding-right:6px!important}</style></head>');
+      html = html.replace('</head>', '<style id="excel-add-new-inbound-style">.inbound-popup-head{gap:6px!important;padding-left:8px!important;padding-right:8px!important}.inbound-popup-head>div:not(.inbound-title-actions){flex-direction:row!important;align-items:center!important;gap:6px!important}.inbound-title-actions{display:flex!important;flex-direction:row!important;align-items:center!important;gap:7px!important}.inbound-day-heading-toggle{padding:3px 5px!important;font-size:8px!important;letter-spacing:.02em!important}.inbound-add-new{width:23px;height:23px;display:grid;place-items:center;margin:0;padding:0;border:1px solid #f4c430;border-radius:5px;background:#f4c430;color:#111827;font-size:16px;line-height:1;font-weight:900;cursor:pointer}.inbound-add-new:hover,.inbound-add-new:focus-visible{background:#ffe16b;border-color:#ffe16b;outline:2px solid rgba(244,196,48,.32);outline-offset:1px}.inbound-popup-close{min-width:56px!important;padding-left:6px!important;padding-right:6px!important}</style></head>');
       html = html.replace(
         '<div class="inbound-popup-title">Inbounds</div>',
         '<div class="inbound-title-actions"><div class="inbound-popup-title">Inbounds</div><button class="inbound-add-new" id="addNewInbound" type="button" title="Add new inbound" aria-label="Add new inbound">+</button></div>'
@@ -5943,21 +5943,40 @@ tfoot .lph-target-pill.below-target{background:#fecaca;color:#7f1d1d}
         .replace(trainAnchor, `'\"><span>' + escapeHtml(displayTrain) + '</span>'`);
     }
 
-    function withExcelMatrixViewButton(html) {
-      const marker = "excel-open-actual-matrix-v1";
+    function withExcelMoveFollowUpLabelsButton(html) {
+      const marker = "excel-move-followup-labels-v1";
       if (!html || typeof html !== "string" || html.includes(marker)) return html;
       if (!html.includes('class="dashboard-controls"') || !html.includes('id="undoExcelView"')) return html;
       html = html.replace(
         '<div class="dashboard-controls">',
-        '<div class="dashboard-controls">\n            <button class="btn btn-white btn-small" id="openMatrixView" type="button">Matrix View</button>'
+        '<div class="dashboard-controls">\n            <button class="btn btn-white btn-small" id="moveFollowUpLabels" type="button" aria-pressed="false">Move Labels Right</button>'
       );
+      html = html.replace('</head>', '<style id="excel-followup-label-header-position-v1">#moveFollowUpLabels{width:auto;min-width:112px;white-space:nowrap}</style>\n</head>');
       html = html.replace(
         '  $("#undoExcelView").addEventListener("click", undoExcelViewChange);',
         `  /* ${marker} */
-  $("#openMatrixView").addEventListener("click",()=>{
-    publishLiveSnapshot();
-    if(window.parent&&window.parent!==window)window.parent.postMessage({type:"conglobal-open-excel-matrix-overlay"},"*");
-  });
+  (()=>{
+    const storageKey="conglobal-excel-followup-labels-right-v1";
+    const apply=()=>{
+      let right=false;
+      try{right=localStorage.getItem(storageKey)==="right"}catch(_){}
+      document.body.classList.toggle("excel-followup-labels-right",right);
+      const button=$("#moveFollowUpLabels");
+      if(button){
+        button.setAttribute("aria-pressed",String(right));
+        button.textContent=right?"Move Labels Left":"Move Labels Right";
+      }
+      requestAnimationFrame(()=>requestAnimationFrame(()=>document.dispatchEvent(new CustomEvent("excel-followup-label-position-change",{detail:{right}}))));
+    };
+    document.addEventListener("click",event=>{
+      if(!event.target.closest("#moveFollowUpLabels"))return;
+      const right=!document.body.classList.contains("excel-followup-labels-right");
+      try{localStorage.setItem(storageKey,right?"right":"left")}catch(_){}
+      apply();
+    });
+    window.addEventListener("storage",event=>{if(event.key===storageKey)apply()});
+    apply();
+  })();
   $("#undoExcelView").addEventListener("click", undoExcelViewChange);`
       );
       return html;
@@ -5968,7 +5987,7 @@ tfoot .lph-target-pill.below-target{background:#fecaca;color:#7f1d1d}
       if (!html || typeof html !== "string" || html.includes(marker)) return html;
       if (!html.includes('id="yardGrid"') || !html.includes('class="panel dashboard-panel"')) return html;
       const bootMarker = "excel-page2-route-boot-v1";
-      const bootScript = `<scr${""}ipt id="${bootMarker}">(function(){try{if(window.parent&&window.parent!==window&&String(window.parent.location.hash||"")==="#excelView2")document.body.classList.add("excel-page-2","excel-page-2-tools-open","excel-page-2-pending")}catch(error){}})();</scr${""}ipt>`;
+      const bootScript = `<scr${""}ipt id="${bootMarker}">(function(){document.documentElement.classList.add("excel-page-2-boot-pending");document.body.classList.add("excel-page-2-pending");window.setTimeout(function(){if(!document.documentElement.classList.contains("excel-page-2-boot-pending"))return;document.documentElement.classList.remove("excel-page-2-boot-pending");document.body.classList.remove("excel-page-2-pending")},8000)})();</scr${""}ipt>`;
       html = html.replace(/(<body\b[^>]*>)/i, "$1\n" + bootScript);
       html = html
         .replace(/Array\.from\(\{length:8\}/g, "Array.from({length:(document.body.classList.contains('excel-page-2')?10:8)}")
@@ -6025,7 +6044,10 @@ tfoot .lph-target-pill.below-target{background:#fecaca;color:#7f1d1d}
       }
       const style = `<style id="${marker}-styles">
 body.excel-page-2{background:#f3f5f6!important;color:#101820!important}
-body.excel-page-2.excel-page-2-pending{overflow:hidden!important}
+html.excel-page-2-boot-pending{background:#f3f5f6!important}
+html.excel-page-2-boot-pending body{visibility:hidden!important}
+html.excel-page-2-boot-pending body:before{content:"Loading Excel view...";position:fixed;inset:0;z-index:2147483647;display:grid;place-items:center;background:#f3f5f6;color:#60717c;visibility:visible!important;font:900 11px/1 "Arial Narrow","Segoe UI",Arial,sans-serif;letter-spacing:.12em;text-transform:uppercase}
+body.excel-page-2-pending{overflow:hidden!important}
 body.excel-page-2.excel-page-2-pending>.app{visibility:hidden!important}
 body.excel-page-2 .app{max-width:none!important;margin:0!important}
 body.excel-page-2 .main{max-width:none!important;padding:0!important}
@@ -6040,6 +6062,7 @@ body.excel-page-2.excel-page-2-tools-open #excelWorkspace>.dashboard-panel>.pane
 body.excel-page-2 #excelWorkspace>.dashboard-panel>.panel-head{background:#050505!important;color:#fff!important;border-bottom-color:#303030!important}
 body.excel-page-2 #excelWorkspace>.dashboard-panel>.panel-head .panel-title,
 body.excel-page-2 #excelWorkspace>.dashboard-panel>.panel-head .panel-subtitle{color:#fff!important}
+body.excel-page-2 #excelWorkspace>.dashboard-panel>.panel-head .panel-title{font:950 13px/1.1 "Arial Narrow","Segoe UI",Arial,sans-serif!important;letter-spacing:.04em!important}
 body.excel-page-2 #removeAllBlockTags,
 body.excel-page-2 #toggleInboundBlockGlow,
 body.excel-page-2 #assignmentLabelToolbarToggle{display:none!important}
@@ -6126,7 +6149,7 @@ body.excel-page-2 #yardGrid>.cut-cell.block-drag-target:before,body.excel-page-2
 body.excel-page-2 #yardGrid>.track-remaining{position:relative!important;z-index:1!important;display:flex!important;flex-direction:column!important;justify-content:center!important;align-items:flex-end!important;margin:0!important;min-height:calc(44px * var(--excel-table-scale,1))!important;padding:5px 12px!important;border:0!important;border-radius:0!important;background:linear-gradient(90deg,var(--excel-page2-row,#f6f8f9) 0 calc(100% - 98px),var(--excel-page2-remaining-bg,#dfe9e3) calc(100% - 98px) 100%)!important;color:#101820!important;font-family:var(--grid-header-font,"Roboto Condensed","Arial Narrow",Arial,sans-serif)!important;font-size:max(13px,calc(var(--grid-header-size,11px) + 4px))!important;font-weight:var(--grid-header-weight,700)!important;line-height:1!important;box-shadow:none!important}
 body.excel-page-2 #yardGrid>.track-remaining:before{content:none;display:none}
 body.excel-page-2 #yardGrid>.track-remaining:after{content:none;display:none}
-body.excel-page-2 #yardGrid>.track-remaining.excel-page2-tight{--excel-page2-remaining-bg:#f6c447}body.excel-page-2 #yardGrid>.track-remaining.over,body.excel-page-2 #yardGrid>.track-remaining.excel-page2-over{--excel-page2-remaining-bg:#b21422;background:linear-gradient(90deg,var(--excel-page2-row,#f6f8f9) 0 calc(100% - 98px),var(--excel-page2-remaining-bg) calc(100% - 98px) 100%)!important;color:#fff!important}
+body.excel-page-2 #yardGrid>.track-remaining.excel-page2-tight{--excel-page2-remaining-bg:#f6c447}body.excel-page-2 #yardGrid>.track-remaining.excel-page2-critical,body.excel-page-2 #yardGrid>.track-remaining.over,body.excel-page-2 #yardGrid>.track-remaining.excel-page2-over{--excel-page2-remaining-bg:#b21422;background:linear-gradient(90deg,var(--excel-page2-row,#f6f8f9) 0 calc(100% - 98px),var(--excel-page2-remaining-bg) calc(100% - 98px) 100%)!important;color:#fff!important}
 body.excel-page-2 #yardGrid>.track-remaining.block-paste-target{box-shadow:inset 0 0 0 3px #f59e0b,0 0 0 2px #7c2d12!important}body.excel-page-2 #yardGrid>.track-remaining.block-drag-target{box-shadow:inset 0 0 0 3px #f59e0b,0 0 0 2px #7c2d12!important;filter:brightness(1.1)}
 body.excel-page-2 #yardGrid>.excel-page2-row-alt{--excel-page2-row:#e7eaed}
 body.excel-page-2 #yardGrid>.excel-page2-row-over{--excel-page2-row:#fbeceb}
@@ -6188,6 +6211,7 @@ body.excel-page-2 .blank-grid-separator:first-of-type{margin-top:10px!important}
         if(!page2Enabled)return;
         document.body.classList.remove("excel-page-2-pending");
         document.body.classList.add("excel-page-2-ready");
+        document.documentElement.classList.remove("excel-page-2-boot-pending");
       });
     });
   }
@@ -6403,7 +6427,7 @@ body.excel-page-2 .blank-grid-separator:first-of-type{margin-top:10px!important}
   function formatNumber(value){return Math.round(Number(value)||0).toLocaleString("en-US")}
   function paintRemainingCell(cell,open){
     if(!cell)return;
-    var over=open<0,tight=!over&&open<=200,palette=over?"#b21422":tight?"#f6c447":"#dfe9e3",textColor=over?"#fff":"#101820";
+    var critical=open<200,caution=!critical&&open<700,palette=critical?"#b21422":caution?"#f6c447":"#dfe9e3",textColor=critical?"#fff":"#101820";
     cell.style.setProperty("--excel-page2-remaining-bg",palette,"important");
     cell.style.setProperty("background","linear-gradient(90deg,var(--excel-page2-row,#f6f8f9) 0 calc(100% - 98px),"+palette+" calc(100% - 98px) 100%)","important");
     cell.style.setProperty("color",textColor,"important");
@@ -6635,7 +6659,7 @@ body.excel-page-2 .blank-grid-separator:first-of-type{margin-top:10px!important}
     if(!grid)return;
     Array.prototype.forEach.call(grid.querySelectorAll(":scope > .excel-page2-row-band"),function(band){band.remove()});
     Array.prototype.forEach.call(grid.children,function(cell){
-      cell.classList.remove("excel-page2-track-head","excel-page2-ruler-head","excel-page2-blocks-head","excel-page2-remaining-head","excel-page2-head-hidden","excel-page2-row-alt","excel-page2-row-over","excel-page2-row-hidden","excel-page2-cat-sand","excel-page2-cat-purple","excel-page2-cat-red","excel-page2-cat-dark","excel-page2-cat-other","excel-page2-empty","excel-page2-tight","excel-page2-over");
+      cell.classList.remove("excel-page2-track-head","excel-page2-ruler-head","excel-page2-blocks-head","excel-page2-remaining-head","excel-page2-head-hidden","excel-page2-row-alt","excel-page2-row-over","excel-page2-row-hidden","excel-page2-cat-sand","excel-page2-cat-purple","excel-page2-cat-red","excel-page2-cat-dark","excel-page2-cat-other","excel-page2-empty","excel-page2-tight","excel-page2-critical","excel-page2-over");
       cell.style.removeProperty("--excel-page2-row");
       cell.style.removeProperty("--excel-page2-fill");
       cell.style.removeProperty("--excel-page2-track-color");
@@ -6742,7 +6766,7 @@ body.excel-page-2 .blank-grid-separator:first-of-type{margin-top:10px!important}
       var capacity=capacityFor(track,remaining);
       var open=capacity-used;
       var percent=capacity>0?Math.round(used/capacity*100):0;
-      var needsAttention=open<=200;
+      var needsAttention=open<200;
       var over=open<0;
       var includedInSummary=track!==803||includeTrack803;
       var rowCategories={sand:0,purple:0,red:0,dark:0,other:0};
@@ -6803,9 +6827,10 @@ body.excel-page-2 .blank-grid-separator:first-of-type{margin-top:10px!important}
         remaining.textContent=formatNumber(open);
         remaining.style.setProperty("grid-column","13 / 15","important");
         remaining.classList.toggle("over",over);
-        remaining.classList.toggle("excel-page2-tight",!over&&open<=200);
+        remaining.classList.toggle("excel-page2-tight",open>=200&&open<700);
+        remaining.classList.toggle("excel-page2-critical",open<200);
         remaining.classList.toggle("excel-page2-over",over);
-        remaining.setAttribute("data-page2-caption",over?"ft over":open<=200?"ft open · tight":"ft open");
+        remaining.setAttribute("data-page2-caption",over?"ft over":open<200?"ft open · critical":open<700?"ft open · tight":"ft open");
         paintRemainingCell(remaining,open);
       }
     });
@@ -6846,11 +6871,15 @@ body.excel-page-2 .blank-grid-separator:first-of-type{margin-top:10px!important}
     var nextEnabled=Boolean(enabled);
     var alreadyApplied=page2Enabled===nextEnabled&&document.body.classList.contains("excel-page-2")===nextEnabled;
     page2Enabled=nextEnabled;
-    if(page2Enabled&&!document.body.classList.contains("excel-page-2-ready"))document.body.classList.add("excel-page-2-pending");
+    if(page2Enabled&&!document.body.classList.contains("excel-page-2-ready")){
+      document.documentElement.classList.add("excel-page-2-boot-pending");
+      document.body.classList.add("excel-page-2-pending");
+    }
     if(!page2Enabled){
       if(readyFrame)cancelAnimationFrame(readyFrame);
       readyFrame=0;
       document.body.classList.remove("excel-page-2-pending","excel-page-2-ready");
+      document.documentElement.classList.remove("excel-page-2-boot-pending");
     }
     document.body.classList.toggle("excel-page-2",page2Enabled);
     document.body.classList.toggle("excel-page-2-tools-open",page2Enabled);
@@ -6962,7 +6991,7 @@ body.excel-page-2 .excel-page2-secondary-grid>.track-remaining{display:flex!impo
 body.excel-page-2 .excel-page2-secondary-grid>.track-remaining:before{content:none;display:none}
 body.excel-page-2 .excel-page2-secondary-grid>.track-remaining:after{content:none;display:none}
 body.excel-page-2 .excel-page2-secondary-grid>.track-remaining.excel-page2-tight{--excel-page2-remaining-bg:#f6c447}
-body.excel-page-2 #blankYardGrid>.track-remaining.over,body.excel-page-2 #blankYardGrid>.track-remaining.excel-page2-over,body.excel-page-2 #blankYardGridTwo>.track-remaining.over,body.excel-page-2 #blankYardGridTwo>.track-remaining.excel-page2-over,body.excel-page-2 #blankYardGridThree>.track-remaining.over,body.excel-page-2 #blankYardGridThree>.track-remaining.excel-page2-over{--excel-page2-remaining-bg:#b21422;background:linear-gradient(90deg,var(--excel-page2-row,#f6f8f9) 0 calc(100% - 98px),var(--excel-page2-remaining-bg) calc(100% - 98px) 100%)!important;color:#fff!important}
+body.excel-page-2 .excel-page2-secondary-grid>.track-remaining.excel-page2-critical,body.excel-page-2 #blankYardGrid>.track-remaining.over,body.excel-page-2 #blankYardGrid>.track-remaining.excel-page2-over,body.excel-page-2 #blankYardGridTwo>.track-remaining.over,body.excel-page-2 #blankYardGridTwo>.track-remaining.excel-page2-over,body.excel-page-2 #blankYardGridThree>.track-remaining.over,body.excel-page-2 #blankYardGridThree>.track-remaining.excel-page2-over{--excel-page2-remaining-bg:#b21422;background:linear-gradient(90deg,var(--excel-page2-row,#f6f8f9) 0 calc(100% - 98px),var(--excel-page2-remaining-bg) calc(100% - 98px) 100%)!important;color:#fff!important}
 body.excel-page-2 .excel-page2-secondary-grid>.excel-page2-row-alt{--excel-page2-row:#e7eaed}
 body.excel-page-2 .excel-page2-secondary-grid>.excel-page2-row-over{--excel-page2-row:#fbeceb}
 body.excel-page-2.excel-page-2-no-alternate-shading .excel-page2-secondary-grid>.excel-page2-row-alt:not([data-track-row-highlight]),body.excel-page-2.excel-page-2-no-alternate-shading .excel-page2-secondary-grid>.excel-page2-row-over:not([data-track-row-highlight]),body.excel-page-2.excel-page-2-no-alternate-shading .excel-page2-secondary-grid>.excel-page2-row-over[data-track-row-highlight="red"]{--excel-page2-row:#f6f8f9!important}
@@ -6985,7 +7014,11 @@ body.excel-page-2 #blankYardGridTwo>.third-summary-total:before{content:attr(dat
 body.excel-page-2 #blankYardGridTwo>.third-summary-total:after{content:attr(data-page2-percent) "%";position:absolute;right:12px;top:8px;color:#17232c;font:900 10px/1 Consolas,"Courier New",monospace}
 body.excel-page-2 #blankYardGridTwo>.excel-page2-final-track{background-color:#fff1bd!important}
 body.excel-page-2 #blankYardGridTwo>.third-summary-total.excel-page2-final-track{background-color:#fff1bd!important}
-body.excel-page-2 #blankYardGridTwo .final-summary-block[data-block-assignment]{min-height:30px!important}
+body.excel-page-2 #blankYardGridTwo .final-summary-block{height:30px!important;min-height:30px!important;max-height:30px!important;box-sizing:border-box!important}
+body.excel-page-2 #blankYardGridTwo>.third-summary-blank.final-paste-zone{width:var(--excel-page2-final-zone-width,calc(100vw - 397px))!important;min-width:0!important;max-width:100%!important;justify-self:start!important;box-sizing:border-box!important}
+#blankYardGridTwo .final-block-list{grid-template-columns:repeat(4,minmax(0,1fr))!important;grid-auto-rows:30px!important;min-width:0!important;max-width:100%!important}
+body.excel-page-2 #blankYardGridTwo>.third-summary-average,
+body.excel-page-2 #blankYardGridTwo>.excel-page2-summary-edge,
 body.excel-page-2 #yardGrid>.track-remaining,
 body.excel-page-2 .excel-page2-secondary-grid>.track-remaining{position:sticky!important;right:0!important;z-index:12!important;width:98px!important;min-width:98px!important;max-width:98px!important;justify-self:end!important;box-shadow:-1px 0 0 #c7d0d6,-7px 0 12px rgba(15,23,32,.12)!important}
 </style>`;
@@ -6994,12 +7027,12 @@ body.excel-page-2 .excel-page2-secondary-grid>.track-remaining{position:sticky!i
   "use strict";
   var fallbackCapacity={801:1750,802:1750,803:2200,804:2500,805:2500,806:2600,807:2750,808:2500,809:2500};
   var grids=[document.getElementById("blankYardGrid"),document.getElementById("blankYardGridTwo"),document.getElementById("blankYardGridThree")].filter(Boolean);
-  var frame=0;
+  var frame=0,finalZoneFrame=0;
   function numberText(value){var match=String(value||"").replace(/,/g,"").match(/-?\\d+(?:\\.\\d+)?/);return match?Number(match[0]):0}
   function formatNumber(value){return Math.round(Number(value)||0).toLocaleString("en-US")}
   function paintRemainingCell(cell,open){
     if(!cell)return;
-    var over=open<0,tight=!over&&open<=200,palette=over?"#b21422":tight?"#f6c447":"#dfe9e3",textColor=over?"#fff":"#101820";
+    var critical=open<200,caution=!critical&&open<700,palette=critical?"#b21422":caution?"#f6c447":"#dfe9e3",textColor=critical?"#fff":"#101820";
     cell.style.setProperty("--excel-page2-remaining-bg",palette,"important");
     cell.style.setProperty("background","linear-gradient(90deg,var(--excel-page2-row,#f6f8f9) 0 calc(100% - 98px),"+palette+" calc(100% - 98px) 100%)","important");
     cell.style.setProperty("color",textColor,"important");
@@ -7043,6 +7076,7 @@ body.excel-page-2 .excel-page2-secondary-grid>.track-remaining{position:sticky!i
   function rulerColorFor(cell,category){var colors={sand:"#dec48b",purple:"#5d2a92",red:"#df3e2d",dark:"#141a1e",other:"#8796a0"};var source=String(cell&&cell.style&&cell.style.getPropertyValue("--excel-page2-source-bg")||"").trim();var tokens=source.match(/#[0-9a-f]{3,8}|rgba?[(][^)]*[)]|hsla?[(][^)]*[)]/ig);if(tokens&&tokens.length)return tokens[Math.floor(tokens.length/2)];return colors[category]||colors.other}
   function rulerPaint(entries,capacity){var colors={sand:"#dec48b",purple:"#5d2a92",red:"#df3e2d",dark:"#141a1e",other:"#8796a0"},cursor=0,stops=[],dots=["radial-gradient(circle at 1% 82%,#f8fafc 0 2px,#60717d 2.2px 3.3px,transparent 3.6px)"];entries.forEach(function(entry){var start=Math.max(0,Math.min(100,cursor));cursor+=capacity>0?entry.footage/capacity*100:0;var end=Math.max(start,Math.min(100,cursor));if(end>start){var color=entry.color||colors[entry.category]||colors.other;stops.push(color+" "+start.toFixed(3)+"%",color+" "+end.toFixed(3)+"%");dots.push("radial-gradient(circle at "+end.toFixed(3)+"% 82%,#f8fafc 0 2px,#60717d 2.2px 3.3px,transparent 3.6px)")}});var filled=Math.max(0,Math.min(100,cursor));stops.push("transparent "+filled.toFixed(3)+"%","transparent 100%");return {segments:"linear-gradient(90deg,"+stops.join(",")+")",dots:dots.join(",")}}
   function decorateTenThousandFootTracks(grid){if(!grid||grid.id!=="blankYardGridTwo")return;Array.prototype.forEach.call(grid.querySelectorAll(":scope > .third-summary-total"),function(total){var used=numberText(total.textContent),capacity=10000,percent=Math.max(0,Math.round(used/capacity*100));total.setAttribute("data-page2-used",formatNumber(used));total.setAttribute("data-page2-capacity",formatNumber(capacity));total.setAttribute("data-page2-percent",String(percent));total.style.setProperty("--excel-page2-summary-fill",Math.min(100,percent)+"%");var cell=total.previousElementSibling;while(cell&&!cell.classList.contains("third-summary-head")){cell.classList.add("excel-page2-final-track");cell=cell.nextElementSibling;if(cell&&cell!==total&&cell.classList.contains("third-summary-label"))break}})}
+  function sizeFinalSummaryZones(grid){if(!grid||grid.id!=="blankYardGridTwo")return;var wrap=grid.closest(".grid-wrap"),viewportWidth=wrap&&wrap.clientWidth||document.documentElement.clientWidth||window.innerWidth||0,scrollLeft=wrap&&wrap.scrollLeft||0,zoneWidth=Math.max(0,Math.floor(viewportWidth-68-231-98+scrollLeft));if(zoneWidth)grid.style.setProperty("--excel-page2-final-zone-width",zoneWidth+"px");else grid.style.removeProperty("--excel-page2-final-zone-width")}
   function ensureTenCutColumns(grid){
     var firstLabel=grid&&grid.querySelector(":scope > .track-label[data-track]");
     if(!firstLabel)return;
@@ -7070,6 +7104,7 @@ body.excel-page-2 .excel-page2-secondary-grid>.track-remaining{position:sticky!i
     var remainingHead=grid.querySelector(":scope > .excel-page2-remaining-head");
     if(remainingHead)remainingHead.style.setProperty("grid-column","14","important");
     decorateTenThousandFootTracks(grid);
+    sizeFinalSummaryZones(grid);
     var cuts=Array.prototype.slice.call(grid.querySelectorAll(":scope > .cut-cell"));
     captureSourceColors(cuts);
     var attentionOnly=document.getElementById("excelPage2AttentionToggle")&&document.getElementById("excelPage2AttentionToggle").getAttribute("aria-pressed")==="true";
@@ -7087,11 +7122,11 @@ body.excel-page-2 .excel-page2-secondary-grid>.track-remaining{position:sticky!i
         cardCopy(cell,footage);
         entries.push({footage:footage,category:category,color:color});
       });
-      var cutFootage=entries.reduce(function(sum,entry){return sum+entry.footage},0),used=Math.max(numberText(total&&total.textContent),cutFootage),capacity=capacityFor(track,remaining),open=capacity-used,percent=capacity>0?Math.round(used/capacity*100):0,over=open<0,needsAttention=open<=200;
+      var cutFootage=entries.reduce(function(sum,entry){return sum+entry.footage},0),used=Math.max(numberText(total&&total.textContent),cutFootage),capacity=capacityFor(track,remaining),open=capacity-used,percent=capacity>0?Math.round(used/capacity*100):0,over=open<0,needsAttention=open<200;
       if(cutFootage<used)entries.push({footage:used-cutFootage,category:"other"});
       row.forEach(function(cell){cell.classList.toggle("excel-page2-row-alt",rowIndex%2===1);cell.classList.toggle("excel-page2-row-over",over);cell.classList.toggle("excel-page2-row-hidden",attentionOnly&&!needsAttention)});
       if(total){var paint=rulerPaint(entries,capacity);total.setAttribute("data-page2-used",formatNumber(used));total.setAttribute("data-page2-capacity",formatNumber(capacity));total.setAttribute("data-page2-percent",String(percent));total.setAttribute("data-page2-over",String(over));total.style.setProperty("--excel-page2-ruler-segments",paint.segments);total.style.setProperty("--excel-page2-ruler-dots",paint.dots)}
-      if(remaining){remaining.textContent=formatNumber(open);remaining.style.setProperty("grid-column","13 / 15","important");remaining.classList.toggle("over",over);remaining.classList.toggle("excel-page2-tight",!over&&open<=200);remaining.classList.toggle("excel-page2-over",over);remaining.setAttribute("data-page2-caption",over?"ft over":open<=200?"ft open · tight":"ft open");paintRemainingCell(remaining,open)}
+      if(remaining){remaining.textContent=formatNumber(open);remaining.style.setProperty("grid-column","13 / 15","important");remaining.classList.toggle("over",over);remaining.classList.toggle("excel-page2-tight",open>=200&&open<700);remaining.classList.toggle("excel-page2-critical",open<200);remaining.classList.toggle("excel-page2-over",over);remaining.setAttribute("data-page2-caption",over?"ft over":open<200?"ft open · critical":open<700?"ft open · tight":"ft open");paintRemainingCell(remaining,open)}
     });
   }
   function stabilizeTrackRows(grid){
@@ -7103,7 +7138,9 @@ body.excel-page-2 .excel-page2-secondary-grid>.track-remaining{position:sticky!i
   function cleanStageActions(){grids.forEach(function(grid){grid.style.removeProperty("grid-template-columns");grid.querySelectorAll(":scope > .track-label,:scope > .track-total,:scope > .cut-cell,:scope > .track-remaining,:scope > .excel-page2-remaining-head").forEach(function(cell){cell.style.removeProperty("grid-row");cell.style.removeProperty("grid-column");cell.style.removeProperty("display")});var separator=grid.previousElementSibling;if(!separator||!separator.classList.contains("blank-grid-separator"))return;var moved=separator.querySelector(":scope > .copy-grid-actions");if(moved)moved.remove();separator.classList.remove("excel-page2-stage-separator")});try{if(typeof renderFourthRampTable==="function")renderFourthRampTable()}catch(error){}}
   function sync(){if(!document.body.classList.contains("excel-page-2"))return;grids.forEach(function(grid){decorateGrid(grid);stabilizeTrackRows(grid)})}
   function schedule(){if(frame)return;frame=requestAnimationFrame(function(){frame=0;sync()})}
+  function scheduleFinalSummarySize(){if(finalZoneFrame)return;finalZoneFrame=requestAnimationFrame(function(){finalZoneFrame=0;sizeFinalSummaryZones(document.getElementById("blankYardGridTwo"))})}
   grids.forEach(function(grid){new MutationObserver(schedule).observe(grid,{childList:true,subtree:false})});
+  var finalScrollWrap=document.getElementById("blankYardGridTwo");finalScrollWrap=finalScrollWrap&&finalScrollWrap.closest(".grid-wrap");if(finalScrollWrap)finalScrollWrap.addEventListener("scroll",scheduleFinalSummarySize,{passive:true});
   document.addEventListener("click",function(event){if(event.target.closest("#excelPage2AttentionToggle"))requestAnimationFrame(schedule)});
   ["hideTrackIdsToggle","hideDwellToggle","showInboundTrainToggle"].forEach(function(id){var toggle=document.getElementById(id);if(!toggle||toggle.dataset.excelPage2SecondaryRefreshBound==="true")return;toggle.dataset.excelPage2SecondaryRefreshBound="true";toggle.addEventListener("change",function(){requestAnimationFrame(schedule);setTimeout(schedule,60)})});
   window.addEventListener("resize",schedule);
@@ -7186,7 +7223,7 @@ body.excel-page-2 .excel-page2-secondary-grid>.track-remaining{position:sticky!i
       }
       html = html.replace(finalTitleAnchor, finalTitleAnchor + '\n          const assignment = block.assignment === "ihosa" || block.assignment === "mhoas" ? ` data-block-assignment="${block.assignment}"` : "";');
       html = html.replace(finalBlockAnchor, '          return `<div class="${escapeAttr(block.className)}"${assignment} data-final-block-id="${escapeAttr(block.id)}" data-footage="${Number(block.footage) || 0}" title="${escapeAttr(displayTitle)}">${displayContent}</div>`;');
-      return html.replace(/<\/head>/i, '<meta name="' + marker + '" content="enabled">\n<style id="excel-copy-assigned-final-blocks-styles">.final-assigned-main,.final-assigned-source{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.final-assigned-source{margin-top:1px;font-size:.82em;font-weight:850;line-height:1}.final-summary-block[data-block-assignment]{display:flex!important;min-height:28px;padding:2px 5px;flex-direction:column!important;align-items:flex-start!important;justify-content:center!important;overflow:hidden;line-height:1!important;text-align:left!important}.final-summary-block[data-block-assignment] .final-assigned-main,.final-summary-block[data-block-assignment] .final-assigned-source{width:100%;flex:0 0 auto}</style>\n</head>');
+      return html.replace(/<\/head>/i, '<meta name="' + marker + '" content="enabled">\n<style id="excel-copy-assigned-final-blocks-styles">.final-assigned-main,.final-assigned-source{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.final-assigned-source{margin-top:1px;font-size:.82em;font-weight:850;line-height:1}.final-summary-block[data-block-assignment]{display:flex!important;height:30px;min-height:30px;max-height:30px;padding:2px 5px;box-sizing:border-box;flex-direction:column!important;align-items:flex-start!important;justify-content:center!important;overflow:hidden;line-height:1!important;text-align:left!important}.final-summary-block[data-block-assignment] .final-assigned-main,.final-summary-block[data-block-assignment] .final-assigned-source{width:100%;flex:0 0 auto}</style>\n</head>');
     }
 
     function withExcelInboundPlannerClosedAtBoot(html) {
@@ -7556,11 +7593,11 @@ body.excel-page-2 .excel-page2-secondary-grid>.track-remaining{position:sticky!i
     function withExcelVisibleInboundHideControl(html) {
       if (!html || typeof html !== "string" || html.includes("excel-visible-inbound-hide-control")) return html;
       const patch = `<style id="excel-visible-inbound-hide-control">
-#closeInboundPlanner.inbound-popup-close{min-width:112px!important;width:auto!important;height:30px!important;padding:0 10px!important;font-size:11px!important;font-weight:900!important;letter-spacing:.03em!important}
+#closeInboundPlanner.inbound-popup-close{min-width:56px!important;width:auto!important;height:30px!important;padding:0 10px!important;font-size:11px!important;font-weight:900!important;letter-spacing:.03em!important}
 </style>`;
       html = html.replace(
         '<button class="inbound-popup-close" id="closeInboundPlanner" type="button" aria-label="Close Inbounds">&times;</button>',
-        '<button class="inbound-popup-close" id="closeInboundPlanner" type="button" aria-label="Hide Inbounds">Hide Inbounds</button>'
+        '<button class="inbound-popup-close" id="closeInboundPlanner" type="button" aria-label="Hide Inbounds">Hide</button>'
       );
       const headClose = html.toLowerCase().lastIndexOf("</head>");
       return headClose >= 0 ? html.slice(0, headClose) + patch + "\n" + html.slice(headClose) : patch + html;
@@ -9437,6 +9474,25 @@ document.addEventListener("DOMContentLoaded",function(){
       return headClose >= 0 ? patched.slice(0, headClose) + styles + "\n" + patched.slice(headClose) : styles + patched;
     }
 
+    function withExcelVerticalInboundLandingTracks(html) {
+      const marker = "excel-inbound-landing-tracks-vertical-v1";
+      if (!html || typeof html !== "string" || html.includes(marker)) return html;
+      if (!html.includes('id="inboundTrainTrackList"')) return html;
+      const style = `<style id="${marker}">
+  #inboundTrainTrackList.inbound-train-track-list{grid-template-columns:minmax(0,1fr)}
+</style>`;
+      const headClose = html.toLowerCase().indexOf("</head>");
+      return headClose >= 0 ? html.slice(0, headClose) + style + "\n" + html.slice(headClose) : style + html;
+    }
+
+    function withExcelToolbarWithoutTodayRoster(html) {
+      const marker = "excel-toolbar-without-today-roster-v1";
+      if (!html || typeof html !== "string" || html.includes(marker)) return html;
+      const button = '<button class="btn btn-light" id="toggleTodayRoster" type="button">Today\'s Roster</button>';
+      if (!html.includes(button)) return html;
+      return html.replace(button, "").replace("</head>", '<meta name="' + marker + '" content="enabled">\n</head>');
+    }
+
     function withExcelBlockConsolidation(html) {
       if (!html || typeof html !== "string" || html.includes("excel-selected-block-consolidation-v1")) return html;
       const deleteButton = "<button class=\"danger-menu-action\" id=\"deleteSelectedBlocks\" type=\"button\" role=\"menuitem\">Delete selected block(s)</button>";
@@ -10331,6 +10387,12 @@ document.addEventListener("DOMContentLoaded",function(){
     if(event.target&&event.target.id==="inventoryFileTop"&&event.target.files&&event.target.files.length){write([]);closeDeleteMenu();schedule()}
   },true);
   document.addEventListener("excel-er-imported",function(){write([]);closeDeleteMenu();schedule()});
+  document.addEventListener("excel-secondary-table-cleared",function(event){
+    var gridId=String(event&&event.detail&&event.detail.gridId||"");if(!gridId)return;
+    var records=read(),remaining=records.filter(function(item){return String(item&&item.gridId||"")!==gridId});
+    if(remaining.length===records.length)return;
+    write(remaining);closeDeleteMenu();schedule();
+  });
   window.addEventListener("storage",function(event){if(event.key===storageKey)schedule()});
   schedule();
 })();
@@ -17827,7 +17889,7 @@ body.excel-page-2 .yard-grid>.track-remaining.over,body.excel-page-2 .yard-grid>
   function saveState(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(state))}catch(_){}}
   function rowCells(label){var cells=[label],node=label.nextElementSibling;while(node&&!(node.matches&&node.matches(".track-label[data-track]"))){cells.push(node);node=node.nextElementSibling}return cells}
   function ensureRemainingNumbers(grid){grid.querySelectorAll(":scope > .track-label[data-track]").forEach(function(label){var row=rowCells(label),remaining=row.find(function(cell){return cell.classList.contains("track-remaining")});if(!remaining||String(remaining.textContent||"").trim())return;var total=row.find(function(cell){return cell.classList.contains("track-total")}),used=Number(String(total&&total.getAttribute("data-page2-used")||total&&total.textContent||"0").replace(/[^\\d.-]/g,""))||0,capacity=TRACK_CAPACITY[Number(label.dataset.track)]||0,open=Math.round(capacity-used);remaining.textContent=open.toLocaleString("en-US");remaining.classList.toggle("over",open<0)})}
-  function paintRemainingPalette(grid){grid.querySelectorAll(":scope > .track-remaining").forEach(function(remaining){var value=Number(String(remaining.textContent||"").replace(/[^\\d.-]/g,"")),over=remaining.classList.contains("over")||remaining.classList.contains("excel-page2-over")||Number.isFinite(value)&&value<0,tight=!over&&(remaining.classList.contains("excel-page2-tight")||Number.isFinite(value)&&value<=200),palette=over?"#b21422":tight?"#f6c447":"#dfe9e3",textColor=over?"#fff":"#101820";remaining.style.setProperty("--excel-page2-remaining-bg",palette,"important");remaining.style.setProperty("background","linear-gradient(90deg,var(--excel-page2-row,#f6f8f9) 0 calc(100% - 98px),var(--excel-page2-remaining-bg) calc(100% - 98px) 100%)","important");remaining.style.setProperty("color",textColor,"important");remaining.style.setProperty("-webkit-text-fill-color",textColor,"important");remaining.style.setProperty("visibility","visible","important");remaining.style.setProperty("opacity","1","important")})}
+  function paintRemainingPalette(grid){grid.querySelectorAll(":scope > .track-remaining").forEach(function(remaining){var value=Number(String(remaining.textContent||"").replace(/[^\\d.-]/g,"")),critical=Number.isFinite(value)&&value<200,caution=Number.isFinite(value)&&value>=200&&value<700,palette=critical?"#b21422":caution?"#f6c447":"#dfe9e3",textColor=critical?"#fff":"#101820";remaining.style.setProperty("--excel-page2-remaining-bg",palette,"important");remaining.style.setProperty("background","linear-gradient(90deg,var(--excel-page2-row,#f6f8f9) 0 calc(100% - 98px),var(--excel-page2-remaining-bg) calc(100% - 98px) 100%)","important");remaining.style.setProperty("color",textColor,"important");remaining.style.setProperty("-webkit-text-fill-color",textColor,"important");remaining.style.setProperty("visibility","visible","important");remaining.style.setProperty("opacity","1","important")})}
   function applyHighlights(){applyFrame=0;GRID_IDS.forEach(function(gridId){var grid=document.getElementById(gridId);if(!grid)return;ensureRemainingNumbers(grid);paintRemainingPalette(grid);grid.querySelectorAll(":scope > [data-track-row-highlight]").forEach(function(cell){cell.removeAttribute("data-track-row-highlight")});grid.querySelectorAll(":scope > .track-label[data-track]").forEach(function(label){var color=state[gridId]&&state[gridId][String(label.dataset.track||"")];if(!COLORS[color])return;rowCells(label).forEach(function(cell){cell.setAttribute("data-track-row-highlight",color)})})})}
   function scheduleApply(){if(!applyFrame)applyFrame=requestAnimationFrame(applyHighlights)}
   function ensureMenu(){var menu=document.getElementById("trackRowHighlightMenu");if(menu)return menu;menu=document.createElement("div");menu.id="trackRowHighlightMenu";menu.setAttribute("role","dialog");menu.setAttribute("aria-label","Track highlight options");menu.innerHTML='<div class="track-highlight-title"></div><button type="button" data-track-highlight-color="blue"><span class="track-highlight-swatch" style="--track-highlight-swatch:#dbeafe"></span>LIGHT BLUE</button><button type="button" data-track-highlight-color="orange"><span class="track-highlight-swatch" style="--track-highlight-swatch:#fed7aa"></span>ORANGE</button><button type="button" data-track-highlight-color="red"><span class="track-highlight-swatch" style="--track-highlight-swatch:#fecaca"></span>RED</button><button type="button" data-track-highlight-color="yellow"><span class="track-highlight-swatch" style="--track-highlight-swatch:#fef3c7"></span>YELLOW</button><button type="button" data-track-highlight-color="purple"><span class="track-highlight-swatch" style="--track-highlight-swatch:#e9d5ff"></span>LIGHT PURPLE</button><button type="button" data-track-highlight-color="clear">CLEAR HIGHLIGHT</button><div class="track-highlight-divider"></div><button type="button" data-track-highlight-action="import">IMPORT CARS TO TRACK</button>';menu.addEventListener("click",function(event){var button=event.target.closest("button");if(!button||!active)return;var color=button.dataset.trackHighlightColor;if(color){var gridState=state[active.gridId]&&typeof state[active.gridId]==="object"?state[active.gridId]:{};if(COLORS[color])gridState[String(active.track)]=color;else delete gridState[String(active.track)];if(Object.keys(gridState).length)state[active.gridId]=gridState;else delete state[active.gridId];saveState();applyHighlights();closeMenu();return}if(button.dataset.trackHighlightAction==="import"){var importTrack=active.importTrack,track=active.track;closeMenu();if(typeof importTrack==="function")importTrack(track)}});document.body.appendChild(menu);return menu}
@@ -18760,7 +18822,7 @@ function clearLegacyFollowUps(ids){var records=[];try{records=JSON.parse(localSt
 function backfillFollowUpLocators(){var records=directRead(),changed=false;Object.keys(records).forEach(function(recordKey){var split=recordKey.indexOf("::"),grid=split>=0?document.getElementById(recordKey.slice(0,split)):null,blockId=split>=0?recordKey.slice(split+2):"",value=records[recordKey];if(!grid||!blockId||!value||value._locator)return;var cell=Array.from(grid.querySelectorAll(".cut-cell[data-block-id]")).find(function(item){return String(item.dataset.blockId||"")===blockId});if(cell){value._locator=followUpLocator(cell);changed=true}});if(changed){localStorage.setItem(directKey,JSON.stringify(records));localStorage.setItem(directKey+".updatedAt",new Date().toISOString())}return records}
 function renderDirect(){
   var records=directRead(),wanted={},usedSlots={};Object.keys(records).forEach(function(recordKey){var split=recordKey.indexOf("::"),gridId=split>=0?recordKey.slice(0,split):"",blockId=split>=0?recordKey.slice(split+2):"",grid=document.getElementById(gridId),value=records[recordKey]||{};if(!grid||!blockId)return;var cell=locateFollowUpCell(grid,blockId,value);if(!cell)return;var detail=directDetail(value);if(!detail)return;var track=String(cell.dataset.track||""),slotKey=gridId+"::"+track,emptyCells=Array.from(grid.children).filter(function(item){return item.classList&&item.classList.contains("cut-cell")&&item.classList.contains("empty")&&String(item.dataset.dropEndTrack||item.dataset.track||"")===track}),slotIndex=usedSlots[slotKey]||0,displayCell=emptyCells[slotIndex]||cell;if(displayCell!==cell)usedSlots[slotKey]=slotIndex+1;wanted[recordKey]=true;displayCell.classList.add("selected-block-followup-host");var selector='[data-followup-key="'+recordKey.replace(/"/g,'\\"')+'"]',oldNodes=grid.querySelectorAll('.selected-block-followup-arrow'+selector+',.selected-block-followup-target'+selector+',.selected-block-departing-label'+selector),labelName=directBlockLabel(cell,String(cell.dataset.blockId||blockId),value);
-    var labelText=directLabelText(value),pill=displayCell.querySelector(':scope > .selected-block-departing-label'+selector);oldNodes.forEach(function(node){if(node!==pill)node.remove()});if(!pill){pill=document.createElement("span");pill.className="selected-block-departing-label";pill.dataset.followupKey=recordKey;displayCell.appendChild(pill)}pill.classList.toggle("selected-block-followup-slot",displayCell!==cell);pill.dataset.label=String(value.labelColor||labelName||"BLOCK").toUpperCase();if(pill.textContent!==labelText)pill.textContent=labelText
+    var labelText=directLabelText(value),pill=displayCell.querySelector(':scope > .selected-block-departing-label'+selector);oldNodes.forEach(function(node){if(node!==pill)node.remove()});if(!pill){pill=document.createElement("span");pill.className="selected-block-departing-label";pill.dataset.followupKey=recordKey;displayCell.appendChild(pill)}pill.classList.toggle("selected-block-followup-slot",displayCell!==cell);pill.dataset.followupGrid=gridId;pill.dataset.followupTrack=track;pill.dataset.label=String(value.labelColor||labelName||"BLOCK").toUpperCase();if(pill.textContent!==labelText)pill.textContent=labelText
   });document.querySelectorAll(".selected-block-followup-arrow,.selected-block-followup-target,.selected-block-departing-label").forEach(function(node){if(!wanted[String(node.dataset.followupKey||"")])node.remove()});document.querySelectorAll(".selected-block-followup-host").forEach(function(cell){if(!cell.querySelector(":scope > .selected-block-followup-arrow,:scope > .selected-block-followup-target,:scope > .selected-block-departing-label"))cell.classList.remove("selected-block-followup-host")})
 }
 function saveFollowUp(value){
@@ -18776,10 +18838,32 @@ removeMenu.addEventListener("click",function(event){var button=event.target.clos
 document.addEventListener("click",function(event){var undo=event.target.closest&&event.target.closest("#undoExcelView");if(!undo)return;try{var stack=window.excelViewUndoStackBridge;if(!Array.isArray(stack)||!stack.length)return;var parsed=JSON.parse(stack[stack.length-1]);if(!parsed||parsed.__excelSelectedBlockFollowUpsUndo!==true)return;event.preventDefault();event.stopImmediatePropagation();stack.pop();if(parsed.value===null||typeof parsed.value==="undefined")localStorage.removeItem(directKey);else localStorage.setItem(directKey,String(parsed.value));localStorage.setItem(directKey+".updatedAt",new Date().toISOString());renderDirect();syncUndoButton()}catch(_){}},true);
 document.addEventListener("pointerdown",function(event){if(!removeMenu.hidden&&!removeMenu.contains(event.target)){removeKey="";removeMenu.hidden=true}},true);
 document.addEventListener("click",function(event){var action=event.target.closest&&event.target.closest("#assignSelectedSwingToYard,#assignSelectedMoveToTrack,#assignSelectedDeparting,#assignSelectedRemoveFollowUp,[data-selected-move-track]");if(!action)return;if(action.id==="assignSelectedMoveToTrack"){event.preventDefault();event.stopImmediatePropagation();tracks.hidden=!tracks.hidden;move.setAttribute("aria-expanded",tracks.hidden?"false":"true");return}if(action.id==="assignSelectedSwingToYard"){event.preventDefault();event.stopImmediatePropagation();finish({type:"swing"});return}if(action.id==="assignSelectedDeparting"){event.preventDefault();event.stopImmediatePropagation();finish({type:"departing"});return}if(action.id==="assignSelectedRemoveFollowUp"){event.preventDefault();event.stopImmediatePropagation();removeCaptured();return}if(action.dataset.selectedMoveTrack){event.preventDefault();event.stopImmediatePropagation();finish({type:"move",track:"6-"+action.dataset.selectedMoveTrack})}},true);
+document.addEventListener("excel-secondary-table-cleared",function(event){var gridId=String(event&&event.detail&&event.detail.gridId||"");if(!gridId)return;var prefix=gridId+"::",direct=directRead(),changed=false;Object.keys(direct).forEach(function(recordKey){if(recordKey.indexOf(prefix)===0){delete direct[recordKey];changed=true}});if(changed){localStorage.setItem(directKey,JSON.stringify(direct));localStorage.setItem(directKey+".updatedAt",new Date().toISOString())}renderDirect()});
 var directFrame=0;function scheduleDirect(){if(!directFrame)directFrame=requestAnimationFrame(function(){directFrame=0;renderDirect()})}new MutationObserver(function(records){var external=records.some(function(record){return Array.from(record.addedNodes).concat(Array.from(record.removedNodes)).some(function(node){return !(node.nodeType===1&&(node.matches&&node.matches(".selected-block-followup-arrow,.selected-block-followup-target,.selected-block-departing-label")||node.closest&&node.closest(".selected-block-followup-arrow,.selected-block-followup-target,.selected-block-departing-label")))})});if(external)scheduleDirect()}).observe(document.body,{childList:true,subtree:true});window.addEventListener("storage",function(event){if(event.key===directKey)scheduleDirect()});var savedDirect=backfillFollowUpLocators(),savedIds=Object.keys(savedDirect).map(function(recordKey){var split=recordKey.indexOf("::");return split>=0?recordKey.slice(split+2):""}).filter(Boolean);clearLegacyFollowUps(savedIds);renderDirect();
 })();<\/script>`;
+      const labelPositioning = `<style id="${marker}-position-styles">
+.yard-grid>.track-remaining.selected-block-followup-edge-host{overflow:visible!important}
+body:not(.excel-page-2) .yard-grid>.track-remaining.selected-block-followup-edge-host{position:relative!important;z-index:16!important}
+.excel-followup-labels-right .selected-block-departing-label.selected-block-followup-edge,.excel-followup-labels-right .consolidation-explanation-followup-label.selected-block-followup-edge{left:auto!important}
+</style><script id="${marker}-position-script">(function(){
+var frame=0,moving=false;
+function trackForCell(cell){return String(cell&&cell.dataset&&(cell.dataset.dropEndTrack||cell.dataset.track)||"")}
+function emptyCells(grid,track){return Array.from(grid.children).filter(function(cell){return cell.classList&&cell.classList.contains("cut-cell")&&cell.classList.contains("empty")&&trackForCell(cell)===track})}
+function remainingCell(grid,track){return Array.from(grid.children).find(function(cell){return cell.classList&&cell.classList.contains("track-remaining")&&trackForCell(cell)===track})||null}
+function gridForLabel(label){var id=String(label&&label.dataset&&label.dataset.followupGrid||"");return id&&document.getElementById(id)||label.closest(".yard-grid")}
+function trackForLabel(label){return String(label&&label.dataset&&label.dataset.followupTrack||trackForCell(label.closest(".cut-cell,.track-remaining"))||label.__excelOriginalTrack||"")}
+function directBlockHome(label,grid){var key=String(label&&label.dataset&&label.dataset.followupKey||""),split=key.indexOf("::"),blockId=split>=0?key.slice(split+2):"";return blockId&&Array.from(grid.children).find(function(cell){return cell.classList&&cell.classList.contains("cut-cell")&&String(cell.dataset.blockId||"")===blockId})||null}
+function cleanupHost(cell){if(!cell||!cell.classList)return;if(!cell.querySelector(":scope > .selected-block-departing-label,:scope > .consolidation-explanation-followup-label")){cell.classList.remove("selected-block-followup-host","selected-block-followup-edge-host","consolidation-explanation-host")}}
+function clearEdgePosition(label){label.classList.remove("selected-block-followup-edge");label.style.removeProperty("left");label.style.removeProperty("right")}
+function placeAtEdge(label,host,offset){var previous=label.parentElement;if((!label.__excelFollowUpHome||!label.__excelFollowUpHome.isConnected)&&previous&&previous.classList&&previous.classList.contains("cut-cell"))label.__excelFollowUpHome=previous;host.classList.add("selected-block-followup-edge-host");if(previous!==host)host.appendChild(label);label.classList.add("selected-block-followup-edge");label.style.setProperty("left","auto","important");label.style.setProperty("right","calc(100% + "+offset+"px)","important");cleanupHost(previous);return offset+Math.max(1,Math.ceil(label.getBoundingClientRect().width))+6}
+function schedule(){if(!frame)frame=requestAnimationFrame(function(){frame=0;positionLabels()})}
+function positionDirect(right,offsets){var groups={};document.querySelectorAll(".selected-block-departing-label[data-followup-key]").forEach(function(label){var grid=gridForLabel(label),track=trackForLabel(label);if(!grid||!track)return;var key=(grid.id||"grid")+"::"+track;(groups[key]||(groups[key]={grid:grid,track:track,labels:[]})).labels.push(label)});Object.keys(groups).forEach(function(key){var group=groups[key];if(right){var host=remainingCell(group.grid,group.track),offset=offsets[key]||7;if(!host)return;group.labels.forEach(function(label){offset=placeAtEdge(label,host,offset)});offsets[key]=offset;return}var slots=emptyCells(group.grid,group.track);group.labels.forEach(function(label,index){var previous=label.parentElement,home=label.__excelFollowUpHome,target=home&&home.isConnected?home:slots[index]||directBlockHome(label,group.grid);if(target){target.classList.add("selected-block-followup-host");if(previous!==target)target.appendChild(label)}clearEdgePosition(label);cleanupHost(previous);label.__excelFollowUpHome=null})})}
+function positionLegacy(right,offsets){document.querySelectorAll(".consolidation-explanation-followup-label").forEach(function(label){if(right){var grid=label.__excelOriginalGrid&&label.__excelOriginalGrid.isConnected?label.__excelOriginalGrid:label.closest(".yard-grid"),track=String(label.__excelOriginalTrack||trackForCell(label.closest(".cut-cell"))||"");if(!grid||!track)return;var key=(grid.id||"grid")+"::"+track,host=remainingCell(grid,track);if(!host)return;if(!label.__excelOriginalParent){label.__excelOriginalParent=label.parentElement;label.__excelOriginalLeft=label.style.left;label.__excelOriginalRight=label.style.right;label.__excelOriginalGrid=grid;label.__excelOriginalTrack=track}offsets[key]=placeAtEdge(label,host,offsets[key]||7);return}var previous=label.parentElement,target=label.__excelOriginalParent&&label.__excelOriginalParent.isConnected?label.__excelOriginalParent:null;if(target&&previous!==target)target.appendChild(label);label.classList.remove("selected-block-followup-edge");label.style.left=label.__excelOriginalLeft||"";label.style.right=label.__excelOriginalRight||"";cleanupHost(previous);label.__excelOriginalParent=null;label.__excelOriginalGrid=null;label.__excelOriginalTrack=""})}
+function positionLabels(){if(moving)return;moving=true;try{var right=document.body.classList.contains("excel-followup-labels-right"),offsets={};positionDirect(right,offsets);positionLegacy(right,offsets)}finally{moving=false}}
+document.addEventListener("excel-followup-label-position-change",schedule);document.addEventListener("scroll",function(){if(document.body.classList.contains("excel-followup-labels-right"))schedule()},true);window.addEventListener("resize",schedule);new MutationObserver(function(records){if(moving)return;if(records.some(function(record){return Array.from(record.addedNodes).some(function(node){return node.nodeType===1&&(node.matches&&node.matches(".selected-block-departing-label,.consolidation-explanation-followup-label")||node.querySelector&&node.querySelector(".selected-block-departing-label,.consolidation-explanation-followup-label"))})}))schedule()}).observe(document.body,{childList:true,subtree:true});schedule();
+})();<\/script>`;
       const close = html.toLowerCase().lastIndexOf("</body>");
-      return close >= 0 ? html.slice(0, close) + script + "\n" + html.slice(close) : html + script;
+      return close >= 0 ? html.slice(0, close) + script + labelPositioning + "\n" + html.slice(close) : html + script + labelPositioning;
     }
 
     function bridgedHtmlForPage(id) {
@@ -18872,6 +18956,8 @@ var directFrame=0;function scheduleDirect(){if(!directFrame)directFrame=requestA
           pageHtml = withExcelInventoryViewport(pageHtml);
           pageHtml = withExcelInboundTrainPasteImporter(pageHtml);
           pageHtml = withExcelAvailableSpaceReadout(pageHtml);
+          pageHtml = withExcelVerticalInboundLandingTracks(pageHtml);
+          pageHtml = withExcelToolbarWithoutTodayRoster(pageHtml);
           pageHtml = withExcelBlockConsolidation(pageHtml);
           pageHtml = withExcelInboundGoldHighlight(pageHtml);
           pageHtml = withExcelColorTabGlowControls(pageHtml);
@@ -18912,7 +18998,7 @@ var directFrame=0;function scheduleDirect(){if(!directFrame)directFrame=requestA
           pageHtml = withExcelAddNewInbound(pageHtml);
           pageHtml = withExcelInboundSummaryDayChooser(pageHtml);
           pageHtml = withExcelPierceInboundBadge(pageHtml);
-          pageHtml = withExcelMatrixViewButton(pageHtml);
+          pageHtml = withExcelMoveFollowUpLabelsButton(pageHtml);
           pageHtml = withExcelCurrentWorkRowToggles(pageHtml);
           pageHtml = withExcelPage2Overview(pageHtml);
           pageHtml = withExcelPage2ThreeTables(pageHtml);
