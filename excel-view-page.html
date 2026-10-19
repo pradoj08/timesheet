@@ -1530,18 +1530,20 @@
   #trackRowHighlightMenu button:hover,#trackRowHighlightMenu button[aria-pressed="true"] { border-color:#93c5fd; background:#334155; }
   #trackRowHighlightMenu .track-highlight-swatch { width:18px; height:18px; flex:0 0 18px; border:1px solid rgba(15,23,42,.4); border-radius:4px; background:var(--track-highlight-swatch); }
   #trackRowHighlightMenu .track-highlight-divider { height:1px; margin:2px 0; background:#334155; }
-  body.excel-page-2 .yard-grid > [data-track-row-highlight="blue"] { --excel-page2-row:#dbeafe!important; }
+  body.excel-page-2 .yard-grid > [data-track-row-highlight="blue"] { --excel-page2-row:#bfdbfe!important; }
   body.excel-page-2 .yard-grid > [data-track-row-highlight="orange"] { --excel-page2-row:#fed7aa!important; }
   body.excel-page-2 .yard-grid > [data-track-row-highlight="red"] { --excel-page2-row:#fecaca!important; }
   body.excel-page-2 .yard-grid > [data-track-row-highlight="yellow"] { --excel-page2-row:#fef3c7!important; }
   body.excel-page-2 .yard-grid > [data-track-row-highlight="purple"] { --excel-page2-row:#e9d5ff!important; }
+  body.excel-page-2 .yard-grid > [data-track-row-highlight="green"] { --excel-page2-row:#bbf7d0!important; }
   body:not(.excel-page-2) .yard-grid > [data-track-row-highlight]:not(.cut-cell),
   body:not(.excel-page-2) .yard-grid > .cut-cell[data-track-row-highlight]:not([data-block-id]) { background:var(--track-row-highlight-color)!important; }
-  .yard-grid > [data-track-row-highlight="blue"] { --track-row-highlight-color:#dbeafe; }
+  .yard-grid > [data-track-row-highlight="blue"] { --track-row-highlight-color:#bfdbfe; }
   .yard-grid > [data-track-row-highlight="orange"] { --track-row-highlight-color:#fed7aa; }
   .yard-grid > [data-track-row-highlight="red"] { --track-row-highlight-color:#fecaca; }
   .yard-grid > [data-track-row-highlight="yellow"] { --track-row-highlight-color:#fef3c7; }
   .yard-grid > [data-track-row-highlight="purple"] { --track-row-highlight-color:#e9d5ff; }
+  .yard-grid > [data-track-row-highlight="green"] { --track-row-highlight-color:#bbf7d0; }
   body.excel-page-2 .yard-grid > .track-remaining.over,
   body.excel-page-2 .yard-grid > .track-remaining.excel-page2-over { background:var(--excel-page2-row,#f6f8f9)!important; color:#fff!important; }
   body.excel-page-2 .yard-grid > .track-remaining.over:before,
@@ -4336,7 +4338,7 @@
             <div class="panel-subtitle" id="viewDescription"></div>
           </div>
           <div class="dashboard-controls">
-            <button class="btn btn-white btn-small" id="moveFollowUpLabels" type="button" aria-pressed="false">Move Labels Right</button>
+            <button class="btn btn-white btn-small" id="moveFollowUpLabels" type="button" aria-pressed="true">Move Labels Left</button>
             <label class="table-density-control" title="Condense or expand all ramp tables">
               <span>Table space</span>
               <input id="tableDensityRange" type="range" min="0" max="100" step="1" value="50" aria-label="Table spacing from condensed to expanded">
@@ -10513,8 +10515,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   (()=>{
     const storageKey="conglobal-excel-followup-labels-right-v1";
     const apply=()=>{
-      let right=false;
-      try{right=localStorage.getItem(storageKey)==="right"}catch(_){}
+      let right=true;
+      try{right=localStorage.getItem(storageKey)!=="left"}catch(_){}
       document.body.classList.toggle("excel-followup-labels-right",right);
       const button=$("#moveFollowUpLabels");
       if(button){
@@ -10635,7 +10637,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   (() => {
     const STORAGE_KEY = "conglobal-excel-track-row-highlights-v1";
     const GRID_IDS = ["yardGrid", "blankYardGrid", "blankYardGridTwo", "blankYardGridThree"];
-    const COLORS = { blue:"#dbeafe", orange:"#fed7aa", red:"#fecaca", yellow:"#fef3c7", purple:"#e9d5ff" };
+    const COLORS = { blue:"#bfdbfe", orange:"#fed7aa", red:"#fecaca", yellow:"#fef3c7", purple:"#e9d5ff", green:"#bbf7d0" };
     const TRACK_CAPACITY = { 801:1750, 802:1750, 803:2200, 804:2500, 805:2500, 806:2600, 807:2750, 808:2500, 809:2500 };
     let state = loadState();
     let active = null;
@@ -10697,11 +10699,12 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       menu.setAttribute("role", "dialog");
       menu.setAttribute("aria-label", "Track highlight options");
       menu.innerHTML = '<div class="track-highlight-title"></div>' +
-        '<button type="button" data-track-highlight-color="blue"><span class="track-highlight-swatch" style="--track-highlight-swatch:#dbeafe"></span>LIGHT BLUE</button>' +
+        '<button type="button" data-track-highlight-color="blue"><span class="track-highlight-swatch" style="--track-highlight-swatch:#bfdbfe"></span>LIGHT BLUE</button>' +
         '<button type="button" data-track-highlight-color="orange"><span class="track-highlight-swatch" style="--track-highlight-swatch:#fed7aa"></span>ORANGE</button>' +
         '<button type="button" data-track-highlight-color="red"><span class="track-highlight-swatch" style="--track-highlight-swatch:#fecaca"></span>RED</button>' +
         '<button type="button" data-track-highlight-color="yellow"><span class="track-highlight-swatch" style="--track-highlight-swatch:#fef3c7"></span>YELLOW</button>' +
         '<button type="button" data-track-highlight-color="purple"><span class="track-highlight-swatch" style="--track-highlight-swatch:#e9d5ff"></span>LIGHT PURPLE</button>' +
+        '<button type="button" data-track-highlight-color="green"><span class="track-highlight-swatch" style="--track-highlight-swatch:#bbf7d0"></span>GREEN</button>' +
         '<button type="button" data-track-highlight-color="clear">CLEAR HIGHLIGHT</button>' +
         '<div class="track-highlight-divider"></div>' +
         '<button type="button" data-track-highlight-action="import">IMPORT CARS TO TRACK</button>';

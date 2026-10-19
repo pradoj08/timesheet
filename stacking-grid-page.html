@@ -3250,7 +3250,7 @@ function spreadsheetXmlCells(row){
   });
   return values;
 }
-function emptyImportedGrid(rows){return Array.from({length:Math.max(1,rows)*ROW_SIZE},()=>({text:'',green:false}))}
+function emptyImportedGrid(rows,bays=BAYS){return Array.from({length:Math.max(1,rows)*Math.max(2,bays)*LEVELS},()=>({text:'',green:false}))}
 function parseStackingGridWorkbook(xmlText){
   const documentXml=new DOMParser().parseFromString(String(xmlText||'').replace(/^\uFEFF/,''),'application/xml');
   if(documentXml.querySelector('parsererror'))throw new Error('This is not a valid Stacking Grid Excel export.');
@@ -3262,23 +3262,27 @@ function parseStackingGridWorkbook(xmlText){
   if(headerIndex<0)throw new Error('Container List columns were not recognized.');
   const records=rows.slice(headerIndex+1).map(row=>({page:String(row[0]?.value||'').trim().toUpperCase(),row:Number(row[1]?.value),bay:Number(row[2]?.value),level:Number(row[3]?.value),text:String(row[5]?.value||'').trim(),category:String(row[6]?.value||'').trim().toUpperCase(),highlight:String(row[7]?.value||'').trim().toUpperCase(),style:String(row[5]?.style||'')})).filter(record=>record.text&&['B','D','J','S'].includes(record.page)&&record.row>0&&record.bay>0&&record.level>0);
   if(!records.length)throw new Error('No grid containers were found in the Container List worksheet.');
-  const pageNumber={B:1,D:2,J:3,S:4},maxRows={1:1,2:1,3:1,4:1};
+  const pageNumber={B:1,D:2,J:3,S:4},maxRows={1:1,2:1,3:1,4:1},pageBays={1:2,2:2,3:2,4:2};
   const pageDisplayLevels={1:2,2:2,3:2,4:2};
   worksheets.forEach(sheet=>{
     const page=pageNumber[xmlAttributeByName(sheet,'Name').trim().toUpperCase()];
     if(!page)return;
+    const layoutRows=Array.from(sheet.getElementsByTagNameNS('*','Row')).map(spreadsheetXmlCells);
+    const bayHeaderRow=layoutRows.find(row=>row.some(cell=>/^BAY\s+\d+$/i.test(String(cell?.value||'').trim())));
+    const importedBayCount=bayHeaderRow?bayHeaderRow.filter(cell=>/^BAY\s+\d+$/i.test(String(cell?.value||'').trim())).length:0;
+    if(importedBayCount)pageBays[page]=Math.min(MAX_BAYS,Math.max(2,importedBayCount));
     const heading=Array.from(sheet.getElementsByTagNameNS('*','Data')).map(cell=>String(cell.textContent||'')).find(value=>/\b[23]\s+HIGH\b/i.test(value));
     const match=String(heading||'').match(/\b([23])\s+HIGH\b/i);
     if(match)pageDisplayLevels[page]=Number(match[1]);
   });
   records.forEach(record=>{const page=pageNumber[record.page];if(record.level>=3)pageDisplayLevels[page]=3});
-  records.forEach(record=>{const page=pageNumber[record.page];maxRows[page]=Math.max(maxRows[page],record.row)});
-  const pageStates=Object.fromEntries([1,2,3,4].map(page=>[page,emptyImportedGrid(maxRows[page])]));
+  records.forEach(record=>{const page=pageNumber[record.page];maxRows[page]=Math.max(maxRows[page],record.row);pageBays[page]=Math.min(MAX_BAYS,Math.max(pageBays[page],record.bay))});
+  const pageStates=Object.fromEntries([1,2,3,4].map(page=>[page,emptyImportedGrid(maxRows[page],pageBays[page])]));
   records.forEach(record=>{
-    const page=pageNumber[record.page],rowIndex=maxRows[page]-record.row,bayIndex=BAYS-record.bay;
+    const page=pageNumber[record.page],pageBayCount=pageBays[page],rowIndex=maxRows[page]-record.row,bayIndex=page===3?record.bay-1:pageBayCount-record.bay;
     const physicalLevel=pageDisplayLevels[page]===3?3-record.level:(record.level===2?0:2);
-    if(bayIndex<0||bayIndex>=BAYS||physicalLevel<0||physicalLevel>=LEVELS)return;
-    const index=(rowIndex*ROW_SIZE)+(physicalLevel*BAYS)+bayIndex;
+    if(bayIndex<0||bayIndex>=pageBayCount||physicalLevel<0||physicalLevel>=LEVELS)return;
+    const index=(rowIndex*pageBayCount*LEVELS)+(physicalLevel*pageBayCount)+bayIndex;
     const styleColor=record.style.replace(/^Pool_/i,'').toLowerCase();
     const highlighted=record.highlight==='YES'||/^Pool_/i.test(record.style);
     const item={text:record.text,green:highlighted};
@@ -3286,7 +3290,7 @@ function parseStackingGridWorkbook(xmlText){
     if(record.category){item.poolImportCategory=record.category;item.poolImportPool=record.category.split(/\s+/)[0];item.poolImportLength=Number(record.category.match(/20|40|45|53/)?.[0]||0);item.manualHighlight=false}
     pageStates[page][index]=item;
   });
-  return{pageStates,pageDisplayLevels,count:records.length};
+  return{pageStates,pageBays,pageDisplayLevels,count:records.length};
 }
 async function importStackingGridExcel(file){
   const button=document.getElementById('importGrid');if(!file)return;
@@ -3297,13 +3301,13 @@ async function importStackingGridExcel(file){
     rememberAllStackPages(previous);
     for(let page=1;page<=STACK_PAGE_COUNT;page++){
       localStorage.setItem(stackPageKey(page),JSON.stringify(imported.pageStates[page]));
-      localStorage.setItem(stackBaysKey(page),String(BAYS));
+      localStorage.setItem(stackBaysKey(page),String(imported.pageBays[page]));
     }
     const assignments=readSavedPoolAssignments();
     Object.values(imported.pageStates).flat().forEach(item=>{const equipment=normalizePoolImportEquipment(item?.text);if(equipment&&item?.poolImportCategory)assignments[equipment]={pool:item.poolImportPool,length:item.poolImportLength,category:item.poolImportCategory,location:'',shipper:normalizeImportedShipper(item.poolImportShipper||item.poolImportConsignee)}});
     localStorage.setItem(POOL_IMPORT_ASSIGNMENTS_KEY,JSON.stringify(assignments));
     for(let page=1;page<=STACK_PAGE_COUNT;page++)localStorage.setItem(stackDisplayLevelKey(page),String(imported.pageDisplayLevels[page]||3));
-    displayLevels=readStackDisplayLevels(activeStackPage);
+    BAYS=imported.pageBays[activeStackPage];ROW_SIZE=BAYS*LEVELS;displayLevels=readStackDisplayLevels(activeStackPage);
     state=imported.pageStates[activeStackPage].map(item=>({...item}));selectedIndex=null;selectedIndexes.clear();save();updateStackHeightToggle();updateUndoButton();renderAll();
     button.textContent=`IMPORTED ${imported.count}`;setTimeout(()=>{button.textContent='IMPORT GRID'},1800);
   }catch(error){console.error('Stacking Grid import failed',error);button.textContent='IMPORT FAILED';button.title=String(error.message||error);setTimeout(()=>{button.textContent='IMPORT GRID'},2500)}
