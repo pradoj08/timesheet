@@ -13843,6 +13843,20 @@ body.excel-page-2 #excelWorkspace .excel-page2-secondary-grid.outbound-departure
     let excelMatrixOverlay = null;
     let excelMatrixOverlayFrame = null;
     let excelMatrixOverlayMode = "reloaded";
+    window.conglobalDownloadExcelHandoff = function(payload) {
+      if (!payload || payload.format !== "conglobal-excel-handoff" || payload.version !== 1 || !payload.state || !Array.isArray(payload.state.rows) || !payload.auxiliary || typeof payload.auxiliary !== "object") {
+        throw new Error("Invalid Excel handoff export.");
+      }
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "conglobal-excel-handoff-" + String(payload.exportedAt || new Date().toISOString()).replace(/[^0-9TZ-]/g, "-") + ".json";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 30000);
+    };
 
     function renderExcelMatrixOverlayMode(mode) {
       if (!excelMatrixOverlay || !excelMatrixOverlayFrame) return;
@@ -19816,6 +19830,206 @@ body.excel-page-2 .excel-page2-secondary-buttons-right>.copy-grid-actions>.outbo
       return html.replace(/<\/head>/i, style + "\n</head>");
     }
 
+    function withExcelPage2DataHandoff(html) {
+      const marker = "excel-page2-data-handoff-v1";
+      const controlAnchor = '            <button type="button" id="excelPage2RowShadingToggle"';
+      const saveAnchor = '  function saveState() {';
+      const cloneAnchor = '          var clonedButton=clonedDocument.getElementById("excelPage2ExportPng");';
+      if (!html || html.includes(marker) || !html.includes(controlAnchor) || !html.includes(saveAnchor) || !html.includes(cloneAnchor)) return html;
+      const controls = `<div class="excel-page2-handoff-menu" id="excelPage2HandoffMenu">
+              <button type="button" id="excelPage2HandoffButton" aria-haspopup="menu" aria-expanded="false">EXPORT DATA <span aria-hidden="true">▾</span></button>
+              <div class="excel-page2-handoff-options" id="excelPage2HandoffOptions" role="menu" hidden>
+                <button type="button" id="excelPage2DownloadHandoff" role="menuitem">DOWNLOAD EXCEL HANDOFF</button>
+                <button type="button" id="excelPage2ChooseHandoff" role="menuitem">IMPORT EXCEL HANDOFF</button>
+              </div>
+              <div class="excel-page2-handoff-preview" id="excelPage2HandoffPreview" role="dialog" aria-label="Import Excel handoff" hidden>
+                <strong>IMPORT EXCEL HANDOFF?</strong>
+                <p id="excelPage2HandoffSummary"></p>
+                <p>This replaces this browser's four Excel tables, inbounds, blocks, labels, and Excel settings. Other workbook pages stay unchanged. Connected cloud sync may share the restored Excel data.</p>
+                <div class="excel-page2-handoff-preview-actions"><button type="button" id="excelPage2CancelHandoff">CANCEL</button><button type="button" id="excelPage2ConfirmHandoff">REPLACE EXCEL DATA</button></div>
+                <div id="excelPage2HandoffStatus" role="status" aria-live="polite"></div>
+              </div>
+              <input id="excelPage2HandoffFile" type="file" accept=".json,application/json" hidden>
+            </div>
+`;
+      const style = `<style id="${marker}">
+.excel-page2-handoff-menu{position:relative;margin-top:4px}
+.excel-page2-heading #excelPage2HandoffButton{min-height:28px;padding:5px 10px;border:1px solid #7fb1cc;border-radius:4px;background:#163448;color:#fff;font:950 9px/1 "Arial Narrow","Segoe UI",Arial,sans-serif;letter-spacing:.05em;cursor:pointer}
+.excel-page2-heading #excelPage2HandoffButton:hover,.excel-page2-heading #excelPage2HandoffButton:focus-visible{border-color:#bae6fd;background:#20506d;outline:2px solid #fff;outline-offset:1px}
+#excelPage2HandoffButton span{margin-left:4px;font-size:10px}
+.excel-page2-handoff-options,.excel-page2-handoff-preview{position:absolute;top:calc(100% + 4px);left:0;z-index:120;box-sizing:border-box;border:1px solid #7fb1cc;border-radius:4px;background:#10191f;color:#f8fafc;box-shadow:0 8px 18px rgba(0,0,0,.4)}
+.excel-page2-handoff-options[hidden],.excel-page2-handoff-preview[hidden]{display:none!important}
+.excel-page2-handoff-options{display:grid;min-width:192px;padding:4px}
+.excel-page2-handoff-options button{min-height:28px;padding:6px 8px;border:0;border-radius:3px;background:transparent;color:inherit;font:900 9px/1.1 "Arial Narrow","Segoe UI",Arial,sans-serif;letter-spacing:.03em;text-align:left;cursor:pointer}
+.excel-page2-handoff-options button:hover,.excel-page2-handoff-options button:focus-visible{background:#7fb1cc;color:#101820;outline:0}
+.excel-page2-handoff-preview{width:min(360px,calc(100vw - 32px));padding:12px;font:700 11px/1.4 "Segoe UI",Arial,sans-serif}
+.excel-page2-handoff-preview strong{display:block;color:#fff;font-size:12px;letter-spacing:.04em}
+.excel-page2-handoff-preview p{margin:8px 0;color:#dbe8ef}
+.excel-page2-handoff-preview-actions{display:flex;gap:7px;justify-content:flex-end;margin-top:10px}
+.excel-page2-handoff-preview-actions button{min-height:27px;padding:4px 9px;border:1px solid #7fb1cc;border-radius:3px;background:#24343f;color:#fff;font:900 9px/1 "Arial Narrow","Segoe UI",Arial,sans-serif;cursor:pointer}
+.excel-page2-handoff-preview-actions button:hover,.excel-page2-handoff-preview-actions button:focus-visible{outline:2px solid #fff;outline-offset:1px}
+#excelPage2ConfirmHandoff{border-color:#ef4444;background:#991b1b}
+#excelPage2ConfirmHandoff.is-confirming{background:#dc2626;color:#fff}
+#excelPage2HandoffStatus{margin-top:7px;color:#fca5a5}
+</style>`;
+      const runtime = function() {
+        const format = "conglobal-excel-handoff";
+        const auxiliaryKeys = [
+          "rampBlockingCurrentWork.v1",
+          "rampBlockingControl.inventoryColorMode.v1",
+          "conglobal-device-excel-color-rules-canonical-v1",
+          "rampBlockingControl.colorRules.v2",
+          "settegast-excel-visual-settings-v2",
+          "settegast-excel-grid-typography-v1",
+          "settegast-excel-color-rule-extras-v1",
+          "settegast-excel-block-assignments-v1",
+          "settegast-excel-block-assignments-v1.updatedAt",
+          "conglobal-excel-selected-block-followups-v1",
+          "conglobal-excel-selected-block-followups-v1.updatedAt",
+          "conglobal-excel-consolidation-arrow-explanations-v1",
+          "conglobal-excel-track-row-highlights-v1",
+          "settegast-excel-tomorrow-inbound-markers-v1",
+          "conglobal-excel-outbound-departure-visibility-v1",
+          "conglobal-excel-followup-labels-right-v1",
+          "conglobal-excel-followup-labels-hidden-v1",
+          "conglobal-excel-page2-alternate-row-shading-v1",
+          "conglobal-excel-page2-png-inbound-table-v1",
+          "conglobal-excel-table-density-v1",
+          "settegast-excel-highlight-inbound-blocks-v1",
+          "settegast-excel-inbound-glow-settings-v1",
+          "settegast-excel-inbound-glow-position-v1",
+          "settegast-excel-inbound-day-headings-v1",
+          "settegast-excel-color-key-layout-v1",
+          "settegast-excel-inbounds-popup-layout-v1",
+          "settegast-yard-pierce-display-v1"
+        ];
+        const menu=document.getElementById("excelPage2HandoffMenu");
+        const button=document.getElementById("excelPage2HandoffButton");
+        const options=document.getElementById("excelPage2HandoffOptions");
+        const preview=document.getElementById("excelPage2HandoffPreview");
+        const fileInput=document.getElementById("excelPage2HandoffFile");
+        const summary=document.getElementById("excelPage2HandoffSummary");
+        const status=document.getElementById("excelPage2HandoffStatus");
+        const confirmButton=document.getElementById("excelPage2ConfirmHandoff");
+        if(!menu||!button||!options||!preview||!fileInput||!confirmButton)return;
+        const buttonMarkup=button.innerHTML;
+        let pending=null,confirmTimer=0,statusTimer=0;
+        function stores(){return [...new Set(storageCandidates())]}
+        function readKey(key){for(const store of stores()){try{const value=store.getItem(key);if(value!==null)return value}catch(_){}}return null}
+        function resetConfirm(){clearTimeout(confirmTimer);confirmButton.dataset.confirm="";confirmButton.classList.remove("is-confirming");confirmButton.textContent="REPLACE EXCEL DATA"}
+        function close(){options.hidden=true;preview.hidden=true;button.setAttribute("aria-expanded","false");pending=null;resetConfirm()}
+        function notice(text){clearTimeout(statusTimer);button.textContent=text;statusTimer=setTimeout(function(){button.innerHTML=buttonMarkup},2400)}
+        async function waitForRecovery(){for(let attempt=0;typeof erRecoveryPending!=="undefined"&&erRecoveryPending;attempt++){if(attempt>=100)throw new Error("Excel recovery is still loading. Try again in a moment.");await new Promise(resolve=>setTimeout(resolve,50))}}
+        function captureAuxiliary(){const result={};auxiliaryKeys.forEach(function(key){const value=readKey(key);if(value!==null)result[key]=value});return result}
+        function validate(payload){
+          if(!payload||payload.format!==format||payload.version!==1||!payload.state||typeof payload.state!=="object"||Array.isArray(payload.state))throw new Error("This is not a compatible Excel handoff file.");
+          const data=payload.state;
+          if(!Array.isArray(data.rows)||!data.rows.every(Array.isArray)||!Array.isArray(data.inboundPlans)||!Array.isArray(data.inboundArchive))throw new Error("The handoff is missing the ramp rows or inbounds.");
+          for(const key of ["secondaryGridTwo","secondaryGridThree","secondaryGridFour"]){
+            if(!Object.prototype.hasOwnProperty.call(data,key)||data[key]!=null&&!validSecondaryModel(data[key]))throw new Error("The handoff is missing a valid "+key+" table.");
+            if(data[key]!=null&&Object.values(data[key].tracks).some(function(track){return !Array.isArray(track)}))throw new Error("The handoff has invalid blocks in "+key+".");
+          }
+          if(!payload.auxiliary||typeof payload.auxiliary!=="object"||Array.isArray(payload.auxiliary))throw new Error("The handoff is missing its labels and settings.");
+          for(const key of auxiliaryKeys){if(Object.prototype.hasOwnProperty.call(payload.auxiliary,key)&&typeof payload.auxiliary[key]!=="string")throw new Error("The handoff has an invalid Excel setting.")}
+          for(const key of ["settegast-excel-block-assignments-v1","conglobal-excel-selected-block-followups-v1","conglobal-excel-track-row-highlights-v1","settegast-excel-tomorrow-inbound-markers-v1","conglobal-excel-consolidation-arrow-explanations-v1"]){
+            if(!Object.prototype.hasOwnProperty.call(payload.auxiliary,key))continue;
+            let parsed;try{parsed=JSON.parse(payload.auxiliary[key])}catch(_){throw new Error("The handoff has invalid labels or highlights.")}
+            if(key==="conglobal-excel-consolidation-arrow-explanations-v1"?!Array.isArray(parsed):!parsed||typeof parsed!=="object"||Array.isArray(parsed))throw new Error("The handoff has invalid labels or highlights.");
+          }
+          return data;
+        }
+        function putAuxiliary(auxiliary,stamp){
+          const values={};
+          auxiliaryKeys.forEach(function(key){values[key]=Object.prototype.hasOwnProperty.call(auxiliary,key)?auxiliary[key]:null});
+          for(const [key,empty] of [["settegast-excel-block-assignments-v1","{}"],["conglobal-excel-selected-block-followups-v1","{}"],["conglobal-excel-consolidation-arrow-explanations-v1","[]"],["conglobal-excel-track-row-highlights-v1","{}"],["settegast-excel-tomorrow-inbound-markers-v1","{}"]]){
+            if(values[key]===null)values[key]=empty;
+          }
+          for(const [base,dated] of [["settegast-excel-block-assignments-v1","settegast-excel-block-assignments-v1.updatedAt"],["conglobal-excel-selected-block-followups-v1","conglobal-excel-selected-block-followups-v1.updatedAt"]]){
+            if(values[base]!==null)values[dated]=stamp;
+          }
+          const visualKey="settegast-excel-visual-settings-v2";
+          let visual=null;
+          try{visual=JSON.parse(values[visualKey]||"null")}catch(_){}
+          if(!visual||typeof visual!=="object"||Array.isArray(visual))visual={version:2,gridTypography:state.gridTypography,colorRules:state.colorRules};
+          visual.updatedAt=stamp;visual.gridTypography=state.gridTypography;visual.colorRules=state.colorRules;
+          values[visualKey]=JSON.stringify(visual);
+          const colorPayload=JSON.stringify({version:2,updatedAt:stamp,rules:Array.isArray(state.colorRules)?state.colorRules:[]});
+          values["rampBlockingControl.colorRules.v2"]=colorPayload;
+          values["conglobal-device-excel-color-rules-canonical-v1"]=colorPayload;
+          for(const store of stores())for(const key of auxiliaryKeys){
+            if(values[key]===null)store.removeItem(key);else store.setItem(key,values[key]);
+          }
+        }
+        function restoreAuxiliary(values){for(const store of stores())for(const key of auxiliaryKeys){try{if(values[key]===undefined)store.removeItem(key);else store.setItem(key,values[key])}catch(_){}}}
+        async function download(){
+          await waitForRecovery();
+          if(document.activeElement&&typeof document.activeElement.blur==="function")document.activeElement.blur();
+          await new Promise(resolve=>setTimeout(resolve,0));
+          saveState();
+          const snapshot=JSON.parse(JSON.stringify(state));
+          const payload={format:format,version:1,exportedAt:new Date().toISOString(),state:snapshot,auxiliary:captureAuxiliary()};
+          validate(payload);
+          let parentDownload=null;
+          try{if(window.parent&&window.parent!==window)parentDownload=window.parent.conglobalDownloadExcelHandoff}catch(_){}
+          if(typeof parentDownload==="function"){parentDownload(payload);return}
+          const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});
+          const url=URL.createObjectURL(blob),link=document.createElement("a");
+          link.href=url;link.download="conglobal-excel-handoff-"+payload.exportedAt.replace(/[:.]/g,"-")+".json";
+          document.body.appendChild(link);link.click();link.remove();
+          setTimeout(function(){URL.revokeObjectURL(url)},30000);
+        }
+        async function restore(payload){
+          await waitForRecovery();
+          const next=JSON.parse(JSON.stringify(validate(payload)));
+          const previous=JSON.parse(JSON.stringify(state));
+          const previousAuxiliary=captureAuxiliary();
+          const previousHistoryReady=excelViewHistoryReady;
+          const previousCommitted=lastCommittedExcelViewState;
+          const previousUndo=excelViewUndoStack.slice();
+          const previousCurrentWork=currentWork;
+          try{
+            state=next;
+            selectedBlockIds.clear();selectedBlockGridId="";
+            excelViewUndoStack.length=0;excelViewHistoryReady=false;lastCommittedExcelViewState="";
+            putAuxiliary(payload.auxiliary,new Date().toISOString());
+            currentWork=loadCurrentWorkState();
+            renderAll();
+            const serialized=JSON.stringify(state);
+            const saved=readKey(STORAGE_KEY),tables=readKey(RAMP_TABLES_STORAGE_KEY),inbounds=readKey("rampBlockingControl.inbounds.v1");
+            let parsedTables=null,parsedInbounds=null;
+            try{parsedTables=JSON.parse(tables);parsedInbounds=JSON.parse(inbounds)}catch(_){}
+            if(saved!==serialized||!parsedTables||!parsedInbounds||JSON.stringify(parsedTables.rows)!==JSON.stringify(state.rows)||JSON.stringify(parsedTables.secondaryGridTwo)!==JSON.stringify(state.secondaryGridTwo)||JSON.stringify(parsedTables.secondaryGridThree)!==JSON.stringify(state.secondaryGridThree)||JSON.stringify(parsedTables.secondaryGridFour)!==JSON.stringify(state.secondaryGridFour)||JSON.stringify(parsedInbounds.inboundPlans)!==JSON.stringify(state.inboundPlans)||JSON.stringify(parsedInbounds.inboundArchive)!==JSON.stringify(state.inboundArchive))throw new Error("Excel data did not fit in browser storage. Nothing was imported.");
+            if(typeof writeErRecoverySnapshot==="function")await writeErRecoverySnapshot(serialized);
+            putAuxiliary(payload.auxiliary,new Date().toISOString());
+            status.textContent="Imported. Reloading the workbook...";
+            if(window.parent&&window.parent!==window)window.parent.postMessage({type:"conglobal-excel-handoff-imported"},"*");
+            else window.location.reload();
+          }catch(error){
+            state=previous;
+            restoreAuxiliary(previousAuxiliary);
+            currentWork=previousCurrentWork;
+            lastCommittedExcelViewState="";
+            try{renderAll();if(typeof writeErRecoverySnapshot==="function")await writeErRecoverySnapshot(JSON.stringify(state))}catch(rollbackError){console.error("Excel handoff rollback failed",rollbackError)}
+            excelViewUndoStack.length=0;excelViewUndoStack.push(...previousUndo);
+            lastCommittedExcelViewState=previousCommitted;updateExcelViewUndoButton();
+            throw error;
+          }finally{excelViewHistoryReady=previousHistoryReady}
+        }
+        button.addEventListener("click",function(event){event.stopPropagation();preview.hidden=true;pending=null;resetConfirm();options.hidden=!options.hidden;button.setAttribute("aria-expanded",String(!options.hidden))});
+        document.getElementById("excelPage2DownloadHandoff").addEventListener("click",async function(){close();button.disabled=true;button.textContent="EXPORTING...";try{await download();notice("EXPORTED")}catch(error){console.error(error);button.title=error&&error.message||"Excel export failed";notice("EXPORT FAILED")}finally{button.disabled=false}});
+        document.getElementById("excelPage2ChooseHandoff").addEventListener("click",function(){options.hidden=true;button.setAttribute("aria-expanded","false");fileInput.value="";fileInput.click()});
+        fileInput.addEventListener("change",async function(){if(!fileInput.files||!fileInput.files[0])return;try{pending=JSON.parse(await fileInput.files[0].text());const data=validate(pending);const date=pending.exportedAt?new Date(pending.exportedAt).toLocaleString():"unknown date";summary.textContent="From "+date+": "+data.rows.length+" ramp rows, 4 tables, "+data.inboundPlans.length+" active inbounds, "+data.inboundArchive.length+" archived inbounds.";status.textContent="";preview.hidden=false;confirmButton.focus()}catch(error){pending=null;button.title=error&&error.message||"Invalid handoff";notice("INVALID FILE")}});
+        document.getElementById("excelPage2CancelHandoff").addEventListener("click",function(){close();button.focus()});
+        confirmButton.addEventListener("click",async function(){if(!pending)return;if(confirmButton.dataset.confirm!=="true"){confirmButton.dataset.confirm="true";confirmButton.classList.add("is-confirming");confirmButton.textContent="CONFIRM REPLACE";confirmTimer=setTimeout(resetConfirm,6000);return}resetConfirm();confirmButton.disabled=true;status.textContent="Importing...";try{await restore(pending)}catch(error){console.error(error);status.textContent=error&&error.message||"Import failed. Existing Excel data was restored.";confirmButton.disabled=false}});
+        document.addEventListener("click",function(event){if(!menu.contains(event.target)&&!preview.hidden)close();else if(!menu.contains(event.target)&&!options.hidden)close()});
+        document.addEventListener("keydown",function(event){if(event.key==="Escape"&&(!options.hidden||!preview.hidden)){close();button.focus()}});
+      };
+      html = html.replace(controlAnchor, controls + controlAnchor);
+      html = html.replace(saveAnchor, `  (${runtime.toString()})();\n\n${saveAnchor}`);
+      html = html.replace(cloneAnchor, '          var clonedHandoff=clonedDocument.getElementById("excelPage2HandoffMenu");if(clonedHandoff)clonedHandoff.remove();\n' + cloneAnchor);
+      return html.replace(/<\/head>/i, style + "\n</head>");
+    }
+
     function bridgedHtmlForPage(id) {
       if (!bridgedPageHtml.has(id)) {
         let pageHtml = pages[id].html;
@@ -19969,6 +20183,7 @@ body.excel-page-2 .excel-page2-secondary-buttons-right>.copy-grid-actions>.outbo
           pageHtml = withExcelFollowUpLabelVisibilityAndAlignment(pageHtml);
           pageHtml = withExcelRampHeaderFootage(pageHtml);
           pageHtml = withExcelSecondaryButtonsRight(pageHtml);
+          pageHtml = withExcelPage2DataHandoff(pageHtml);
         }
         // The embedded chassisStatus document is a supplied, self-contained baseline.
         // Do not layer the legacy chassis transformer chain over it.
@@ -20906,6 +21121,10 @@ body.excel-page-2 .excel-page2-secondary-buttons-right>.copy-grid-actions>.outbo
             localStorage.setItem(EXCEL_RAMP_TABLES_KEY, tablesSerialized);
           }
         } catch (error) {}
+        return;
+      }
+      if (event.data && event.data.type === "conglobal-excel-handoff-imported" && excelFrame && event.source === excelFrame.contentWindow && isExcelRoute(activePage)) {
+        refreshActiveWorkbookPageFromStorage();
         return;
       }
       if (event.data && event.data.type === "conglobal-excel-color-rules-save") {

@@ -177,6 +177,7 @@
   - source columns may arrive as separate Yard and Track numbers such as `3` and `24`, which must normalize to a Pierce track.
 - Compatible like blocks should consolidate using the same logic as the primary tables; row height should match actual one-line/two-line block content.
 - Inbound records and archived inbounds must survive iframe recreation and browser refresh.
+- Page 2 `EXPORT DATA` downloads a versioned `conglobal-excel-handoff` JSON file containing the live four-table Excel state, inbounds/archive, and allowlisted Excel-only labels and visual settings. `IMPORT EXCEL HANDOFF` replaces only this browser's Excel state after inline two-click confirmation, updates the ER recovery snapshot, and refreshes the Excel iframe; connected cloud sync may then propagate the imported Excel data. Keep the export/import allowlist and recovery write aligned when adding persistent Excel keys.
 - Gold inbound highlighting applies only to the intended inbound blocks added through the designated workflow.
 - Future dwell at 20:30 always means 20:30 today. Preserve the special SS calculation and optional breakdown display.
 - Morning and Afternoon Meeting boards are separate persistent boards. Push-alert/export behavior must capture the intended popup, not a blank or hidden clone.
@@ -315,6 +316,7 @@
 | AM weather/SCW | Cached content appears, latest refresh works, Show Third Day loads the deferred frame, SCW push works, Checklist stacks above SCW. |
 | Timesheet | Schedule styled, Archive opens, Full View renders, Quick Actions persist, no CSS text leaks into the page. |
 | Excel import/parser | Table 1 populated, `03-xxx` routes to Pierce, `06-xxx` routes to Yard, like blocks consolidate, refresh preserves inbounds/archive. |
+| Excel handoff | Page 2 exports all four tables and inbounds; importing into an isolated origin restores blocks, labels, and settings after refresh without changing other workbook pages. |
 | Chassis forecast | Mismatches consume supply first, only true shortages get red X, totals unflagged, numbers centered. |
 | LPH | Page loads without old-state flash, inbound count 1/2/3 works, carry-over begins 03:00, reset clears intended inputs. |
 | Pearl/Mori | Agent and extension statuses update, schedule/countdown visible, each control ID unique, Excel preview/send and AlertMeter capture/preview still work. |
