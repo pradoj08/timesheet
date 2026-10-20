@@ -6191,6 +6191,8 @@ body.excel-page-2 .blank-grid-separator:first-of-type{margin-top:10px!important}
   var attentionButton=document.getElementById("excelPage2AttentionToggle");
   var capacityToggle=document.getElementById("excelPage2CapacityToggle");
   var exportPngButton=document.getElementById("excelPage2ExportPng");
+  var exportPngMarkup=exportPngButton&&exportPngButton.innerHTML;
+  var exportPngStatusTimer=0;
   var exportPngMenu=document.getElementById("excelPage2ExportMenu");
   var exportPngOptions=document.getElementById("excelPage2ExportOptions");
   var rowShadingButton=document.getElementById("excelPage2RowShadingToggle");
@@ -6266,9 +6268,9 @@ body.excel-page-2 .blank-grid-separator:first-of-type{margin-top:10px!important}
         var url=URL.createObjectURL(blob);
         var link=document.createElement("a");
         var stamp=new Date().toISOString().replace(/[:.]/g,"-");
-        link.href=url;link.download="yard-overview-"+stamp+".png";
+        link.href=url;link.download="yard-overview-"+canvas.width+"x"+canvas.height+"-"+stamp+".png";
         document.body.appendChild(link);link.click();link.remove();
-        setTimeout(function(){URL.revokeObjectURL(url)},1500);
+        setTimeout(function(){URL.revokeObjectURL(url)},30000);
         resolve();
       },"image/png");
     });
@@ -6440,7 +6442,7 @@ body.excel-page-2 .blank-grid-separator:first-of-type{margin-top:10px!important}
   }
   async function exportPage2Png(){
     if(!page2Enabled||!exportPngButton)return;
-    var originalText=exportPngButton.textContent;
+    clearTimeout(exportPngStatusTimer);
     exportPngButton.disabled=true;exportPngButton.textContent="EXPORTING...";
     try{
       scheduleUpdate();
@@ -6479,9 +6481,16 @@ body.excel-page-2 .blank-grid-separator:first-of-type{margin-top:10px!important}
       var width=layoutWidth;
       var height=Math.max(1,Math.ceil(panel.scrollHeight)-inboundTableHeight);
       var captureWindowWidth=layoutWidth;
-      var canvas=await renderer(panel,{
+      /* Keep the screen-width layout and full vertical length while using a
+         high-density, lossless PNG. Never silently save a 1x retry as "max". */
+      var captureArea=width*height;
+      var captureEdge=Math.max(width,height);
+      var scaleForPixels=function(maxPixels){return Math.floor(Math.min(8,30000/captureEdge,Math.sqrt(maxPixels/captureArea))*100)/100};
+      var captureScale=scaleForPixels(180000000);
+      if(captureScale<2)throw new Error("Full-length PNG exceeds the browser's high-resolution canvas limit");
+      var renderOptions={
         backgroundColor:"#f3f5f6",
-        scale:1,
+        scale:captureScale,
         useCORS:true,
         logging:false,
         width:width,
@@ -6512,14 +6521,36 @@ body.excel-page-2 .blank-grid-separator:first-of-type{margin-top:10px!important}
           preparePage2PngInboundSummary(clonedDocument);
           preparePage2PngTomorrowInboundLabels(clonedDocument,pngTomorrowInboundLabels);
         }
-      });
-      await downloadPage2Png(canvas);
-      exportPngButton.textContent="EXPORTED";
-      setTimeout(function(){if(exportPngButton)exportPngButton.textContent=originalText},1200);
+      };
+      var canvas,lastCaptureError,exported=false,exportedScale=0,exportedWidth=0,exportedHeight=0;
+      var scales=[captureScale,scaleForPixels(150000000),scaleForPixels(128000000),scaleForPixels(96000000),scaleForPixels(64000000),scaleForPixels(32000000)]
+        .filter(function(value,index,values){return value>=2&&value<=captureScale&&values.indexOf(value)===index});
+      for(var attempt=0;attempt<scales.length;attempt++){
+        try{
+          renderOptions.scale=scales[attempt];
+          exportPngButton.textContent="RENDERING "+scales[attempt]+"x...";
+          canvas=await renderer(panel,renderOptions);
+          if(!canvas||canvas.width<Math.floor(width*scales[attempt])-1||canvas.height<Math.floor(height*scales[attempt])-1)throw new Error("PNG renderer returned a reduced canvas");
+          await downloadPage2Png(canvas);
+          exportedScale=scales[attempt];exportedWidth=canvas.width;exportedHeight=canvas.height;
+          canvas.width=0;canvas.height=0;canvas=null;
+          exported=true;
+          break;
+        }catch(error){
+          lastCaptureError=error;
+          if(canvas){canvas.width=0;canvas.height=0;canvas=null}
+          console.warn("PNG render at "+scales[attempt]+"x failed; trying another high-resolution canvas.",error);
+        }
+      }
+      if(!exported)throw lastCaptureError||new Error("PNG renderer could not capture the full dashboard at high resolution");
+      exportPngButton.title="Exported "+exportedWidth+" x "+exportedHeight+" pixels ("+exportedScale+"x), lossless PNG";
+      exportPngButton.textContent="EXPORTED "+exportedScale+"x";
+      exportPngStatusTimer=setTimeout(function(){if(exportPngButton)exportPngButton.innerHTML=exportPngMarkup},4000);
     }catch(error){
       console.error(error);
-      exportPngButton.textContent="EXPORT FAILED";
-      setTimeout(function(){if(exportPngButton)exportPngButton.textContent=originalText},1800);
+      exportPngButton.title=error&&error.message||"High-resolution PNG export failed";
+      exportPngButton.textContent="HIGH-RES FAILED";
+      exportPngStatusTimer=setTimeout(function(){if(exportPngButton)exportPngButton.innerHTML=exportPngMarkup},4000);
     }finally{
       exportPngButton.disabled=false;
     }
@@ -7202,7 +7233,23 @@ body.excel-page-2 .excel-page2-secondary-grid>.track-remaining{position:sticky!i
     });
   }
   function rowCells(label){var row=[label],node=label.nextElementSibling;while(node&&row.length<13){row.push(node);node=node.nextElementSibling}return row.length===13?row:[]}
-  function syncStageActions(grid){var separator=grid.previousElementSibling;if(!separator||!separator.classList.contains("blank-grid-separator"))return;separator.classList.add("excel-page2-stage-separator");var incoming=grid.querySelector(":scope > .copy-grid-head .copy-grid-actions");if(!incoming)return;var existing=separator.querySelector(":scope > .copy-grid-actions");if(existing&&existing!==incoming)existing.remove();if(grid.id==="blankYardGrid"||grid.id==="blankYardGridThree"){var outbound=grid.querySelector("#openOutboundUnits");if(outbound)incoming.insertBefore(outbound,incoming.firstChild)}separator.appendChild(incoming)}
+  function syncStageActions(grid){
+    var separator=grid.previousElementSibling;
+    if(!separator||!separator.classList.contains("blank-grid-separator"))return;
+    separator.classList.add("excel-page2-stage-separator","excel-page2-secondary-buttons-right");
+    var incoming=grid.querySelector(":scope > .copy-grid-head .copy-grid-actions");
+    if(!incoming)return;
+    var existing=separator.querySelector(":scope > .copy-grid-actions");
+    var outbound=grid.querySelector("#openOutboundUnits");
+    if(outbound)incoming.insertBefore(outbound,incoming.firstChild);
+    if(grid.id==="blankYardGrid"||grid.id==="blankYardGridTwo"){
+      var toggleKey=grid.id==="blankYardGrid"?"two":"three";
+      var toggle=separator.querySelector('[data-outbound-departure-toggle="'+toggleKey+'"]');
+      if(toggle)incoming.insertBefore(toggle,incoming.firstChild);
+    }
+    if(existing&&existing!==incoming)existing.remove();
+    separator.appendChild(incoming);
+  }
   function decorateHeader(grid){var header=[],thirdHeads=[],summaryVisible=grid.id==="blankYardGridTwo"||grid.classList.contains("outbound-departures-visible");if(summaryVisible){thirdHeads=Array.prototype.slice.call(grid.querySelectorAll(":scope > .third-summary-head"));header=thirdHeads.slice(-5);if(thirdHeads[3])thirdHeads[3].classList.add("excel-page2-summary-edge")}else{var firstTrack=grid.querySelector(":scope > .track-label[data-track]"),children=Array.prototype.slice.call(grid.children),trackAt=children.indexOf(firstTrack);if(trackAt>=13)header=children.slice(trackAt-13,trackAt)}if(header.length<5)return;var last=summaryVisible?4:12;var decorated=header[0].classList.contains("excel-page2-track-head")&&Boolean(header[1].querySelector(":scope > .excel-page2-ruler-ticks"))&&header[2].classList.contains("excel-page2-blocks-head")&&header[last]&&header[last].classList.contains("excel-page2-remaining-head");if(decorated)return;Array.prototype.forEach.call(grid.querySelectorAll(":scope > .excel-page2-track-head,:scope > .excel-page2-ruler-head,:scope > .excel-page2-blocks-head,:scope > .excel-page2-remaining-head,:scope > .excel-page2-head-hidden"),function(cell){cell.classList.remove("excel-page2-track-head","excel-page2-ruler-head","excel-page2-blocks-head","excel-page2-remaining-head","excel-page2-head-hidden")});header[0].textContent="";header[0].classList.add("excel-page2-track-head");header[1].classList.add("excel-page2-ruler-head");header[1].innerHTML='<span class="excel-page2-ruler-ticks"><i>0</i><i>500</i><i>1,000</i><i>1,500</i><i>2,000</i><i>2,500</i><i>2,750</i></span>';header[2].textContent="";header[2].classList.add("excel-page2-blocks-head");if(summaryVisible){header[3].classList.add("excel-page2-head-hidden");header[4].textContent="";header[4].classList.add("excel-page2-remaining-head")}else{for(var index=3;index<12;index+=1)header[index].classList.add("excel-page2-head-hidden");header[12].textContent="";header[12].classList.add("excel-page2-remaining-head")}}
   function decorateGrid(grid){
     syncStageActions(grid);
@@ -7244,7 +7291,22 @@ body.excel-page-2 .excel-page2-secondary-grid>.track-remaining{position:sticky!i
       rowCells(label).forEach(function(cell){cell.style.gridRow=String(firstRow+rowIndex)});
     });
   }
-  function cleanStageActions(){grids.forEach(function(grid){grid.style.removeProperty("grid-template-columns");grid.querySelectorAll(":scope > .track-label,:scope > .track-total,:scope > .cut-cell,:scope > .track-remaining,:scope > .excel-page2-remaining-head").forEach(function(cell){cell.style.removeProperty("grid-row");cell.style.removeProperty("grid-column");cell.style.removeProperty("display")});var separator=grid.previousElementSibling;if(!separator||!separator.classList.contains("blank-grid-separator"))return;var moved=separator.querySelector(":scope > .copy-grid-actions");if(moved)moved.remove();separator.classList.remove("excel-page2-stage-separator")});try{if(typeof renderFourthRampTable==="function")renderFourthRampTable()}catch(error){}}
+  function cleanStageActions(){
+    grids.forEach(function(grid){
+      grid.style.removeProperty("grid-template-columns");
+      grid.querySelectorAll(":scope > .track-label,:scope > .track-total,:scope > .cut-cell,:scope > .track-remaining,:scope > .excel-page2-remaining-head").forEach(function(cell){cell.style.removeProperty("grid-row");cell.style.removeProperty("grid-column");cell.style.removeProperty("display")});
+      var separator=grid.previousElementSibling;
+      if(!separator||!separator.classList.contains("blank-grid-separator"))return;
+      var moved=separator.querySelector(":scope > .copy-grid-actions");
+      if(moved){
+        var toggle=moved.querySelector("[data-outbound-departure-toggle]");
+        if(toggle)separator.insertBefore(toggle,moved);
+        moved.remove();
+      }
+      separator.classList.remove("excel-page2-stage-separator","excel-page2-secondary-buttons-right");
+    });
+    try{if(typeof renderFourthRampTable==="function")renderFourthRampTable()}catch(error){}
+  }
   function sync(){if(!document.body.classList.contains("excel-page-2"))return;grids.forEach(function(grid){decorateGrid(grid);stabilizeTrackRows(grid)})}
   function schedule(){if(frame)return;frame=requestAnimationFrame(function(){frame=0;sync()})}
   function scheduleFinalSummarySize(){if(finalZoneFrame)return;finalZoneFrame=requestAnimationFrame(function(){finalZoneFrame=0;sizeFinalSummaryZones(document.getElementById("blankYardGridTwo"))})}
@@ -19551,6 +19613,209 @@ document.addEventListener("excel-followup-label-position-change",schedule);docum
       return html.replace(/<\/head>/i, `${style}${cardStyle}\n</head>`);
     }
 
+    function withExcelFollowUpLabelVisibilityAndAlignment(html) {
+      const marker = "excel-followup-label-visibility-alignment-v1";
+      const legacyStart = html.indexOf("function positionLegacy(){");
+      const legacyEnd = html.indexOf("function positionLabels(){", legacyStart);
+      const moveButton = '<button class="btn btn-white btn-small" id="moveFollowUpLabels" type="button" aria-pressed="true">Move Labels Left</button>';
+      if (!html || html.includes(marker) || legacyStart < 0 || legacyEnd < 0 || !html.includes(moveButton)) return html;
+      const positionLegacy = function(right, offsets) {
+        document.querySelectorAll(".consolidation-explanation-followup-label").forEach(function(label) {
+          const previous = label.parentElement;
+          const original = label.__excelOriginalParent && label.__excelOriginalParent.isConnected
+            ? label.__excelOriginalParent : null;
+          const home = original || (previous && previous.classList && previous.classList.contains("cut-cell") ? previous : null);
+          if (right && home) {
+            const grid = home.closest(".yard-grid");
+            let track = trackForCell(home);
+            if (!track) {
+              let cursor = home.previousElementSibling;
+              while (cursor && !cursor.classList.contains("track-label")) cursor = cursor.previousElementSibling;
+              track = cursor && trackForCell(cursor);
+            }
+            const edge = grid && track && remainingCell(grid, track);
+            if (edge) {
+              if (!original) {
+                label.__excelOriginalParent = home;
+                label.__excelOriginalLeft = label.style.getPropertyValue("left");
+                label.__excelOriginalRight = label.style.getPropertyValue("right");
+              }
+              label.__excelOriginalGrid = grid;
+              label.__excelOriginalTrack = track;
+              const key = grid.id + "::" + track;
+              const offset = offsets[key] || 7;
+              edge.classList.add("selected-block-followup-edge-host");
+              if (label.parentElement !== edge) edge.appendChild(label);
+              label.classList.add("selected-block-followup-edge");
+              label.style.setProperty("left", "auto", "important");
+              label.style.setProperty("right", "calc(100% + " + offset + "px)", "important");
+              offsets[key] = offset + Math.max(1, Math.ceil(label.getBoundingClientRect().width)) + 6;
+              return;
+            }
+          }
+          if (original && previous !== original) original.appendChild(label);
+          if (original) {
+            if (label.__excelOriginalLeft) label.style.setProperty("left", label.__excelOriginalLeft);
+            else label.style.removeProperty("left");
+            if (label.__excelOriginalRight) label.style.setProperty("right", label.__excelOriginalRight);
+            else label.style.removeProperty("right");
+            cleanupHost(previous);
+          }
+          label.classList.remove("selected-block-followup-edge");
+          label.__excelOriginalParent = null;
+          label.__excelOriginalGrid = null;
+          label.__excelOriginalTrack = "";
+        });
+      };
+      html = html.slice(0, legacyStart) + "var positionLegacy=" + positionLegacy.toString() + ";\n" + html.slice(legacyEnd);
+      html = html.replace(moveButton, moveButton + '\n            <button class="btn btn-white btn-small" id="hideFollowUpLabels" type="button" aria-pressed="false">Hide Labels</button>');
+      html = html.replace('{id:"moveFollowUpLabels"},', '{id:"moveFollowUpLabels"},\n      {id:"hideFollowUpLabels"},');
+      const style = '<style id="excel-followup-label-visibility-style-v1">#hideFollowUpLabels{width:auto;min-width:91px;white-space:nowrap}.excel-followup-labels-right .consolidation-explanation-followup-label:not(.selected-block-followup-edge){visibility:hidden!important}body.excel-followup-labels-hidden .selected-block-departing-label,body.excel-followup-labels-hidden .consolidation-explanation-followup-label{display:none!important}</style>';
+      const runtime = function() {
+        const key = "conglobal-excel-followup-labels-hidden-v1";
+        const button = document.getElementById("hideFollowUpLabels");
+        if (!button) return;
+        function apply() {
+          let hidden = false;
+          try { hidden = localStorage.getItem(key) === "true"; } catch (_) {}
+          document.body.classList.toggle("excel-followup-labels-hidden", hidden);
+          button.setAttribute("aria-pressed", String(hidden));
+          button.textContent = hidden ? "Show Labels" : "Hide Labels";
+          requestAnimationFrame(function() {
+            document.dispatchEvent(new CustomEvent("excel-followup-label-position-change"));
+          });
+        }
+        button.addEventListener("click", function() {
+          const hidden = !document.body.classList.contains("excel-followup-labels-hidden");
+          try { localStorage.setItem(key, String(hidden)); } catch (_) {}
+          apply();
+        });
+        window.addEventListener("storage", function(event) { if (event.key === key) apply(); });
+        apply();
+      };
+      const close = html.toLowerCase().lastIndexOf("</body>");
+      const patch = `${style}<scr${""}ipt id="${marker}">(${runtime.toString()})();</scr${""}ipt>`;
+      return close >= 0 ? html.slice(0, close) + patch + "\n" + html.slice(close) : html + patch;
+    }
+
+    function withExcelRampHeaderFootage(html) {
+      const marker = "excel-page2-ramp-header-footage-v1";
+      if (!html || html.includes(marker) || !html.includes('id="yardGrid"')) return html;
+      const style = `<style id="${marker}-style">
+body:not(.excel-page-2) .excel-page2-ramp-open{display:none!important}
+body.excel-page-2 .excel-page2-ramp-open{display:inline-flex;align-items:center;gap:5px;margin-left:8px;align-self:center;white-space:nowrap;font:800 9px/1 "Arial Narrow","Segoe UI",Arial,sans-serif;letter-spacing:.02em}
+body.excel-page-2 .excel-page2-ramp-open-label{margin-right:2px;color:#9fb2bd;font-weight:900;letter-spacing:.08em}
+body.excel-page-2 .excel-page2-ramp-open-chip{display:inline-flex;align-items:center;gap:4px;min-height:23px;padding:3px 7px;border:1px solid #425764;border-radius:3px;background:#24343f;color:#e5eef3}
+body.excel-page-2 .excel-page2-ramp-open-chip em{color:#a9bfcb;font-size:8px;font-style:normal}
+body.excel-page-2 .excel-page2-ramp-open-chip b{color:#f6c447;font:900 12px/1 Consolas,"Courier New",monospace}
+body.excel-page-2 .excel-page2-ramp-open-chip[data-track-count="9"] b{color:#8ad9ff}
+body.excel-page-2 .excel-page2-ramp-open-chip.over b{color:#ff8380}
+body.excel-page-2 .fourth-ramp-separator:not(.table-visible)>.excel-page2-ramp-open{display:none!important}
+</style>`;
+      const runtime = function() {
+        "use strict";
+        const tables = [
+          {gridId:"yardGrid",readoutId:"excelPage2CurrentOpen"},
+          {gridId:"blankYardGrid",readoutId:"excelPage2AfterOpen"},
+          {gridId:"blankYardGridTwo",readoutId:"excelPage2PostOpen"},
+          {gridId:"blankYardGridThree",readoutId:"excelPage2AdditionalOpen"}
+        ];
+        const observed = new WeakSet();
+        let frame = 0;
+        function readoutFor(table,grid) {
+          let readout = document.getElementById(table.readoutId);
+          if (readout) return readout;
+          const title = table.gridId === "yardGrid"
+            ? document.querySelector("#excelWorkspace>.dashboard-panel .dashboard-title-row>.panel-title")
+            : grid.previousElementSibling && grid.previousElementSibling.querySelector(":scope > .blank-grid-title");
+          if (!title) return null;
+          readout = document.createElement("span");
+          readout.id = table.readoutId;
+          readout.className = "excel-page2-ramp-open";
+          readout.setAttribute("aria-label", "Available ramp footage");
+          readout.setAttribute("aria-live", "polite");
+          readout.innerHTML = '<span class="excel-page2-ramp-open-label">OPEN</span><span class="excel-page2-ramp-open-chip" data-track-count="8">8 TRACKS <em>NO 803</em> <b>—</b> FT</span><span class="excel-page2-ramp-open-chip" data-track-count="9">9 TRACKS <em>WITH 803</em> <b>—</b> FT</span>';
+          title.insertAdjacentElement("afterend", readout);
+          return readout;
+        }
+        function availableFootage(grid) {
+          const seen = new Set();
+          let eight = 0, nine = 0;
+          grid.querySelectorAll(":scope > .track-label[data-track]").forEach(function(label) {
+            const track = Number(String(label.getAttribute("data-track") || "").replace(/[^0-9]/g, "").slice(-3));
+            if (track < 801 || track > 809 || seen.has(track)) return;
+            const total = label.nextElementSibling;
+            if (!total || !total.classList.contains("track-total")) return;
+            const usedText = total.getAttribute("data-page2-used");
+            const capacityText = total.getAttribute("data-page2-capacity");
+            if (usedText === null || capacityText === null) return;
+            const used = Number(usedText.replace(/,/g, ""));
+            const capacity = Number(capacityText.replace(/,/g, ""));
+            if (!Number.isFinite(used) || !Number.isFinite(capacity)) return;
+            seen.add(track);
+            const open = capacity - used;
+            nine += open;
+            if (track !== 803) eight += open;
+          });
+          return seen.size === 9 ? {eight:eight,nine:nine} : null;
+        }
+        function sync() {
+          if (!document.body.classList.contains("excel-page-2")) return;
+          tables.forEach(function(table) {
+            const grid = document.getElementById(table.gridId);
+            if (!grid) return;
+            const readout = readoutFor(table,grid);
+            if (!readout) return;
+            if (!observed.has(grid)) {
+              new MutationObserver(schedule).observe(grid,{childList:true,subtree:true,attributes:true,attributeFilter:["data-page2-used","data-page2-capacity"]});
+              observed.add(grid);
+            }
+            const values = availableFootage(grid);
+            if (!values) {
+              readout.querySelectorAll(".excel-page2-ramp-open-chip").forEach(function(chip) {
+                const number = chip.querySelector("b");
+                if (number && number.textContent !== "—") number.textContent = "—";
+                chip.classList.remove("over");
+                chip.setAttribute("aria-label",chip.getAttribute("data-track-count") + " track available footage loading");
+              });
+              return;
+            }
+            [["8",values.eight],["9",values.nine]].forEach(function(entry) {
+              const chip = readout.querySelector('[data-track-count="' + entry[0] + '"]');
+              if (!chip) return;
+              const value = entry[1];
+              const text = value.toLocaleString("en-US");
+              const number = chip.querySelector("b");
+              if (number && number.textContent !== text) number.textContent = text;
+              chip.classList.toggle("over",value < 0);
+              chip.setAttribute("aria-label",entry[0] + " tracks " + (entry[0] === "8" ? "excluding" : "including") + " 6-803: " + (value < 0 ? Math.abs(value).toLocaleString("en-US") + " feet over capacity" : text + " feet available"));
+            });
+          });
+        }
+        function schedule() {
+          if (frame) return;
+          frame = requestAnimationFrame(function() { frame = 0; sync(); });
+        }
+        window.addEventListener("message",function(event) { if (event.data && event.data.type === "conglobal-excel-page2-mode") schedule(); });
+        schedule();
+      };
+      const headClose = html.toLowerCase().indexOf("</head>");
+      if (headClose >= 0) html = html.slice(0,headClose) + style + "\n" + html.slice(headClose);
+      const close = html.toLowerCase().lastIndexOf("</body>");
+      const script = `<scr${""}ipt id="${marker}">(${runtime.toString()})();</scr${""}ipt>`;
+      return close >= 0 ? html.slice(0,close) + script + "\n" + html.slice(close) : html + script;
+    }
+
+    function withExcelSecondaryButtonsRight(html) {
+      const marker = "excel-page2-secondary-buttons-right-v1";
+      if (!html || html.includes(marker) || !html.includes('id="blankYardGrid"')) return html;
+      const style = `<style id="${marker}">
+body.excel-page-2 .excel-page2-secondary-buttons-right>.copy-grid-actions{right:0!important}
+body.excel-page-2 .excel-page2-secondary-buttons-right>.copy-grid-actions>.outbound-departure-toggle{margin-left:0!important}
+</style>`;
+      return html.replace(/<\/head>/i, style + "\n</head>");
+    }
+
     function bridgedHtmlForPage(id) {
       if (!bridgedPageHtml.has(id)) {
         let pageHtml = pages[id].html;
@@ -19701,6 +19966,9 @@ document.addEventListener("excel-followup-label-position-change",schedule);docum
           pageHtml = withExcelSsColorPrecedence(pageHtml);
           pageHtml = withExcelTomorrowInboundMarker(pageHtml);
           pageHtml = withExcelBlockNameFootageEditor(pageHtml);
+          pageHtml = withExcelFollowUpLabelVisibilityAndAlignment(pageHtml);
+          pageHtml = withExcelRampHeaderFootage(pageHtml);
+          pageHtml = withExcelSecondaryButtonsRight(pageHtml);
         }
         // The embedded chassisStatus document is a supplied, self-contained baseline.
         // Do not layer the legacy chassis transformer chain over it.
