@@ -6003,7 +6003,13 @@ tfoot .lph-target-pill.below-target{background:#fecaca;color:#7f1d1d}
         <section class="excel-page2-overview" id="excelPage2Overview" hidden aria-label="Yard overview">
           <div class="excel-page2-heading">
             <h2>YARD OVERVIEW</h2>
-            <button type="button" id="excelPage2ExportPng">EXPORT PNG</button>
+            <div class="excel-page2-export-menu" id="excelPage2ExportMenu">
+              <button type="button" id="excelPage2ExportPng" aria-haspopup="menu" aria-expanded="false">EXPORT PNG <span aria-hidden="true">▾</span></button>
+              <div class="excel-page2-export-options" id="excelPage2ExportOptions" role="menu" hidden>
+                <button type="button" role="menuitem" data-png-inbound-table="include">INCLUDE INBOUND TABLE</button>
+                <button type="button" role="menuitem" data-png-inbound-table="exclude">EXCLUDE INBOUND TABLE</button>
+              </div>
+            </div>
             <button type="button" id="excelPage2RowShadingToggle" aria-pressed="true" title="Remove the alternating grey and negative-track red row shading">GREY ROWS ON</button>
             <button type="button" id="excelPage2BlockStyleBtn" title="Block font and colors" aria-label="Block font and colors">COLORS</button>
           </div>
@@ -6071,8 +6077,10 @@ body.excel-page-2 #assignmentLabelToolbarToggle{display:none!important}
 .excel-page2-heading>span{display:block;margin-bottom:3px;color:#7fb1cc;font:800 9px/1.1 Consolas,"Courier New",monospace;letter-spacing:.15em}
 .excel-page2-heading{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px}
 .excel-page2-heading h2{margin:0;transform:translateY(4px);font-size:32px;line-height:.92;font-weight:950;letter-spacing:-.035em}
+.excel-page2-export-menu{position:relative;margin-top:4px}
 .excel-page2-heading #excelPage2ExportPng{min-height:28px;margin-top:4px;padding:5px 10px;border:1px solid #f6c447;border-radius:4px;background:#f6c447;color:#101820;font:950 9px/1 "Arial Narrow","Segoe UI",Arial,sans-serif;letter-spacing:.05em;cursor:pointer}
 .excel-page2-heading #excelPage2ExportPng:hover,.excel-page2-heading #excelPage2ExportPng:focus-visible{border-color:#fff3bd;background:#ffd765;outline:2px solid #fff;outline-offset:1px}.excel-page2-heading #excelPage2ExportPng:disabled{opacity:.65;cursor:wait}
+.excel-page2-export-menu #excelPage2ExportPng{margin-top:0}.excel-page2-export-menu #excelPage2ExportPng span{margin-left:4px;font-size:10px}.excel-page2-export-options{position:absolute;top:calc(100% + 4px);left:0;z-index:100;display:grid;min-width:178px;padding:4px;border:1px solid #f6c447;border-radius:4px;background:#10191f;box-shadow:0 8px 18px rgba(0,0,0,.35)}.excel-page2-export-options[hidden]{display:none!important}.excel-page2-export-options button{min-height:28px;padding:6px 8px;border:0;border-radius:3px;background:transparent;color:#f8fafc;font:900 9px/1.1 "Arial Narrow","Segoe UI",Arial,sans-serif;letter-spacing:.03em;text-align:left;cursor:pointer}.excel-page2-export-options button:hover,.excel-page2-export-options button:focus-visible{background:#f6c447;color:#101820;outline:0}
 .excel-page2-heading #excelPage2RowShadingToggle{min-height:28px;margin-top:4px;padding:5px 10px;border:1px solid #aab8c2;border-radius:4px;background:#f8fafc;color:#101820;font:950 9px/1 "Arial Narrow","Segoe UI",Arial,sans-serif;letter-spacing:.05em;cursor:pointer}
 .excel-page2-heading #excelPage2RowShadingToggle:hover,.excel-page2-heading #excelPage2RowShadingToggle:focus-visible{border-color:#fff;background:#fff;outline:2px solid #fff;outline-offset:1px}.excel-page2-heading #excelPage2RowShadingToggle[aria-pressed="true"]{border-color:#cbd5e1;background:#dfe4e8}
 #excelPage2BlockStyleBtn{min-height:27px;height:27px;margin:0;padding:4px 9px;border:1px solid #7fb1cc;border-radius:3px;background:#163448;color:#f8fafc;font:950 9px/1 "Arial Narrow","Segoe UI",Arial,sans-serif;letter-spacing:.04em;cursor:pointer;white-space:nowrap}#excelPage2BlockStyleBtn:hover,#excelPage2BlockStyleBtn:focus-visible{border-color:#bae6fd;background:#20506d;outline:2px solid #fff;outline-offset:1px}
@@ -6183,8 +6191,13 @@ body.excel-page-2 .blank-grid-separator:first-of-type{margin-top:10px!important}
   var attentionButton=document.getElementById("excelPage2AttentionToggle");
   var capacityToggle=document.getElementById("excelPage2CapacityToggle");
   var exportPngButton=document.getElementById("excelPage2ExportPng");
+  var exportPngMenu=document.getElementById("excelPage2ExportMenu");
+  var exportPngOptions=document.getElementById("excelPage2ExportOptions");
   var rowShadingButton=document.getElementById("excelPage2RowShadingToggle");
   var blockStyleButton=document.getElementById("excelPage2BlockStyleBtn");
+  var pngInboundTableStorageKey="conglobal-excel-page2-png-inbound-table-v1";
+  var pngInboundTableMode="include";
+  try{pngInboundTableMode=localStorage.getItem(pngInboundTableStorageKey)==="exclude"?"exclude":"include"}catch(error){}
   var rowShadingStorageKey="conglobal-excel-page2-alternate-row-shading-v1";
   var alternateRowShading=true;
   try{alternateRowShading=localStorage.getItem(rowShadingStorageKey)!=="off"}catch(error){}
@@ -6452,9 +6465,19 @@ body.excel-page-2 .blank-grid-separator:first-of-type{margin-top:10px!important}
       /* Keep the live responsive screen width, but include the dashboard's
          complete vertical length in the exported PNG. */
       var layoutWidth=Math.max(1,Math.min(Math.ceil(panelRect.width),viewportWidth));
+      var excludeInboundTable=pngInboundTableMode==="exclude";
+      var inboundTableHeight=0;
+      if(excludeInboundTable){
+        var inboundTable=document.getElementById("inboundSummaryHost");
+        if(inboundTable){
+          var inboundTableRect=inboundTable.getBoundingClientRect();
+          var inboundTableStyle=getComputedStyle(inboundTable);
+          inboundTableHeight=Math.max(0,Math.ceil(inboundTableRect.height+(parseFloat(inboundTableStyle.marginTop)||0)+(parseFloat(inboundTableStyle.marginBottom)||0)));
+        }
+      }
       var pngTomorrowInboundLabels=collectPage2PngTomorrowInboundLabels(panel,panelRect);
       var width=layoutWidth;
-      var height=Math.max(1,Math.ceil(panel.scrollHeight));
+      var height=Math.max(1,Math.ceil(panel.scrollHeight)-inboundTableHeight);
       var captureWindowWidth=layoutWidth;
       var canvas=await renderer(panel,{
         backgroundColor:"#f3f5f6",
@@ -6473,9 +6496,13 @@ body.excel-page-2 .blank-grid-separator:first-of-type{margin-top:10px!important}
           var clonedOverview=clonedDocument.getElementById("excelPage2Overview");
           var clonedLegend=clonedDocument.getElementById("excelPage2Legend");
           var clonedButton=clonedDocument.getElementById("excelPage2ExportPng");
-          if(clonedButton)clonedButton.remove();
+          if(clonedButton){var clonedExportMenu=clonedButton.closest(".excel-page2-export-menu");if(clonedExportMenu)clonedExportMenu.remove();else clonedButton.remove()}
           var clonedShadingButton=clonedDocument.getElementById("excelPage2RowShadingToggle");
           if(clonedShadingButton)clonedShadingButton.remove();
+          if(excludeInboundTable){
+            var clonedInboundTable=clonedDocument.getElementById("inboundSummaryHost");
+            if(clonedInboundTable)clonedInboundTable.remove();
+          }
           [clonedOverview,clonedLegend].forEach(function(element){if(element){element.style.setProperty("position","static","important");element.style.setProperty("top","auto","important")}});
           if(clonedWorkspace){clonedWorkspace.style.setProperty("display","block","important");clonedWorkspace.style.setProperty("width",layoutWidth+"px","important");clonedWorkspace.style.setProperty("max-width","none","important")}
           if(clonedPanel){clonedPanel.style.setProperty("width",layoutWidth+"px","important");clonedPanel.style.setProperty("max-width","none","important");clonedPanel.style.setProperty("overflow","visible","important")}
@@ -6497,7 +6524,11 @@ body.excel-page-2 .blank-grid-separator:first-of-type{margin-top:10px!important}
       exportPngButton.disabled=false;
     }
   }
-  if(exportPngButton)exportPngButton.addEventListener("click",exportPage2Png);
+  function closePage2ExportMenu(){if(exportPngOptions)exportPngOptions.hidden=true;if(exportPngButton)exportPngButton.setAttribute("aria-expanded","false")}
+  if(exportPngButton)exportPngButton.addEventListener("click",function(event){event.stopPropagation();if(!exportPngOptions||exportPngButton.disabled)return;var willOpen=exportPngOptions.hidden;exportPngOptions.hidden=!willOpen;exportPngButton.setAttribute("aria-expanded",String(willOpen))});
+  if(exportPngOptions)exportPngOptions.addEventListener("click",function(event){var option=event.target.closest("[data-png-inbound-table]");if(!option)return;pngInboundTableMode=option.getAttribute("data-png-inbound-table")==="exclude"?"exclude":"include";try{localStorage.setItem(pngInboundTableStorageKey,pngInboundTableMode)}catch(error){}closePage2ExportMenu();exportPage2Png()});
+  document.addEventListener("click",function(event){if(exportPngMenu&&!exportPngMenu.contains(event.target))closePage2ExportMenu()});
+  document.addEventListener("keydown",function(event){if(event.key==="Escape")closePage2ExportMenu()});
   if(rowShadingButton)rowShadingButton.addEventListener("click",toggleAlternateRowShading);
   applyAlternateRowShading();
   function formatNumber(value){return Math.round(Number(value)||0).toLocaleString("en-US")}
@@ -10181,7 +10212,7 @@ document.addEventListener("DOMContentLoaded",function(){
 
     function withExcelConsolidationArrowExplanations(html) {
       const marker = "excel-consolidation-arrow-explanations-v1";
-      if (!html || typeof html !== "string" || html.includes(marker)) return html;
+      if (!html || typeof html !== "string" || html.includes(`<style id="${marker}-styles">`)) return html;
       const destinations = [
         { id: "Ihosa", label: "IHOSA" },
         { id: "Mhoas", label: "MHOAS" },
@@ -10194,6 +10225,10 @@ document.addEventListener("DOMContentLoaded",function(){
         const explanation = `<button class="copy-menu-action consolidation-arrow-explanation-action" id="explainConsolidateTo${destination.id}" data-consolidation-arrow-label="${destination.label}" type="button" role="menuitem">Consolidate with arrow explanation</button>`;
         updated = updated.replace(anchor, anchor + "\n    " + explanation);
       });
+      updated = updated.replace(
+        'clone.querySelectorAll(".overflow, .inbound-shove-flag").forEach(node => node.remove());',
+        'clone.querySelectorAll(".overflow, .inbound-shove-flag, .consolidation-explanation-arrow, .consolidation-explanation-target, .consolidation-explanation-followup-label").forEach(node => node.remove());'
+      );
       const copyAnchor = `    state.secondaryGridTwo = snapshotGrid(sourceGrid);`;
       const copyReplacement = `    let copiedModel = snapshotGrid(sourceGrid);
     try {
@@ -10204,6 +10239,15 @@ document.addEventListener("DOMContentLoaded",function(){
     state.secondaryGridTwo = copiedModel;`;
       if (!updated.includes(copyAnchor)) return html;
       updated = updated.replace(copyAnchor, copyReplacement);
+      const copyTwoAnchor = `    state.secondaryGridThree = snapshotGrid(sourceGrid);`;
+      const copyTwoReplacement = `    let copiedModel = snapshotGrid(sourceGrid);
+    try {
+      if (typeof window.conglobalExcelApplyConsolidationArrowsToCopy === "function") {
+        copiedModel = window.conglobalExcelApplyConsolidationArrowsToCopy(copiedModel, sourceGrid.id) || copiedModel;
+      }
+    } catch (_) {}
+    state.secondaryGridThree = copiedModel;`;
+      if (updated.includes(copyTwoAnchor)) updated = updated.replace(copyTwoAnchor, copyTwoReplacement);
       if (updated === html) return html;
       const styles = `<style id="${marker}-styles">
   .block-context-menu .consolidation-arrow-explanation-action{min-height:25px!important;margin:-2px 0 4px!important;padding:4px 9px 5px 18px!important;border-color:#334155!important;background:#1e293b!important;color:#cbd5e1!important;font-size:9px!important;font-weight:750!important}
@@ -10217,7 +10261,7 @@ document.addEventListener("DOMContentLoaded",function(){
   #explainConsolidateToPierce{background:#9d174d!important;border-color:#f472b6!important;color:#fff!important}
   #explainConsolidateToPierce:hover{background:#be185d!important}
   .consolidation-explanation-arrow,.consolidation-explanation-target{position:absolute;z-index:8;box-sizing:border-box}
-  .consolidation-explanation-arrow{pointer-events:none}
+  .consolidation-explanation-arrow{pointer-events:auto;cursor:context-menu}
   .consolidation-explanation-target{pointer-events:auto;cursor:context-menu}
   .consolidation-explanation-arrow{left:1px;top:4px;bottom:4px;width:29px;display:flex;align-items:center;justify-content:center;color:#050505!important;font:800 25px/1 Arial,sans-serif!important}
   .consolidation-explanation-target{left:31px;right:auto;width:calc(100% - 4px);max-width:none!important;top:calc(5px * var(--excel-table-scale,1));bottom:calc(5px * var(--excel-table-scale,1));display:flex;flex-direction:column;align-items:flex-start;justify-content:center;overflow:hidden;padding:calc(4px * var(--excel-table-scale,1)) 5px;border:1px solid rgba(15,23,42,.14);border-radius:3px;color:#fff!important;font-family:var(--grid-block-font,"Roboto Condensed","Arial Narrow",Arial,sans-serif)!important;font-size:var(--grid-block-size,12px);font-weight:var(--grid-block-weight,700)!important;line-height:1!important;letter-spacing:-.01em;white-space:nowrap;box-shadow:0 1px 1px rgba(15,23,42,.08)}
@@ -10239,7 +10283,7 @@ document.addEventListener("DOMContentLoaded",function(){
   .consolidation-explanation-delete-menu[hidden]{display:none!important}
   .consolidation-explanation-delete-menu button{width:100%;min-height:29px;margin:0 0 4px;padding:5px 9px;border:1px solid #475569;border-radius:4px;background:#1e293b;color:#fff;font:850 10px/1 "Arial Narrow","Segoe UI",Arial,sans-serif;text-align:left;cursor:pointer}
   .consolidation-explanation-delete-menu button:hover,.consolidation-explanation-delete-menu button:focus-visible{background:#334155}
-  .consolidation-explanation-delete-menu button[data-action="delete"]{margin-bottom:0;border-color:#ef4444;background:#7f1d1d}
+  .consolidation-explanation-delete-menu button[data-action="delete"]{border-color:#ef4444;background:#7f1d1d}
   .consolidation-explanation-delete-menu button[data-action="delete"][data-confirming="true"]{background:#dc2626}
   .consolidation-explanation-move-tracks{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;margin:-1px 0 4px;padding:4px;border:1px solid #334155;border-radius:4px;background:#020617}
   .consolidation-explanation-move-tracks[hidden]{display:none!important}
@@ -10256,7 +10300,7 @@ document.addEventListener("DOMContentLoaded",function(){
   "use strict";
   var storageKey="conglobal-excel-consolidation-arrow-explanations-v1";
   var applying=false,scheduled=false;
-  var deleteMenu=document.createElement("div");deleteMenu.className="consolidation-explanation-delete-menu";deleteMenu.hidden=true;deleteMenu.innerHTML='<button type="button" data-action="swing">Swing to Yard</button><button type="button" data-action="move" aria-expanded="false">Move to...</button><div class="consolidation-explanation-move-tracks" hidden></div><button type="button" data-action="departing">Departing From Here</button><button type="button" data-action="delete">Delete block</button>';document.body.appendChild(deleteMenu);
+  var deleteMenu=document.createElement("div");deleteMenu.className="consolidation-explanation-delete-menu";deleteMenu.hidden=true;deleteMenu.innerHTML='<button type="button" data-action="delete">Delete assigned arrow</button><button type="button" data-action="swing">Swing to Yard</button><button type="button" data-action="move" aria-expanded="false">Move to...</button><div class="consolidation-explanation-move-tracks" hidden></div><button type="button" data-action="departing">Departing From Here</button>';document.body.appendChild(deleteMenu);
   var deleteButton=deleteMenu.querySelector('[data-action="delete"]'),moveButton=deleteMenu.querySelector('[data-action="move"]'),moveTracks=deleteMenu.querySelector(".consolidation-explanation-move-tracks"),deleteId="",deleteTimer=0,menuAnchorX=0,menuAnchorY=0;
   for(var moveTrack=801;moveTrack<=809;moveTrack+=1){var moveTrackButton=document.createElement("button");moveTrackButton.type="button";moveTrackButton.dataset.moveTrack=String(moveTrack);moveTrackButton.textContent=String(moveTrack);moveTracks.appendChild(moveTrackButton)}
   function read(){try{var value=JSON.parse(localStorage.getItem(storageKey)||"[]");return Array.isArray(value)?value:[]}catch(_){return []}}
@@ -10298,7 +10342,7 @@ document.addEventListener("DOMContentLoaded",function(){
         var arrowIndex=last+1,targetIndex=last+1;
         if(targetIndex<0||targetIndex>=row.cuts.length)return;
         row.cuts[targetIndex].classList.add("consolidation-explanation-host");row.cuts[targetIndex].style.setProperty("overflow","visible","important");row.cuts[targetIndex].style.setProperty("z-index","7","important");
-        if(arrowIndex>=0){var arrow=document.createElement("span");arrow.className="consolidation-explanation-arrow";arrow.textContent="⟶";row.cuts[arrowIndex].appendChild(arrow)}
+        if(arrowIndex>=0){var arrow=document.createElement("span");arrow.className="consolidation-explanation-arrow";arrow.dataset.explanationId=String(item.id||"");arrow.textContent="⟶";row.cuts[arrowIndex].appendChild(arrow)}
         var destinationLabel=String(item.label||"").toUpperCase();
         var target=document.createElement("span");target.className="consolidation-explanation-target";target.dataset.label=destinationLabel;target.dataset.explanationId=String(item.id||"");
         var sourceCandidates=Array.from(grid.querySelectorAll(".cut-cell[data-block-id]")).filter(function(cell){return Array.isArray(item.blockIds)&&item.blockIds.indexOf(String(cell.dataset.blockId||""))>=0&&cell.getClientRects().length});
@@ -10337,7 +10381,7 @@ document.addEventListener("DOMContentLoaded",function(){
   }
   function schedule(){if(scheduled)return;scheduled=true;requestAnimationFrame(apply)}
   function selectedCells(){return Array.from(document.querySelectorAll(".yard-grid .cut-cell.block-selected[data-block-id]"))}
-  function closeDeleteMenu(){deleteMenu.hidden=true;deleteId="";deleteButton.textContent="Delete block";deleteButton.dataset.confirming="false";moveTracks.hidden=true;moveButton.setAttribute("aria-expanded","false");if(deleteTimer){clearTimeout(deleteTimer);deleteTimer=0}}
+  function closeDeleteMenu(){deleteMenu.hidden=true;deleteId="";deleteButton.textContent="Delete assigned arrow";deleteButton.dataset.confirming="false";moveTracks.hidden=true;moveButton.setAttribute("aria-expanded","false");if(deleteTimer){clearTimeout(deleteTimer);deleteTimer=0}}
   function positionDeleteMenu(clientX,clientY){
     var visibleLeft=0,visibleTop=0,visibleRight=innerWidth,visibleBottom=innerHeight;
     try{var frameRect=window.frameElement&&window.frameElement.getBoundingClientRect();if(frameRect&&window.parent!==window){visibleLeft=Math.max(0,-frameRect.left);visibleTop=Math.max(0,-frameRect.top);visibleRight=Math.min(visibleRight,window.parent.innerWidth-frameRect.left);visibleBottom=Math.min(visibleBottom,window.parent.innerHeight-frameRect.top)}}catch(_){}
@@ -10382,7 +10426,7 @@ document.addEventListener("DOMContentLoaded",function(){
     write(records);var menu=document.getElementById("blockContextMenu");if(menu)menu.hidden=true;schedule();
   }
   window.conglobalExcelApplyConsolidationArrowsToCopy=function(model,gridId){
-    if(!model||!model.tracks||String(gridId||"")!=="yardGrid")return model;
+    if(!model||!model.tracks||["yardGrid","blankYardGrid"].indexOf(String(gridId||""))<0)return model;
     var tones={IHOSA:"green",MHOAS:"blue",SS:"purple",PIERCE:"pink"},claimed=new Set(),accepted=[];
     function uniqueFootageSubset(blocks,targetFootage){
       var target=Math.round(number(targetFootage)*100);if(target<=0)return [];
@@ -10425,7 +10469,7 @@ document.addEventListener("DOMContentLoaded",function(){
     return model;
   };
   document.querySelectorAll("[data-consolidation-arrow-label]").forEach(function(button){button.addEventListener("click",function(){add(button.dataset.consolidationArrowLabel)})});
-  document.addEventListener("contextmenu",function(event){var target=event.target.closest&&event.target.closest(".consolidation-explanation-target");if(!target)return;event.preventDefault();event.stopImmediatePropagation();openDeleteMenu(target,event)},true);
+  document.addEventListener("contextmenu",function(event){var target=event.target.closest&&event.target.closest(".consolidation-explanation-arrow,.consolidation-explanation-target");if(!target)return;event.preventDefault();event.stopImmediatePropagation();openDeleteMenu(target,event)},true);
   deleteMenu.querySelector('[data-action="swing"]').addEventListener("click",function(){setFollowUp({type:"swing"})});
   deleteMenu.querySelector('[data-action="departing"]').addEventListener("click",function(){setFollowUp({type:"departing"})});
   moveButton.addEventListener("click",function(){moveTracks.hidden=!moveTracks.hidden;moveButton.setAttribute("aria-expanded",moveTracks.hidden?"false":"true");positionDeleteMenu(menuAnchorX,menuAnchorY)});
@@ -10446,7 +10490,7 @@ document.addEventListener("DOMContentLoaded",function(){
   })();
   deleteButton.addEventListener("click",function(){
     if(!deleteId)return;
-    if(deleteButton.dataset.confirming!=="true"){deleteButton.dataset.confirming="true";deleteButton.textContent="Confirm delete";deleteTimer=setTimeout(closeDeleteMenu,3000);return}
+    if(deleteButton.dataset.confirming!=="true"){deleteButton.dataset.confirming="true";deleteButton.textContent="Confirm delete arrow";deleteTimer=setTimeout(closeDeleteMenu,3000);return}
     write(read().filter(function(item){return String(item.id||"")!==deleteId}));closeDeleteMenu();schedule();
   });
   document.addEventListener("pointerdown",function(event){if(!deleteMenu.hidden&&!deleteMenu.contains(event.target))closeDeleteMenu()});
@@ -19113,8 +19157,8 @@ var directFrame=0;function scheduleDirect(){if(!directFrame)directFrame=requestA
 .yard-grid>.track-remaining.selected-block-followup-edge-host{overflow:visible!important}
 body:not(.excel-page-2) .yard-grid>.track-remaining.selected-block-followup-edge-host{position:relative!important;z-index:16!important}
 .selected-block-departing-label[data-label="BLOCK"]{color:#e2e8f0!important;-webkit-text-fill-color:#e2e8f0!important;visibility:visible!important;opacity:1!important;text-shadow:none!important}
-.excel-followup-labels-right .selected-block-departing-label:not(.selected-block-followup-edge),.excel-followup-labels-right .consolidation-explanation-followup-label:not(.selected-block-followup-edge){visibility:hidden!important}
-.excel-followup-labels-right .selected-block-departing-label.selected-block-followup-edge,.excel-followup-labels-right .consolidation-explanation-followup-label.selected-block-followup-edge{left:auto!important}
+.excel-followup-labels-right .selected-block-departing-label:not(.selected-block-followup-edge){visibility:hidden!important}
+.excel-followup-labels-right .selected-block-departing-label.selected-block-followup-edge{left:auto!important}
 </style><script id="${marker}-position-script">(function(){
 var frame=0,moving=false;
 function trackForCell(cell){return String(cell&&cell.dataset&&(cell.dataset.dropEndTrack||cell.dataset.track)||"")}
@@ -19128,7 +19172,7 @@ function clearEdgePosition(label){label.classList.remove("selected-block-followu
 function placeAtEdge(label,host,offset){var previous=label.parentElement;if((!label.__excelFollowUpHome||!label.__excelFollowUpHome.isConnected)&&previous&&previous.classList&&previous.classList.contains("cut-cell"))label.__excelFollowUpHome=previous;host.classList.add("selected-block-followup-edge-host");if(previous!==host)host.appendChild(label);label.classList.add("selected-block-followup-edge");label.style.setProperty("left","auto","important");label.style.setProperty("right","calc(100% + "+offset+"px)","important");cleanupHost(previous);return offset+Math.max(1,Math.ceil(label.getBoundingClientRect().width))+6}
 function schedule(){if(!frame)frame=requestAnimationFrame(function(){frame=0;positionLabels()})}
 function positionDirect(right,offsets){var groups={};document.querySelectorAll(".selected-block-departing-label[data-followup-key]").forEach(function(label){var grid=gridForLabel(label),track=trackForLabel(label);if(!grid||!track)return;var key=(grid.id||"grid")+"::"+track;(groups[key]||(groups[key]={grid:grid,track:track,labels:[]})).labels.push(label)});Object.keys(groups).forEach(function(key){var group=groups[key];if(right){var host=remainingCell(group.grid,group.track),offset=offsets[key]||7;if(!host)return;group.labels.forEach(function(label){offset=placeAtEdge(label,host,offset)});offsets[key]=offset;return}var slots=emptyCells(group.grid,group.track);group.labels.forEach(function(label,index){var previous=label.parentElement,home=label.__excelFollowUpHome,target=home&&home.isConnected?home:slots[index]||directBlockHome(label,group.grid);if(target){target.classList.add("selected-block-followup-host");if(previous!==target)target.appendChild(label)}clearEdgePosition(label);cleanupHost(previous);label.__excelFollowUpHome=null})})}
-function positionLegacy(right,offsets){document.querySelectorAll(".consolidation-explanation-followup-label").forEach(function(label){if(right){var grid=label.__excelOriginalGrid&&label.__excelOriginalGrid.isConnected?label.__excelOriginalGrid:label.closest(".yard-grid"),track=String(label.__excelOriginalTrack||trackForCell(label.closest(".cut-cell"))||"");if(!grid||!track)return;var key=(grid.id||"grid")+"::"+track,host=remainingCell(grid,track);if(!host)return;if(!label.__excelOriginalParent){label.__excelOriginalParent=label.parentElement;label.__excelOriginalLeft=label.style.left;label.__excelOriginalRight=label.style.right;label.__excelOriginalGrid=grid;label.__excelOriginalTrack=track}offsets[key]=placeAtEdge(label,host,offsets[key]||7);return}var previous=label.parentElement,target=label.__excelOriginalParent&&label.__excelOriginalParent.isConnected?label.__excelOriginalParent:null;if(target&&previous!==target)target.appendChild(label);label.classList.remove("selected-block-followup-edge");label.style.left=label.__excelOriginalLeft||"";label.style.right=label.__excelOriginalRight||"";cleanupHost(previous);label.__excelOriginalParent=null;label.__excelOriginalGrid=null;label.__excelOriginalTrack=""})}
+function positionLegacy(){document.querySelectorAll(".consolidation-explanation-followup-label").forEach(function(label){var previous=label.parentElement,target=label.__excelOriginalParent&&label.__excelOriginalParent.isConnected?label.__excelOriginalParent:null;if(target&&previous!==target)target.appendChild(label);if(label.__excelOriginalParent){label.style.left=label.__excelOriginalLeft||"";label.style.right=label.__excelOriginalRight||"";cleanupHost(previous)}label.classList.remove("selected-block-followup-edge");label.__excelOriginalParent=null;label.__excelOriginalGrid=null;label.__excelOriginalTrack=""})}
 function positionLabels(){if(moving)return;moving=true;try{var right=document.body.classList.contains("excel-followup-labels-right"),offsets={};positionDirect(right,offsets);positionLegacy(right,offsets)}finally{moving=false}}
 document.addEventListener("excel-followup-label-position-change",schedule);document.addEventListener("scroll",function(){if(document.body.classList.contains("excel-followup-labels-right"))schedule()},true);window.addEventListener("resize",schedule);new MutationObserver(function(records){if(moving)return;if(records.some(function(record){return Array.from(record.addedNodes).some(function(node){return node.nodeType===1&&(node.matches&&node.matches(".selected-block-departing-label,.consolidation-explanation-followup-label")||node.querySelector&&node.querySelector(".selected-block-departing-label,.consolidation-explanation-followup-label"))})}))positionLabels()}).observe(document.body,{childList:true,subtree:true});schedule();
 })();<\/script>`;
@@ -19153,12 +19197,7 @@ document.addEventListener("excel-followup-label-position-change",schedule);docum
           if (value !== "IHOSA" && value !== "MHOAS") value = (text.match(/\b(IHOSA|MHOAS)\b/) || [])[1] || "";
           if (value === "IHOSA" || value === "MHOAS") assigned.set(id, value.toLowerCase());
         });
-        let source = snapshotGrid(grid);
-        try {
-          if (typeof window.conglobalExcelApplyConsolidationArrowsToCopy === "function") {
-            source = window.conglobalExcelApplyConsolidationArrowsToCopy(source, grid.id) || source;
-          }
-        } catch (_) {}
+        const source = snapshotGrid(grid);
         const finalBlocks = {ihosa:[], mhoas:[]};
         TRACKS.forEach(track => {
           (Array.isArray(source.tracks[track]) ? source.tracks[track] : []).forEach(block => {
@@ -19181,6 +19220,31 @@ document.addEventListener("excel-followup-label-position-change",schedule);docum
               sourceRows:Array.isArray(block.sourceRows) ? block.sourceRows.map(row => row.slice()) : []
             }));
           });
+        });
+        const sourceBlocks = new Map();
+        TRACKS.forEach(track => (source.tracks[track] || []).forEach(block => sourceBlocks.set(String(block.id || ""), block)));
+        let arrowAssignments = [];
+        try { arrowAssignments = JSON.parse(localStorage.getItem("conglobal-excel-consolidation-arrow-explanations-v1") || "[]"); } catch (_) {}
+        if (Array.isArray(arrowAssignments)) arrowAssignments.forEach(item => {
+          if (!item || String(item.gridId || "") !== grid.id) return;
+          const zone = String(item.label || "").toLowerCase();
+          const track = Number(String(item.track || "").replace(/[^0-9]/g, "").slice(-3));
+          const footage = Number(item.footage) || 0;
+          if ((zone !== "ihosa" && zone !== "mhoas") || !TRACKS.includes(track) || footage <= 0) return;
+          const sourceRows = [...new Set(Array.isArray(item.blockIds) ? item.blockIds.map(String) : [])]
+            .flatMap(id => { const block = sourceBlocks.get(id); return block && Array.isArray(block.sourceRows) ? block.sourceRows.map(row => row.slice()) : []; });
+          let sourceLabel = clean(item.source || "");
+          try { if (!sourceLabel) sourceLabel = clean(inboundTrainLabel(sourceRows)); } catch (_) {}
+          const mainLabel = `${fmtInt(footage)} ${zone.toUpperCase()} [${track}]`;
+          sourceLabel = sourceLabel || "INBOUND";
+          finalBlocks[zone].push(normalizeFinalBlock({
+            footage,
+            assignment:zone,
+            className:`cut-cell ${zone === "ihosa" ? "green" : "blue"}`,
+            content:`<span class="final-assigned-main">${escapeHtml(mainLabel)}</span><span class="final-assigned-source">&rarr;${escapeHtml(sourceLabel)}</span>`,
+            title:`${mainLabel} -> ${sourceLabel}`,
+            sourceRows
+          }));
         });
         const target = validSecondaryModel(state.secondaryGridTwo) ? state.secondaryGridTwo : emptySecondaryModel();
         target.finalBlocks = finalBlocks;
