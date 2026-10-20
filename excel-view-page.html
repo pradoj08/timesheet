@@ -8499,6 +8499,20 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     renderAll();
   }
 
+  window.conglobalExcelDeleteFinalBlock = function(gridId, zone, blockId) {
+    if (!["blankYardGrid", "blankYardGridTwo"].includes(gridId) || !["ihosa", "mhoas"].includes(zone) || !blockId) return false;
+    const key = secondaryGridStateKey(gridId);
+    const model = state[key];
+    if (!validSecondaryModel(model)) return false;
+    model.finalBlocks = normalizeFinalBlocks(model.finalBlocks);
+    const list = model.finalBlocks[zone];
+    const next = list.filter(block => String(block.id) !== String(blockId));
+    if (next.length === list.length) return false;
+    model.finalBlocks[zone] = next;
+    renderAll();
+    return true;
+  };
+
   let removeBlockTagsConfirmTimer = 0;
   function removeAllBlockTags() {
     const button = $("#removeAllBlockTags");
@@ -12657,18 +12671,10 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   }
 
   function deleteFinalBlock() {
-    if (!deleteTarget || typeof state === "undefined") return hideDeleteMenu();
-    const key = deleteTarget.gridId === "blankYardGridTwo" ? "secondaryGridThree" : "secondaryGridTwo";
-    const model = state[key];
-    if (!model || typeof normalizeFinalBlocks !== "function") return hideDeleteMenu();
-    model.finalBlocks = normalizeFinalBlocks(model.finalBlocks);
-    const list = model.finalBlocks[deleteTarget.zone];
-    if (!Array.isArray(list)) return hideDeleteMenu();
-    const next = list.filter(block => String(block.id) !== deleteTarget.id);
-    const changed = next.length !== list.length;
-    model.finalBlocks[deleteTarget.zone] = next;
+    if (deleteTarget && typeof window.conglobalExcelDeleteFinalBlock === "function") {
+      window.conglobalExcelDeleteFinalBlock(deleteTarget.gridId, deleteTarget.zone, deleteTarget.id);
+    }
     hideDeleteMenu();
-    if (changed) renderAll();
   }
 
   document.addEventListener("contextmenu", event => {
