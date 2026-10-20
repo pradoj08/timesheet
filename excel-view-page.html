@@ -8669,7 +8669,11 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   function decorateTomorrowInboundBlocks() {
     const markers = readTomorrowInboundMarkers();
     const rowOffsets = {};
-    document.querySelectorAll("body > .tomorrow-inbound-callout").forEach(label => label.remove());
+    const existingLabels = new Map();
+    document.querySelectorAll("body > .tomorrow-inbound-callout").forEach(label => {
+      existingLabels.set(`${label.dataset.sourceGrid || ""}::${label.dataset.sourceBlock || ""}`, label);
+    });
+    const activeLabels = new Set();
     document.querySelectorAll(".yard-grid .cut-cell[data-block-id]").forEach(cell => {
       const grid = cell.closest(".yard-grid");
       const marked = Boolean(grid && markers[tomorrowInboundMarkerId(grid.id, cell.dataset.blockId)]);
@@ -8684,21 +8688,26 @@ https://github.com/nodeca/pako/blob/main/LICENSE
           if (frameRect.top + rect.bottom <= 0 || frameRect.top + rect.top >= window.parent.innerHeight) return;
         }
       } catch (_) {}
-      const label = document.createElement("span");
-      label.className = "tomorrow-inbound-callout";
-      label.setAttribute("aria-label", "Tomorrow's Inbound");
-      label.textContent = "Tomorrow's Inbound";
-      label.dataset.sourceGrid = grid.id;
-      label.dataset.sourceBlock = String(cell.dataset.blockId || "");
-      label.addEventListener("contextmenu", event => {
-        event.preventDefault();
-        event.stopPropagation();
-        const sourceGrid = document.getElementById(label.dataset.sourceGrid);
-        const sourceCell = sourceGrid && Array.from(sourceGrid.querySelectorAll(".cut-cell[data-block-id]")).find(item => String(item.dataset.blockId || "") === label.dataset.sourceBlock);
-        if (!sourceCell) return;
-        sourceCell.dispatchEvent(new MouseEvent("contextmenu", {bubbles:true, cancelable:true, clientX:event.clientX, clientY:event.clientY, button:2, buttons:2}));
-      });
-      document.body.appendChild(label);
+      const labelKey = `${grid.id}::${String(cell.dataset.blockId || "")}`;
+      let label = existingLabels.get(labelKey);
+      if (!label) {
+        label = document.createElement("span");
+        label.className = "tomorrow-inbound-callout";
+        label.setAttribute("aria-label", "Tomorrow's Inbound");
+        label.textContent = "Tomorrow's Inbound";
+        label.dataset.sourceGrid = grid.id;
+        label.dataset.sourceBlock = String(cell.dataset.blockId || "");
+        label.addEventListener("contextmenu", event => {
+          event.preventDefault();
+          event.stopPropagation();
+          const sourceGrid = document.getElementById(label.dataset.sourceGrid);
+          const sourceCell = sourceGrid && Array.from(sourceGrid.querySelectorAll(".cut-cell[data-block-id]")).find(item => String(item.dataset.blockId || "") === label.dataset.sourceBlock);
+          if (!sourceCell) return;
+          sourceCell.dispatchEvent(new MouseEvent("contextmenu", {bubbles:true, cancelable:true, clientX:event.clientX, clientY:event.clientY, button:2, buttons:2}));
+        });
+        document.body.appendChild(label);
+      }
+      activeLabels.add(label);
       const labelRect = label.getBoundingClientRect();
       const track = String(cell.dataset.track || "");
       const rowKey = `${grid.id}::${track}`;
@@ -8716,6 +8725,9 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       }
       label.style.top = `${window.scrollY + rect.top + (rect.height - labelRect.height) / 2}px`;
       rowOffsets[rowKey] = offset + labelRect.width + 7;
+    });
+    existingLabels.forEach(label => {
+      if (!activeLabels.has(label)) label.remove();
     });
   }
   function positionBlockContextMenu(menu, event) {
@@ -9260,8 +9272,64 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   function copyAboveHeaderCell(target = "two") {
     const id = target === "three" ? "copyTableTwoToThree" : "copyTableOneToTwo";
     const headerClass = target === "three" ? "third-summary-head copy-grid-head" : "grid-head copy-grid-head";
-    const assignmentCopy = target === "three" ? '<button class="copy-grid-btn" id="copyAssignedFinalBlocks" type="button">COPY IHOSA/MHOAS BLOCKS</button>' : '';
+    const assignmentCopy = target === "three"
+      ? '<button class="copy-grid-btn" id="copyAssignedFinalBlocks" type="button">COPY IHOSA/MHOAS BLOCKS</button>'
+      : '<button class="copy-grid-btn" id="copyAssignedTableOneToTwo" type="button" title="Copy only IHOSA and MHOAS blocks from Table 1 into Table 2">COPY IHOSA/MHOAS</button>';
     return '<div class="' + headerClass + '"><div class="copy-grid-actions">' + assignmentCopy + '<button class="copy-grid-btn" id="' + id + '" type="button">COPY ABOVE</button><button class="add-inbound-train-btn" data-open-inbound-train="' + target + '" type="button">ADD INBOUND TRAIN</button></div></div>';
+  }
+
+  function copyAssignedTableOneToTwo() {
+    const grid = $("#yardGrid");
+    if (!grid) return;
+    let savedAssignments = {};
+    try { savedAssignments = JSON.parse(localStorage.getItem("settegast-excel-block-assignments-v1") || "{}"); } catch (_) {}
+    const assigned = new Map();
+    grid.querySelectorAll(".cut-cell[data-block-id]").forEach(cell => {
+      const id = String(cell.dataset.blockId || "");
+      const text = String(`${cell.dataset.assignmentOriginalTitle || ""} ${cell.title || ""} ${cell.textContent || ""}`).toUpperCase();
+      let value = String(cell.dataset.blockAssignment || savedAssignments[`${grid.id}::${id}`] || savedAssignments[id] || "").toUpperCase();
+      if (value !== "IHOSA" && value !== "MHOAS") value = (text.match(/\b(IHOSA|MHOAS)\b/) || [])[1] || "";
+      if (value === "IHOSA" || value === "MHOAS") assigned.set(id, value.toLowerCase());
+    });
+    let source = snapshotGrid(grid);
+    try {
+      if (typeof window.conglobalExcelApplyConsolidationArrowsToCopy === "function") {
+        source = window.conglobalExcelApplyConsolidationArrowsToCopy(source, grid.id) || source;
+      }
+    } catch (_) {}
+    const finalBlocks = {ihosa:[], mhoas:[]};
+    TRACKS.forEach(track => {
+      (Array.isArray(source.tracks[track]) ? source.tracks[track] : []).forEach(block => {
+        const id = String(block && block.id || "");
+        const blockText = clean(`${block && block.title || ""} ${textFromCellHtml(`<div>${block && block.content || ""}</div>`)}`);
+        let zone = String(block && block.assignment || assigned.get(id) || "").toLowerCase();
+        if (zone !== "ihosa" && zone !== "mhoas") zone = /\bIHOSA\b/i.test(blockText) ? "ihosa" : /\bMHOAS\b/i.test(blockText) ? "mhoas" : "";
+        if (!zone) return;
+        let inbound = clean(block && block.inboundTrain);
+        try { if (!inbound) inbound = clean(inboundTrainLabel(block.sourceRows)); } catch (_) {}
+        if (!inbound) inbound = clean((blockText.match(/\b(?:ZLBHO|ZPBHO|ILBHOX)\s+\d+\b/i) || [])[0]).toUpperCase();
+        const mainLabel = `${fmtInt(block.footage)} ${zone.toUpperCase()} [${track}]`;
+        const sourceLabel = inbound || "INBOUND";
+        finalBlocks[zone].push(normalizeFinalBlock({
+          ...block,
+          id:"",
+          assignment:zone,
+          content:`<span class="final-assigned-main">${escapeHtml(mainLabel)}</span><span class="final-assigned-source">&rarr;${escapeHtml(sourceLabel)}</span>`,
+          title:`${mainLabel} -> ${sourceLabel}`,
+          sourceRows:Array.isArray(block.sourceRows) ? block.sourceRows.map(row => row.slice()) : []
+        }));
+      });
+    });
+    const target = validSecondaryModel(state.secondaryGridTwo) ? state.secondaryGridTwo : emptySecondaryModel();
+    target.finalBlocks = finalBlocks;
+    state.secondaryGridTwo = target;
+    if (typeof outboundDepartureVisibility !== "undefined") {
+      outboundDepartureVisibility.two = true;
+      if (typeof saveOutboundDepartureVisibility === "function") saveOutboundDepartureVisibility();
+    }
+    renderAll();
+    const copied = finalBlocks.ihosa.length + finalBlocks.mhoas.length;
+    ssShowToast(copied ? `Copied ${copied} IHOSA/MHOAS block${copied === 1 ? "" : "s"} from Table 1 to Table 2 outbound tracks.` : "No IHOSA or MHOAS blocks found in Table 1.");
   }
 
   function copyTableOneToTwo() {
@@ -10949,6 +11017,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     if (e.target.closest("[data-save-archive-edit]")) { saveArchivedInboundEdit(); return; }
     const addInboundTrain = e.target.closest("[data-open-inbound-train]");
     if (addInboundTrain) { openInboundTrainModal(addInboundTrain.dataset.openInboundTrain); return; }
+    if (e.target.closest("#copyAssignedTableOneToTwo")) copyAssignedTableOneToTwo();
     if (e.target.closest("#copyTableOneToTwo")) copyTableOneToTwo();
     if (e.target.closest("#copyTableTwoToThree")) copyTableTwoToThree();
     if (e.target.closest("#copyAssignedFinalBlocks")) copyAssignedBlocksToFinalTracks();
@@ -12510,6 +12579,112 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   });
   setTimeout(()=>{const saved=readNewest();if(saved)restore();else snapshot();},0);
   setTimeout(restore,250);
+})();
+</script>
+<style id="excel-final-block-controls-v1-styles">
+  #excelFinalBlockDeleteMenu { position:fixed; z-index:2147483647; min-width:150px; padding:5px; border:1px solid #475569; border-radius:7px; background:#0f172a; box-shadow:0 12px 28px rgba(15,23,42,.45); }
+  #excelFinalBlockDeleteMenu[hidden] { display:none !important; }
+  #excelFinalBlockDeleteMenu button { width:100%; min-height:30px; padding:7px 10px; border:1px solid #ef4444; border-radius:5px; background:#991b1b; color:#fff; font:900 11px/1 "Segoe UI",Arial,sans-serif; text-align:left; }
+  #excelFinalBlockDeleteMenu button.pending { background:#dc2626; }
+  .final-summary-block[data-final-block-id] { cursor:context-menu; }
+</style>
+<script id="excel-final-block-controls-v1">
+(() => {
+  let deleteTarget = null;
+  let confirmTimer = 0;
+  const deleteMenu = document.createElement("div");
+  deleteMenu.id = "excelFinalBlockDeleteMenu";
+  deleteMenu.hidden = true;
+  deleteMenu.innerHTML = '<button type="button">Delete Block</button>';
+  document.body.appendChild(deleteMenu);
+  const deleteButton = deleteMenu.querySelector("button");
+
+  function hideDeleteMenu() {
+    clearTimeout(confirmTimer);
+    deleteTarget = null;
+    deleteButton.textContent = "Delete Block";
+    deleteButton.classList.remove("pending");
+    deleteMenu.hidden = true;
+  }
+
+  function positionDeleteMenu(event) {
+    deleteMenu.hidden = false;
+    const width = deleteMenu.offsetWidth || 160;
+    const height = deleteMenu.offsetHeight || 44;
+    let left = event.clientX;
+    let top = event.clientY;
+    try {
+      const frameRect = window.frameElement && window.frameElement.getBoundingClientRect();
+      if (frameRect && window.parent !== window) {
+        left = Math.max(-frameRect.left + 6, Math.min(window.parent.innerWidth - frameRect.left - width - 6, left));
+        top = Math.max(-frameRect.top + 6, Math.min(window.parent.innerHeight - frameRect.top - height - 6, top));
+      } else {
+        left = Math.max(6, Math.min(window.innerWidth - width - 6, left));
+        top = Math.max(6, Math.min(window.innerHeight - height - 6, top));
+      }
+    } catch (_) {
+      left = Math.max(6, Math.min(window.innerWidth - width - 6, left));
+      top = Math.max(6, Math.min(window.innerHeight - height - 6, top));
+    }
+    deleteMenu.style.left = `${left}px`;
+    deleteMenu.style.top = `${top}px`;
+  }
+
+  function deleteFinalBlock() {
+    if (!deleteTarget || typeof state === "undefined") return hideDeleteMenu();
+    const key = deleteTarget.gridId === "blankYardGridTwo" ? "secondaryGridThree" : "secondaryGridTwo";
+    const model = state[key];
+    if (!model || typeof normalizeFinalBlocks !== "function") return hideDeleteMenu();
+    model.finalBlocks = normalizeFinalBlocks(model.finalBlocks);
+    const list = model.finalBlocks[deleteTarget.zone];
+    if (!Array.isArray(list)) return hideDeleteMenu();
+    const next = list.filter(block => String(block.id) !== deleteTarget.id);
+    const changed = next.length !== list.length;
+    model.finalBlocks[deleteTarget.zone] = next;
+    hideDeleteMenu();
+    if (changed) renderAll();
+  }
+
+  document.addEventListener("contextmenu", event => {
+    const block = event.target.closest(".final-summary-block[data-final-block-id]");
+    if (!block) return;
+    const zoneHost = block.closest("[data-summary-paste-zone]");
+    const grid = block.closest(".yard-grid");
+    const zone = String(zoneHost && zoneHost.dataset.summaryPasteZone || "").toLowerCase();
+    if (!grid || !["ihosa", "mhoas"].includes(zone)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    clearTimeout(confirmTimer);
+    deleteTarget = {gridId:grid.id, zone, id:String(block.dataset.finalBlockId || "")};
+    deleteButton.textContent = "Delete Block";
+    deleteButton.classList.remove("pending");
+    positionDeleteMenu(event);
+  }, true);
+
+  deleteButton.addEventListener("click", event => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!deleteTarget) return;
+    if (deleteButton.dataset.confirm !== "true") {
+      deleteButton.dataset.confirm = "true";
+      deleteButton.textContent = "Confirm Delete Block";
+      deleteButton.classList.add("pending");
+      clearTimeout(confirmTimer);
+      confirmTimer = setTimeout(() => {
+        delete deleteButton.dataset.confirm;
+        deleteButton.textContent = "Delete Block";
+        deleteButton.classList.remove("pending");
+      }, 4000);
+      return;
+    }
+    delete deleteButton.dataset.confirm;
+    deleteFinalBlock();
+  });
+
+  document.addEventListener("pointerdown", event => {
+    if (!deleteMenu.hidden && !deleteMenu.contains(event.target)) hideDeleteMenu();
+  }, true);
+  document.addEventListener("keydown", event => { if (event.key === "Escape") hideDeleteMenu(); });
 })();
 </script>
 </body>

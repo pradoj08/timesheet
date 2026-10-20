@@ -6005,7 +6005,7 @@ tfoot .lph-target-pill.below-target{background:#fecaca;color:#7f1d1d}
             <h2>YARD OVERVIEW</h2>
             <button type="button" id="excelPage2ExportPng">EXPORT PNG</button>
             <button type="button" id="excelPage2RowShadingToggle" aria-pressed="true" title="Remove the alternating grey and negative-track red row shading">GREY ROWS ON</button>
-            <button type="button" id="excelPage2BlockStyleBtn">BLOCK FONT &amp; COLORS</button>
+            <button type="button" id="excelPage2BlockStyleBtn" title="Block font and colors" aria-label="Block font and colors">COLORS</button>
           </div>
           <div class="excel-page2-metrics" aria-label="Yard capacity summary">
             <div class="excel-page2-metric"><span>ON TRACKS</span><strong><span id="excelPage2OnTracks">0</span> <small>ft</small></strong><em id="excelPage2Utilization">0% of capacity</em></div>
@@ -6075,7 +6075,7 @@ body.excel-page-2 #assignmentLabelToolbarToggle{display:none!important}
 .excel-page2-heading #excelPage2ExportPng:hover,.excel-page2-heading #excelPage2ExportPng:focus-visible{border-color:#fff3bd;background:#ffd765;outline:2px solid #fff;outline-offset:1px}.excel-page2-heading #excelPage2ExportPng:disabled{opacity:.65;cursor:wait}
 .excel-page2-heading #excelPage2RowShadingToggle{min-height:28px;margin-top:4px;padding:5px 10px;border:1px solid #aab8c2;border-radius:4px;background:#f8fafc;color:#101820;font:950 9px/1 "Arial Narrow","Segoe UI",Arial,sans-serif;letter-spacing:.05em;cursor:pointer}
 .excel-page2-heading #excelPage2RowShadingToggle:hover,.excel-page2-heading #excelPage2RowShadingToggle:focus-visible{border-color:#fff;background:#fff;outline:2px solid #fff;outline-offset:1px}.excel-page2-heading #excelPage2RowShadingToggle[aria-pressed="true"]{border-color:#cbd5e1;background:#dfe4e8}
-.excel-page2-heading #excelPage2BlockStyleBtn{min-height:28px;margin-top:4px;padding:5px 10px;border:1px solid #7fb1cc;border-radius:4px;background:#163448;color:#f8fafc;font:950 9px/1 "Arial Narrow","Segoe UI",Arial,sans-serif;letter-spacing:.04em;cursor:pointer}.excel-page2-heading #excelPage2BlockStyleBtn:hover,.excel-page2-heading #excelPage2BlockStyleBtn:focus-visible{border-color:#bae6fd;background:#20506d;outline:2px solid #fff;outline-offset:1px}
+#excelPage2BlockStyleBtn{min-height:27px;height:27px;margin:0;padding:4px 9px;border:1px solid #7fb1cc;border-radius:3px;background:#163448;color:#f8fafc;font:950 9px/1 "Arial Narrow","Segoe UI",Arial,sans-serif;letter-spacing:.04em;cursor:pointer;white-space:nowrap}#excelPage2BlockStyleBtn:hover,#excelPage2BlockStyleBtn:focus-visible{border-color:#bae6fd;background:#20506d;outline:2px solid #fff;outline-offset:1px}
 .excel-page2-metrics{display:grid;grid-template-columns:repeat(3,minmax(115px,1fr));gap:16px;align-self:start}
 .excel-page2-metric{display:flex;min-width:0;flex-direction:column;align-items:flex-start}
 .excel-page2-capacity-toggle{cursor:pointer;border-radius:3px;outline:0}.excel-page2-capacity-toggle:hover,.excel-page2-capacity-toggle:focus-visible{box-shadow:0 0 0 2px #f6c447}.excel-page2-capacity-toggle[aria-pressed="true"]{background:rgba(246,196,71,.12)}
@@ -6437,25 +6437,28 @@ body.excel-page-2 .blank-grid-separator:first-of-type{margin-top:10px!important}
       var renderer=await loadPage2PngRenderer();
       if(typeof renderer!=="function")throw new Error("PNG renderer unavailable");
       var panelRect=panel.getBoundingClientRect();
-      var layoutWidth=Math.max(1,Math.ceil(panelRect.width));
+      var viewportWidth=Math.max(1,Math.floor(window.innerWidth||document.documentElement.clientWidth||panelRect.width));
+      var viewportHeight=Math.max(1,Math.floor(window.innerHeight||document.documentElement.clientHeight||panelRect.height));
+      var panelScreenTop=panelRect.top;
+      try{
+        if(window.frameElement&&window.parent!==window){
+          var frameRect=window.frameElement.getBoundingClientRect();
+          viewportWidth=Math.max(1,Math.min(viewportWidth,Math.floor(window.parent.innerWidth-Math.max(0,frameRect.left))));
+          viewportHeight=Math.max(1,Math.min(viewportHeight,Math.floor(window.parent.innerHeight-Math.max(0,frameRect.top))));
+          panelScreenTop=frameRect.top+panelRect.top;
+          viewportHeight=Math.max(1,Math.floor(window.parent.innerHeight-Math.max(0,panelScreenTop)));
+        }
+      }catch(error){}
+      /* Keep the live responsive screen width, but include the dashboard's
+         complete vertical length in the exported PNG. */
+      var layoutWidth=Math.max(1,Math.min(Math.ceil(panelRect.width),viewportWidth));
       var pngTomorrowInboundLabels=collectPage2PngTomorrowInboundLabels(panel,panelRect);
-      /* Match the live Page 2 layout, then extend only the capture canvas for
-         any sticky right-edge cells that visibly overhang the panel. */
-      var visibleRight=panelRect.right;
-      Array.prototype.forEach.call(panel.querySelectorAll(".track-remaining,.third-summary-average,.excel-page2-summary-edge"),function(edge){
-        var edgeRect=edge.getBoundingClientRect();
-        if(edgeRect.width>0&&edgeRect.height>0)visibleRight=Math.max(visibleRight,edgeRect.right);
-      });
-      pngTomorrowInboundLabels.forEach(function(item){visibleRight=Math.max(visibleRight,item.right)});
-      var rightOverflow=Math.max(2,Math.ceil(visibleRight-panelRect.right)+2);
-      var width=layoutWidth+rightOverflow;
+      var width=layoutWidth;
       var height=Math.max(1,Math.ceil(panel.scrollHeight));
-      var viewportWidth=Math.max(1,Math.ceil(window.innerWidth||document.documentElement.clientWidth||layoutWidth));
-      var viewportHeight=Math.max(1,Math.ceil(window.innerHeight||document.documentElement.clientHeight||height));
-      var captureWindowWidth=viewportWidth;
+      var captureWindowWidth=layoutWidth;
       var canvas=await renderer(panel,{
         backgroundColor:"#f3f5f6",
-        scale:1.5,
+        scale:1,
         useCORS:true,
         logging:false,
         width:width,
@@ -6689,6 +6692,7 @@ body.excel-page-2 .blank-grid-separator:first-of-type{margin-top:10px!important}
     if(!quickControls)return;
     [
       {id:"toggleYardView"},
+      {id:"excelPage2BlockStyleBtn"},
       {id:"colorTabBtn"},
       {id:"tableDensityRange",closest:"label"},
       {id:"hideTrackIdsToggle",closest:"label"},
@@ -19014,7 +19018,7 @@ var contextMenu=document.getElementById("blockContextMenu");if(contextMenu)conte
 function read(){try{var value=JSON.parse(localStorage.getItem(storageKey)||"{}");return value&&typeof value==="object"&&!Array.isArray(value)?value:{}}catch(_){return{}}}
 function key(gridId,blockId){return String(gridId||"")+"::"+String(blockId||"")}
 function marked(gridId,blockId){return !!read()[key(gridId,blockId)]}
-function decorate(){frame=0;var records=read(),rowOffsets={};document.querySelectorAll("body > .tomorrow-inbound-callout").forEach(function(label){label.remove()});document.querySelectorAll(".yard-grid .cut-cell[data-block-id]").forEach(function(cell){var grid=cell.closest(".yard-grid"),active=!!(grid&&records[key(grid.id,cell.dataset.blockId)]);cell.classList.toggle("tomorrow-inbound-block",active);cell.querySelectorAll(":scope > .tomorrow-inbound-callout").forEach(function(label){label.remove()});if(!active)return;var rect=cell.getBoundingClientRect();if(!cell.offsetParent||rect.width<1||rect.height<1||rect.bottom<=0||rect.right<=0||rect.top>=innerHeight||rect.left>=innerWidth)return;try{if(parent!==window&&frameElement){var frameRect=frameElement.getBoundingClientRect();if(frameRect.top+rect.bottom<=0||frameRect.top+rect.top>=parent.innerHeight)return}}catch(_){}var label=document.createElement("span");label.className="tomorrow-inbound-callout";label.setAttribute("aria-label","Tomorrow's Inbound");label.textContent="Tomorrow's Inbound";label.dataset.sourceGrid=grid.id;label.dataset.sourceBlock=String(cell.dataset.blockId||"");label.addEventListener("contextmenu",function(event){event.preventDefault();event.stopPropagation();var sourceGrid=document.getElementById(label.dataset.sourceGrid),sourceCell=sourceGrid&&Array.from(sourceGrid.querySelectorAll(".cut-cell[data-block-id]")).find(function(item){return String(item.dataset.blockId||"")===label.dataset.sourceBlock});if(sourceCell)sourceCell.dispatchEvent(new MouseEvent("contextmenu",{bubbles:true,cancelable:true,clientX:event.clientX,clientY:event.clientY,button:2,buttons:2}))});document.body.appendChild(label);var labelRect=label.getBoundingClientRect(),track=String(cell.dataset.track||""),rowKey=grid.id+"::"+track,labelsRight=document.body.classList.contains("excel-followup-labels-right"),remainingCell=Array.from(grid.children).find(function(item){return item.classList&&item.classList.contains("track-remaining")&&String(item.dataset.track||item.dataset.dropEndTrack||"")===track}),rightmost=Array.from(grid.querySelectorAll(".cut-cell[data-block-id]")).filter(function(item){return String(item.dataset.track||"")===track&&item.offsetParent}).reduce(function(right,item){return Math.max(right,item.getBoundingClientRect().right)},rect.right),offset=rowOffsets[rowKey]||0;if(labelsRight&&remainingCell){var remainingRect=remainingCell.getBoundingClientRect();label.style.left=scrollX+remainingRect.left-7-offset-labelRect.width+"px"}else label.style.left=scrollX+rightmost+7+offset+"px";label.style.top=scrollY+rect.top+(rect.height-labelRect.height)/2+"px";rowOffsets[rowKey]=offset+labelRect.width+7})}
+function decorate(){frame=0;var records=read(),rowOffsets={},existingLabels=new Map(),activeLabels=new Set();document.querySelectorAll("body > .tomorrow-inbound-callout").forEach(function(label){existingLabels.set(String(label.dataset.sourceGrid||"")+"::"+String(label.dataset.sourceBlock||""),label)});document.querySelectorAll(".yard-grid .cut-cell[data-block-id]").forEach(function(cell){var grid=cell.closest(".yard-grid"),active=!!(grid&&records[key(grid.id,cell.dataset.blockId)]);cell.classList.toggle("tomorrow-inbound-block",active);cell.querySelectorAll(":scope > .tomorrow-inbound-callout").forEach(function(label){label.remove()});if(!active)return;var rect=cell.getBoundingClientRect();if(!cell.offsetParent||rect.width<1||rect.height<1||rect.bottom<=0||rect.right<=0||rect.top>=innerHeight||rect.left>=innerWidth)return;try{if(parent!==window&&frameElement){var frameRect=frameElement.getBoundingClientRect();if(frameRect.top+rect.bottom<=0||frameRect.top+rect.top>=parent.innerHeight)return}}catch(_){}var labelKey=String(grid.id||"")+"::"+String(cell.dataset.blockId||""),label=existingLabels.get(labelKey);if(!label){label=document.createElement("span");label.className="tomorrow-inbound-callout";label.setAttribute("aria-label","Tomorrow's Inbound");label.textContent="Tomorrow's Inbound";label.dataset.sourceGrid=grid.id;label.dataset.sourceBlock=String(cell.dataset.blockId||"");label.addEventListener("contextmenu",function(event){event.preventDefault();event.stopPropagation();var sourceGrid=document.getElementById(label.dataset.sourceGrid),sourceCell=sourceGrid&&Array.from(sourceGrid.querySelectorAll(".cut-cell[data-block-id]")).find(function(item){return String(item.dataset.blockId||"")===label.dataset.sourceBlock});if(sourceCell)sourceCell.dispatchEvent(new MouseEvent("contextmenu",{bubbles:true,cancelable:true,clientX:event.clientX,clientY:event.clientY,button:2,buttons:2}))});document.body.appendChild(label)}activeLabels.add(label);var labelRect=label.getBoundingClientRect(),track=String(cell.dataset.track||""),rowKey=grid.id+"::"+track,labelsRight=document.body.classList.contains("excel-followup-labels-right"),remainingCell=Array.from(grid.children).find(function(item){return item.classList&&item.classList.contains("track-remaining")&&String(item.dataset.track||item.dataset.dropEndTrack||"")===track}),rightmost=Array.from(grid.querySelectorAll(".cut-cell[data-block-id]")).filter(function(item){return String(item.dataset.track||"")===track&&item.offsetParent}).reduce(function(right,item){return Math.max(right,item.getBoundingClientRect().right)},rect.right),offset=rowOffsets[rowKey]||0;if(labelsRight&&remainingCell){var remainingRect=remainingCell.getBoundingClientRect();label.style.left=scrollX+remainingRect.left-7-offset-labelRect.width+"px"}else label.style.left=scrollX+rightmost+7+offset+"px";label.style.top=scrollY+rect.top+(rect.height-labelRect.height)/2+"px";rowOffsets[rowKey]=offset+labelRect.width+7});existingLabels.forEach(function(label){if(!activeLabels.has(label))label.remove()})}
 function schedule(){if(!frame)frame=requestAnimationFrame(decorate)}
 document.addEventListener("contextmenu",function(event){var cell=event.target.closest(".yard-grid .cut-cell[data-block-id]"),grid=cell&&cell.closest(".yard-grid");targetGridId=grid?String(grid.id||""):"";targetBlockId=cell?String(cell.dataset.blockId||""):"";setTimeout(function(){button.hidden=!targetGridId||!targetBlockId;if(targetGridId&&targetBlockId)button.textContent=marked(targetGridId,targetBlockId)?"Remove Tomorrow's Inbound":"Mark Tomorrow's Inbound"},0)});
 button.addEventListener("click",function(event){event.preventDefault();event.stopImmediatePropagation();var gridId=targetGridId,id=targetBlockId;if(!gridId||!id)return;var records=read(),recordKey=key(gridId,id);if(records[recordKey])delete records[recordKey];else records[recordKey]=true;localStorage.setItem(storageKey,JSON.stringify(records));var menu=document.getElementById("blockContextMenu");if(menu)menu.hidden=true;decorate()},true);
@@ -19060,7 +19064,7 @@ addEventListener("scroll",schedule,true);addEventListener("resize",schedule);doc
     <button id="assignSelectedDeparting" type="button" role="menuitem">Departing From Here</button>
     <button id="assignSelectedRemoveFollowUp" type="button" role="menuitem">Remove</button>`;
       html = html.replace(flyoutAnchor, flyoutAnchor + controls);
-      const script = `<style id="${marker}-styles">#assignActionsFlyout .selected-block-move-tracks{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;margin:0;padding:4px;border:1px solid #334155;border-radius:4px;background:#020617}#assignActionsFlyout .selected-block-move-tracks[hidden]{display:none!important}#assignActionsFlyout .selected-block-move-tracks button{min-height:24px;margin:0;padding:4px;text-align:center}#assignSelectedSwingToYard,#assignSelectedMoveToTrack,#assignSelectedDeparting{border-color:#475569!important;background:#1e293b!important;color:#fff!important}#assignSelectedSwingToYard:hover,#assignSelectedMoveToTrack:hover,#assignSelectedDeparting:hover{background:#334155!important}#assignSelectedTodayInbound{border-color:#4ade80!important;background:#166534!important;color:#dcfce7!important}#assignSelectedTodayInbound:hover{background:#15803d!important}#assignSelectedFromPierce{border-color:#a78bfa!important;background:#5b21b6!important;color:#f3e8ff!important}#assignSelectedFromPierce:hover{background:#6d28d9!important}.yard-grid>.cut-cell.selected-block-followup-host,body.excel-page-2 #yardGrid>.cut-cell.selected-block-followup-host,body.excel-page-2 .excel-page2-secondary-grid>.cut-cell.selected-block-followup-host{overflow:visible!important;z-index:16!important}.selected-block-followup-arrow,.selected-block-followup-target,.selected-block-departing-label{position:absolute;z-index:17}.selected-block-followup-arrow,.selected-block-followup-target{pointer-events:none}.selected-block-departing-label{pointer-events:auto;cursor:context-menu}.selected-block-followup-arrow{left:calc(100% + 2px);top:0;bottom:0;width:29px;display:flex;align-items:center;justify-content:center;color:#050505;font:800 25px/1 Arial,sans-serif}.selected-block-followup-target{left:calc(100% + 31px);top:calc(5px * var(--excel-table-scale,1));bottom:calc(5px * var(--excel-table-scale,1));display:flex;flex-direction:column;align-items:flex-start;justify-content:center;overflow:hidden;padding:calc(4px * var(--excel-table-scale,1)) 5px;border:1px solid rgba(15,23,42,.14);border-radius:3px;background:#334155;color:#fff;font-family:var(--grid-block-font,"Roboto Condensed","Arial Narrow",Arial,sans-serif);font-size:var(--grid-block-size,12px);font-weight:var(--grid-block-weight,700);line-height:1;letter-spacing:-.01em;white-space:nowrap;box-shadow:0 1px 1px rgba(15,23,42,.08)}.selected-block-followup-target[data-label="IHOSA"]{background:var(--ihosa-block-color,#166534)!important}.selected-block-followup-target[data-label="MHOAS"]{background:var(--mhoas-block-color,#4338ca)!important}.selected-block-followup-target[data-label="SS"]{background:#7e22ce!important}.selected-block-followup-target[data-label="PIERCE"]{background:var(--pierce-block-color,#be185d)!important}.selected-block-followup-target strong,.selected-block-followup-target small{display:block;max-width:100%;overflow:hidden;font-weight:var(--grid-block-weight,700);line-height:1;text-overflow:ellipsis;white-space:nowrap}.selected-block-followup-target small{font-size:max(7px,calc(var(--grid-block-size,12px) - 2px))}.selected-block-departing-label{left:calc(100% + 7px);top:50%;display:inline-flex;align-items:center;padding:4px 7px;border:1px solid #64748b;border-radius:5px;background:#111827;color:#e2e8f0;box-shadow:0 3px 10px rgba(15,23,42,.35);font:900 10px/1 "Segoe UI",Arial,sans-serif;white-space:nowrap;transform:translateY(-50%)}.selected-block-departing-label.selected-block-followup-slot{left:7px}.selected-block-departing-label[data-label="IHOSA"]{border-color:#22c55e!important;background:#052e16!important;color:#86efac!important;-webkit-text-fill-color:#86efac!important}.selected-block-departing-label[data-label="MHOAS"]{border-color:#3b82f6!important;background:#172554!important;color:#93c5fd!important;-webkit-text-fill-color:#93c5fd!important}.selected-block-departing-label[data-followup-type="pierce"]{border-color:#a78bfa!important;background:#5b21b6!important;color:#f3e8ff!important;-webkit-text-fill-color:#f3e8ff!important}.selected-block-departing-label[data-followup-type="today"]{border-color:#4ade80!important;background:#166534!important;color:#dcfce7!important;-webkit-text-fill-color:#dcfce7!important}.selected-block-followup-remove-menu{position:fixed;z-index:2147483647;display:block;min-width:145px;padding:5px;border:1px solid #475569;border-radius:6px;background:#0f172a;box-shadow:0 10px 28px rgba(15,23,42,.45)}.selected-block-followup-remove-menu[hidden]{display:none!important}.selected-block-followup-remove-menu button{display:block;width:100%;margin:0 0 4px;padding:7px 10px;border:1px solid #475569;border-radius:4px;background:#1e293b;color:#fff;font:800 11px/1 "Segoe UI",Arial,sans-serif;text-align:left}.selected-block-followup-remove-menu button:last-child{margin-bottom:0}.selected-block-followup-remove-menu [data-followup-color="MHOAS"]{border-color:#3b82f6;background:#172554;color:#93c5fd}.selected-block-followup-remove-menu [data-followup-color="IHOSA"]{border-color:#22c55e;background:#052e16;color:#86efac}.selected-block-followup-remove-menu [data-followup-remove]{border-color:#ef4444;background:#991b1b;color:#fff}</style><script id="${marker}">(function(){
+      const script = `<style id="${marker}-styles">#assignActionsFlyout .selected-block-move-tracks{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;margin:0;padding:4px;border:1px solid #334155;border-radius:4px;background:#020617}#assignActionsFlyout .selected-block-move-tracks[hidden]{display:none!important}#assignActionsFlyout .selected-block-move-tracks button{min-height:24px;margin:0;padding:4px;text-align:center}#assignSelectedSwingToYard,#assignSelectedMoveToTrack,#assignSelectedDeparting{border-color:#475569!important;background:#1e293b!important;color:#fff!important}#assignSelectedSwingToYard:hover,#assignSelectedMoveToTrack:hover,#assignSelectedDeparting:hover{background:#334155!important}#assignSelectedTodayInbound{border-color:#4ade80!important;background:#166534!important;color:#dcfce7!important}#assignSelectedTodayInbound:hover{background:#15803d!important}#assignSelectedFromPierce{border-color:#a78bfa!important;background:#5b21b6!important;color:#f3e8ff!important}#assignSelectedFromPierce:hover{background:#6d28d9!important}.yard-grid>.cut-cell.selected-block-followup-host,body.excel-page-2 #yardGrid>.cut-cell.selected-block-followup-host,body.excel-page-2 .excel-page2-secondary-grid>.cut-cell.selected-block-followup-host{overflow:visible!important;z-index:16!important}.selected-block-followup-arrow,.selected-block-followup-target,.selected-block-departing-label{position:absolute;z-index:17}.selected-block-followup-arrow,.selected-block-followup-target{pointer-events:none}.selected-block-departing-label{pointer-events:auto;cursor:context-menu}.selected-block-followup-arrow{left:calc(100% + 2px);top:0;bottom:0;width:29px;display:flex;align-items:center;justify-content:center;color:#050505;font:800 25px/1 Arial,sans-serif}.selected-block-followup-target{left:calc(100% + 31px);top:calc(5px * var(--excel-table-scale,1));bottom:calc(5px * var(--excel-table-scale,1));display:flex;flex-direction:column;align-items:flex-start;justify-content:center;overflow:hidden;padding:calc(4px * var(--excel-table-scale,1)) 5px;border:1px solid rgba(15,23,42,.14);border-radius:3px;background:#334155;color:#fff;font-family:var(--grid-block-font,"Roboto Condensed","Arial Narrow",Arial,sans-serif);font-size:var(--grid-block-size,12px);font-weight:var(--grid-block-weight,700);line-height:1;letter-spacing:-.01em;white-space:nowrap;box-shadow:0 1px 1px rgba(15,23,42,.08)}.selected-block-followup-target[data-label="IHOSA"]{background:var(--ihosa-block-color,#166534)!important}.selected-block-followup-target[data-label="MHOAS"]{background:var(--mhoas-block-color,#4338ca)!important}.selected-block-followup-target[data-label="SS"]{background:#7e22ce!important}.selected-block-followup-target[data-label="PIERCE"]{background:var(--pierce-block-color,#be185d)!important}.selected-block-followup-target strong,.selected-block-followup-target small{display:block;max-width:100%;overflow:hidden;font-weight:var(--grid-block-weight,700);line-height:1;text-overflow:ellipsis;white-space:nowrap}.selected-block-followup-target small{font-size:max(7px,calc(var(--grid-block-size,12px) - 2px))}.selected-block-departing-label{left:calc(100% + 7px);top:50%;display:inline-flex;align-items:center;padding:4px 7px;border:1px solid #64748b;border-radius:5px;background:#111827;color:#e2e8f0;box-shadow:0 3px 10px rgba(15,23,42,.35);font:900 10px/1 "Segoe UI",Arial,sans-serif;white-space:nowrap;transform:translateY(-50%)}.selected-block-departing-label.selected-block-followup-slot{left:7px}.selected-block-departing-label[data-label="IHOSA"]{border-color:#22c55e!important;background:#052e16!important;color:#86efac!important;-webkit-text-fill-color:#86efac!important}.selected-block-departing-label[data-label="MHOAS"]{border-color:#3b82f6!important;background:#172554!important;color:#93c5fd!important;-webkit-text-fill-color:#93c5fd!important}.selected-block-departing-label[data-followup-type="pierce"]{border-color:#a78bfa!important;background:#5b21b6!important;color:#f3e8ff!important;-webkit-text-fill-color:#f3e8ff!important}.selected-block-followup-remove-menu{position:fixed;z-index:2147483647;display:block;min-width:145px;padding:5px;border:1px solid #475569;border-radius:6px;background:#0f172a;box-shadow:0 10px 28px rgba(15,23,42,.45)}.selected-block-followup-remove-menu[hidden]{display:none!important}.selected-block-followup-remove-menu button{display:block;width:100%;margin:0 0 4px;padding:7px 10px;border:1px solid #475569;border-radius:4px;background:#1e293b;color:#fff;font:800 11px/1 "Segoe UI",Arial,sans-serif;text-align:left}.selected-block-followup-remove-menu button:last-child{margin-bottom:0}.selected-block-followup-remove-menu [data-followup-color="MHOAS"]{border-color:#3b82f6;background:#172554;color:#93c5fd}.selected-block-followup-remove-menu [data-followup-color="IHOSA"]{border-color:#22c55e;background:#052e16;color:#86efac}.selected-block-followup-remove-menu [data-followup-remove]{border-color:#ef4444;background:#991b1b;color:#fff}</style><script id="${marker}">(function(){
 var host=document.getElementById("assignActionsFlyout");if(!host)return;
 var key="conglobal-excel-consolidation-arrow-explanations-v1",directKey="conglobal-excel-selected-block-followups-v1";
 var targetGridId="",targetBlockId="",targetLabel="";
@@ -19078,7 +19082,7 @@ function directRecordKey(gridId,blockId){return String(gridId||"")+"::"+String(b
 /* excel-followup-stable-refresh-locator-v1 */
 function followUpSignature(cell){var raw=String(cell&&cell.getAttribute("data-page2-primary")||cell&&cell.dataset&&cell.dataset.assignmentOriginalTitle||cell&&cell.title||cell&&cell.textContent||"").toUpperCase();return raw.split("→")[0].replace(/\[[^\]]*\]/g,"").replace(/\([^)]*\)/g,"").replace(/\b(IHOSA|MHOAS|PIERCE)\b/g,"").replace(/[^A-Z0-9]+/g," ").trim()}
 function followUpLocator(cell){if(!cell)return null;var grid=cell.closest(".yard-grid"),track=String(cell.dataset.track||"").trim(),footage=String(Number(cell.dataset.footage)||0),signature=followUpSignature(cell);if(!track){var host=cell.closest("[data-track]");track=String(host&&host.dataset.track||"").trim()}var peers=grid?Array.from(grid.querySelectorAll(".cut-cell[data-block-id]")).filter(function(peer){var peerTrack=String(peer.dataset.track||"").trim();if(!peerTrack){var peerHost=peer.closest("[data-track]");peerTrack=String(peerHost&&peerHost.dataset.track||"").trim()}return peerTrack===track&&String(Number(peer.dataset.footage)||0)===footage&&followUpSignature(peer)===signature}):[];return {track:track,footage:footage,signature:signature,occurrence:Math.max(0,peers.indexOf(cell))}}
-function locateFollowUpCell(grid,blockId,value){var cells=Array.from(grid.querySelectorAll(".cut-cell[data-block-id]")),exact=cells.find(function(item){return String(item.dataset.blockId||"")===blockId});if(exact)return exact;var locator=value&&value._locator;if(!locator)return null;var matches=cells.filter(function(cell){var current=followUpLocator(cell);return current&&current.track===String(locator.track||"")&&current.footage===String(locator.footage||"")&&current.signature===String(locator.signature||"")});return matches[Math.max(0,Number(locator.occurrence)||0)]||matches[0]||null}
+function locateFollowUpCell(grid,blockId,value){var cells=Array.from(grid.querySelectorAll(".cut-cell[data-block-id]")),exact=cells.find(function(item){return String(item.dataset.blockId||"")===blockId}),locator=value&&value._locator;if(!locator)return exact||null;var matchesLocator=function(cell){var current=followUpLocator(cell);return current&&current.track===String(locator.track||"")&&current.footage===String(locator.footage||"")&&current.signature===String(locator.signature||"")};if(exact&&matchesLocator(exact))return exact;var matches=cells.filter(matchesLocator);return matches[Math.max(0,Number(locator.occurrence)||0)]||matches[0]||null}
 function directDetail(value){return value.type==="swing"?"SWING TO YARD":value.type==="today"?"TODAY'S INBOUND":value.type==="pierce"?"FROM PIERCE":value.type==="departing"?"DEPARTING FROM HERE":value.type==="move"?"MOVING TO "+String(value.track||""):""}
 function directLabelText(value){return value.type==="swing"?"← Swing to Yard":value.type==="today"?"← Today's Inbound":value.type==="pierce"?"← From Pierce":value.type==="departing"?"← Departing From Here":value.type==="move"?"← Moving to Track "+String(value.track||""):""}
 function directBlockLabel(cell,blockId,value){var assignment=String(cell&&cell.dataset&&cell.dataset.blockAssignment||"").toUpperCase();if(assignment==="IHOSA"||assignment==="MHOAS")return assignment;try{var assignments=JSON.parse(localStorage.getItem("settegast-excel-block-assignments-v1")||"{}");assignment=String(assignments&&assignments[String(blockId||"")]||"").toUpperCase();if(assignment==="IHOSA"||assignment==="MHOAS")return assignment}catch(_){}var primary=String(cell&&cell.getAttribute("data-page2-primary")||"")+" "+String(cell&&cell.getAttribute("data-page2-secondary")||"")+" "+String(cell&&cell.title||"")+" "+String(cell&&cell.textContent||"");var match=primary.toUpperCase().match(/\b(IHOSA|MHOAS)\b/);if(match)return match[1];var saved=String(value&&value.label||"").toUpperCase();return saved==="IHOSA"||saved==="MHOAS"?saved:""}
@@ -19086,7 +19090,7 @@ function clearLegacyFollowUps(ids){var records=[];try{records=JSON.parse(localSt
 function backfillFollowUpLocators(){var records=directRead(),changed=false;Object.keys(records).forEach(function(recordKey){var split=recordKey.indexOf("::"),grid=split>=0?document.getElementById(recordKey.slice(0,split)):null,blockId=split>=0?recordKey.slice(split+2):"",value=records[recordKey];if(!grid||!blockId||!value||value._locator)return;var cell=Array.from(grid.querySelectorAll(".cut-cell[data-block-id]")).find(function(item){return String(item.dataset.blockId||"")===blockId});if(cell){value._locator=followUpLocator(cell);changed=true}});if(changed){localStorage.setItem(directKey,JSON.stringify(records));localStorage.setItem(directKey+".updatedAt",new Date().toISOString())}return records}
 function renderDirect(){
   var records=directRead(),wanted={},usedSlots={};Object.keys(records).forEach(function(recordKey){var split=recordKey.indexOf("::"),gridId=split>=0?recordKey.slice(0,split):"",blockId=split>=0?recordKey.slice(split+2):"",grid=document.getElementById(gridId),value=records[recordKey]||{};if(!grid||!blockId)return;var cell=locateFollowUpCell(grid,blockId,value);if(!cell)return;var detail=directDetail(value);if(!detail)return;var track=String(cell.dataset.track||""),slotKey=gridId+"::"+track,emptyCells=Array.from(grid.children).filter(function(item){return item.classList&&item.classList.contains("cut-cell")&&item.classList.contains("empty")&&String(item.dataset.dropEndTrack||item.dataset.track||"")===track}),slotIndex=usedSlots[slotKey]||0,displayCell=emptyCells[slotIndex]||cell;if(displayCell!==cell)usedSlots[slotKey]=slotIndex+1;wanted[recordKey]=true;displayCell.classList.add("selected-block-followup-host");var selector='[data-followup-key="'+recordKey.replace(/"/g,'\\"')+'"]',oldNodes=grid.querySelectorAll('.selected-block-followup-arrow'+selector+',.selected-block-followup-target'+selector+',.selected-block-departing-label'+selector),labelName=directBlockLabel(cell,String(cell.dataset.blockId||blockId),value);
-    var labelText=directLabelText(value),pill=grid.querySelector('.selected-block-departing-label'+selector);oldNodes.forEach(function(node){if(node!==pill)node.remove()});if(!pill){pill=document.createElement("span");pill.className="selected-block-departing-label";pill.dataset.followupKey=recordKey;displayCell.appendChild(pill)}pill.classList.toggle("selected-block-followup-slot",displayCell!==cell);pill.dataset.followupGrid=gridId;pill.dataset.followupTrack=track;pill.dataset.label=String(value.labelColor||labelName||"BLOCK").toUpperCase();pill.dataset.followupType=String(value.type||"");if(pill.textContent!==labelText)pill.textContent=labelText
+    var labelText=directLabelText(value),pill=grid.querySelector('.selected-block-departing-label'+selector);oldNodes.forEach(function(node){if(node!==pill)node.remove()});if(!pill){pill=document.createElement("span");pill.className="selected-block-departing-label";pill.dataset.followupKey=recordKey;displayCell.appendChild(pill)}pill.classList.toggle("selected-block-followup-slot",displayCell!==cell);pill.dataset.followupGrid=gridId;pill.dataset.followupTrack=track;pill.dataset.label=String(value.labelColor||(value.type==="today"?"BLOCK":labelName)||"BLOCK").toUpperCase();pill.dataset.followupType=String(value.type||"");if(pill.textContent!==labelText)pill.textContent=labelText
   });document.querySelectorAll(".selected-block-followup-arrow,.selected-block-followup-target,.selected-block-departing-label").forEach(function(node){if(!wanted[String(node.dataset.followupKey||"")])node.remove()});document.querySelectorAll(".selected-block-followup-host").forEach(function(cell){if(!cell.querySelector(":scope > .selected-block-followup-arrow,:scope > .selected-block-followup-target,:scope > .selected-block-departing-label"))cell.classList.remove("selected-block-followup-host")})
 }
 function saveFollowUp(value){
@@ -19103,7 +19107,7 @@ document.addEventListener("click",function(event){var undo=event.target.closest&
 document.addEventListener("pointerdown",function(event){if(!removeMenu.hidden&&!removeMenu.contains(event.target)){removeKey="";removeMenu.hidden=true}},true);
 document.addEventListener("click",function(event){var action=event.target.closest&&event.target.closest("#assignSelectedSwingToYard,#assignSelectedMoveToTrack,#assignSelectedTodayInbound,#assignSelectedFromPierce,#assignSelectedDeparting,#assignSelectedRemoveFollowUp,[data-selected-move-track]");if(!action)return;if(action.id==="assignSelectedMoveToTrack"){event.preventDefault();event.stopImmediatePropagation();tracks.hidden=!tracks.hidden;move.setAttribute("aria-expanded",tracks.hidden?"false":"true");return}if(action.id==="assignSelectedSwingToYard"){event.preventDefault();event.stopImmediatePropagation();finish({type:"swing"});return}if(action.id==="assignSelectedTodayInbound"){event.preventDefault();event.stopImmediatePropagation();finish({type:"today"});return}if(action.id==="assignSelectedFromPierce"){event.preventDefault();event.stopImmediatePropagation();finish({type:"pierce"});return}if(action.id==="assignSelectedDeparting"){event.preventDefault();event.stopImmediatePropagation();finish({type:"departing"});return}if(action.id==="assignSelectedRemoveFollowUp"){event.preventDefault();event.stopImmediatePropagation();removeCaptured();return}if(action.dataset.selectedMoveTrack){event.preventDefault();event.stopImmediatePropagation();finish({type:"move",track:"6-"+action.dataset.selectedMoveTrack})}},true);
 document.addEventListener("excel-secondary-table-cleared",function(event){var gridId=String(event&&event.detail&&event.detail.gridId||"");if(!gridId)return;var prefix=gridId+"::",direct=directRead(),changed=false;Object.keys(direct).forEach(function(recordKey){if(recordKey.indexOf(prefix)===0){delete direct[recordKey];changed=true}});if(changed){localStorage.setItem(directKey,JSON.stringify(direct));localStorage.setItem(directKey+".updatedAt",new Date().toISOString())}renderDirect()});
-var directFrame=0;function scheduleDirect(){if(!directFrame)directFrame=requestAnimationFrame(function(){directFrame=0;renderDirect()})}new MutationObserver(function(records){var external=records.some(function(record){return Array.from(record.addedNodes).concat(Array.from(record.removedNodes)).some(function(node){return !(node.nodeType===1&&(node.matches&&node.matches(".selected-block-followup-arrow,.selected-block-followup-target,.selected-block-departing-label")||node.closest&&node.closest(".selected-block-followup-arrow,.selected-block-followup-target,.selected-block-departing-label")))})});if(external)scheduleDirect()}).observe(document.body,{childList:true,subtree:true});window.addEventListener("storage",function(event){if(event.key===directKey)scheduleDirect()});var savedDirect=backfillFollowUpLocators(),savedIds=Object.keys(savedDirect).map(function(recordKey){var split=recordKey.indexOf("::");return split>=0?recordKey.slice(split+2):""}).filter(Boolean);clearLegacyFollowUps(savedIds);renderDirect();
+var directFrame=0;function scheduleDirect(){if(!directFrame)directFrame=requestAnimationFrame(function(){directFrame=0;renderDirect()})}new MutationObserver(function(records){var external=records.some(function(record){return Array.from(record.addedNodes).concat(Array.from(record.removedNodes)).some(function(node){return !(node.nodeType===1&&(node.matches&&node.matches(".selected-block-followup-arrow,.selected-block-followup-target,.selected-block-departing-label")||node.closest&&node.closest(".selected-block-followup-arrow,.selected-block-followup-target,.selected-block-departing-label")))})});if(external)renderDirect()}).observe(document.body,{childList:true,subtree:true});window.addEventListener("storage",function(event){if(event.key===directKey)scheduleDirect()});var savedDirect=backfillFollowUpLocators(),savedIds=Object.keys(savedDirect).map(function(recordKey){var split=recordKey.indexOf("::");return split>=0?recordKey.slice(split+2):""}).filter(Boolean);clearLegacyFollowUps(savedIds);renderDirect();
 })();<\/script>`;
       const labelPositioning = `<style id="${marker}-position-styles">
 .yard-grid>.track-remaining.selected-block-followup-edge-host{overflow:visible!important}
@@ -19126,10 +19130,140 @@ function schedule(){if(!frame)frame=requestAnimationFrame(function(){frame=0;pos
 function positionDirect(right,offsets){var groups={};document.querySelectorAll(".selected-block-departing-label[data-followup-key]").forEach(function(label){var grid=gridForLabel(label),track=trackForLabel(label);if(!grid||!track)return;var key=(grid.id||"grid")+"::"+track;(groups[key]||(groups[key]={grid:grid,track:track,labels:[]})).labels.push(label)});Object.keys(groups).forEach(function(key){var group=groups[key];if(right){var host=remainingCell(group.grid,group.track),offset=offsets[key]||7;if(!host)return;group.labels.forEach(function(label){offset=placeAtEdge(label,host,offset)});offsets[key]=offset;return}var slots=emptyCells(group.grid,group.track);group.labels.forEach(function(label,index){var previous=label.parentElement,home=label.__excelFollowUpHome,target=home&&home.isConnected?home:slots[index]||directBlockHome(label,group.grid);if(target){target.classList.add("selected-block-followup-host");if(previous!==target)target.appendChild(label)}clearEdgePosition(label);cleanupHost(previous);label.__excelFollowUpHome=null})})}
 function positionLegacy(right,offsets){document.querySelectorAll(".consolidation-explanation-followup-label").forEach(function(label){if(right){var grid=label.__excelOriginalGrid&&label.__excelOriginalGrid.isConnected?label.__excelOriginalGrid:label.closest(".yard-grid"),track=String(label.__excelOriginalTrack||trackForCell(label.closest(".cut-cell"))||"");if(!grid||!track)return;var key=(grid.id||"grid")+"::"+track,host=remainingCell(grid,track);if(!host)return;if(!label.__excelOriginalParent){label.__excelOriginalParent=label.parentElement;label.__excelOriginalLeft=label.style.left;label.__excelOriginalRight=label.style.right;label.__excelOriginalGrid=grid;label.__excelOriginalTrack=track}offsets[key]=placeAtEdge(label,host,offsets[key]||7);return}var previous=label.parentElement,target=label.__excelOriginalParent&&label.__excelOriginalParent.isConnected?label.__excelOriginalParent:null;if(target&&previous!==target)target.appendChild(label);label.classList.remove("selected-block-followup-edge");label.style.left=label.__excelOriginalLeft||"";label.style.right=label.__excelOriginalRight||"";cleanupHost(previous);label.__excelOriginalParent=null;label.__excelOriginalGrid=null;label.__excelOriginalTrack=""})}
 function positionLabels(){if(moving)return;moving=true;try{var right=document.body.classList.contains("excel-followup-labels-right"),offsets={};positionDirect(right,offsets);positionLegacy(right,offsets)}finally{moving=false}}
-document.addEventListener("excel-followup-label-position-change",schedule);document.addEventListener("scroll",function(){if(document.body.classList.contains("excel-followup-labels-right"))schedule()},true);window.addEventListener("resize",schedule);new MutationObserver(function(records){if(moving)return;if(records.some(function(record){return Array.from(record.addedNodes).some(function(node){return node.nodeType===1&&(node.matches&&node.matches(".selected-block-departing-label,.consolidation-explanation-followup-label")||node.querySelector&&node.querySelector(".selected-block-departing-label,.consolidation-explanation-followup-label"))})}))schedule()}).observe(document.body,{childList:true,subtree:true});schedule();
+document.addEventListener("excel-followup-label-position-change",schedule);document.addEventListener("scroll",function(){if(document.body.classList.contains("excel-followup-labels-right"))schedule()},true);window.addEventListener("resize",schedule);new MutationObserver(function(records){if(moving)return;if(records.some(function(record){return Array.from(record.addedNodes).some(function(node){return node.nodeType===1&&(node.matches&&node.matches(".selected-block-departing-label,.consolidation-explanation-followup-label")||node.querySelector&&node.querySelector(".selected-block-departing-label,.consolidation-explanation-followup-label"))})}))positionLabels()}).observe(document.body,{childList:true,subtree:true});schedule();
 })();<\/script>`;
       const close = html.toLowerCase().lastIndexOf("</body>");
       return close >= 0 ? html.slice(0, close) + script + labelPositioning + "\n" + html.slice(close) : html + script + labelPositioning;
+    }
+
+    function withExcelFinalBlockControls(html) {
+      const marker = "excel-final-block-controls-v1";
+      if (!html || typeof html !== "string" || html.includes(marker)) return html;
+      if (!html.includes('id="blankYardGrid"') || !html.includes('data-final-block-id')) return html;
+      const copyAssignedTableOneToTwo = function copyAssignedTableOneToTwo() {
+        const grid = $("#yardGrid");
+        if (!grid) return;
+        let savedAssignments = {};
+        try { savedAssignments = JSON.parse(localStorage.getItem("settegast-excel-block-assignments-v1") || "{}"); } catch (_) {}
+        const assigned = new Map();
+        grid.querySelectorAll(".cut-cell[data-block-id]").forEach(cell => {
+          const id = String(cell.dataset.blockId || "");
+          const text = String(`${cell.dataset.assignmentOriginalTitle || ""} ${cell.title || ""} ${cell.textContent || ""}`).toUpperCase();
+          let value = String(cell.dataset.blockAssignment || savedAssignments[`${grid.id}::${id}`] || savedAssignments[id] || "").toUpperCase();
+          if (value !== "IHOSA" && value !== "MHOAS") value = (text.match(/\b(IHOSA|MHOAS)\b/) || [])[1] || "";
+          if (value === "IHOSA" || value === "MHOAS") assigned.set(id, value.toLowerCase());
+        });
+        let source = snapshotGrid(grid);
+        try {
+          if (typeof window.conglobalExcelApplyConsolidationArrowsToCopy === "function") {
+            source = window.conglobalExcelApplyConsolidationArrowsToCopy(source, grid.id) || source;
+          }
+        } catch (_) {}
+        const finalBlocks = {ihosa:[], mhoas:[]};
+        TRACKS.forEach(track => {
+          (Array.isArray(source.tracks[track]) ? source.tracks[track] : []).forEach(block => {
+            const id = String(block && block.id || "");
+            const blockText = clean(`${block && block.title || ""} ${textFromCellHtml(`<div>${block && block.content || ""}</div>`)}`);
+            let zone = String(block && block.assignment || assigned.get(id) || "").toLowerCase();
+            if (zone !== "ihosa" && zone !== "mhoas") zone = /\bIHOSA\b/i.test(blockText) ? "ihosa" : /\bMHOAS\b/i.test(blockText) ? "mhoas" : "";
+            if (!zone) return;
+            let inbound = clean(block && block.inboundTrain);
+            try { if (!inbound) inbound = clean(inboundTrainLabel(block.sourceRows)); } catch (_) {}
+            if (!inbound) inbound = clean((blockText.match(/\b(?:ZLBHO|ZPBHO|ILBHOX)\s+\d+\b/i) || [])[0]).toUpperCase();
+            const mainLabel = `${fmtInt(block.footage)} ${zone.toUpperCase()} [${track}]`;
+            const sourceLabel = inbound || "INBOUND";
+            finalBlocks[zone].push(normalizeFinalBlock({
+              ...block,
+              id:"",
+              assignment:zone,
+              content:`<span class="final-assigned-main">${escapeHtml(mainLabel)}</span><span class="final-assigned-source">&rarr;${escapeHtml(sourceLabel)}</span>`,
+              title:`${mainLabel} -> ${sourceLabel}`,
+              sourceRows:Array.isArray(block.sourceRows) ? block.sourceRows.map(row => row.slice()) : []
+            }));
+          });
+        });
+        const target = validSecondaryModel(state.secondaryGridTwo) ? state.secondaryGridTwo : emptySecondaryModel();
+        target.finalBlocks = finalBlocks;
+        state.secondaryGridTwo = target;
+        if (typeof outboundDepartureVisibility !== "undefined") {
+          outboundDepartureVisibility.two = true;
+          if (typeof saveOutboundDepartureVisibility === "function") saveOutboundDepartureVisibility();
+        }
+        renderAll();
+        const copied = finalBlocks.ihosa.length + finalBlocks.mhoas.length;
+        ssShowToast(copied ? `Copied ${copied} IHOSA/MHOAS block${copied === 1 ? "" : "s"} from Table 1 to Table 2 outbound tracks.` : "No IHOSA or MHOAS blocks found in Table 1.");
+      };
+      const headerAnchor = `    const assignmentCopy = target === "three" ? '<button class="copy-grid-btn" id="copyAssignedFinalBlocks" type="button">COPY IHOSA/MHOAS BLOCKS</button>' : "";
+    return '<div class="' + headerClass + '"><div class="copy-grid-actions">' + assignmentCopy + '<button class="copy-grid-btn" id="' + id + '" type="button">COPY ABOVE</button><button class="clear-grid-btn" data-clear-secondary-table="' + target + '" type="button">CLEAR TABLE</button><button class="add-inbound-train-btn" data-open-inbound-train="' + target + '" type="button">ADD INBOUND TRAIN</button></div></div>';`;
+      const headerReplacement = `    const assignmentCopy = target === "three"
+      ? '<button class="copy-grid-btn" id="copyAssignedFinalBlocks" type="button">COPY IHOSA/MHOAS BLOCKS</button>'
+      : target === "two"
+        ? '<button class="copy-grid-btn" id="copyAssignedTableOneToTwo" type="button" title="Copy only IHOSA and MHOAS blocks from Table 1 into Table 2">COPY IHOSA/MHOAS</button>'
+        : "";
+    return '<div class="' + headerClass + '"><div class="copy-grid-actions">' + assignmentCopy + '<button class="copy-grid-btn" id="' + id + '" type="button">COPY ABOVE</button><button class="clear-grid-btn" data-clear-secondary-table="' + target + '" type="button">CLEAR TABLE</button><button class="add-inbound-train-btn" data-open-inbound-train="' + target + '" type="button">ADD INBOUND TRAIN</button></div></div>';`;
+      const functionAnchor = "  function copyTableOneToTwo() {";
+      const listenerAnchor = '    if (e.target.closest("#copyTableOneToTwo")) copyTableOneToTwo();';
+      if (!html.includes(headerAnchor) || !html.includes(functionAnchor) || !html.includes(listenerAnchor)) return html;
+      html = html.replace(headerAnchor, headerReplacement);
+      html = html.replace(functionAnchor, "  " + copyAssignedTableOneToTwo.toString() + "\n\n" + functionAnchor);
+      html = html.replace(listenerAnchor, '    if (e.target.closest("#copyAssignedTableOneToTwo")) copyAssignedTableOneToTwo();\n' + listenerAnchor);
+      const runtime = function() {
+        let deleteTarget = null, confirmTimer = 0;
+        const deleteMenu = document.createElement("div");
+        deleteMenu.id = "excelFinalBlockDeleteMenu";
+        deleteMenu.hidden = true;
+        deleteMenu.innerHTML = '<button type="button">Delete Block</button>';
+        document.body.appendChild(deleteMenu);
+        const deleteButton = deleteMenu.querySelector("button");
+        function hideDeleteMenu() {
+          clearTimeout(confirmTimer); deleteTarget = null; delete deleteButton.dataset.confirm;
+          deleteButton.textContent = "Delete Block"; deleteButton.classList.remove("pending"); deleteMenu.hidden = true;
+        }
+        function positionDeleteMenu(event) {
+          deleteMenu.hidden = false;
+          const width = deleteMenu.offsetWidth || 160, height = deleteMenu.offsetHeight || 44;
+          let left = event.clientX, top = event.clientY;
+          try {
+            const frameRect = window.frameElement && window.frameElement.getBoundingClientRect();
+            if (frameRect && window.parent !== window) {
+              left = Math.max(-frameRect.left + 6, Math.min(window.parent.innerWidth - frameRect.left - width - 6, left));
+              top = Math.max(-frameRect.top + 6, Math.min(window.parent.innerHeight - frameRect.top - height - 6, top));
+            } else { left = Math.max(6, Math.min(window.innerWidth - width - 6, left)); top = Math.max(6, Math.min(window.innerHeight - height - 6, top)); }
+          } catch (_) { left = Math.max(6, Math.min(window.innerWidth - width - 6, left)); top = Math.max(6, Math.min(window.innerHeight - height - 6, top)); }
+          deleteMenu.style.left = left + "px"; deleteMenu.style.top = top + "px";
+        }
+        function deleteFinalBlock() {
+          if (!deleteTarget || typeof state === "undefined") return hideDeleteMenu();
+          const key = deleteTarget.gridId === "blankYardGridTwo" ? "secondaryGridThree" : "secondaryGridTwo", model = state[key];
+          if (!model || typeof normalizeFinalBlocks !== "function") return hideDeleteMenu();
+          model.finalBlocks = normalizeFinalBlocks(model.finalBlocks);
+          const list = model.finalBlocks[deleteTarget.zone]; if (!Array.isArray(list)) return hideDeleteMenu();
+          const next = list.filter(function(block) { return String(block.id) !== deleteTarget.id; }), changed = next.length !== list.length;
+          model.finalBlocks[deleteTarget.zone] = next; hideDeleteMenu(); if (changed) renderAll();
+        }
+        document.addEventListener("contextmenu", function(event) {
+          const block = event.target.closest(".final-summary-block[data-final-block-id]"); if (!block) return;
+          const zoneHost = block.closest("[data-summary-paste-zone]"), grid = block.closest(".yard-grid");
+          const zone = String(zoneHost && zoneHost.dataset.summaryPasteZone || "").toLowerCase();
+          if (!grid || ["ihosa", "mhoas"].indexOf(zone) < 0) return;
+          event.preventDefault(); event.stopPropagation(); clearTimeout(confirmTimer);
+          deleteTarget = {gridId:grid.id, zone:zone, id:String(block.dataset.finalBlockId || "")};
+          deleteButton.textContent = "Delete Block"; deleteButton.classList.remove("pending"); delete deleteButton.dataset.confirm; positionDeleteMenu(event);
+        }, true);
+        deleteButton.addEventListener("click", function(event) {
+          event.preventDefault(); event.stopPropagation(); if (!deleteTarget) return;
+          if (deleteButton.dataset.confirm !== "true") {
+            deleteButton.dataset.confirm = "true"; deleteButton.textContent = "Confirm Delete Block"; deleteButton.classList.add("pending");
+            clearTimeout(confirmTimer); confirmTimer = setTimeout(function() { delete deleteButton.dataset.confirm; deleteButton.textContent = "Delete Block"; deleteButton.classList.remove("pending"); }, 4000); return;
+          }
+          delete deleteButton.dataset.confirm; deleteFinalBlock();
+        });
+        document.addEventListener("pointerdown", function(event) { if (!deleteMenu.hidden && !deleteMenu.contains(event.target)) hideDeleteMenu(); }, true);
+        document.addEventListener("keydown", function(event) { if (event.key === "Escape") hideDeleteMenu(); });
+      };
+      const patch = `<style id="${marker}-styles">#excelFinalBlockDeleteMenu{position:fixed;z-index:2147483647;min-width:150px;padding:5px;border:1px solid #475569;border-radius:7px;background:#0f172a;box-shadow:0 12px 28px rgba(15,23,42,.45)}#excelFinalBlockDeleteMenu[hidden]{display:none!important}#excelFinalBlockDeleteMenu button{width:100%;min-height:30px;padding:7px 10px;border:1px solid #ef4444;border-radius:5px;background:#991b1b;color:#fff;font:900 11px/1 "Segoe UI",Arial,sans-serif;text-align:left}#excelFinalBlockDeleteMenu button.pending{background:#dc2626}.final-summary-block[data-final-block-id]{cursor:context-menu}</style><scr${""}ipt id="${marker}">(${runtime.toString()})();</scr${""}ipt>`;
+      const close = html.toLowerCase().lastIndexOf("</body>");
+      return close >= 0 ? html.slice(0, close) + patch + "\n" + html.slice(close) : html + patch;
     }
 
     function bridgedHtmlForPage(id) {
@@ -19270,6 +19404,7 @@ document.addEventListener("excel-followup-label-position-change",schedule);docum
           pageHtml = withExcelPage2Overview(pageHtml);
           pageHtml = withExcelPage2ThreeTables(pageHtml);
           pageHtml = withExcelCopyAssignedFinalBlocks(pageHtml);
+          pageHtml = withExcelFinalBlockControls(pageHtml);
           pageHtml = withExcelContextActionFlyouts(pageHtml);
           pageHtml = withExcelOutsideTableBlockDeselect(pageHtml);
           pageHtml = withExcelBlockShowTrack(pageHtml);
