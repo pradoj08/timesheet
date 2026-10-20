@@ -7312,6 +7312,28 @@ body.excel-page-2 .excel-page2-secondary-grid>.track-remaining{position:sticky!i
               }));
             });
           });
+          const sourceBlocks = new Map();
+          TRACKS.forEach(track => (source.tracks[track] || []).forEach(block => sourceBlocks.set(String(block.id || ""), block)));
+          let arrowAssignments = [];
+          try { arrowAssignments = JSON.parse(localStorage.getItem("conglobal-excel-consolidation-arrow-explanations-v1") || "[]"); } catch (_) {}
+          if (Array.isArray(arrowAssignments)) arrowAssignments.forEach(item => {
+            if (!item || String(item.gridId || "") !== "blankYardGrid" || sourceBlocks.has("arrow-copy-" + String(item.id || ""))) return;
+            const zone = String(item.label || "").toLowerCase();
+            const track = Number(String(item.track || "").replace(/[^0-9]/g, "").slice(-3));
+            const footage = Number(item.footage) || 0;
+            if ((zone !== "ihosa" && zone !== "mhoas") || !TRACKS.includes(track) || footage <= 0) return;
+            const sourceRows = [...new Set(Array.isArray(item.blockIds) ? item.blockIds.map(String) : [])]
+              .flatMap(id => { const block = sourceBlocks.get(id); return block && Array.isArray(block.sourceRows) ? block.sourceRows.map(row => row.slice()) : []; });
+            let sourceLabel = clean(item.source || "");
+            try { if (!sourceLabel) sourceLabel = clean(inboundTrainLabel(sourceRows)); } catch (_) {}
+            sourceLabel = sourceLabel || "INBOUND";
+            const mainLabel = `${fmtInt(footage)} ${zone.toUpperCase()} [${track}]`;
+            finalBlocks[zone].push(normalizeFinalBlock({
+              footage, assignment:zone, className:`cut-cell ${zone === "ihosa" ? "green" : "blue"}`,
+              content:`<span class="final-assigned-main">${escapeHtml(mainLabel)}</span><span class="final-assigned-source">&rarr;${escapeHtml(sourceLabel)}</span>`,
+              title:`${mainLabel} -> ${sourceLabel}`, sourceRows
+            }));
+          });
         }
         const target = validSecondaryModel(state.secondaryGridThree) ? state.secondaryGridThree : emptySecondaryModel();
         target.finalBlocks = finalBlocks;
@@ -10230,7 +10252,8 @@ document.addEventListener("DOMContentLoaded",function(){
         'clone.querySelectorAll(".overflow, .inbound-shove-flag, .consolidation-explanation-arrow, .consolidation-explanation-target, .consolidation-explanation-followup-label").forEach(node => node.remove());'
       );
       const copyAnchor = `    state.secondaryGridTwo = snapshotGrid(sourceGrid);`;
-      const copyReplacement = `    let copiedModel = snapshotGrid(sourceGrid);
+      const copyReplacement = `    document.dispatchEvent(new CustomEvent("excel-secondary-table-cleared", {detail:{gridId:"blankYardGrid"}}));
+    let copiedModel = snapshotGrid(sourceGrid);
     try {
       if (typeof window.conglobalExcelApplyConsolidationArrowsToCopy === "function") {
         copiedModel = window.conglobalExcelApplyConsolidationArrowsToCopy(copiedModel, sourceGrid.id) || copiedModel;
@@ -10240,7 +10263,8 @@ document.addEventListener("DOMContentLoaded",function(){
       if (!updated.includes(copyAnchor)) return html;
       updated = updated.replace(copyAnchor, copyReplacement);
       const copyTwoAnchor = `    state.secondaryGridThree = snapshotGrid(sourceGrid);`;
-      const copyTwoReplacement = `    let copiedModel = snapshotGrid(sourceGrid);
+      const copyTwoReplacement = `    document.dispatchEvent(new CustomEvent("excel-secondary-table-cleared", {detail:{gridId:"blankYardGridTwo"}}));
+    let copiedModel = snapshotGrid(sourceGrid);
     try {
       if (typeof window.conglobalExcelApplyConsolidationArrowsToCopy === "function") {
         copiedModel = window.conglobalExcelApplyConsolidationArrowsToCopy(copiedModel, sourceGrid.id) || copiedModel;
@@ -11919,6 +11943,7 @@ document.addEventListener('click',function(event){
   function copyTableThreeToFour() {
     const sourceGrid = document.getElementById("blankYardGridTwo");
     if (!sourceGrid) return;
+    document.dispatchEvent(new CustomEvent("excel-secondary-table-cleared", {detail:{gridId:"blankYardGridThree"}}));
     state.secondaryGridFour = snapshotGrid(sourceGrid);
     state.fourthRampTableVisible = true;
     renderAll();

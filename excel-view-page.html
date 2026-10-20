@@ -9369,6 +9369,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   function copyTableOneToTwo() {
     const sourceGrid = $("#yardGrid");
     if (!sourceGrid) return;
+    document.dispatchEvent(new CustomEvent("excel-secondary-table-cleared", {detail:{gridId:"blankYardGrid"}}));
     state.secondaryGridTwo = snapshotGrid(sourceGrid);
     renderAll();
   }
@@ -9377,6 +9378,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     const sourceGrid = $("#blankYardGrid");
     if (!sourceGrid) return;
     const finalBlocks = state.secondaryGridThree && state.secondaryGridThree.finalBlocks;
+    document.dispatchEvent(new CustomEvent("excel-secondary-table-cleared", {detail:{gridId:"blankYardGridTwo"}}));
     let copiedModel = snapshotGrid(sourceGrid);
     try {
       if (typeof window.conglobalExcelApplyConsolidationArrowsToCopy === "function") {
@@ -9424,6 +9426,28 @@ https://github.com/nodeca/pako/blob/main/LICENSE
             sourceRows:Array.isArray(block.sourceRows) ? block.sourceRows.map(row => row.slice()) : []
           }));
         });
+      });
+      const sourceBlocks = new Map();
+      TRACKS.forEach(track => (source.tracks[track] || []).forEach(block => sourceBlocks.set(String(block.id || ""), block)));
+      let arrowAssignments = [];
+      try { arrowAssignments = JSON.parse(localStorage.getItem("conglobal-excel-consolidation-arrow-explanations-v1") || "[]"); } catch (_) {}
+      if (Array.isArray(arrowAssignments)) arrowAssignments.forEach(item => {
+        if (!item || String(item.gridId || "") !== "blankYardGrid" || sourceBlocks.has("arrow-copy-" + String(item.id || ""))) return;
+        const zone = String(item.label || "").toLowerCase();
+        const track = Number(String(item.track || "").replace(/[^0-9]/g, "").slice(-3));
+        const footage = Number(item.footage) || 0;
+        if ((zone !== "ihosa" && zone !== "mhoas") || !TRACKS.includes(track) || footage <= 0) return;
+        const sourceRows = [...new Set(Array.isArray(item.blockIds) ? item.blockIds.map(String) : [])]
+          .flatMap(id => { const block = sourceBlocks.get(id); return block && Array.isArray(block.sourceRows) ? block.sourceRows.map(row => row.slice()) : []; });
+        let sourceLabel = clean(item.source || "");
+        try { if (!sourceLabel) sourceLabel = clean(inboundTrainLabel(sourceRows)); } catch (_) {}
+        sourceLabel = sourceLabel || "INBOUND";
+        const mainLabel = `${fmtInt(footage)} ${zone.toUpperCase()} [${track}]`;
+        finalBlocks[zone].push(normalizeFinalBlock({
+          footage, assignment:zone, className:`cut-cell ${zone === "ihosa" ? "green" : "blue"}`,
+          content:`<span class="final-assigned-main">${escapeHtml(mainLabel)}</span><span class="final-assigned-source">&rarr;${escapeHtml(sourceLabel)}</span>`,
+          title:`${mainLabel} -> ${sourceLabel}`, sourceRows
+        }));
       });
     }
     const target = validSecondaryModel(state.secondaryGridThree) ? state.secondaryGridThree : emptySecondaryModel();
