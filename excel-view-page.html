@@ -128,7 +128,8 @@
   .footage-calc-head > span {
     width: 100%;
     text-align: center;
-    pointer-events: none;
+    pointer-events: auto;
+    cursor: context-menu;
   }
   .footage-calc-close {
     position: absolute;
@@ -1864,6 +1865,12 @@
     gap: 3px;
     align-items: stretch;
   }
+  body.excel-page-2 #blankYardGridTwo .final-block-list {
+    width: 100%;
+    max-width: 100%;
+    justify-self: stretch;
+    grid-template-columns: repeat(auto-fill, var(--excel-page2-block-width, 140.5536px));
+  }
   .final-summary-block {
     width: 100%;
     min-width: 0;
@@ -2637,7 +2644,7 @@
     box-shadow: inset 0 0 0 2px #facc15 !important;
   }
   .tomorrow-inbound-callout {
-    position: fixed;
+    position: absolute;
     z-index: 10030;
     display: inline-flex;
     align-items: center;
@@ -4536,7 +4543,7 @@
       <button class="inbound-train-close" id="closeInboundTrain" type="button" aria-label="Close Add Inbound Train">&times;</button>
     </header>
     <div class="inbound-train-body">
-      <div class="inbound-train-note">Choose a current inbound or a Yard/Pierce track, then click each landing track and use the slider to assign that shove. Continue until all inbound footage is allocated.</div>
+      <div class="inbound-train-note">Choose a current inbound or a Yard/Pierce track, then assign only the footage you want to place. Any unassigned footage will be omitted when the inbound is added.</div>
       <div class="inbound-train-field-grid">
         <div class="inbound-train-field source">
           <label for="inboundTrainSource">Select current inbound / track</label>
@@ -5668,9 +5675,10 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       const days = Number(row[8]) || 0;
       const hours = Number(row[9]) || 0;
       const manualSegment = clean(row[MANUAL_BLOCK_SEGMENT_INDEX]);
+      const inboundIdentity = clean(row[10]).toUpperCase();
       const key = manualSegment
-        ? `${track}|manual|${manualSegment}`
-        : `${track}|${status}|${days}|${hours}|`;
+        ? `${track}|manual|${manualSegment}|${inboundIdentity}`
+        : `${track}|${status}|${days}|${hours}|${inboundIdentity}`;
       if (!active || active.key !== key) {
         active = {key, blockId:`block-${groups.length}`, track, status, days, hours, rows: [], sourceIndexes: []};
         groups.push(active);
@@ -8459,10 +8467,11 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   }
 
   function pasteBlocksIntoFinal(payload, target) {
-    if (!validBlockClipboard(payload) || target.gridId !== "blankYardGridTwo") return false;
+    if (!validBlockClipboard(payload) || !["blankYardGrid", "blankYardGridTwo"].includes(target.gridId)) return false;
     const zone = target.summaryZone === "mhoas" ? "mhoas" : target.summaryZone === "ihosa" ? "ihosa" : "";
     if (!zone) return false;
-    const model = validSecondaryModel(state.secondaryGridThree) ? state.secondaryGridThree : emptySecondaryModel();
+    const key = secondaryGridStateKey(target.gridId);
+    const model = validSecondaryModel(state[key]) ? state[key] : emptySecondaryModel();
     model.finalBlocks = normalizeFinalBlocks(model.finalBlocks);
     const copies = payload.blocks.map(block => normalizeFinalBlock({
       ...block,
@@ -8470,20 +8479,21 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       sourceRows:Array.isArray(block.sourceRows) ? block.sourceRows.map(row => row.slice()) : []
     }));
     model.finalBlocks[zone].push(...copies);
-    state.secondaryGridThree = model;
+    state[key] = model;
     return copies.length > 0;
   }
 
   function clearFinalZoneTrack() {
     const target = blockPasteTarget;
-    if (!target || target.role !== "summary" || target.gridId !== "blankYardGridTwo") return;
+    if (!target || target.role !== "summary" || !["blankYardGrid", "blankYardGridTwo"].includes(target.gridId)) return;
     const zone = target.summaryZone === "mhoas" ? "mhoas" : target.summaryZone === "ihosa" ? "ihosa" : "";
-    if (!zone || !validSecondaryModel(state.secondaryGridThree)) {
+    const key = secondaryGridStateKey(target.gridId);
+    if (!zone || !validSecondaryModel(state[key])) {
       hideBlockContextMenu();
       return;
     }
-    state.secondaryGridThree.finalBlocks = normalizeFinalBlocks(state.secondaryGridThree.finalBlocks);
-    state.secondaryGridThree.finalBlocks[zone] = [];
+    state[key].finalBlocks = normalizeFinalBlocks(state[key].finalBlocks);
+    state[key].finalBlocks[zone] = [];
     blockPasteTarget = null;
     hideBlockContextMenu();
     renderAll();
@@ -8678,15 +8688,32 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       label.className = "tomorrow-inbound-callout";
       label.setAttribute("aria-label", "Tomorrow's Inbound");
       label.textContent = "Tomorrow's Inbound";
+      label.dataset.sourceGrid = grid.id;
+      label.dataset.sourceBlock = String(cell.dataset.blockId || "");
+      label.addEventListener("contextmenu", event => {
+        event.preventDefault();
+        event.stopPropagation();
+        const sourceGrid = document.getElementById(label.dataset.sourceGrid);
+        const sourceCell = sourceGrid && Array.from(sourceGrid.querySelectorAll(".cut-cell[data-block-id]")).find(item => String(item.dataset.blockId || "") === label.dataset.sourceBlock);
+        if (!sourceCell) return;
+        sourceCell.dispatchEvent(new MouseEvent("contextmenu", {bubbles:true, cancelable:true, clientX:event.clientX, clientY:event.clientY, button:2, buttons:2}));
+      });
       document.body.appendChild(label);
       const labelRect = label.getBoundingClientRect();
       const track = String(cell.dataset.track || "");
       const rowKey = `${grid.id}::${track}`;
+      const labelsRight = document.body.classList.contains("excel-followup-labels-right");
+      const remainingCell = Array.from(grid.children).find(item => item.classList && item.classList.contains("track-remaining") && String(item.dataset.track || item.dataset.dropEndTrack || "") === track);
       const rightmost = Array.from(grid.querySelectorAll(".cut-cell[data-block-id]"))
         .filter(item => String(item.dataset.track || "") === track && item.offsetParent)
         .reduce((right, item) => Math.max(right, item.getBoundingClientRect().right), rect.right);
       const offset = rowOffsets[rowKey] || 0;
-      label.style.left = `${window.scrollX + rightmost + 7 + offset}px`;
+      if (labelsRight && remainingCell) {
+        const remainingRect = remainingCell.getBoundingClientRect();
+        label.style.left = `${window.scrollX + remainingRect.left - 7 - offset - labelRect.width}px`;
+      } else {
+        label.style.left = `${window.scrollX + rightmost + 7 + offset}px`;
+      }
       label.style.top = `${window.scrollY + rect.top + (rect.height - labelRect.height) / 2}px`;
       rowOffsets[rowKey] = offset + labelRect.width + 7;
     });
@@ -9339,12 +9366,12 @@ https://github.com/nodeca/pako/blob/main/LICENSE
 
   function inboundTrainTargetKey(target = inboundTrainTarget) {
     if (target === "one") return "";
-    return target === "three" ? "secondaryGridThree" : "secondaryGridTwo";
+    return target === "four" ? "secondaryGridFour" : (target === "three" ? "secondaryGridThree" : "secondaryGridTwo");
   }
 
   function inboundTrainSourceGrid(target = inboundTrainTarget) {
     if (target === "one") return $("#yardGrid");
-    return target === "three" ? $("#blankYardGrid") : $("#yardGrid");
+    return target === "four" ? $("#blankYardGridTwo") : (target === "three" ? $("#blankYardGrid") : $("#yardGrid"));
   }
 
   function inboundTrainPreviewModel() {
@@ -9431,20 +9458,20 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       preview.textContent = "Enter footage, then click a landing track to assign the first shove.";
     } else {
       preview.className = "inbound-train-preview";
-      preview.innerHTML = `<div class="inbound-train-section-label">Placement Preview · ${fmtInt(result.unallocated)} FT left to assign</div>${result.allocations.filter(item => item.assigned > 0).map(item => `<div class="inbound-train-preview-row"><b>${fmtInt(item.assigned)} FT</b><span>${escapeHtml(displayTrain || "Inbound train")} [${item.track}]</span><span>6-${item.track}</span><span class="${item.projected < 0 ? "projected-bad" : "projected-good"}">${fmtInt(item.projected)} FT remaining</span></div>`).join("")}${result.allocations.some(item => item.projected < 0) ? `<div class="inbound-train-overflow">A selected track exceeds its available footage.</div>` : ""}`;
+      preview.innerHTML = `<div class="inbound-train-section-label">${result.unallocated > 0 ? `Placement Preview · ${fmtInt(result.unallocated)} FT unassigned (will be omitted)` : "Placement Preview · Fully assigned"}</div>${result.allocations.filter(item => item.assigned > 0).map(item => `<div class="inbound-train-preview-row"><b>${fmtInt(item.assigned)} FT</b><span>${escapeHtml(displayTrain || "Inbound train")} [${item.track}]</span><span>6-${item.track}</span><span class="${item.projected < 0 ? "projected-bad" : "projected-good"}">${fmtInt(item.projected)} FT remaining</span></div>`).join("")}${result.allocations.some(item => item.projected < 0) ? `<div class="inbound-train-overflow">A selected track exceeds its available footage.</div>` : ""}`;
     }
-    $("#confirmInboundTrain").disabled = !(train && !result.invalidRequest && result.footage > 0 && result.unallocated === 0 && result.allocations.some(item => item.assigned > 0));
+    $("#confirmInboundTrain").disabled = !(train && !result.invalidRequest && result.footage > 0 && result.allocated > 0);
   }
 
   function openInboundTrainModal(target) {
-    inboundTrainTarget = target === "one" ? "one" : target === "three" ? "three" : "two";
+    inboundTrainTarget = target === "one" ? "one" : (target === "four" ? "four" : (target === "three" ? "three" : "two"));
     inboundTrainTrackOrder = [];
     inboundTrainTrackAmounts = {};
     inboundTrainPendingTrack = 0;
     inboundTrainSourceIsPierce = false;
     $("#inboundTrainTargetLabel").textContent = inboundTrainTarget === "one"
       ? "Adding to Table 1 · Current Ramp"
-      : inboundTrainTarget === "three" ? "Adding to Ramp Post Switching" : "Adding to Ramp After Switching";
+      : inboundTrainTarget === "four" ? "Adding to Additional Ramp Table" : (inboundTrainTarget === "three" ? "Adding to Ramp Post Switching" : "Adding to Ramp After Switching");
     $("#inboundTrainName").value = "";
     $("#inboundTrainFootage").value = "";
     populateInboundTrainSources();
@@ -9563,11 +9590,18 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     const stamp = Date.now();
     if (inboundTrainTarget === "one") {
       const inboundSequence = Math.max(0, ...state.rows.map(row => Number(row && row[INBOUND_SEQUENCE_INDEX]) || 0)) + 1;
+      const nextTrackSequence = new Map(TRACKS.map(track => [track,
+        Math.max(0, ...state.rows
+          .filter(row => Number(row && row[0]) === track)
+          .map(row => Number(row && row[1]) || 0)) + 1
+      ]));
       let added = 0;
       result.allocations.forEach((item,index)=>{
         if (item.assigned <= 0) return;
         const label = `${fmtInt(item.assigned)} ${displayTrain} [${item.track}]`;
         const row = syntheticPrimaryRow({footage:item.assigned,title:label,content:escapeHtml(label)},item.track,`inbound-${stamp}-${item.track}-${index}`);
+        row[1] = nextTrackSequence.get(item.track) || 1;
+        nextTrackSequence.set(item.track, Number(row[1]) + 1);
         row[2] = `INBOUND-${stamp}-${index + 1}`;
         row[6] = "CU";
         row[10] = displayTrain;
@@ -10582,6 +10616,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   });
   window.addEventListener("scroll", () => requestAnimationFrame(decorateTomorrowInboundBlocks), true);
   window.addEventListener("resize", () => requestAnimationFrame(decorateTomorrowInboundBlocks));
+  document.addEventListener("excel-followup-label-position-change", () => requestAnimationFrame(decorateTomorrowInboundBlocks));
   try {
     if (window.parent !== window) window.parent.addEventListener("scroll", () => requestAnimationFrame(decorateTomorrowInboundBlocks), true);
   } catch (_) {}

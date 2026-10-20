@@ -6363,6 +6363,68 @@ body.excel-page-2 .blank-grid-separator:first-of-type{margin-top:10px!important}
       total.appendChild(utilization);
     });
   }
+  function preparePage2PngRemainingCapacity(clonedDocument){
+    var selector="#yardGrid > .track-remaining, .excel-page2-secondary-grid > .track-remaining";
+    var sourceCells=document.querySelectorAll(selector);
+    Array.prototype.forEach.call(clonedDocument.querySelectorAll(selector),function(cell,index){
+      var source=sourceCells[index];
+      if(!source)return;
+      var sourceStyle=getComputedStyle(source);
+      var color=sourceStyle.getPropertyValue("--excel-page2-remaining-bg").trim()||sourceStyle.backgroundColor||"#dfe9e3";
+      cell.style.setProperty("background",color,"important");
+      cell.style.setProperty("background-image","none","important");
+      cell.style.setProperty("color",sourceStyle.color||"#101820","important");
+      cell.style.setProperty("-webkit-text-fill-color",sourceStyle.color||"#101820","important");
+    });
+  }
+  /* Body-level follow-up labels float outside the captured dashboard node.
+     Re-home export-only copies inside the cloned panel at the same coordinates. */
+  function preparePage2PngTomorrowInboundLabels(clonedDocument,labels){
+    var clonedPanel=clonedDocument.querySelector("#excelWorkspace>.dashboard-panel");
+    if(!clonedPanel||!Array.isArray(labels)||!labels.length)return;
+    clonedPanel.style.setProperty("position","relative","important");
+    Array.prototype.forEach.call(clonedDocument.querySelectorAll("body > .tomorrow-inbound-callout"),function(label){label.remove()});
+    labels.forEach(function(item){
+      var label=clonedDocument.createElement("span");
+      label.className="tomorrow-inbound-callout excel-page2-png-tomorrow-inbound";
+      label.setAttribute("aria-label","Tomorrow's Inbound");
+      label.textContent="Tomorrow's Inbound";
+      label.style.setProperty("position","absolute","important");
+      label.style.setProperty("left",item.left+"px","important");
+      label.style.setProperty("top",item.top+"px","important");
+      label.style.setProperty("display","inline-flex","important");
+      label.style.setProperty("visibility","visible","important");
+      label.style.setProperty("opacity","1","important");
+      label.style.setProperty("pointer-events","none","important");
+      clonedPanel.appendChild(label);
+    });
+  }
+  function collectPage2PngTomorrowInboundLabels(panel,panelRect){
+    var records={};
+    try{records=JSON.parse(localStorage.getItem("settegast-excel-tomorrow-inbound-markers-v1")||"{}")||{}}catch(error){records={}}
+    var measure=document.createElement("span");
+    measure.className="tomorrow-inbound-callout";
+    measure.textContent="Tomorrow's Inbound";
+    measure.style.cssText="position:absolute!important;left:-10000px!important;top:-10000px!important;display:inline-flex!important;visibility:hidden!important";
+    document.body.appendChild(measure);
+    var measureRect=measure.getBoundingClientRect(),labelWidth=Math.max(1,measureRect.width||measure.offsetWidth||132),labelHeight=Math.max(1,measureRect.height||measure.offsetHeight||23);
+    measure.remove();
+    var labelsRight=document.body.classList.contains("excel-followup-labels-right"),rowOffsets={},labels=[];
+    Array.prototype.forEach.call(panel.querySelectorAll(".yard-grid .cut-cell[data-block-id]"),function(cell){
+      var grid=cell.closest(".yard-grid"),blockId=String(cell.dataset.blockId||"");
+      if(!grid||!records[String(grid.id||"")+"::"+blockId])return;
+      var rect=cell.getBoundingClientRect(),track=String(cell.dataset.track||""),rowKey=grid.id+"::"+track,offset=rowOffsets[rowKey]||0;
+      var rowCells=Array.prototype.filter.call(grid.querySelectorAll(".cut-cell[data-block-id]"),function(item){return String(item.dataset.track||"")===track});
+      var rightmost=rowCells.reduce(function(right,item){return Math.max(right,item.getBoundingClientRect().right)},rect.right);
+      var remainingCell=Array.prototype.find.call(grid.children,function(item){return item.classList&&item.classList.contains("track-remaining")&&String(item.dataset.track||item.dataset.dropEndTrack||"")===track});
+      var left;
+      if(labelsRight&&remainingCell)left=remainingCell.getBoundingClientRect().left-panelRect.left-7-offset-labelWidth;
+      else left=rightmost-panelRect.left+7+offset;
+      labels.push({left:left,top:rect.top-panelRect.top+(rect.height-labelHeight)/2,right:panelRect.left+left+labelWidth});
+      rowOffsets[rowKey]=offset+labelWidth+7;
+    });
+    return labels;
+  }
   async function exportPage2Png(){
     if(!page2Enabled||!exportPngButton)return;
     var originalText=exportPngButton.textContent;
@@ -6376,12 +6438,21 @@ body.excel-page-2 .blank-grid-separator:first-of-type{margin-top:10px!important}
       if(typeof renderer!=="function")throw new Error("PNG renderer unavailable");
       var panelRect=panel.getBoundingClientRect();
       var layoutWidth=Math.max(1,Math.ceil(panelRect.width));
-      var width=Math.max(layoutWidth,Math.ceil(panel.scrollWidth));
-      Array.prototype.forEach.call(panel.querySelectorAll(".grid-wrap"),function(wrap){width=Math.max(width,Math.ceil(wrap.scrollWidth),Math.ceil(wrap.getBoundingClientRect().width))});
+      var pngTomorrowInboundLabels=collectPage2PngTomorrowInboundLabels(panel,panelRect);
+      /* Match the live Page 2 layout, then extend only the capture canvas for
+         any sticky right-edge cells that visibly overhang the panel. */
+      var visibleRight=panelRect.right;
+      Array.prototype.forEach.call(panel.querySelectorAll(".track-remaining,.third-summary-average,.excel-page2-summary-edge"),function(edge){
+        var edgeRect=edge.getBoundingClientRect();
+        if(edgeRect.width>0&&edgeRect.height>0)visibleRight=Math.max(visibleRight,edgeRect.right);
+      });
+      pngTomorrowInboundLabels.forEach(function(item){visibleRight=Math.max(visibleRight,item.right)});
+      var rightOverflow=Math.max(2,Math.ceil(visibleRight-panelRect.right)+2);
+      var width=layoutWidth+rightOverflow;
       var height=Math.max(1,Math.ceil(panel.scrollHeight));
       var viewportWidth=Math.max(1,Math.ceil(window.innerWidth||document.documentElement.clientWidth||layoutWidth));
       var viewportHeight=Math.max(1,Math.ceil(window.innerHeight||document.documentElement.clientHeight||height));
-      var captureWindowWidth=Math.max(viewportWidth,width);
+      var captureWindowWidth=viewportWidth;
       var canvas=await renderer(panel,{
         backgroundColor:"#f3f5f6",
         scale:1.5,
@@ -6403,11 +6474,13 @@ body.excel-page-2 .blank-grid-separator:first-of-type{margin-top:10px!important}
           var clonedShadingButton=clonedDocument.getElementById("excelPage2RowShadingToggle");
           if(clonedShadingButton)clonedShadingButton.remove();
           [clonedOverview,clonedLegend].forEach(function(element){if(element){element.style.setProperty("position","static","important");element.style.setProperty("top","auto","important")}});
-          if(clonedWorkspace){clonedWorkspace.style.setProperty("display","block","important");clonedWorkspace.style.setProperty("width",width+"px","important");clonedWorkspace.style.setProperty("max-width","none","important")}
-          if(clonedPanel){clonedPanel.style.setProperty("width",width+"px","important");clonedPanel.style.setProperty("max-width","none","important");clonedPanel.style.setProperty("overflow","visible","important")}
-          Array.prototype.forEach.call(clonedDocument.querySelectorAll("#excelWorkspace .grid-wrap"),function(gridWrap){gridWrap.style.setProperty("width",width+"px","important");gridWrap.style.setProperty("max-width","none","important");gridWrap.style.setProperty("overflow","visible","important");gridWrap.scrollLeft=0});
-           preparePage2PngTrackReadouts(clonedDocument);
+          if(clonedWorkspace){clonedWorkspace.style.setProperty("display","block","important");clonedWorkspace.style.setProperty("width",layoutWidth+"px","important");clonedWorkspace.style.setProperty("max-width","none","important")}
+          if(clonedPanel){clonedPanel.style.setProperty("width",layoutWidth+"px","important");clonedPanel.style.setProperty("max-width","none","important");clonedPanel.style.setProperty("overflow","visible","important")}
+          Array.prototype.forEach.call(clonedDocument.querySelectorAll("#excelWorkspace .grid-wrap"),function(gridWrap){gridWrap.style.setProperty("width",layoutWidth+"px","important");gridWrap.style.setProperty("max-width","none","important");gridWrap.style.setProperty("overflow","visible","important");gridWrap.scrollLeft=0});
+          preparePage2PngRemainingCapacity(clonedDocument);
+          preparePage2PngTrackReadouts(clonedDocument);
           preparePage2PngInboundSummary(clonedDocument);
+          preparePage2PngTomorrowInboundLabels(clonedDocument,pngTomorrowInboundLabels);
         }
       });
       await downloadPage2Png(canvas);
@@ -6621,6 +6694,7 @@ body.excel-page-2 .blank-grid-separator:first-of-type{margin-top:10px!important}
       {id:"hideTrackIdsToggle",closest:"label"},
       {id:"hideDwellToggle",closest:"label"},
       {id:"showInboundTrainToggle",closest:"label"},
+      {id:"moveFollowUpLabels"},
       {id:"importFileBtnTop",after:"toggleSplitView"},
       {id:"addInboundTableOneBtn",after:"importFileBtnTop"},
       {id:"viewPicker"}
@@ -6944,7 +7018,7 @@ body.excel-page-2 .excel-page2-stage-separator{position:relative!important;z-ind
 body.excel-page-2 .excel-page2-stage-separator>strong{position:relative!important;z-index:1!important;display:flex!important;height:100%!important;align-items:center!important;align-self:stretch!important;margin:0!important;padding:0!important;overflow:visible!important;color:#fff!important;font:950 13px/1.1 "Arial Narrow","Segoe UI",Arial,sans-serif!important;letter-spacing:.04em!important;white-space:nowrap!important}
 body.excel-page-2 .excel-page2-stage-separator>.copy-grid-actions{position:sticky!important;top:auto!important;right:118px!important;bottom:auto!important;left:auto!important;z-index:2!important;display:flex!important;height:25px!important;margin:0 0 0 auto!important;align-items:center!important;align-self:center!important;justify-content:flex-end!important;gap:5px!important;overflow:visible!important}
 body.excel-page-2 .excel-page2-stage-separator>.copy-grid-actions>button{width:auto!important;max-width:none!important;min-height:25px!important;height:25px!important;padding:0 9px!important;border-radius:3px!important;font:950 8px/1 "Arial Narrow","Segoe UI",Arial,sans-serif!important;letter-spacing:.04em!important;white-space:nowrap!important}
-body.excel-page-2 .excel-page2-secondary-grid{position:relative!important;grid-template-columns:68px 231px repeat(10,140.5536px) minmax(0,1fr) 98px!important;grid-auto-flow:row!important;min-width:1802.536px!important;width:100%!important;margin:0 0 8px!important;border:0!important;border-radius:0!important;background:#f6f8f9!important;box-shadow:none!important;overflow:visible!important;font-family:"Arial Narrow","Segoe UI",Arial,sans-serif!important}
+body.excel-page-2 .excel-page2-secondary-grid{--excel-page2-block-width:140.5536px;position:relative!important;grid-template-columns:68px 231px repeat(10,var(--excel-page2-block-width)) minmax(0,1fr) 98px!important;grid-auto-flow:row!important;min-width:1802.536px!important;width:100%!important;margin:0 0 8px!important;border:0!important;border-radius:0!important;background:#f6f8f9!important;box-shadow:none!important;overflow:visible!important;font-family:"Arial Narrow","Segoe UI",Arial,sans-serif!important}
 body.excel-page-2 #blankYardGridTwo.excel-page2-secondary-grid:before{content:"";display:block!important;grid-column:1/-1!important;grid-row:4!important;height:8px!important;min-height:8px!important;margin:0!important;padding:0!important;background:#050505!important;pointer-events:none!important}
 body.excel-page-2 #excelWorkspace .excel-page2-secondary-grid>.excel-page2-track-head,
 body.excel-page-2 #excelWorkspace .excel-page2-secondary-grid>.excel-page2-ruler-head,
@@ -7016,7 +7090,7 @@ body.excel-page-2 #blankYardGridTwo>.excel-page2-final-track{background-color:#f
 body.excel-page-2 #blankYardGridTwo>.third-summary-total.excel-page2-final-track{background-color:#fff1bd!important}
 body.excel-page-2 #blankYardGridTwo .final-summary-block{height:30px!important;min-height:30px!important;max-height:30px!important;box-sizing:border-box!important}
 body.excel-page-2 #blankYardGridTwo>.third-summary-blank.final-paste-zone{width:var(--excel-page2-final-zone-width,calc(100vw - 397px))!important;min-width:0!important;max-width:100%!important;justify-self:start!important;box-sizing:border-box!important}
-#blankYardGridTwo .final-block-list{grid-template-columns:repeat(4,minmax(0,1fr))!important;grid-auto-rows:30px!important;min-width:0!important;max-width:100%!important}
+#blankYardGridTwo .final-block-list{width:100%!important;grid-template-columns:repeat(auto-fill,var(--excel-page2-block-width,140.5536px))!important;grid-auto-rows:30px!important;min-width:0!important;max-width:100%!important;justify-self:stretch!important}
 body.excel-page-2 #blankYardGridTwo>.third-summary-average,
 body.excel-page-2 #blankYardGridTwo>.excel-page2-summary-edge,
 body.excel-page-2 #yardGrid>.track-remaining,
@@ -7075,8 +7149,8 @@ body.excel-page-2 .excel-page2-secondary-grid>.track-remaining{position:sticky!i
   /* excel-page2-all-table-composition-colors-v1 */
   function rulerColorFor(cell,category){var colors={sand:"#dec48b",purple:"#5d2a92",red:"#df3e2d",dark:"#141a1e",other:"#8796a0"};var source=String(cell&&cell.style&&cell.style.getPropertyValue("--excel-page2-source-bg")||"").trim();var tokens=source.match(/#[0-9a-f]{3,8}|rgba?[(][^)]*[)]|hsla?[(][^)]*[)]/ig);if(tokens&&tokens.length)return tokens[Math.floor(tokens.length/2)];return colors[category]||colors.other}
   function rulerPaint(entries,capacity){var colors={sand:"#dec48b",purple:"#5d2a92",red:"#df3e2d",dark:"#141a1e",other:"#8796a0"},cursor=0,stops=[],dots=["radial-gradient(circle at 1% 82%,#f8fafc 0 2px,#60717d 2.2px 3.3px,transparent 3.6px)"];entries.forEach(function(entry){var start=Math.max(0,Math.min(100,cursor));cursor+=capacity>0?entry.footage/capacity*100:0;var end=Math.max(start,Math.min(100,cursor));if(end>start){var color=entry.color||colors[entry.category]||colors.other;stops.push(color+" "+start.toFixed(3)+"%",color+" "+end.toFixed(3)+"%");dots.push("radial-gradient(circle at "+end.toFixed(3)+"% 82%,#f8fafc 0 2px,#60717d 2.2px 3.3px,transparent 3.6px)")}});var filled=Math.max(0,Math.min(100,cursor));stops.push("transparent "+filled.toFixed(3)+"%","transparent 100%");return {segments:"linear-gradient(90deg,"+stops.join(",")+")",dots:dots.join(",")}}
-  function decorateTenThousandFootTracks(grid){if(!grid||grid.id!=="blankYardGridTwo")return;Array.prototype.forEach.call(grid.querySelectorAll(":scope > .third-summary-total"),function(total){var used=numberText(total.textContent),capacity=10000,percent=Math.max(0,Math.round(used/capacity*100));total.setAttribute("data-page2-used",formatNumber(used));total.setAttribute("data-page2-capacity",formatNumber(capacity));total.setAttribute("data-page2-percent",String(percent));total.style.setProperty("--excel-page2-summary-fill",Math.min(100,percent)+"%");var cell=total.previousElementSibling;while(cell&&!cell.classList.contains("third-summary-head")){cell.classList.add("excel-page2-final-track");cell=cell.nextElementSibling;if(cell&&cell!==total&&cell.classList.contains("third-summary-label"))break}})}
-  function sizeFinalSummaryZones(grid){if(!grid||grid.id!=="blankYardGridTwo")return;var wrap=grid.closest(".grid-wrap"),viewportWidth=wrap&&wrap.clientWidth||document.documentElement.clientWidth||window.innerWidth||0,scrollLeft=wrap&&wrap.scrollLeft||0,zoneWidth=Math.max(0,Math.floor(viewportWidth-68-231-98+scrollLeft));if(zoneWidth)grid.style.setProperty("--excel-page2-final-zone-width",zoneWidth+"px");else grid.style.removeProperty("--excel-page2-final-zone-width")}
+  function decorateTenThousandFootTracks(grid){if(!grid||!(grid.id==="blankYardGridTwo"||grid.classList.contains("outbound-departures-visible")))return;Array.prototype.forEach.call(grid.querySelectorAll(":scope > .third-summary-total"),function(total){var used=numberText(total.textContent),capacity=10000,percent=Math.max(0,Math.round(used/capacity*100));total.setAttribute("data-page2-used",formatNumber(used));total.setAttribute("data-page2-capacity",formatNumber(capacity));total.setAttribute("data-page2-percent",String(percent));total.style.setProperty("--excel-page2-summary-fill",Math.min(100,percent)+"%");var cell=total.previousElementSibling;while(cell&&!cell.classList.contains("third-summary-head")){cell.classList.add("excel-page2-final-track");cell=cell.nextElementSibling;if(cell&&cell!==total&&cell.classList.contains("third-summary-label"))break}})}
+  function sizeFinalSummaryZones(grid){if(!grid||!(grid.id==="blankYardGridTwo"||grid.classList.contains("outbound-departures-visible")))return;var wrap=grid.closest(".grid-wrap"),viewportWidth=wrap&&wrap.clientWidth||document.documentElement.clientWidth||window.innerWidth||0,scrollLeft=wrap&&wrap.scrollLeft||0,zoneWidth=Math.max(0,Math.floor(viewportWidth-68-231-98+scrollLeft));if(zoneWidth)grid.style.setProperty("--excel-page2-final-zone-width",zoneWidth+"px");else grid.style.removeProperty("--excel-page2-final-zone-width")}
   function ensureTenCutColumns(grid){
     var firstLabel=grid&&grid.querySelector(":scope > .track-label[data-track]");
     if(!firstLabel)return;
@@ -7094,7 +7168,7 @@ body.excel-page-2 .excel-page2-secondary-grid>.track-remaining{position:sticky!i
   }
   function rowCells(label){var row=[label],node=label.nextElementSibling;while(node&&row.length<13){row.push(node);node=node.nextElementSibling}return row.length===13?row:[]}
   function syncStageActions(grid){var separator=grid.previousElementSibling;if(!separator||!separator.classList.contains("blank-grid-separator"))return;separator.classList.add("excel-page2-stage-separator");var incoming=grid.querySelector(":scope > .copy-grid-head .copy-grid-actions");if(!incoming)return;var existing=separator.querySelector(":scope > .copy-grid-actions");if(existing&&existing!==incoming)existing.remove();if(grid.id==="blankYardGrid"||grid.id==="blankYardGridThree"){var outbound=grid.querySelector("#openOutboundUnits");if(outbound)incoming.insertBefore(outbound,incoming.firstChild)}separator.appendChild(incoming)}
-  function decorateHeader(grid){var header=[],thirdHeads=[];if(grid.id==="blankYardGridTwo"){thirdHeads=Array.prototype.slice.call(grid.querySelectorAll(":scope > .third-summary-head"));header=thirdHeads.slice(-5);if(thirdHeads[3])thirdHeads[3].classList.add("excel-page2-summary-edge")}else{var firstTrack=grid.querySelector(":scope > .track-label[data-track]"),children=Array.prototype.slice.call(grid.children),trackAt=children.indexOf(firstTrack);if(trackAt>=13)header=children.slice(trackAt-13,trackAt)}if(header.length<5)return;var last=grid.id==="blankYardGridTwo"?4:12;var decorated=header[0].classList.contains("excel-page2-track-head")&&Boolean(header[1].querySelector(":scope > .excel-page2-ruler-ticks"))&&header[2].classList.contains("excel-page2-blocks-head")&&header[last]&&header[last].classList.contains("excel-page2-remaining-head");if(decorated)return;Array.prototype.forEach.call(grid.querySelectorAll(":scope > .excel-page2-track-head,:scope > .excel-page2-ruler-head,:scope > .excel-page2-blocks-head,:scope > .excel-page2-remaining-head,:scope > .excel-page2-head-hidden"),function(cell){cell.classList.remove("excel-page2-track-head","excel-page2-ruler-head","excel-page2-blocks-head","excel-page2-remaining-head","excel-page2-head-hidden")});header[0].textContent="";header[0].classList.add("excel-page2-track-head");header[1].classList.add("excel-page2-ruler-head");header[1].innerHTML='<span class="excel-page2-ruler-ticks"><i>0</i><i>500</i><i>1,000</i><i>1,500</i><i>2,000</i><i>2,500</i><i>2,750</i></span>';header[2].textContent="";header[2].classList.add("excel-page2-blocks-head");if(grid.id==="blankYardGridTwo"){header[3].classList.add("excel-page2-head-hidden");header[4].textContent="";header[4].classList.add("excel-page2-remaining-head")}else{for(var index=3;index<12;index+=1)header[index].classList.add("excel-page2-head-hidden");header[12].textContent="";header[12].classList.add("excel-page2-remaining-head")}}
+  function decorateHeader(grid){var header=[],thirdHeads=[],summaryVisible=grid.id==="blankYardGridTwo"||grid.classList.contains("outbound-departures-visible");if(summaryVisible){thirdHeads=Array.prototype.slice.call(grid.querySelectorAll(":scope > .third-summary-head"));header=thirdHeads.slice(-5);if(thirdHeads[3])thirdHeads[3].classList.add("excel-page2-summary-edge")}else{var firstTrack=grid.querySelector(":scope > .track-label[data-track]"),children=Array.prototype.slice.call(grid.children),trackAt=children.indexOf(firstTrack);if(trackAt>=13)header=children.slice(trackAt-13,trackAt)}if(header.length<5)return;var last=summaryVisible?4:12;var decorated=header[0].classList.contains("excel-page2-track-head")&&Boolean(header[1].querySelector(":scope > .excel-page2-ruler-ticks"))&&header[2].classList.contains("excel-page2-blocks-head")&&header[last]&&header[last].classList.contains("excel-page2-remaining-head");if(decorated)return;Array.prototype.forEach.call(grid.querySelectorAll(":scope > .excel-page2-track-head,:scope > .excel-page2-ruler-head,:scope > .excel-page2-blocks-head,:scope > .excel-page2-remaining-head,:scope > .excel-page2-head-hidden"),function(cell){cell.classList.remove("excel-page2-track-head","excel-page2-ruler-head","excel-page2-blocks-head","excel-page2-remaining-head","excel-page2-head-hidden")});header[0].textContent="";header[0].classList.add("excel-page2-track-head");header[1].classList.add("excel-page2-ruler-head");header[1].innerHTML='<span class="excel-page2-ruler-ticks"><i>0</i><i>500</i><i>1,000</i><i>1,500</i><i>2,000</i><i>2,500</i><i>2,750</i></span>';header[2].textContent="";header[2].classList.add("excel-page2-blocks-head");if(summaryVisible){header[3].classList.add("excel-page2-head-hidden");header[4].textContent="";header[4].classList.add("excel-page2-remaining-head")}else{for(var index=3;index<12;index+=1)header[index].classList.add("excel-page2-head-hidden");header[12].textContent="";header[12].classList.add("excel-page2-remaining-head")}}
   function decorateGrid(grid){
     syncStageActions(grid);
     grid.classList.add("excel-page2-secondary-grid");
@@ -7130,7 +7204,7 @@ body.excel-page-2 .excel-page2-secondary-grid>.track-remaining{position:sticky!i
     });
   }
   function stabilizeTrackRows(grid){
-    var firstRow=grid.id==="blankYardGridTwo"?5:1;
+    var firstRow=(grid.id==="blankYardGridTwo"||grid.classList.contains("outbound-departures-visible"))?5:1;
     Array.prototype.forEach.call(grid.querySelectorAll(":scope > .track-label[data-track]"),function(label,rowIndex){
       rowCells(label).forEach(function(cell){cell.style.gridRow=String(firstRow+rowIndex)});
     });
@@ -10153,7 +10227,7 @@ document.addEventListener("DOMContentLoaded",function(){
   .consolidation-explanation-target[data-label="MHOAS"]{background:var(--mhoas-block-color,#4338ca)!important}
   .consolidation-explanation-target[data-label="SS"]{background:#7e22ce!important}
   .consolidation-explanation-target[data-label="PIERCE"]{background:var(--pierce-block-color,#be185d)!important}
-  .consolidation-explanation-followup-label{position:absolute;z-index:18;top:50%;display:inline-flex;align-items:center;padding:4px 7px;border:1px solid #64748b;border-radius:5px;background:#111827;color:#e2e8f0;box-shadow:0 3px 10px rgba(15,23,42,.35);font:900 10px/1 "Segoe UI",Arial,sans-serif;white-space:nowrap;transform:translateY(-50%);pointer-events:none}
+  .consolidation-explanation-followup-label{position:absolute;z-index:18;top:50%;display:inline-flex;align-items:center;padding:4px 7px;border:1px solid #64748b;border-radius:5px;background:#111827;color:#e2e8f0!important;-webkit-text-fill-color:#e2e8f0!important;visibility:visible!important;opacity:1!important;box-shadow:0 3px 10px rgba(15,23,42,.35);font:900 10px/1 "Segoe UI",Arial,sans-serif;white-space:nowrap;transform:translateY(-50%);pointer-events:none}
   .consolidation-explanation-followup-label[data-label="IHOSA"]{border-color:#22c55e!important;background:#052e16!important;color:#86efac!important;-webkit-text-fill-color:#86efac!important}
   .consolidation-explanation-followup-label[data-label="MHOAS"]{border-color:#3b82f6!important;background:#172554!important;color:#93c5fd!important;-webkit-text-fill-color:#93c5fd!important}
   .yard-grid>.cut-cell.consolidation-explanation-host{overflow:visible!important;z-index:7!important}
@@ -11669,6 +11743,14 @@ document.addEventListener('click',function(event){
       if (!html.includes('class="inbound-shove-flag') || !html.includes("function confirmInboundTrain()")) return html;
       let updated = html;
       updated = updated.replace(
+        '      const manualSegment = clean(row[MANUAL_BLOCK_SEGMENT_INDEX]);\n      const key = manualSegment\n        ? `${track}|manual|${manualSegment}`\n        : `${track}|${status}|${days}|${hours}|`;',
+        '      const manualSegment = clean(row[MANUAL_BLOCK_SEGMENT_INDEX]);\n      const inboundIdentity = clean(row[10]).toUpperCase();\n      const key = manualSegment\n        ? `${track}|manual|${manualSegment}|${inboundIdentity}`\n        : `${track}|${status}|${days}|${hours}|${inboundIdentity}`;'
+      );
+      updated = updated.replace(
+        '      const manualSegment = clean(row[MANUAL_BLOCK_SEGMENT_INDEX]);\n      const key = `${track}|${status}|${days}|${hours}|${manualSegment}`;',
+        '      const manualSegment = clean(row[MANUAL_BLOCK_SEGMENT_INDEX]);\n      const inboundIdentity = clean(row[10]).toUpperCase();\n      const key = `${track}|${status}|${days}|${hours}|${manualSegment}|${inboundIdentity}`;'
+      );
+      updated = updated.replace(
         "  let inboundTrainTrackOrder = [];",
         "  let inboundTrainTrackOrder = [];\n  let inboundTrainSourceIsPierce = false;"
       );
@@ -11808,11 +11890,14 @@ document.addEventListener('click',function(event){
         .replace('      secondaryGridTwo: state.secondaryGridTwo,\n      secondaryGridThree: state.secondaryGridThree\n    });', '      secondaryGridTwo: state.secondaryGridTwo,\n      secondaryGridThree: state.secondaryGridThree,\n      secondaryGridFour: state.secondaryGridFour,\n      fourthRampTableVisible: state.fourthRampTableVisible === true\n    });')
         .replace('const id = target === "three" ? "copyTableTwoToThree" : "copyTableOneToTwo";', 'const id = target === "four" ? "copyTableThreeToFour" : (target === "three" ? "copyTableTwoToThree" : "copyTableOneToTwo");')
         .replace('return target === "three" ? "secondaryGridThree" : "secondaryGridTwo";', 'return target === "four" ? "secondaryGridFour" : (target === "three" ? "secondaryGridThree" : "secondaryGridTwo");')
-        .replace('return gridId === "blankYardGridTwo" ? "secondaryGridThree" : "secondaryGridTwo";', 'return gridId === "blankYardGridThree" ? "secondaryGridFour" : (gridId === "blankYardGridTwo" ? "secondaryGridThree" : "secondaryGridTwo");')
         .replace('return target === "three" ? $("#blankYardGrid") : $("#yardGrid");', 'return target === "four" ? $("#blankYardGridTwo") : (target === "three" ? $("#blankYardGrid") : $("#yardGrid"));')
+        .replace('return gridId === "blankYardGridTwo" ? "secondaryGridThree" : "secondaryGridTwo";', 'return gridId === "blankYardGridThree" ? "secondaryGridFour" : (gridId === "blankYardGridTwo" ? "secondaryGridThree" : "secondaryGridTwo");')
         .replace('["yardGrid", "blankYardGrid", "blankYardGridTwo"].forEach(gridId => {', '["yardGrid", "blankYardGrid", "blankYardGridTwo", "blankYardGridThree"].forEach(gridId => {')
         .replace('document.querySelectorAll("#yardGrid [data-block-id], #blankYardGrid [data-block-id], #blankYardGridTwo [data-block-id]")', 'document.querySelectorAll("#yardGrid [data-block-id], #blankYardGrid [data-block-id], #blankYardGridTwo [data-block-id], #blankYardGridThree [data-block-id]")')
         .replace('inboundTrainTarget = target === "three" ? "three" : "two";', 'inboundTrainTarget = target === "four" ? "four" : (target === "three" ? "three" : "two");')
+        .replace('inboundTrainTarget = target === "one" ? "one" : target === "three" ? "three" : "two";', 'inboundTrainTarget = target === "one" ? "one" : (target === "four" ? "four" : (target === "three" ? "three" : "two"));')
+        .replace('    $("#inboundTrainTargetLabel").textContent = inboundTrainTarget === "one"\n      ? "Adding to Table 1 · Current Ramp"\n      : inboundTrainTarget === "three" ? "Adding to Ramp Post Switching" : "Adding to Ramp After Switching";', '    $("#inboundTrainTargetLabel").textContent = inboundTrainTarget === "one"\n      ? "Adding to Table 1 · Current Ramp"\n      : inboundTrainTarget === "four" ? "Adding to Additional Ramp Table" : (inboundTrainTarget === "three" ? "Adding to Ramp Post Switching" : "Adding to Ramp After Switching");')
+        .replace('    $("#inboundTrainTargetLabel").textContent = inboundTrainTarget === "one"\n      ? "Adding to Table 1 · Current Ramp"\n      : inboundTrainTarget === "three" ? "Adding to Ramp After Switching" : "Adding to Ramp Overview";', '    $("#inboundTrainTargetLabel").textContent = inboundTrainTarget === "one"\n      ? "Adding to Table 1 · Current Ramp"\n      : inboundTrainTarget === "four" ? "Adding to Additional Ramp Table" : (inboundTrainTarget === "three" ? "Adding to Ramp After Switching" : "Adding to Ramp Overview");')
         .replace('$("#inboundTrainTargetLabel").textContent = inboundTrainTarget === "three" ? "Adding to Ramp After Switching" : "Adding to Ramp Overview";', '$("#inboundTrainTargetLabel").textContent = inboundTrainTarget === "four" ? "Adding to Additional Ramp Table" : (inboundTrainTarget === "three" ? "Adding to Ramp After Switching" : "Adding to Ramp Overview");')
         .replace('$("#inboundTrainTargetLabel").textContent = inboundTrainTarget === "three" ? "Adding to Ramp Post Switching" : "Adding to Ramp After Switching";', '$("#inboundTrainTargetLabel").textContent = inboundTrainTarget === "four" ? "Adding to Additional Ramp Table" : (inboundTrainTarget === "three" ? "Adding to Ramp Post Switching" : "Adding to Ramp After Switching");')
         .replace('const target = clearSecondaryTableButton.dataset.clearSecondaryTable === "three" ? "three" : "two";', 'const requestedTarget = clearSecondaryTableButton.dataset.clearSecondaryTable;\n      const target = requestedTarget === "four" ? "four" : (requestedTarget === "three" ? "three" : "two");')
@@ -11834,6 +11919,181 @@ document.addEventListener('click',function(event){
 </style>`;
       const headClose = patched.toLowerCase().indexOf("</head>");
       return headClose >= 0 ? patched.slice(0, headClose) + styles + "\n" + patched.slice(headClose) : styles + patched;
+    }
+
+    function withExcelOutboundDepartureToggles(html) {
+      const marker = "excel-outbound-departure-toggles-v1";
+      if (!html || typeof html !== "string" || html.includes(marker)) return html;
+      if (!html.includes('id="blankYardGrid"') || !html.includes('id="blankYardGridTwo"') || !html.includes('function thirdGridSummaryCells')) return html;
+      let updated = html;
+      updated = updated.replace(
+        /(<div class="blank-grid-separator"><strong class="blank-grid-title">[^<]*<\/strong>)(<\/div>\s*<div class="yard-grid blank-yard-grid" id="blankYardGrid")/,
+        '$1<button type="button" class="outbound-departure-toggle" data-outbound-departure-toggle="two" aria-expanded="false">Outbound</button>$2'
+      );
+      updated = updated.replace(
+        /(<div class="blank-grid-separator"><strong class="blank-grid-title">[^<]*<\/strong>)(<\/div>\s*<div class="yard-grid blank-yard-grid" id="blankYardGridTwo")/,
+        '$1<button type="button" class="outbound-departure-toggle" data-outbound-departure-toggle="three" aria-expanded="false">Outbound</button>$2'
+      );
+      const scopedFinalPasteHandlers = `  function pasteBlocksIntoFinal(payload, target) {
+    if (!validBlockClipboard(payload) || !["blankYardGrid", "blankYardGridTwo"].includes(target.gridId)) return false;
+    const zone = target.summaryZone === "mhoas" ? "mhoas" : target.summaryZone === "ihosa" ? "ihosa" : "";
+    if (!zone) return false;
+    const key = secondaryGridStateKey(target.gridId);
+    const model = validSecondaryModel(state[key]) ? state[key] : emptySecondaryModel();
+    model.finalBlocks = normalizeFinalBlocks(model.finalBlocks);
+    const copies = payload.blocks.map(block => normalizeFinalBlock({
+      ...block,
+      id:"",
+      sourceRows:Array.isArray(block.sourceRows) ? block.sourceRows.map(row => row.slice()) : []
+    }));
+    model.finalBlocks[zone].push(...copies);
+    state[key] = model;
+    return copies.length > 0;
+  }
+
+  function clearFinalZoneTrack() {
+    const target = blockPasteTarget;
+    if (!target || target.role !== "summary" || !["blankYardGrid", "blankYardGridTwo"].includes(target.gridId)) return;
+    const zone = target.summaryZone === "mhoas" ? "mhoas" : target.summaryZone === "ihosa" ? "ihosa" : "";
+    const key = secondaryGridStateKey(target.gridId);
+    if (!zone || !validSecondaryModel(state[key])) {
+      hideBlockContextMenu();
+      return;
+    }
+    state[key].finalBlocks = normalizeFinalBlocks(state[key].finalBlocks);
+    state[key].finalBlocks[zone] = [];
+    blockPasteTarget = null;
+    hideBlockContextMenu();
+    renderAll();
+  }`;
+      updated = updated.replace(
+        /  function pasteBlocksIntoFinal\(payload, target\) \{[\s\S]*?\n  \}\n\n  function clearFinalZoneTrack\(\) \{[\s\S]*?\n  \}/,
+        scopedFinalPasteHandlers
+      );
+      const scopedRenderer = `  const outboundDepartureVisibilityKey = "conglobal-excel-outbound-departure-visibility-v1";
+  const outboundDepartureVisibility = (() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(outboundDepartureVisibilityKey) || "{}");
+      return { two: saved.two === true, three: saved.three === true };
+    } catch (_) { return { two: false, three: false }; }
+  })();
+
+  function saveOutboundDepartureVisibility() {
+    try { localStorage.setItem(outboundDepartureVisibilityKey, JSON.stringify(outboundDepartureVisibility)); } catch (_) {}
+  }
+
+  function outboundSummaryCells(bodyCells, stateKey, copyTarget) {
+    const model = validSecondaryModel(state[stateKey]) ? state[stateKey] : emptySecondaryModel();
+    model.finalBlocks = normalizeFinalBlocks(model.finalBlocks);
+    if (validSecondaryModel(state[stateKey])) state[stateKey].finalBlocks = model.finalBlocks;
+    const ihosaFinal = model.finalBlocks.ihosa;
+    const mhoasFinal = model.finalBlocks.mhoas;
+    const ihosaStats = weightedBlockStats(ihosaFinal);
+    const mhoasStats = weightedBlockStats(mhoasFinal);
+    const ihosaTotal = ihosaStats.footage;
+    const mhoasTotal = mhoasStats.footage;
+    const total = ihosaTotal + mhoasTotal;
+    const ihosaWeighted = ihosaStats.weightedFootage ? \`\${fmtOne(ihosaStats.average)}H\` : "0";
+    const mhoasWeighted = mhoasStats.weightedFootage ? \`\${fmtOne(mhoasStats.average)}H\` : "0";
+    return [
+      '<div class="third-summary-head">Track</div>',
+      \`<div class="third-summary-head">\${fmtInt(total)}</div>\`,
+      '<div class="third-summary-head third-summary-span">Outbound Departures</div>',
+      '<div class="third-summary-head">Dwell Wt Average</div>',
+      '<div class="third-summary-label">IHOSA [Final]</div>',
+      \`<div class="third-summary-total">\${fmtInt(ihosaTotal)}</div>\`,
+      finalSummaryZoneHtml("ihosa", ihosaFinal),
+      \`<div class="third-summary-average"><span>\${ihosaWeighted}</span><small>weighted</small></div>\`,
+      '<div class="third-summary-label">MHOAS [Final]</div>',
+      \`<div class="third-summary-total">\${fmtInt(mhoasTotal)}</div>\`,
+      finalSummaryZoneHtml("mhoas", mhoasFinal),
+      \`<div class="third-summary-average"><span>\${mhoasWeighted}</span><small>weighted</small></div>\`,
+      '<div class="third-summary-head">Track</div>',
+      \`<div class="third-summary-head">\${fmtInt(total)}</div>\`,
+      '<div class="third-summary-head third-summary-note" aria-label="Blank header"></div>',
+      copyAboveHeaderCell(copyTarget),
+      '<div class="third-summary-head">&Delta;</div>'
+    ];
+  }
+
+  function syncOutboundDepartureButtons() {
+    document.querySelectorAll("[data-outbound-departure-toggle]").forEach(button => {
+      const key = button.dataset.outboundDepartureToggle;
+      const shown = outboundDepartureVisibility[key] === true;
+      button.textContent = shown ? "Hide Outbound" : "Outbound";
+      button.title = shown ? "Hide outbound departures" : "Show outbound departures";
+      button.setAttribute("aria-expanded", String(shown));
+    });
+  }
+
+  function renderBlankGrid() {
+    const firstBlank = $("#blankYardGrid");
+    const secondBlank = $("#blankYardGridTwo");
+    if (firstBlank) {
+      firstBlank.classList.toggle("outbound-departures-visible", outboundDepartureVisibility.two);
+      const body = validSecondaryModel(state.secondaryGridTwo)
+        ? secondaryGridBodyCells(state.secondaryGridTwo)
+        : blankGridBodyCells();
+      firstBlank.innerHTML = (outboundDepartureVisibility.two
+        ? [...outboundSummaryCells(body, "secondaryGridTwo", "two"), ...body]
+        : [...blankGridHeaderCells("two"), ...body]).join("");
+    }
+    if (secondBlank) {
+      secondBlank.classList.toggle("outbound-departures-visible", outboundDepartureVisibility.three);
+      const body = validSecondaryModel(state.secondaryGridThree)
+        ? secondaryGridBodyCells(state.secondaryGridThree)
+        : blankGridBodyCells();
+      secondBlank.innerHTML = (outboundDepartureVisibility.three
+        ? [...outboundSummaryCells(body, "secondaryGridThree", "three"), ...body]
+        : [...blankGridHeaderCells("three"), ...body]).join("");
+    }
+    syncOutboundDepartureButtons();
+  }
+`;
+      updated = updated.replace(
+        /  function renderBlankGrid\(\) \{[\s\S]*?\n  \}\n\n  function renderTrackBars\(\)/,
+        scopedRenderer + "\n  function renderTrackBars()"
+      );
+      const scopedClickHandler = `  document.addEventListener("click", event => {
+    const button = event.target.closest && event.target.closest("[data-outbound-departure-toggle]");
+    if (!button) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    const key = button.dataset.outboundDepartureToggle;
+    outboundDepartureVisibility[key] = !outboundDepartureVisibility[key];
+    saveOutboundDepartureVisibility();
+    renderBlankGrid();
+  }, true);
+
+`;
+      updated = updated.replace(
+        "  renderAll();\n  excelViewHistoryReady = true;",
+        scopedClickHandler + "  renderAll();\n  excelViewHistoryReady = true;"
+      );
+      const patch = `<style id="${marker}-styles">
+.blank-grid-separator{position:relative}.outbound-departure-toggle{position:static;flex:0 0 auto;min-height:22px;margin-left:10px;padding:3px 9px;transform:none;border:1px solid #f6c447;border-radius:4px;background:#fff3bd;color:#6c4100;font:950 9px/1 "Arial Narrow","Segoe UI",Arial,sans-serif;letter-spacing:.035em;text-transform:uppercase;white-space:nowrap;cursor:pointer}.outbound-departure-toggle:hover,.outbound-departure-toggle:focus-visible{background:#ffdf78;border-color:#d99200;outline:2px solid #fff;outline-offset:1px}
+body.excel-page-2 #excelWorkspace .excel-page2-secondary-grid.outbound-departures-visible:before{content:"";display:block!important;grid-column:1/-1!important;grid-row:4!important;height:8px!important;min-height:8px!important;margin:0!important;padding:0!important;background:#050505!important;pointer-events:none!important}
+body.excel-page-2 #excelWorkspace .excel-page2-secondary-grid.outbound-departures-visible>.third-summary-head,
+body.excel-page-2 #excelWorkspace .excel-page2-secondary-grid.outbound-departures-visible>.third-summary-label,
+body.excel-page-2 #excelWorkspace .excel-page2-secondary-grid.outbound-departures-visible>.third-summary-total,
+body.excel-page-2 #excelWorkspace .excel-page2-secondary-grid.outbound-departures-visible>.third-summary-blank,
+body.excel-page-2 #excelWorkspace .excel-page2-secondary-grid.outbound-departures-visible>.third-summary-average{min-height:34px!important;font-family:"Arial Narrow","Segoe UI",Arial,sans-serif!important}
+body.excel-page-2 #excelWorkspace .excel-page2-secondary-grid.outbound-departures-visible>.third-summary-label{grid-column:1!important}
+body.excel-page-2 #excelWorkspace .excel-page2-secondary-grid.outbound-departures-visible>.third-summary-total{grid-column:2!important}
+body.excel-page-2 #excelWorkspace .excel-page2-secondary-grid.outbound-departures-visible>.third-summary-span{grid-column:3/14!important}
+body.excel-page-2 #excelWorkspace .excel-page2-secondary-grid.outbound-departures-visible>.third-summary-head.third-summary-span{grid-column:3/14!important}
+body.excel-page-2 #excelWorkspace .excel-page2-secondary-grid.outbound-departures-visible>.third-summary-average{grid-column:14!important;position:sticky!important;right:0!important;z-index:12!important;width:98px!important;min-width:98px!important;max-width:98px!important;justify-self:end!important;box-shadow:-1px 0 0 #c7d0d6,-7px 0 12px rgba(15,23,32,.12)!important}
+body.excel-page-2 #excelWorkspace .excel-page2-secondary-grid.outbound-departures-visible>.third-summary-total{position:relative!important;display:block!important;min-height:44px!important;padding:0!important;overflow:hidden!important;background-color:#f6f8f9!important;background-image:linear-gradient(90deg,#dec48b 0 var(--excel-page2-summary-fill,0%),#91a0aa var(--excel-page2-summary-fill,0%) 100%)!important;background-position:16px calc(100% - 5px)!important;background-size:calc(100% - 32px) 10px!important;background-repeat:no-repeat!important;color:transparent!important;font-size:0!important}
+body.excel-page-2 #excelWorkspace .excel-page2-secondary-grid.outbound-departures-visible>.third-summary-total:before{content:attr(data-page2-used) " / " attr(data-page2-capacity) " ft";position:absolute;left:16px;top:8px;color:#17232c;font:900 10px/1 Consolas,"Courier New",monospace;white-space:nowrap}
+body.excel-page-2 #excelWorkspace .excel-page2-secondary-grid.outbound-departures-visible>.third-summary-total:after{content:attr(data-page2-percent) "%";position:absolute;right:12px;top:8px;color:#17232c;font:900 10px/1 Consolas,"Courier New",monospace}
+body.excel-page-2 #excelWorkspace .excel-page2-secondary-grid.outbound-departures-visible>.excel-page2-final-track,
+body.excel-page-2 #excelWorkspace .excel-page2-secondary-grid.outbound-departures-visible>.third-summary-total.excel-page2-final-track{background-color:#fff1bd!important}
+body.excel-page-2 #excelWorkspace .excel-page2-secondary-grid.outbound-departures-visible .final-summary-block{height:30px!important;min-height:30px!important;max-height:30px!important;box-sizing:border-box!important}
+body.excel-page-2 #excelWorkspace .excel-page2-secondary-grid.outbound-departures-visible>.third-summary-blank.final-paste-zone{width:var(--excel-page2-final-zone-width,calc(100vw - 397px))!important;min-width:0!important;max-width:100%!important;justify-self:start!important;box-sizing:border-box!important}
+body.excel-page-2 #excelWorkspace .excel-page2-secondary-grid.outbound-departures-visible .final-block-list{width:100%!important;grid-template-columns:repeat(auto-fill,var(--excel-page2-block-width,140.5536px))!important;grid-auto-rows:30px!important;min-width:0!important;max-width:100%!important;justify-self:stretch!important}
+</style>`;
+      const close = updated.toLowerCase().lastIndexOf("</body>");
+      return close >= 0 ? updated.slice(0, close) + patch + "\n" + updated.slice(close) : updated + patch;
     }
 
     function withChassisFloatingEditorEnhancements(html) {
@@ -18704,7 +18964,7 @@ function scenarioTrainReadyForStorage(train) {
       const marker = "excel-inbound-track-slider-v2";
       if (!html || typeof html !== "string" || html.includes(marker)) return html;
       if (!html.includes('id="inboundTrainModal"') || !html.includes("function inboundTrainAllocations()")) return html;
-      html = html.replace('Choose a current inbound or a Yard/Pierce track, or enter a name and footage manually. Tracks fill in the order selected; the last selected track carries any overflow so the full footage is preserved.', 'Choose a current inbound or a Yard/Pierce track, then click each landing track and use the slider to assign that shove. Continue until all inbound footage is allocated.');
+      html = html.replace('Choose a current inbound or a Yard/Pierce track, or enter a name and footage manually. Tracks fill in the order selected; the last selected track carries any overflow so the full footage is preserved.', 'Choose a current inbound or a Yard/Pierce track, then assign only the footage you want to place. Any unassigned footage will be omitted when the inbound is added.');
       const patch = `<meta name="${marker}" content="enabled">
 <style>
 .inbound-shove-backdrop{position:fixed;inset:0;z-index:2600;display:grid;place-items:center;padding:18px;background:rgba(3,10,20,.72)}.inbound-shove-backdrop[hidden]{display:none!important}.inbound-shove-dialog{width:min(520px,calc(100vw - 36px));padding:18px;border:1px solid #45658e;border-radius:12px;background:#101d31;color:#f4f8ff;box-shadow:0 22px 70px rgba(0,0,0,.58)}.inbound-shove-dialog h4{margin:0 0 7px;font-size:18px}.inbound-shove-dialog p{margin:0 0 16px;color:#a9bbd4;font-size:12px;line-height:1.45}.inbound-shove-readout{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:12px}.inbound-shove-readout strong{color:#62f0dc;font-size:24px}#inboundShoveRange{width:100%;accent-color:#34d6bd;cursor:pointer}.inbound-shove-number{width:118px;padding:9px 10px;border:1px solid #45658e;border-radius:7px;background:#091426;color:#fff;font-weight:900;text-align:right}.inbound-shove-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}.inbound-shove-actions button{min-height:36px;padding:8px 13px;border:1px solid #526b8e;border-radius:7px;background:#162842;color:#fff;font-weight:900;cursor:pointer}.inbound-shove-actions .remove{margin-right:auto;border-color:#8e3547;background:#3a1620}.inbound-shove-actions .confirm{border-color:#2da88f;background:#087b67}
@@ -18715,7 +18975,7 @@ function scenarioTrainReadyForStorage(train) {
 var amounts={},pending=0,lastPrimaryPlan=null,baseRender=renderInboundTrainPlacement,baseOpen=openInboundTrainModal,baseClose=closeInboundTrainModal,shoveOrderIndex=15,inboundSequenceIndex=16;
 function reset(){amounts={};pending=0;inboundTrainTrackOrder=[]}
 inboundTrainAllocations=function(){var footage=Math.max(0,Math.round(parseInboundFt($("#inboundTrainFootage").value))),model=inboundTrainPreviewModel(),allocated=0;var allocations=inboundTrainTrackOrder.map(function(track){var capacity=TRACK_CAPACITY_FT[track]||0,used=inboundTrainTrackUsage(model,track),available=capacity-used,assigned=Math.max(0,Math.round(Number(amounts[track])||0));allocated+=assigned;return{track:track,capacity:capacity,used:used,available:available,assigned:assigned,projected:available-assigned}});if(footage-allocated===1&&allocations.length){var last=allocations[allocations.length-1];last.assigned+=1;last.projected-=1;allocated+=1}return{footage:footage,allocations:allocations,allocated:allocated,unallocated:Math.max(0,footage-allocated),invalidRequest:allocated>footage}};
-renderInboundTrainPlacement=function(){baseRender();var result=inboundTrainAllocations(),preview=$("#inboundTrainPreview"),label=preview&&preview.querySelector(".inbound-train-section-label"),left=result.footage;if(preview){var rows=preview.querySelectorAll(".inbound-train-preview-row"),visible=result.allocations.filter(function(item){return item.assigned>0});rows.forEach(function(row,index){var item=visible[index];if(!item)return;left=Math.max(0,left-item.assigned);var status=row.lastElementChild;if(status){status.className=left>0?"projected-bad":"projected-good";status.textContent=fmtInt(left)+" FT left to shove"}})}if(label&&result.allocations.length)label.textContent="Placement Preview · "+fmtInt(result.unallocated)+" FT left to assign";else if(preview&&result.footage&&!result.allocations.length)preview.textContent="Click a landing track to assign the first shove.";$("#confirmInboundTrain").disabled=$("#confirmInboundTrain").disabled||result.invalidRequest||result.unallocated!==0};
+renderInboundTrainPlacement=function(){baseRender();var result=inboundTrainAllocations(),preview=$("#inboundTrainPreview"),label=preview&&preview.querySelector(".inbound-train-section-label"),left=result.footage;if(preview){var rows=preview.querySelectorAll(".inbound-train-preview-row"),visible=result.allocations.filter(function(item){return item.assigned>0});rows.forEach(function(row,index){var item=visible[index];if(!item)return;left=Math.max(0,left-item.assigned);var status=row.lastElementChild;if(status){status.className=left>0?"projected-bad":"projected-good";status.textContent=fmtInt(left)+" FT left to shove"}})}if(label&&result.allocations.length)label.textContent=result.unallocated>0?"Placement Preview · "+fmtInt(result.unallocated)+" FT unassigned (will be omitted)":"Placement Preview · Fully assigned";else if(preview&&result.footage&&!result.allocations.length)preview.textContent="Click a landing track to assign the first shove.";$("#confirmInboundTrain").disabled=result.invalidRequest||result.allocated<=0};
 function setValue(value){var range=$("#inboundShoveRange"),maximum=Math.max(1,Number(range.max)||1),amount=Math.max(1,Math.min(maximum,Math.round(Number(value)||1)));range.value=String(amount);$("#inboundShoveNumber").value=String(amount);$("#inboundShoveValue").textContent=fmtInt(amount)+" FT"}
 function close(){$("#inboundShoveModal").hidden=true;pending=0}
 function open(track){var total=Math.max(0,Math.round(parseInboundFt($("#inboundTrainFootage").value)));if(!total){$("#inboundTrainPreview").textContent="Enter the inbound total footage before selecting a track.";return}var current=Math.max(0,Number(amounts[track])||0),elsewhere=inboundTrainTrackOrder.reduce(function(sum,item){return item===track?sum:sum+Math.max(0,Number(amounts[item])||0)},0),remaining=Math.max(0,total-elsewhere);if(!remaining)return;var model=inboundTrainPreviewModel(),available=(TRACK_CAPACITY_FT[track]||0)-inboundTrainTrackUsage(model,track),suggested=current||Math.min(remaining,Math.max(1,available));pending=track;$("#inboundShoveTitle").textContent=(current?"Edit":"Add")+" shove to 6-"+track;$("#inboundShoveHelp").textContent=fmtInt(remaining)+" FT of the inbound is available to assign. Track 6-"+track+" currently has "+fmtInt(available)+" FT available.";$("#inboundShoveRange").max=String(remaining);$("#inboundShoveNumber").max=String(remaining);$("#removeInboundShove").hidden=!current;$("#confirmInboundShove").textContent=current?"Update Shove":"Add Shove";setValue(Math.min(remaining,suggested));$("#inboundShoveModal").hidden=false;requestAnimationFrame(function(){$("#inboundShoveRange").focus()})}
@@ -18725,7 +18985,7 @@ function decoratePrimaryShoves(){var grid=$("#yardGrid");if(!grid||!computed||!A
 openInboundTrainModal=function(target){reset();baseOpen(target)};closeInboundTrainModal=function(){close();reset();baseClose()};
 $("#inboundTrainTrackList").addEventListener("click",function(event){var button=event.target.closest("[data-inbound-landing-track]");if(!button)return;event.preventDefault();event.stopImmediatePropagation();open(Number(button.dataset.inboundLandingTrack))},true);
 $("#inboundShoveRange").addEventListener("input",function(event){setValue(event.target.value)});$("#inboundShoveNumber").addEventListener("input",function(event){setValue(event.target.value)});$("#cancelInboundShove").addEventListener("click",close);$("#confirmInboundShove").addEventListener("click",function(){if(!TRACKS.includes(pending))return;var amount=Math.max(1,Math.round(Number($("#inboundShoveRange").value)||1));if(!inboundTrainTrackOrder.includes(pending))inboundTrainTrackOrder.push(pending);amounts[pending]=amount;close();renderInboundTrainPlacement()});$("#removeInboundShove").addEventListener("click",function(){inboundTrainTrackOrder=inboundTrainTrackOrder.filter(function(track){return track!==pending});delete amounts[pending];close();renderInboundTrainPlacement()});$("#inboundShoveModal").addEventListener("click",function(event){if(event.target===event.currentTarget)close()});
-$("#confirmInboundTrain").addEventListener("click",function(){lastPrimaryPlan=inboundTrainTarget==="one"?{start:state.rows.length,tracks:inboundTrainTrackOrder.slice(),stamp:Date.now()}:null},true);$("#confirmInboundTrain").addEventListener("click",function(){if(!lastPrimaryPlan)return;var plan=lastPrimaryPlan;lastPrimaryPlan=null;state.rows.slice(plan.start).forEach(function(row,index){if(!Array.isArray(row))return;var order=plan.tracks.indexOf(Number(row[0]))+1;if(!order)return;while(row.length<=inboundSequenceIndex)row.push("");row[2]="INBOUND-"+plan.stamp+"-"+(index+1);row[13]="inbound-"+plan.stamp+"-"+Number(row[0])+"-"+index;row[shoveOrderIndex]=order;row[inboundSequenceIndex]=1});renderAll();requestAnimationFrame(decoratePrimaryShoves)});
+$("#confirmInboundTrain").addEventListener("click",function(){if(inboundTrainTarget!=="one"){lastPrimaryPlan=null;return}var nextSequences={};TRACKS.forEach(function(track){nextSequences[track]=state.rows.reduce(function(max,row){return Number(row&&row[0])===track?Math.max(max,Number(row&&row[1])||0):max},0)+1});lastPrimaryPlan={start:state.rows.length,tracks:inboundTrainTrackOrder.slice(),stamp:Date.now(),nextSequences:nextSequences}},true);$("#confirmInboundTrain").addEventListener("click",function(){if(!lastPrimaryPlan)return;var plan=lastPrimaryPlan;lastPrimaryPlan=null;state.rows.slice(plan.start).forEach(function(row,index){if(!Array.isArray(row))return;var track=Number(row[0]),order=plan.tracks.indexOf(track)+1;if(!order)return;while(row.length<=inboundSequenceIndex)row.push("");row[1]=plan.nextSequences[track]||1;plan.nextSequences[track]=Number(row[1])+1;row[2]="INBOUND-"+plan.stamp+"-"+(index+1);row[13]="inbound-"+plan.stamp+"-"+track+"-"+index;row[shoveOrderIndex]=order;row[inboundSequenceIndex]=1});renderAll();requestAnimationFrame(decoratePrimaryShoves)});
 var shoveGrid=$("#yardGrid");if(shoveGrid)new MutationObserver(function(){requestAnimationFrame(decoratePrimaryShoves)}).observe(shoveGrid,{childList:true});requestAnimationFrame(decoratePrimaryShoves);
 $("#inboundTrainSource").addEventListener("change",function(){reset();renderInboundTrainPlacement()});$("#inboundTrainFootage").addEventListener("input",function(){reset();renderInboundTrainPlacement()});document.addEventListener("keydown",function(event){if(event.key==="Escape"&&!$("#inboundShoveModal").hidden){event.preventDefault();event.stopImmediatePropagation();close()}},true);
 })();`;
@@ -18743,7 +19003,7 @@ $("#inboundTrainSource").addEventListener("change",function(){reset();renderInbo
       if (!html.includes('id="blockContextMenu"') || !html.includes('id="yardGrid"')) return html;
       const styles = `<meta name="${marker}" content="enabled">
 <style>
-.block-context-menu .tomorrow-inbound-menu-action{border-color:#facc15!important;background:#854d0e!important}.block-context-menu .tomorrow-inbound-menu-action:hover{background:#a16207!important}.yard-grid .cut-cell.tomorrow-inbound-block{z-index:18!important;box-shadow:inset 0 0 0 2px #facc15!important}.tomorrow-inbound-callout{position:absolute;z-index:15;display:inline-flex;align-items:center;gap:4px;padding:4px 7px;border:1px solid #facc15;border-radius:5px;background:#111827;color:#fef08a;box-shadow:0 3px 10px rgba(15,23,42,.35);font:900 10px/1 "Segoe UI",Arial,sans-serif;white-space:nowrap;pointer-events:none}body.modal-open .tomorrow-inbound-callout,body:has(#blockContextMenu:not([hidden])) .tomorrow-inbound-callout{display:none!important}.tomorrow-inbound-callout:before{content:"\\2190";color:#facc15;font-size:15px;line-height:1}
+.block-context-menu .tomorrow-inbound-menu-action{border-color:#facc15!important;background:#854d0e!important}.block-context-menu .tomorrow-inbound-menu-action:hover{background:#a16207!important}.yard-grid .cut-cell.tomorrow-inbound-block{z-index:18!important;box-shadow:inset 0 0 0 2px #facc15!important}.tomorrow-inbound-callout{position:absolute;z-index:15;display:inline-flex;align-items:center;gap:4px;padding:4px 7px;border:1px solid #facc15;border-radius:5px;background:#111827;color:#fef08a;box-shadow:0 3px 10px rgba(15,23,42,.35);font:900 10px/1 "Segoe UI",Arial,sans-serif;white-space:nowrap;pointer-events:auto;cursor:context-menu}body.modal-open .tomorrow-inbound-callout{display:none!important}.tomorrow-inbound-callout:before{content:"\\2190";color:#facc15;font-size:15px;line-height:1}
 </style>`;
       const button = '<button class="tomorrow-inbound-menu-action" id="markTomorrowInbound" type="button" role="menuitem" hidden>Mark Tomorrow\'s Inbound</button>';
       const script = `/* excel-tomorrow-inbound-marker-runtime-v1 */
@@ -18754,12 +19014,12 @@ var contextMenu=document.getElementById("blockContextMenu");if(contextMenu)conte
 function read(){try{var value=JSON.parse(localStorage.getItem(storageKey)||"{}");return value&&typeof value==="object"&&!Array.isArray(value)?value:{}}catch(_){return{}}}
 function key(gridId,blockId){return String(gridId||"")+"::"+String(blockId||"")}
 function marked(gridId,blockId){return !!read()[key(gridId,blockId)]}
-function decorate(){frame=0;var records=read(),rowOffsets={};document.querySelectorAll("body > .tomorrow-inbound-callout").forEach(function(label){label.remove()});document.querySelectorAll(".yard-grid .cut-cell[data-block-id]").forEach(function(cell){var grid=cell.closest(".yard-grid"),active=!!(grid&&records[key(grid.id,cell.dataset.blockId)]);cell.classList.toggle("tomorrow-inbound-block",active);cell.querySelectorAll(":scope > .tomorrow-inbound-callout").forEach(function(label){label.remove()});if(!active)return;var rect=cell.getBoundingClientRect();if(!cell.offsetParent||rect.width<1||rect.height<1||rect.bottom<=0||rect.right<=0||rect.top>=innerHeight||rect.left>=innerWidth)return;try{if(parent!==window&&frameElement){var frameRect=frameElement.getBoundingClientRect();if(frameRect.top+rect.bottom<=0||frameRect.top+rect.top>=parent.innerHeight)return}}catch(_){}var label=document.createElement("span");label.className="tomorrow-inbound-callout";label.setAttribute("aria-label","Tomorrow's Inbound");label.textContent="Tomorrow's Inbound";document.body.appendChild(label);var labelRect=label.getBoundingClientRect(),track=String(cell.dataset.track||""),rowKey=grid.id+"::"+track,rightmost=Array.from(grid.querySelectorAll(".cut-cell[data-block-id]")).filter(function(item){return String(item.dataset.track||"")===track&&item.offsetParent}).reduce(function(right,item){return Math.max(right,item.getBoundingClientRect().right)},rect.right),offset=rowOffsets[rowKey]||0;label.style.left=scrollX+rightmost+7+offset+"px";label.style.top=scrollY+rect.top+(rect.height-labelRect.height)/2+"px";rowOffsets[rowKey]=offset+labelRect.width+7})}
+function decorate(){frame=0;var records=read(),rowOffsets={};document.querySelectorAll("body > .tomorrow-inbound-callout").forEach(function(label){label.remove()});document.querySelectorAll(".yard-grid .cut-cell[data-block-id]").forEach(function(cell){var grid=cell.closest(".yard-grid"),active=!!(grid&&records[key(grid.id,cell.dataset.blockId)]);cell.classList.toggle("tomorrow-inbound-block",active);cell.querySelectorAll(":scope > .tomorrow-inbound-callout").forEach(function(label){label.remove()});if(!active)return;var rect=cell.getBoundingClientRect();if(!cell.offsetParent||rect.width<1||rect.height<1||rect.bottom<=0||rect.right<=0||rect.top>=innerHeight||rect.left>=innerWidth)return;try{if(parent!==window&&frameElement){var frameRect=frameElement.getBoundingClientRect();if(frameRect.top+rect.bottom<=0||frameRect.top+rect.top>=parent.innerHeight)return}}catch(_){}var label=document.createElement("span");label.className="tomorrow-inbound-callout";label.setAttribute("aria-label","Tomorrow's Inbound");label.textContent="Tomorrow's Inbound";label.dataset.sourceGrid=grid.id;label.dataset.sourceBlock=String(cell.dataset.blockId||"");label.addEventListener("contextmenu",function(event){event.preventDefault();event.stopPropagation();var sourceGrid=document.getElementById(label.dataset.sourceGrid),sourceCell=sourceGrid&&Array.from(sourceGrid.querySelectorAll(".cut-cell[data-block-id]")).find(function(item){return String(item.dataset.blockId||"")===label.dataset.sourceBlock});if(sourceCell)sourceCell.dispatchEvent(new MouseEvent("contextmenu",{bubbles:true,cancelable:true,clientX:event.clientX,clientY:event.clientY,button:2,buttons:2}))});document.body.appendChild(label);var labelRect=label.getBoundingClientRect(),track=String(cell.dataset.track||""),rowKey=grid.id+"::"+track,labelsRight=document.body.classList.contains("excel-followup-labels-right"),remainingCell=Array.from(grid.children).find(function(item){return item.classList&&item.classList.contains("track-remaining")&&String(item.dataset.track||item.dataset.dropEndTrack||"")===track}),rightmost=Array.from(grid.querySelectorAll(".cut-cell[data-block-id]")).filter(function(item){return String(item.dataset.track||"")===track&&item.offsetParent}).reduce(function(right,item){return Math.max(right,item.getBoundingClientRect().right)},rect.right),offset=rowOffsets[rowKey]||0;if(labelsRight&&remainingCell){var remainingRect=remainingCell.getBoundingClientRect();label.style.left=scrollX+remainingRect.left-7-offset-labelRect.width+"px"}else label.style.left=scrollX+rightmost+7+offset+"px";label.style.top=scrollY+rect.top+(rect.height-labelRect.height)/2+"px";rowOffsets[rowKey]=offset+labelRect.width+7})}
 function schedule(){if(!frame)frame=requestAnimationFrame(decorate)}
 document.addEventListener("contextmenu",function(event){var cell=event.target.closest(".yard-grid .cut-cell[data-block-id]"),grid=cell&&cell.closest(".yard-grid");targetGridId=grid?String(grid.id||""):"";targetBlockId=cell?String(cell.dataset.blockId||""):"";setTimeout(function(){button.hidden=!targetGridId||!targetBlockId;if(targetGridId&&targetBlockId)button.textContent=marked(targetGridId,targetBlockId)?"Remove Tomorrow's Inbound":"Mark Tomorrow's Inbound"},0)});
 button.addEventListener("click",function(event){event.preventDefault();event.stopImmediatePropagation();var gridId=targetGridId,id=targetBlockId;if(!gridId||!id)return;var records=read(),recordKey=key(gridId,id);if(records[recordKey])delete records[recordKey];else records[recordKey]=true;localStorage.setItem(storageKey,JSON.stringify(records));var menu=document.getElementById("blockContextMenu");if(menu)menu.hidden=true;decorate()},true);
 document.querySelectorAll(".yard-grid").forEach(function(grid){new MutationObserver(schedule).observe(grid,{childList:true})});schedule();
-addEventListener("scroll",schedule,true);addEventListener("resize",schedule);try{if(parent!==window)parent.addEventListener("scroll",schedule,true)}catch(_){}
+addEventListener("scroll",schedule,true);addEventListener("resize",schedule);document.addEventListener("excel-followup-label-position-change",schedule);try{if(parent!==window)parent.addEventListener("scroll",schedule,true)}catch(_){}
 })();`;
       html = html.replace(/<\/head>/i, styles + "\n</head>");
       const patch = button + "\n<script>" + script + "<\/script>";
@@ -18795,16 +19055,18 @@ addEventListener("scroll",schedule,true);addEventListener("resize",schedule);try
     <button id="assignSelectedSwingToYard" type="button" role="menuitem">Swing to Yard</button>
     <button id="assignSelectedMoveToTrack" type="button" role="menuitem" aria-expanded="false">Move to...</button>
     <div class="selected-block-move-tracks" hidden>${[801,802,803,804,805,806,807,808,809].map(track => `<button type="button" data-selected-move-track="${track}">${track}</button>`).join("")}</div>
+    <button id="assignSelectedTodayInbound" type="button" role="menuitem">Today's Inbound</button>
+    <button id="assignSelectedFromPierce" type="button" role="menuitem">From Pierce</button>
     <button id="assignSelectedDeparting" type="button" role="menuitem">Departing From Here</button>
     <button id="assignSelectedRemoveFollowUp" type="button" role="menuitem">Remove</button>`;
       html = html.replace(flyoutAnchor, flyoutAnchor + controls);
-      const script = `<style id="${marker}-styles">#assignActionsFlyout .selected-block-move-tracks{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;margin:0;padding:4px;border:1px solid #334155;border-radius:4px;background:#020617}#assignActionsFlyout .selected-block-move-tracks[hidden]{display:none!important}#assignActionsFlyout .selected-block-move-tracks button{min-height:24px;margin:0;padding:4px;text-align:center}#assignSelectedSwingToYard,#assignSelectedMoveToTrack,#assignSelectedDeparting{border-color:#475569!important;background:#1e293b!important;color:#fff!important}#assignSelectedSwingToYard:hover,#assignSelectedMoveToTrack:hover,#assignSelectedDeparting:hover{background:#334155!important}.yard-grid>.cut-cell.selected-block-followup-host,body.excel-page-2 #yardGrid>.cut-cell.selected-block-followup-host,body.excel-page-2 .excel-page2-secondary-grid>.cut-cell.selected-block-followup-host{overflow:visible!important;z-index:16!important}.selected-block-followup-arrow,.selected-block-followup-target,.selected-block-departing-label{position:absolute;z-index:17}.selected-block-followup-arrow,.selected-block-followup-target{pointer-events:none}.selected-block-departing-label{pointer-events:auto;cursor:context-menu}.selected-block-followup-arrow{left:calc(100% + 2px);top:0;bottom:0;width:29px;display:flex;align-items:center;justify-content:center;color:#050505;font:800 25px/1 Arial,sans-serif}.selected-block-followup-target{left:calc(100% + 31px);top:calc(5px * var(--excel-table-scale,1));bottom:calc(5px * var(--excel-table-scale,1));display:flex;flex-direction:column;align-items:flex-start;justify-content:center;overflow:hidden;padding:calc(4px * var(--excel-table-scale,1)) 5px;border:1px solid rgba(15,23,42,.14);border-radius:3px;background:#334155;color:#fff;font-family:var(--grid-block-font,"Roboto Condensed","Arial Narrow",Arial,sans-serif);font-size:var(--grid-block-size,12px);font-weight:var(--grid-block-weight,700);line-height:1;letter-spacing:-.01em;white-space:nowrap;box-shadow:0 1px 1px rgba(15,23,42,.08)}.selected-block-followup-target[data-label="IHOSA"]{background:var(--ihosa-block-color,#166534)!important}.selected-block-followup-target[data-label="MHOAS"]{background:var(--mhoas-block-color,#4338ca)!important}.selected-block-followup-target[data-label="SS"]{background:#7e22ce!important}.selected-block-followup-target[data-label="PIERCE"]{background:var(--pierce-block-color,#be185d)!important}.selected-block-followup-target strong,.selected-block-followup-target small{display:block;max-width:100%;overflow:hidden;font-weight:var(--grid-block-weight,700);line-height:1;text-overflow:ellipsis;white-space:nowrap}.selected-block-followup-target small{font-size:max(7px,calc(var(--grid-block-size,12px) - 2px))}.selected-block-departing-label{left:calc(100% + 7px);top:50%;display:inline-flex;align-items:center;padding:4px 7px;border:1px solid #64748b;border-radius:5px;background:#111827;color:#e2e8f0;box-shadow:0 3px 10px rgba(15,23,42,.35);font:900 10px/1 "Segoe UI",Arial,sans-serif;white-space:nowrap;transform:translateY(-50%)}.selected-block-departing-label.selected-block-followup-slot{left:7px}.selected-block-departing-label[data-label="IHOSA"]{border-color:#22c55e!important;background:#052e16!important;color:#86efac!important;-webkit-text-fill-color:#86efac!important}.selected-block-departing-label[data-label="MHOAS"]{border-color:#3b82f6!important;background:#172554!important;color:#93c5fd!important;-webkit-text-fill-color:#93c5fd!important}.selected-block-followup-remove-menu{position:fixed;z-index:2147483647;display:block;min-width:145px;padding:5px;border:1px solid #475569;border-radius:6px;background:#0f172a;box-shadow:0 10px 28px rgba(15,23,42,.45)}.selected-block-followup-remove-menu[hidden]{display:none!important}.selected-block-followup-remove-menu button{display:block;width:100%;margin:0 0 4px;padding:7px 10px;border:1px solid #475569;border-radius:4px;background:#1e293b;color:#fff;font:800 11px/1 "Segoe UI",Arial,sans-serif;text-align:left}.selected-block-followup-remove-menu button:last-child{margin-bottom:0}.selected-block-followup-remove-menu [data-followup-color="MHOAS"]{border-color:#3b82f6;background:#172554;color:#93c5fd}.selected-block-followup-remove-menu [data-followup-color="IHOSA"]{border-color:#22c55e;background:#052e16;color:#86efac}.selected-block-followup-remove-menu [data-followup-remove]{border-color:#ef4444;background:#991b1b;color:#fff}</style><script id="${marker}">(function(){
+      const script = `<style id="${marker}-styles">#assignActionsFlyout .selected-block-move-tracks{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;margin:0;padding:4px;border:1px solid #334155;border-radius:4px;background:#020617}#assignActionsFlyout .selected-block-move-tracks[hidden]{display:none!important}#assignActionsFlyout .selected-block-move-tracks button{min-height:24px;margin:0;padding:4px;text-align:center}#assignSelectedSwingToYard,#assignSelectedMoveToTrack,#assignSelectedDeparting{border-color:#475569!important;background:#1e293b!important;color:#fff!important}#assignSelectedSwingToYard:hover,#assignSelectedMoveToTrack:hover,#assignSelectedDeparting:hover{background:#334155!important}#assignSelectedTodayInbound{border-color:#4ade80!important;background:#166534!important;color:#dcfce7!important}#assignSelectedTodayInbound:hover{background:#15803d!important}#assignSelectedFromPierce{border-color:#a78bfa!important;background:#5b21b6!important;color:#f3e8ff!important}#assignSelectedFromPierce:hover{background:#6d28d9!important}.yard-grid>.cut-cell.selected-block-followup-host,body.excel-page-2 #yardGrid>.cut-cell.selected-block-followup-host,body.excel-page-2 .excel-page2-secondary-grid>.cut-cell.selected-block-followup-host{overflow:visible!important;z-index:16!important}.selected-block-followup-arrow,.selected-block-followup-target,.selected-block-departing-label{position:absolute;z-index:17}.selected-block-followup-arrow,.selected-block-followup-target{pointer-events:none}.selected-block-departing-label{pointer-events:auto;cursor:context-menu}.selected-block-followup-arrow{left:calc(100% + 2px);top:0;bottom:0;width:29px;display:flex;align-items:center;justify-content:center;color:#050505;font:800 25px/1 Arial,sans-serif}.selected-block-followup-target{left:calc(100% + 31px);top:calc(5px * var(--excel-table-scale,1));bottom:calc(5px * var(--excel-table-scale,1));display:flex;flex-direction:column;align-items:flex-start;justify-content:center;overflow:hidden;padding:calc(4px * var(--excel-table-scale,1)) 5px;border:1px solid rgba(15,23,42,.14);border-radius:3px;background:#334155;color:#fff;font-family:var(--grid-block-font,"Roboto Condensed","Arial Narrow",Arial,sans-serif);font-size:var(--grid-block-size,12px);font-weight:var(--grid-block-weight,700);line-height:1;letter-spacing:-.01em;white-space:nowrap;box-shadow:0 1px 1px rgba(15,23,42,.08)}.selected-block-followup-target[data-label="IHOSA"]{background:var(--ihosa-block-color,#166534)!important}.selected-block-followup-target[data-label="MHOAS"]{background:var(--mhoas-block-color,#4338ca)!important}.selected-block-followup-target[data-label="SS"]{background:#7e22ce!important}.selected-block-followup-target[data-label="PIERCE"]{background:var(--pierce-block-color,#be185d)!important}.selected-block-followup-target strong,.selected-block-followup-target small{display:block;max-width:100%;overflow:hidden;font-weight:var(--grid-block-weight,700);line-height:1;text-overflow:ellipsis;white-space:nowrap}.selected-block-followup-target small{font-size:max(7px,calc(var(--grid-block-size,12px) - 2px))}.selected-block-departing-label{left:calc(100% + 7px);top:50%;display:inline-flex;align-items:center;padding:4px 7px;border:1px solid #64748b;border-radius:5px;background:#111827;color:#e2e8f0;box-shadow:0 3px 10px rgba(15,23,42,.35);font:900 10px/1 "Segoe UI",Arial,sans-serif;white-space:nowrap;transform:translateY(-50%)}.selected-block-departing-label.selected-block-followup-slot{left:7px}.selected-block-departing-label[data-label="IHOSA"]{border-color:#22c55e!important;background:#052e16!important;color:#86efac!important;-webkit-text-fill-color:#86efac!important}.selected-block-departing-label[data-label="MHOAS"]{border-color:#3b82f6!important;background:#172554!important;color:#93c5fd!important;-webkit-text-fill-color:#93c5fd!important}.selected-block-departing-label[data-followup-type="pierce"]{border-color:#a78bfa!important;background:#5b21b6!important;color:#f3e8ff!important;-webkit-text-fill-color:#f3e8ff!important}.selected-block-departing-label[data-followup-type="today"]{border-color:#4ade80!important;background:#166534!important;color:#dcfce7!important;-webkit-text-fill-color:#dcfce7!important}.selected-block-followup-remove-menu{position:fixed;z-index:2147483647;display:block;min-width:145px;padding:5px;border:1px solid #475569;border-radius:6px;background:#0f172a;box-shadow:0 10px 28px rgba(15,23,42,.45)}.selected-block-followup-remove-menu[hidden]{display:none!important}.selected-block-followup-remove-menu button{display:block;width:100%;margin:0 0 4px;padding:7px 10px;border:1px solid #475569;border-radius:4px;background:#1e293b;color:#fff;font:800 11px/1 "Segoe UI",Arial,sans-serif;text-align:left}.selected-block-followup-remove-menu button:last-child{margin-bottom:0}.selected-block-followup-remove-menu [data-followup-color="MHOAS"]{border-color:#3b82f6;background:#172554;color:#93c5fd}.selected-block-followup-remove-menu [data-followup-color="IHOSA"]{border-color:#22c55e;background:#052e16;color:#86efac}.selected-block-followup-remove-menu [data-followup-remove]{border-color:#ef4444;background:#991b1b;color:#fff}</style><script id="${marker}">(function(){
 var host=document.getElementById("assignActionsFlyout");if(!host)return;
 var key="conglobal-excel-consolidation-arrow-explanations-v1",directKey="conglobal-excel-selected-block-followups-v1";
 var targetGridId="",targetBlockId="",targetLabel="";
 var removeKey="",removeMenu=document.createElement("div");removeMenu.className="selected-block-followup-remove-menu";removeMenu.hidden=true;removeMenu.innerHTML='<button type="button" data-followup-color="MHOAS">Blue</button><button type="button" data-followup-color="IHOSA">Green</button><button type="button" data-followup-color="BLOCK">Neutral</button><button type="button" data-followup-remove>Remove</button>';document.body.appendChild(removeMenu);
 function button(id,label){var node=document.createElement("button");node.type="button";node.id=id;node.textContent=label;return node}
-var swing=document.getElementById("assignSelectedSwingToYard"),move=document.getElementById("assignSelectedMoveToTrack"),departing=document.getElementById("assignSelectedDeparting"),tracks=host.querySelector(".selected-block-move-tracks");if(!swing||!move||!departing||!tracks)return;
+var swing=document.getElementById("assignSelectedSwingToYard"),move=document.getElementById("assignSelectedMoveToTrack"),today=document.getElementById("assignSelectedTodayInbound"),pierce=document.getElementById("assignSelectedFromPierce"),departing=document.getElementById("assignSelectedDeparting"),tracks=host.querySelector(".selected-block-move-tracks");if(!swing||!move||!today||!pierce||!departing||!tracks)return;
 function contextCells(){var capturedGrid=targetGridId&&document.getElementById(targetGridId);if(capturedGrid&&targetBlockId){var captured=Array.from(capturedGrid.querySelectorAll(".cut-cell[data-block-id]")).find(function(cell){return String(cell.dataset.blockId||"")===targetBlockId});if(captured)return [captured]}try{var gridId=typeof blockContextGridId!=="undefined"?String(blockContextGridId||""):"",blockId=typeof blockContextBlockId!=="undefined"?String(blockContextBlockId||""):"",grid=gridId&&document.getElementById(gridId);if(grid&&blockId){var exact=Array.from(grid.querySelectorAll(".cut-cell[data-block-id]")).find(function(cell){return String(cell.dataset.blockId||"")===blockId});if(exact)return [exact]}}catch(_){}return Array.from(document.querySelectorAll(".yard-grid .cut-cell.block-selected[data-block-id]")).slice(0,1)}
 function selectedIds(){return contextCells().map(function(cell){return String(cell.dataset.blockId||"")}).filter(Boolean)}
 function directRead(){try{var value=JSON.parse(localStorage.getItem(directKey)||"{}");return value&&typeof value==="object"&&!Array.isArray(value)?value:{}}catch(_){return{}}}
@@ -18817,14 +19079,14 @@ function directRecordKey(gridId,blockId){return String(gridId||"")+"::"+String(b
 function followUpSignature(cell){var raw=String(cell&&cell.getAttribute("data-page2-primary")||cell&&cell.dataset&&cell.dataset.assignmentOriginalTitle||cell&&cell.title||cell&&cell.textContent||"").toUpperCase();return raw.split("→")[0].replace(/\[[^\]]*\]/g,"").replace(/\([^)]*\)/g,"").replace(/\b(IHOSA|MHOAS|PIERCE)\b/g,"").replace(/[^A-Z0-9]+/g," ").trim()}
 function followUpLocator(cell){if(!cell)return null;var grid=cell.closest(".yard-grid"),track=String(cell.dataset.track||"").trim(),footage=String(Number(cell.dataset.footage)||0),signature=followUpSignature(cell);if(!track){var host=cell.closest("[data-track]");track=String(host&&host.dataset.track||"").trim()}var peers=grid?Array.from(grid.querySelectorAll(".cut-cell[data-block-id]")).filter(function(peer){var peerTrack=String(peer.dataset.track||"").trim();if(!peerTrack){var peerHost=peer.closest("[data-track]");peerTrack=String(peerHost&&peerHost.dataset.track||"").trim()}return peerTrack===track&&String(Number(peer.dataset.footage)||0)===footage&&followUpSignature(peer)===signature}):[];return {track:track,footage:footage,signature:signature,occurrence:Math.max(0,peers.indexOf(cell))}}
 function locateFollowUpCell(grid,blockId,value){var cells=Array.from(grid.querySelectorAll(".cut-cell[data-block-id]")),exact=cells.find(function(item){return String(item.dataset.blockId||"")===blockId});if(exact)return exact;var locator=value&&value._locator;if(!locator)return null;var matches=cells.filter(function(cell){var current=followUpLocator(cell);return current&&current.track===String(locator.track||"")&&current.footage===String(locator.footage||"")&&current.signature===String(locator.signature||"")});return matches[Math.max(0,Number(locator.occurrence)||0)]||matches[0]||null}
-function directDetail(value){return value.type==="swing"?"SWING TO YARD":value.type==="departing"?"DEPARTING FROM HERE":value.type==="move"?"MOVING TO "+String(value.track||""):""}
-function directLabelText(value){return value.type==="swing"?"← Swing to Yard":value.type==="departing"?"← Departing From Here":value.type==="move"?"← Moving to Track "+String(value.track||""):""}
+function directDetail(value){return value.type==="swing"?"SWING TO YARD":value.type==="today"?"TODAY'S INBOUND":value.type==="pierce"?"FROM PIERCE":value.type==="departing"?"DEPARTING FROM HERE":value.type==="move"?"MOVING TO "+String(value.track||""):""}
+function directLabelText(value){return value.type==="swing"?"← Swing to Yard":value.type==="today"?"← Today's Inbound":value.type==="pierce"?"← From Pierce":value.type==="departing"?"← Departing From Here":value.type==="move"?"← Moving to Track "+String(value.track||""):""}
 function directBlockLabel(cell,blockId,value){var assignment=String(cell&&cell.dataset&&cell.dataset.blockAssignment||"").toUpperCase();if(assignment==="IHOSA"||assignment==="MHOAS")return assignment;try{var assignments=JSON.parse(localStorage.getItem("settegast-excel-block-assignments-v1")||"{}");assignment=String(assignments&&assignments[String(blockId||"")]||"").toUpperCase();if(assignment==="IHOSA"||assignment==="MHOAS")return assignment}catch(_){}var primary=String(cell&&cell.getAttribute("data-page2-primary")||"")+" "+String(cell&&cell.getAttribute("data-page2-secondary")||"")+" "+String(cell&&cell.title||"")+" "+String(cell&&cell.textContent||"");var match=primary.toUpperCase().match(/\b(IHOSA|MHOAS)\b/);if(match)return match[1];var saved=String(value&&value.label||"").toUpperCase();return saved==="IHOSA"||saved==="MHOAS"?saved:""}
 function clearLegacyFollowUps(ids){var records=[];try{records=JSON.parse(localStorage.getItem(key)||"[]")}catch(_){}if(!Array.isArray(records)||!ids.length)return;var changed=false;records.forEach(function(item){var recordId=String(item&&item.id||""),blockIds=Array.isArray(item&&item.blockIds)?item.blockIds.map(String):[],matches=ids.some(function(id){return id==="arrow-copy-"+recordId||blockIds.indexOf(id)>=0});if(matches&&item.followUp){delete item.followUp;changed=true}});if(!changed)return;var oldValue=localStorage.getItem(key),newValue=JSON.stringify(records);localStorage.setItem(key,newValue);try{window.dispatchEvent(new StorageEvent("storage",{key:key,oldValue:oldValue,newValue:newValue,storageArea:localStorage,url:location.href}))}catch(_){window.dispatchEvent(new Event("storage"))}}
 function backfillFollowUpLocators(){var records=directRead(),changed=false;Object.keys(records).forEach(function(recordKey){var split=recordKey.indexOf("::"),grid=split>=0?document.getElementById(recordKey.slice(0,split)):null,blockId=split>=0?recordKey.slice(split+2):"",value=records[recordKey];if(!grid||!blockId||!value||value._locator)return;var cell=Array.from(grid.querySelectorAll(".cut-cell[data-block-id]")).find(function(item){return String(item.dataset.blockId||"")===blockId});if(cell){value._locator=followUpLocator(cell);changed=true}});if(changed){localStorage.setItem(directKey,JSON.stringify(records));localStorage.setItem(directKey+".updatedAt",new Date().toISOString())}return records}
 function renderDirect(){
   var records=directRead(),wanted={},usedSlots={};Object.keys(records).forEach(function(recordKey){var split=recordKey.indexOf("::"),gridId=split>=0?recordKey.slice(0,split):"",blockId=split>=0?recordKey.slice(split+2):"",grid=document.getElementById(gridId),value=records[recordKey]||{};if(!grid||!blockId)return;var cell=locateFollowUpCell(grid,blockId,value);if(!cell)return;var detail=directDetail(value);if(!detail)return;var track=String(cell.dataset.track||""),slotKey=gridId+"::"+track,emptyCells=Array.from(grid.children).filter(function(item){return item.classList&&item.classList.contains("cut-cell")&&item.classList.contains("empty")&&String(item.dataset.dropEndTrack||item.dataset.track||"")===track}),slotIndex=usedSlots[slotKey]||0,displayCell=emptyCells[slotIndex]||cell;if(displayCell!==cell)usedSlots[slotKey]=slotIndex+1;wanted[recordKey]=true;displayCell.classList.add("selected-block-followup-host");var selector='[data-followup-key="'+recordKey.replace(/"/g,'\\"')+'"]',oldNodes=grid.querySelectorAll('.selected-block-followup-arrow'+selector+',.selected-block-followup-target'+selector+',.selected-block-departing-label'+selector),labelName=directBlockLabel(cell,String(cell.dataset.blockId||blockId),value);
-    var labelText=directLabelText(value),pill=grid.querySelector('.selected-block-departing-label'+selector);oldNodes.forEach(function(node){if(node!==pill)node.remove()});if(!pill){pill=document.createElement("span");pill.className="selected-block-departing-label";pill.dataset.followupKey=recordKey;displayCell.appendChild(pill)}pill.classList.toggle("selected-block-followup-slot",displayCell!==cell);pill.dataset.followupGrid=gridId;pill.dataset.followupTrack=track;pill.dataset.label=String(value.labelColor||labelName||"BLOCK").toUpperCase();if(pill.textContent!==labelText)pill.textContent=labelText
+    var labelText=directLabelText(value),pill=grid.querySelector('.selected-block-departing-label'+selector);oldNodes.forEach(function(node){if(node!==pill)node.remove()});if(!pill){pill=document.createElement("span");pill.className="selected-block-departing-label";pill.dataset.followupKey=recordKey;displayCell.appendChild(pill)}pill.classList.toggle("selected-block-followup-slot",displayCell!==cell);pill.dataset.followupGrid=gridId;pill.dataset.followupTrack=track;pill.dataset.label=String(value.labelColor||labelName||"BLOCK").toUpperCase();pill.dataset.followupType=String(value.type||"");if(pill.textContent!==labelText)pill.textContent=labelText
   });document.querySelectorAll(".selected-block-followup-arrow,.selected-block-followup-target,.selected-block-departing-label").forEach(function(node){if(!wanted[String(node.dataset.followupKey||"")])node.remove()});document.querySelectorAll(".selected-block-followup-host").forEach(function(cell){if(!cell.querySelector(":scope > .selected-block-followup-arrow,:scope > .selected-block-followup-target,:scope > .selected-block-departing-label"))cell.classList.remove("selected-block-followup-host")})
 }
 function saveFollowUp(value){
@@ -18839,13 +19101,14 @@ document.addEventListener("contextmenu",function(event){var label=event.target.c
 removeMenu.addEventListener("click",function(event){var button=event.target.closest("button");if(!button||!removeKey)return;var direct=directRead();if(button.hasAttribute("data-followup-remove"))delete direct[removeKey];else if(button.dataset.followupColor&&direct[removeKey])direct[removeKey].labelColor=button.dataset.followupColor;writeDirect(direct);renderDirect();removeKey="";removeMenu.hidden=true});
 document.addEventListener("click",function(event){var undo=event.target.closest&&event.target.closest("#undoExcelView");if(!undo)return;try{var stack=window.excelViewUndoStackBridge;if(!Array.isArray(stack)||!stack.length)return;var parsed=JSON.parse(stack[stack.length-1]);if(!parsed||parsed.__excelSelectedBlockFollowUpsUndo!==true)return;event.preventDefault();event.stopImmediatePropagation();stack.pop();if(parsed.value===null||typeof parsed.value==="undefined")localStorage.removeItem(directKey);else localStorage.setItem(directKey,String(parsed.value));localStorage.setItem(directKey+".updatedAt",new Date().toISOString());renderDirect();syncUndoButton()}catch(_){}},true);
 document.addEventListener("pointerdown",function(event){if(!removeMenu.hidden&&!removeMenu.contains(event.target)){removeKey="";removeMenu.hidden=true}},true);
-document.addEventListener("click",function(event){var action=event.target.closest&&event.target.closest("#assignSelectedSwingToYard,#assignSelectedMoveToTrack,#assignSelectedDeparting,#assignSelectedRemoveFollowUp,[data-selected-move-track]");if(!action)return;if(action.id==="assignSelectedMoveToTrack"){event.preventDefault();event.stopImmediatePropagation();tracks.hidden=!tracks.hidden;move.setAttribute("aria-expanded",tracks.hidden?"false":"true");return}if(action.id==="assignSelectedSwingToYard"){event.preventDefault();event.stopImmediatePropagation();finish({type:"swing"});return}if(action.id==="assignSelectedDeparting"){event.preventDefault();event.stopImmediatePropagation();finish({type:"departing"});return}if(action.id==="assignSelectedRemoveFollowUp"){event.preventDefault();event.stopImmediatePropagation();removeCaptured();return}if(action.dataset.selectedMoveTrack){event.preventDefault();event.stopImmediatePropagation();finish({type:"move",track:"6-"+action.dataset.selectedMoveTrack})}},true);
+document.addEventListener("click",function(event){var action=event.target.closest&&event.target.closest("#assignSelectedSwingToYard,#assignSelectedMoveToTrack,#assignSelectedTodayInbound,#assignSelectedFromPierce,#assignSelectedDeparting,#assignSelectedRemoveFollowUp,[data-selected-move-track]");if(!action)return;if(action.id==="assignSelectedMoveToTrack"){event.preventDefault();event.stopImmediatePropagation();tracks.hidden=!tracks.hidden;move.setAttribute("aria-expanded",tracks.hidden?"false":"true");return}if(action.id==="assignSelectedSwingToYard"){event.preventDefault();event.stopImmediatePropagation();finish({type:"swing"});return}if(action.id==="assignSelectedTodayInbound"){event.preventDefault();event.stopImmediatePropagation();finish({type:"today"});return}if(action.id==="assignSelectedFromPierce"){event.preventDefault();event.stopImmediatePropagation();finish({type:"pierce"});return}if(action.id==="assignSelectedDeparting"){event.preventDefault();event.stopImmediatePropagation();finish({type:"departing"});return}if(action.id==="assignSelectedRemoveFollowUp"){event.preventDefault();event.stopImmediatePropagation();removeCaptured();return}if(action.dataset.selectedMoveTrack){event.preventDefault();event.stopImmediatePropagation();finish({type:"move",track:"6-"+action.dataset.selectedMoveTrack})}},true);
 document.addEventListener("excel-secondary-table-cleared",function(event){var gridId=String(event&&event.detail&&event.detail.gridId||"");if(!gridId)return;var prefix=gridId+"::",direct=directRead(),changed=false;Object.keys(direct).forEach(function(recordKey){if(recordKey.indexOf(prefix)===0){delete direct[recordKey];changed=true}});if(changed){localStorage.setItem(directKey,JSON.stringify(direct));localStorage.setItem(directKey+".updatedAt",new Date().toISOString())}renderDirect()});
 var directFrame=0;function scheduleDirect(){if(!directFrame)directFrame=requestAnimationFrame(function(){directFrame=0;renderDirect()})}new MutationObserver(function(records){var external=records.some(function(record){return Array.from(record.addedNodes).concat(Array.from(record.removedNodes)).some(function(node){return !(node.nodeType===1&&(node.matches&&node.matches(".selected-block-followup-arrow,.selected-block-followup-target,.selected-block-departing-label")||node.closest&&node.closest(".selected-block-followup-arrow,.selected-block-followup-target,.selected-block-departing-label")))})});if(external)scheduleDirect()}).observe(document.body,{childList:true,subtree:true});window.addEventListener("storage",function(event){if(event.key===directKey)scheduleDirect()});var savedDirect=backfillFollowUpLocators(),savedIds=Object.keys(savedDirect).map(function(recordKey){var split=recordKey.indexOf("::");return split>=0?recordKey.slice(split+2):""}).filter(Boolean);clearLegacyFollowUps(savedIds);renderDirect();
 })();<\/script>`;
       const labelPositioning = `<style id="${marker}-position-styles">
 .yard-grid>.track-remaining.selected-block-followup-edge-host{overflow:visible!important}
 body:not(.excel-page-2) .yard-grid>.track-remaining.selected-block-followup-edge-host{position:relative!important;z-index:16!important}
+.selected-block-departing-label[data-label="BLOCK"]{color:#e2e8f0!important;-webkit-text-fill-color:#e2e8f0!important;visibility:visible!important;opacity:1!important;text-shadow:none!important}
 .excel-followup-labels-right .selected-block-departing-label:not(.selected-block-followup-edge),.excel-followup-labels-right .consolidation-explanation-followup-label:not(.selected-block-followup-edge){visibility:hidden!important}
 .excel-followup-labels-right .selected-block-departing-label.selected-block-followup-edge,.excel-followup-labels-right .consolidation-explanation-followup-label.selected-block-followup-edge{left:auto!important}
 </style><script id="${marker}-position-script">(function(){
@@ -18968,6 +19231,7 @@ document.addEventListener("excel-followup-label-position-change",schedule);docum
           pageHtml = withExcelInboundDayHeadingToggle(pageHtml);
           pageHtml = withExcelDockedInbounds(pageHtml);
           pageHtml = withExcelFourthRampTable(pageHtml);
+          pageHtml = withExcelOutboundDepartureToggles(pageHtml);
           pageHtml = withInboundDeleteIgnore(pageHtml);
           pageHtml = withExcelGridDisplayToggles(pageHtml);
           pageHtml = withExcelGridToggleSpacingV2(pageHtml);
