@@ -19365,6 +19365,192 @@ document.addEventListener("excel-followup-label-position-change",schedule);docum
       return close >= 0 ? html.slice(0, close) + patch + "\n" + html.slice(close) : html + patch;
     }
 
+    function withExcelBlockNameFootageEditor(html) {
+      const marker = "excel-block-name-footage-editor-v1";
+      const anchor = "  function renderAll() {";
+      if (!html || html.includes(marker) || !html.includes(anchor) || !html.includes('id="blockContextMenu"')) return html;
+      const install = function installExcelBlockEditor() {
+        /* excel-block-name-footage-editor-v1 */
+        const menu = document.getElementById("blockContextMenu");
+        if (!menu) return;
+        const editButton = document.createElement("button");
+        editButton.type = "button";
+        editButton.className = "copy-menu-action";
+        editButton.textContent = "Edit name / footage...";
+        editButton.hidden = true;
+        menu.insertBefore(editButton, document.getElementById("splitSelectedBlockBtn"));
+        const modal = document.createElement("div");
+        modal.id = "excelBlockEditModal";
+        modal.hidden = true;
+        modal.innerHTML = '<form class="excel-block-edit-dialog" aria-label="Edit block"><h3>Edit Block</h3><label>Block name<input name="blockName" required maxlength="100" autocomplete="off"></label><label>Footage<input name="blockFootage" type="number" required min="1" max="100000" step="1" inputmode="numeric"></label><p class="excel-block-edit-error" role="alert" hidden></p><div class="excel-block-edit-actions"><button type="button" data-cancel>Cancel</button><button type="submit">Save changes</button></div></form>';
+        document.body.appendChild(modal);
+        const form = modal.querySelector("form");
+        const nameInput = form.elements.blockName;
+        const footageInput = form.elements.blockFootage;
+        const error = modal.querySelector(".excel-block-edit-error");
+        let target = null;
+        let finalTarget = null;
+        const plainText = value => {
+          const host = document.createElement("div");
+          host.innerHTML = String(value || "");
+          return String(host.textContent || "").trim();
+        };
+        const blockName = block => {
+          if (block.userEditedName) return String(block.userEditedName);
+          const raw = plainText(block.title || block.content).split(/(?:→|->)/)[0];
+          return raw.replace(/^\s*[\d,]+\s*/, "").replace(/\s*\[(?:TRACK\s*)?\d+\]\s*$/i, "").trim();
+        };
+        const modelForGrid = gridId => state[gridId === "blankYardGridThree" ? "secondaryGridFour" : secondaryGridStateKey(gridId)];
+        const getTarget = reference => {
+          if (!reference) return null;
+          if (reference.zone) {
+            const model = modelForGrid(reference.gridId);
+            if (!validSecondaryModel(model)) return null;
+            model.finalBlocks = normalizeFinalBlocks(model.finalBlocks);
+            const block = model.finalBlocks[reference.zone].find(item => String(item.id) === reference.id);
+            return block ? {kind:"final", block, track:Number((block.title.match(/\[(\d+)\]/) || [])[1]) || 0} : null;
+          }
+          if (reference.gridId === "yardGrid") {
+            const group = computed && computed.groups.find(item => item.blockId === reference.id);
+            return group ? {kind:"primary", group, track:group.track} : null;
+          }
+          const model = modelForGrid(reference.gridId);
+          if (!validSecondaryModel(model)) return null;
+          for (const track of TRACKS) {
+            const block = (model.tracks[track] || []).find(item => String(item.id) === reference.id);
+            if (block) return {kind:"secondary", block, track};
+          }
+          return null;
+        };
+        const close = () => { modal.hidden = true; target = null; error.hidden = true; document.body.classList.remove("modal-open"); };
+        const open = reference => {
+          const found = getTarget(reference);
+          if (!found) return;
+          target = reference;
+          nameInput.value = found.kind === "primary" ? String(found.group.status || "") : blockName(found.block);
+          footageInput.value = String(Math.round(found.kind === "primary" ? found.group.footage : found.block.footage));
+          error.hidden = true;
+          modal.hidden = false;
+          document.body.classList.add("modal-open");
+          nameInput.focus(); nameInput.select();
+        };
+        const resizeRows = (rows, footage) => {
+          if (!rows.length) return;
+          const oldTotal = rows.reduce((sum, row) => sum + Math.max(0, Number(row[4]) || 0), 0);
+          let remaining = footage;
+          rows.forEach((row, index) => {
+            const next = index === rows.length - 1 ? remaining :
+              Math.min(remaining, oldTotal ? Math.round(footage * Math.max(0, Number(row[4]) || 0) / oldTotal) : 0);
+            row[4] = next;
+            remaining -= next;
+          });
+        };
+        const updateBlock = (block, name, footage, track) => {
+          const oldText = plainText(block.title || block.content);
+          const arrow = (oldText.match(/(?:→|->)\s*.+$/) || [])[0] || "";
+          const main = `${fmtInt(footage)} ${name}${track ? ` [${track}]` : ""}`;
+          block.footage = footage;
+          block.userEditedName = name;
+          block.title = main + (arrow ? " " + arrow : "");
+          block.content = block.assignment === "ihosa" || block.assignment === "mhoas" || arrow
+            ? `<span class="final-assigned-main">${escapeHtml(main)}</span>${arrow ? `<span class="final-assigned-source">${escapeHtml(arrow)}</span>` : ""}`
+            : escapeHtml(main);
+          resizeRows(Array.isArray(block.sourceRows) ? block.sourceRows : [], footage);
+        };
+        form.addEventListener("submit", event => {
+          event.preventDefault();
+          const found = getTarget(target);
+          const name = String(nameInput.value || "").trim().replace(/\s+/g, " ");
+          const footage = Number(footageInput.value);
+          if (!found || !name || !Number.isSafeInteger(footage) || footage < 1 || footage > 100000) {
+            error.textContent = "Enter a block name and whole-number footage between 1 and 100,000.";
+            error.hidden = false;
+            return;
+          }
+          if (found.kind === "primary") {
+            const rows = found.group.sourceIndexes.map(index => state.rows[index]).filter(Boolean);
+            if (rows.length) {
+              const stamp = `manual-edit-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
+              rows.forEach(row => {
+                while (row.length <= MANUAL_BLOCK_SEGMENT_INDEX) row.push("");
+                row[5] = name; row[6] = ""; row[12] = "";
+                row[MANUAL_BLOCK_SEGMENT_INDEX] = stamp;
+              });
+              resizeRows(rows, footage);
+            }
+          } else updateBlock(found.block, name, footage, found.track);
+          close();
+          selectedBlockIds.clear(); selectedBlockGridId = "";
+          renderAll();
+        });
+        modal.querySelector("[data-cancel]").addEventListener("click", close);
+        modal.addEventListener("pointerdown", event => { if (event.target === modal) close(); });
+        document.addEventListener("keydown", event => { if (event.key === "Escape" && !modal.hidden) { event.stopPropagation(); close(); } }, true);
+        document.addEventListener("contextmenu", event => {
+          const block = event.target.closest(".yard-grid .cut-cell[data-block-id]");
+          editButton.hidden = !block;
+          const final = event.target.closest(".final-summary-block[data-final-block-id]");
+          const zone = final && final.closest("[data-summary-paste-zone]");
+          const grid = final && final.closest(".yard-grid");
+          finalTarget = final && zone && grid ? {gridId:grid.id, zone:zone.dataset.summaryPasteZone, id:String(final.dataset.finalBlockId)} : null;
+        }, true);
+        editButton.addEventListener("click", event => {
+          event.preventDefault(); event.stopPropagation();
+          const reference = {gridId:blockContextGridId, id:String(blockContextBlockId)};
+          hideBlockContextMenu();
+          open(reference);
+        });
+        document.addEventListener("DOMContentLoaded", () => {
+          const finalMenu = document.getElementById("excelFinalBlockDeleteMenu");
+          if (!finalMenu || finalMenu.querySelector("[data-edit-final-block]")) return;
+          const button = document.createElement("button");
+          button.type = "button"; button.dataset.editFinalBlock = "";
+          button.textContent = "Edit name / footage...";
+          finalMenu.insertBefore(button, finalMenu.firstChild);
+          button.addEventListener("click", event => {
+            event.preventDefault(); event.stopPropagation();
+            const reference = finalTarget;
+            finalMenu.hidden = true;
+            open(reference);
+          });
+        }, {once:true});
+      };
+      const style = `<style id="${marker}-style">#excelBlockEditModal{position:fixed;inset:0;z-index:2147483647;display:grid;place-items:center;background:rgba(3,10,20,.7)}#excelBlockEditModal[hidden]{display:none!important}.excel-block-edit-dialog{width:min(390px,calc(100vw - 24px));padding:18px;border:1px solid #64748b;border-radius:10px;background:#102039;color:#fff;box-shadow:0 20px 50px #0008;font:800 13px Arial,sans-serif}.excel-block-edit-dialog h3{margin:0 0 14px;font-size:18px}.excel-block-edit-dialog label{display:grid;gap:5px;margin:11px 0}.excel-block-edit-dialog input{width:100%;box-sizing:border-box;padding:9px;border:1px solid #94a3b8;border-radius:5px;background:#fff;color:#0f172a;font:700 15px Arial,sans-serif}.excel-block-edit-dialog input:focus-visible,.excel-block-edit-dialog button:focus-visible{outline:3px solid #facc15;outline-offset:2px}.excel-block-edit-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}.excel-block-edit-actions button{padding:8px 12px;border:1px solid #94a3b8;border-radius:5px;background:#e2e8f0;color:#0f172a;font-weight:800;cursor:pointer}.excel-block-edit-actions button[type=submit]{background:#fbbf24;border-color:#f59e0b}.excel-block-edit-error{color:#fecaca}#excelFinalBlockDeleteMenu [data-edit-final-block]{margin-bottom:4px;border-color:#60a5fa;background:#1d4ed8}</style>`;
+      const blockCellAnchor = 'data-block-id="${escapeAttr(block.id)}" data-track="${track}" data-footage="${Number(block.footage) || 0}"';
+      const blockCellReplacement = blockCellAnchor + '${block.userEditedName ? ` data-user-edited-name="${escapeAttr(block.userEditedName)}"` : ""}';
+      if (html.includes(blockCellAnchor)) html = html.replace(blockCellAnchor, blockCellReplacement);
+      const primaryCellAnchor = 'data-block-id="${escapeAttr(group.blockId)}" data-track="${track}" data-footage="${Number(group.footage) || 0}"';
+      const primaryCellReplacement = primaryCellAnchor + '${/^manual-edit-/.test(String(group.rows[0] && group.rows[0][MANUAL_BLOCK_SEGMENT_INDEX] || "")) ? ` data-user-edited-name="${escapeAttr(group.status)}"` : ""}';
+      if (html.includes(primaryCellAnchor)) html = html.replace(primaryCellAnchor, primaryCellReplacement);
+      const snapshotAnchor = '        id: cell.dataset.blockId,\n        footage,';
+      if (html.includes(snapshotAnchor)) html = html.replace(snapshotAnchor, '        id: cell.dataset.blockId,\n        userEditedName:cell.dataset.userEditedName || "",\n        footage,');
+      const clipboardAnchor = '      footage:Math.max(0, Number(cell.dataset.footage) || 0),';
+      if (html.includes(clipboardAnchor)) html = html.replace(clipboardAnchor, '      userEditedName:cell.dataset.userEditedName || "",\n' + clipboardAnchor);
+      const page2Anchor = '  /* excel-page2-all-table-composition-colors-v1 */';
+      if (html.includes(page2Anchor)) html = html.replace(page2Anchor, `  var previousEditedNameCardCopy=cardCopy;
+  cardCopy=function(cell,footage){
+    previousEditedNameCardCopy(cell,footage);
+    var name=String(cell&&cell.dataset&&cell.dataset.userEditedName||"").trim();
+    if(!name){var label=String(cell&&cell.getAttribute("title")||"");if(/^\\s*[\\d,]+\\s+PIERCE\\b/i.test(label)&&/\\[P\\]/i.test(label))name=label.replace(/^\\s*[\\d,]+\\s*/,"").replace(/\\s*\\[\\d{3}\\]\\s*$/,"").trim();}
+    if(!name)return;
+    var track=Number(cell.dataset.track)||0;
+    var showTrack=!(document.getElementById("hideTrackIdsToggle")&&document.getElementById("hideTrackIdsToggle").checked);
+    cell.setAttribute("data-page2-primary",formatNumber(footage)+" "+name+(showTrack&&track?" ["+track+"]":""));
+    cell.dataset.page2EditedName="true";
+    cell.removeAttribute("data-page2-secondary");
+    cell.setAttribute("aria-label",cell.getAttribute("data-page2-primary"));
+  };
+` + page2Anchor);
+      const primaryPage2Anchor = '    cell.setAttribute("data-page2-primary",primary);';
+      if (html.includes(primaryPage2Anchor)) html = html.replace(primaryPage2Anchor, `    var editedName=String(cell.dataset.userEditedName||"").trim();
+    if(!editedName&&/^PIERCE\\b/i.test(status)&&/\\[P\\]/i.test(status))editedName=status;
+    if(editedName){primary=formatNumber(footage)+" "+editedName+(!hideTrackIds&&track?" ["+track+"]":"");secondary="";cell.dataset.page2EditedName="true";}
+` + primaryPage2Anchor);
+      html = html.replace(anchor, `  (${install.toString()})();\n${anchor}`);
+      const cardStyle = '<style id="excel-block-edited-name-card-style">body.excel-page-2 .yard-grid>.cut-cell[data-page2-edited-name]:before{white-space:normal!important;overflow-wrap:anywhere;text-overflow:clip!important;line-height:1.05!important;font-size:calc(var(--grid-block-size,12px) * .9)!important}</style>';
+      return html.replace(/<\/head>/i, `${style}${cardStyle}\n</head>`);
+    }
+
     function bridgedHtmlForPage(id) {
       if (!bridgedPageHtml.has(id)) {
         let pageHtml = pages[id].html;
@@ -19514,6 +19700,7 @@ document.addEventListener("excel-followup-label-position-change",schedule);docum
           pageHtml = withExcelInboundPaletteAndPierceMarkers(pageHtml);
           pageHtml = withExcelSsColorPrecedence(pageHtml);
           pageHtml = withExcelTomorrowInboundMarker(pageHtml);
+          pageHtml = withExcelBlockNameFootageEditor(pageHtml);
         }
         // The embedded chassisStatus document is a supplied, self-contained baseline.
         // Do not layer the legacy chassis transformer chain over it.
