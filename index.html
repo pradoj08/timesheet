@@ -763,8 +763,21 @@
       "settegast-excel-block-assignments-v1.updatedAt",
       "conglobal-excel-selected-block-followups-v1",
       "conglobal-excel-selected-block-followups-v1.updatedAt",
-      "conglobal-excel-consolidation-arrow-explanations-v1"
+      "conglobal-excel-selected-block-followups-v1.lastKnownGood",
+      "conglobal-excel-selected-block-followups-v1.lastKnownGood.updatedAt",
+      "settegast-excel-tomorrow-inbound-markers-v1",
+      "settegast-excel-tomorrow-inbound-markers-v1.updatedAt",
+      "conglobal-excel-consolidation-arrow-explanations-v1",
+      "rampBlockingControl.tableFour.v1"
     ]);
+
+    function excelFollowUpStorageValueHasData(raw) {
+      if (typeof raw !== "string" || !raw) return false;
+      try {
+        const value = JSON.parse(raw);
+        return Array.isArray(value) ? value.length > 0 : !!(value && typeof value === "object" && Object.keys(value).length);
+      } catch (error) { return false; }
+    }
 
     function chassisStorageValueHasData(key, raw) {
       if (typeof raw !== "string" || !raw) return false;
@@ -797,10 +810,59 @@
     }
 
     function preserveLocalExcelFollowUpsDuringCloudApply(incoming) {
-      NONDESTRUCTIVE_EXCEL_FOLLOWUP_STORAGE_KEYS.forEach((key) => {
-        const localValue = localStorage.getItem(key);
-        if (localValue !== null) incoming[key] = localValue;
-      });
+      const preservePair = (valueKey, updatedAtKey, lastKnownGoodKey = "") => {
+        let localValue = localStorage.getItem(valueKey);
+        let localStamp = localStorage.getItem(updatedAtKey) || "";
+        if (lastKnownGoodKey && !excelFollowUpStorageValueHasData(localValue)) {
+          const fallbackValue = localStorage.getItem(lastKnownGoodKey);
+          const fallbackStamp = localStorage.getItem(lastKnownGoodKey + ".updatedAt") || "";
+          if (excelFollowUpStorageValueHasData(fallbackValue) && (Date.parse(fallbackStamp) || 0) >= (Date.parse(localStamp) || 0)) {
+            localValue = fallbackValue;
+            localStamp = fallbackStamp;
+          }
+        }
+        if (localValue === null) return;
+        const hasRemote = Object.prototype.hasOwnProperty.call(incoming, valueKey);
+        const remoteValue = hasRemote ? String(incoming[valueKey] ?? "") : null;
+        const remoteStamp = String(incoming[updatedAtKey] || "");
+        const localTime = Date.parse(localStamp) || 0;
+        const remoteTime = Date.parse(remoteStamp) || 0;
+        const useLocal = !hasRemote || localTime > remoteTime ||
+          (localTime === remoteTime && excelFollowUpStorageValueHasData(localValue) && !excelFollowUpStorageValueHasData(remoteValue));
+        if (!useLocal) return;
+        incoming[valueKey] = localValue;
+        if (localStamp) incoming[updatedAtKey] = localStamp;
+        else delete incoming[updatedAtKey];
+      };
+      preservePair("settegast-excel-block-assignments-v1", "settegast-excel-block-assignments-v1.updatedAt");
+      preservePair("conglobal-excel-selected-block-followups-v1", "conglobal-excel-selected-block-followups-v1.updatedAt", "conglobal-excel-selected-block-followups-v1.lastKnownGood");
+      preservePair("settegast-excel-tomorrow-inbound-markers-v1", "settegast-excel-tomorrow-inbound-markers-v1.updatedAt");
+
+      const localFourthRaw = localStorage.getItem("rampBlockingControl.tableFour.v1");
+      if (localFourthRaw !== null) {
+        let localFourth = null;
+        let remoteFourth = null;
+        try { localFourth = JSON.parse(localFourthRaw); } catch (error) {}
+        try { remoteFourth = JSON.parse(incoming["rampBlockingControl.tableFour.v1"] || "null"); } catch (error) {}
+        const localTime = Date.parse(localFourth && localFourth.updatedAt || "") || 0;
+        const remoteTime = Date.parse(remoteFourth && remoteFourth.updatedAt || "") || 0;
+        if (!remoteFourth || localTime >= remoteTime) incoming["rampBlockingControl.tableFour.v1"] = localFourthRaw;
+      }
+
+      const localLastKnownGood = localStorage.getItem("conglobal-excel-selected-block-followups-v1.lastKnownGood");
+      const localLastKnownGoodStamp = localStorage.getItem("conglobal-excel-selected-block-followups-v1.lastKnownGood.updatedAt") || "";
+      const remoteLastKnownGoodStamp = String(incoming["conglobal-excel-selected-block-followups-v1.lastKnownGood.updatedAt"] || "");
+      if (localLastKnownGood !== null && (Date.parse(localLastKnownGoodStamp) || 0) >= (Date.parse(remoteLastKnownGoodStamp) || 0)) {
+        incoming["conglobal-excel-selected-block-followups-v1.lastKnownGood"] = localLastKnownGood;
+        if (localLastKnownGoodStamp) incoming["conglobal-excel-selected-block-followups-v1.lastKnownGood.updatedAt"] = localLastKnownGoodStamp;
+      }
+
+      const localLegacy = localStorage.getItem("conglobal-excel-consolidation-arrow-explanations-v1");
+      const remoteLegacy = Object.prototype.hasOwnProperty.call(incoming, "conglobal-excel-consolidation-arrow-explanations-v1")
+        ? String(incoming["conglobal-excel-consolidation-arrow-explanations-v1"] ?? "") : null;
+      if (localLegacy !== null && (remoteLegacy === null || (excelFollowUpStorageValueHasData(localLegacy) && !excelFollowUpStorageValueHasData(remoteLegacy)))) {
+        incoming["conglobal-excel-consolidation-arrow-explanations-v1"] = localLegacy;
+      }
       return incoming;
     }
 
@@ -1281,11 +1343,21 @@
       /* excel-assignment-refresh-cloud-merge-v1 */
       [
         [EXCEL_BLOCK_ASSIGNMENTS_KEY, EXCEL_BLOCK_ASSIGNMENTS_UPDATED_AT_KEY],
-        [EXCEL_BLOCK_FOLLOWUPS_KEY, EXCEL_BLOCK_FOLLOWUPS_UPDATED_AT_KEY]
+        [EXCEL_BLOCK_FOLLOWUPS_KEY, EXCEL_BLOCK_FOLLOWUPS_UPDATED_AT_KEY],
+        ["settegast-excel-tomorrow-inbound-markers-v1", "settegast-excel-tomorrow-inbound-markers-v1.updatedAt"]
       ].forEach(([valueKey, updatedAtKey]) => {
-        const localValue = localStorage.getItem(valueKey);
+        let localValue = localStorage.getItem(valueKey);
+        let localStamp = localStorage.getItem(updatedAtKey) || "";
         if (localValue === null) return;
-        const localStamp = localStorage.getItem(updatedAtKey) || "";
+        if (valueKey === EXCEL_BLOCK_FOLLOWUPS_KEY && !excelFollowUpStorageValueHasData(localValue)) {
+          const lastKnownGood = localStorage.getItem(valueKey + ".lastKnownGood");
+          const lastKnownGoodStamp = localStorage.getItem(valueKey + ".lastKnownGood.updatedAt") || "";
+          if (excelFollowUpStorageValueHasData(lastKnownGood) && (Date.parse(lastKnownGoodStamp) || 0) >= (Date.parse(localStamp) || 0)) {
+            localValue = lastKnownGood;
+            localStamp = lastKnownGoodStamp;
+          }
+          else if (excelFollowUpStorageValueHasData(merged[valueKey])) return;
+        }
         const cloudStamp = String(merged[updatedAtKey] || "");
         const localTime = Date.parse(localStamp) || 0;
         const cloudTime = Date.parse(cloudStamp) || 0;
@@ -1299,6 +1371,19 @@
       if (localLegacyFollowUps !== null && !Object.prototype.hasOwnProperty.call(merged, EXCEL_LEGACY_BLOCK_FOLLOWUPS_KEY)) {
         merged[EXCEL_LEGACY_BLOCK_FOLLOWUPS_KEY] = localLegacyFollowUps;
         keptLocal = true;
+      }
+      const localFourthRaw = localStorage.getItem("rampBlockingControl.tableFour.v1");
+      if (localFourthRaw !== null) {
+        let localFourth = null;
+        let cloudFourth = null;
+        try { localFourth = JSON.parse(localFourthRaw); } catch (error) {}
+        try { cloudFourth = JSON.parse(merged["rampBlockingControl.tableFour.v1"] || "null"); } catch (error) {}
+        const localFourthTime = Date.parse(localFourth && localFourth.updatedAt || "") || 0;
+        const cloudFourthTime = Date.parse(cloudFourth && cloudFourth.updatedAt || "") || 0;
+        if (!cloudFourth || localFourthTime >= cloudFourthTime) {
+          if (String(merged["rampBlockingControl.tableFour.v1"] || "") !== localFourthRaw) keptLocal = true;
+          merged["rampBlockingControl.tableFour.v1"] = localFourthRaw;
+        }
       }
       return { state: merged, keptLocal };
     }
@@ -7152,8 +7237,8 @@ body.excel-page-2 #blankYardGridTwo>.excel-page2-summary-edge{grid-column:14!imp
 body.excel-page-2 #blankYardGridTwo>.third-summary-total{position:relative!important;display:block!important;min-height:44px!important;padding:0!important;overflow:hidden!important;background-color:#f6f8f9!important;background-image:linear-gradient(90deg,#dec48b 0 var(--excel-page2-summary-fill,0%),#91a0aa var(--excel-page2-summary-fill,0%) 100%)!important;background-position:16px calc(100% - 5px)!important;background-size:calc(100% - 32px) 10px!important;background-repeat:no-repeat!important;color:transparent!important;font-size:0!important}
 body.excel-page-2 #blankYardGridTwo>.third-summary-total:before{content:attr(data-page2-used) " / " attr(data-page2-capacity) " ft";position:absolute;left:16px;top:8px;color:#17232c;font:900 10px/1 Consolas,"Courier New",monospace;white-space:nowrap}
 body.excel-page-2 #blankYardGridTwo>.third-summary-total:after{content:attr(data-page2-percent) "%";position:absolute;right:12px;top:8px;color:#17232c;font:900 10px/1 Consolas,"Courier New",monospace}
-body.excel-page-2 #blankYardGridTwo>.excel-page2-final-track{background-color:#fff1bd!important}
-body.excel-page-2 #blankYardGridTwo>.third-summary-total.excel-page2-final-track{background-color:#fff1bd!important}
+body.excel-page-2 #blankYardGridTwo>.excel-page2-final-track{background-color:#e5e7eb!important}
+body.excel-page-2 #blankYardGridTwo>.third-summary-total.excel-page2-final-track{background-color:#e5e7eb!important}
 body.excel-page-2 #blankYardGridTwo .final-summary-block{height:30px!important;min-height:30px!important;max-height:30px!important;box-sizing:border-box!important}
 body.excel-page-2 #blankYardGridTwo>.third-summary-blank.final-paste-zone{width:var(--excel-page2-final-zone-width,calc(100vw - 397px))!important;min-width:0!important;max-width:100%!important;justify-self:start!important;box-sizing:border-box!important}
 #blankYardGridTwo .final-block-list{width:100%!important;grid-template-columns:repeat(auto-fill,var(--excel-page2-block-width,140.5536px))!important;grid-auto-rows:30px!important;min-width:0!important;max-width:100%!important;justify-self:stretch!important}
@@ -7337,12 +7422,16 @@ body.excel-page-2 .excel-page2-secondary-grid>.track-remaining{position:sticky!i
       const finalTitleAnchor = '          const displayTitle = state.hideTrackIds ? stripBlockTrackIds(block.title) : block.title;';
       const finalBlockAnchor = '          return `<div class="${escapeAttr(block.className)}" data-final-block-id="${escapeAttr(block.id)}" data-footage="${Number(block.footage) || 0}" title="${escapeAttr(displayTitle)}">${displayContent}</div>`;';
       if (!html.includes(headerAnchor) || !html.includes(functionAnchor) || !html.includes(listenerAnchor) || !html.includes(finalTitleAnchor) || !html.includes(finalBlockAnchor)) return html;
-      const copyAssignedBlocksToFinalTracks = function copyAssignedBlocksToFinalTracks() {
-        const source = validSecondaryModel(state.secondaryGridTwo) ? state.secondaryGridTwo : null;
+      const copyAssignedBlocksToFinalTracks = function copyAssignedBlocksToFinalTracks(targetName = "three") {
+        const copyToTableTwo = targetName === "two";
+        const sourceGridSelector = copyToTableTwo ? "#yardGrid" : "#blankYardGrid";
+        const source = copyToTableTwo
+          ? snapshotGrid($(sourceGridSelector))
+          : validSecondaryModel(state.secondaryGridTwo) ? state.secondaryGridTwo : null;
         let savedAssignments = {};
         try { savedAssignments = JSON.parse(localStorage.getItem("settegast-excel-block-assignments-v1") || "{}"); } catch (_) {}
         const visibleAssignments = {};
-        document.querySelectorAll("#blankYardGrid .cut-cell[data-block-id]").forEach(cell => {
+        document.querySelectorAll(sourceGridSelector + " .cut-cell[data-block-id]").forEach(cell => {
           const text = clean(cell.title || cell.textContent).toLowerCase();
           const assignment = clean(cell.dataset.blockAssignment).toLowerCase();
           visibleAssignments[String(cell.dataset.blockId)] = assignment === "ihosa" || assignment === "mhoas"
@@ -7397,18 +7486,20 @@ body.excel-page-2 .excel-page2-secondary-grid>.track-remaining{position:sticky!i
             }));
           });
         }
-        const target = validSecondaryModel(state.secondaryGridThree) ? state.secondaryGridThree : emptySecondaryModel();
+        const targetStateKey = copyToTableTwo ? "secondaryGridTwo" : "secondaryGridThree";
+        const target = validSecondaryModel(state[targetStateKey]) ? state[targetStateKey] : emptySecondaryModel();
         target.finalBlocks = finalBlocks;
-        state.secondaryGridThree = target;
+        state[targetStateKey] = target;
         renderAll();
         const copied = finalBlocks.ihosa.length + finalBlocks.mhoas.length;
-        ssShowToast(copied ? `Copied ${copied} assigned block${copied === 1 ? "" : "s"} to the final tracks.` : "No IHOSA or MHOAS assignments found in Table 2.");
+        const sourceTable = copyToTableTwo ? "Table 1" : "Table 2";
+        ssShowToast(copied ? `Copied ${copied} assigned block${copied === 1 ? "" : "s"} from ${sourceTable} to the final tracks.` : `No IHOSA or MHOAS assignments found in ${sourceTable}.`);
       };
-      const headerReplacement = `    const assignmentCopy = target === "three" ? '<button class="copy-grid-btn" id="copyAssignedFinalBlocks" type="button">COPY IHOSA/MHOAS BLOCKS</button>' : "";
+      const headerReplacement = `    const assignmentCopy = '<button class="copy-grid-btn" data-copy-assigned-final-blocks="' + target + '" type="button">COPY IHOSA/MHOAS BLOCKS</button>';
     return '<div class="' + headerClass + '"><div class="copy-grid-actions">' + assignmentCopy + '<button class="copy-grid-btn" id="' + id + '" type="button">COPY ABOVE</button><button class="clear-grid-btn" data-clear-secondary-table="' + target + '" type="button">CLEAR TABLE</button><button class="add-inbound-train-btn" data-open-inbound-train="' + target + '" type="button">ADD INBOUND TRAIN</button></div></div>';`;
       html = html.replace(headerAnchor, headerReplacement);
       html = html.replace(functionAnchor, "  " + copyAssignedBlocksToFinalTracks.toString() + "\n\n" + functionAnchor);
-      html = html.replace(listenerAnchor, listenerAnchor + '\n    if (e.target.closest("#copyAssignedFinalBlocks")) copyAssignedBlocksToFinalTracks();');
+      html = html.replace(listenerAnchor, listenerAnchor + '\n    const copyAssignedFinalBlocks = e.target.closest("[data-copy-assigned-final-blocks]");\n    if (copyAssignedFinalBlocks) copyAssignedBlocksToFinalTracks(copyAssignedFinalBlocks.dataset.copyAssignedFinalBlocks);');
       if (html.includes(upgradedFinalContentAnchor)) {
         html = html.replace(upgradedFinalContentAnchor, '          const displayContent = block.assignment === "ihosa" || block.assignment === "mhoas" ? String(block.content || "") : secondaryBlockContentForDisplay(block);');
       } else if (html.includes(finalContentAnchor)) {
@@ -7866,6 +7957,46 @@ body.excel-page-2 .excel-page2-secondary-grid>.track-remaining{position:sticky!i
         'if (savedVersion >= COLOR_KEY_BASELINE_VERSION) return next;',
         'if (savedVersion >= COLOR_KEY_BASELINE_VERSION || loadPersistedColorRules()) { next.colorKeyBaselineVersion = COLOR_KEY_BASELINE_VERSION; return next; }'
       );
+      const hasColorRuleBridge = html.includes("window.conglobalFlushColorRules = function") || html.includes("window.conglobalFlushColorRules=function");
+      if (!html.includes("excel-color-rule-bridge-v2") && !hasColorRuleBridge) {
+        const colorRuleBridge = `
+  /* excel-color-rule-bridge-v2 */
+  window.conglobalFlushColorRules = function() {
+    persistColorRules();
+    return normalizeColorRules(state.colorRules);
+  };
+
+  window.addEventListener("message", (event) => {
+    if (!event.data) return;
+    if (event.data.type === "conglobal-excel-color-rules-restore") {
+      const rules = normalizeColorRules(event.data.rules);
+      if (!rules.length) return;
+      state.colorRules = rules;
+      persistColorRules();
+      renderAll();
+      try {
+        window.parent.postMessage({ type:"conglobal-excel-color-rules-restored", rules }, "*");
+      } catch (error) {}
+      return;
+    }
+    if (event.data.type !== "conglobal-excel-color-rules-flush-request") return;
+    const rules = normalizeColorRules(state.colorRules);
+    persistColorRules();
+    try {
+      window.parent.postMessage({
+        type: "conglobal-excel-color-rules-flush-response",
+        requestId: String(event.data.requestId || ""),
+        rules
+      }, "*");
+    } catch (error) {}
+  });
+`;
+        const colorScopeAnchorAt = html.indexOf("const $ = selector => document.querySelector(selector);");
+        const colorScriptAt = colorScopeAnchorAt >= 0 ? html.indexOf("<\/script>", colorScopeAnchorAt) : -1;
+        const colorIifeCloseAt = colorScriptAt >= 0 ? html.lastIndexOf("\n})();", colorScriptAt) : -1;
+        const colorInsertAt = colorIifeCloseAt > colorScopeAnchorAt ? colorIifeCloseAt : colorScriptAt;
+        if (colorInsertAt >= 0) html = html.slice(0, colorInsertAt) + colorRuleBridge + html.slice(colorInsertAt);
+      }
       if (!html.includes("excel-show-train-render-v2")) {
         html = html.replace(
           '  function renderGrid() {',
@@ -8208,27 +8339,6 @@ body.excel-page-2 .excel-page2-secondary-grid>.track-remaining{position:sticky!i
   if(colorEditor)["input","change","click"].forEach(function(type){colorEditor.addEventListener(type,function(){requestAnimationFrame(recolorSecondaryTables)})});
   var viewMenu=document.getElementById("viewSelectMenu");
   if(viewMenu)viewMenu.addEventListener("click",function(event){if(!event.target.closest("[data-grid-view]"))return;requestAnimationFrame(function(){requestAnimationFrame(recolorSecondaryTables)});setTimeout(recolorSecondaryTables,80)});
-  window.conglobalFlushColorRules=function(){
-    persistColorRules();
-    return Array.isArray(state.colorRules)?state.colorRules.map(function(rule){return {color:String(rule&&rule.color||"gray"),terms:String(rule&&rule.terms||"")}}):[];
-  };
-  window.addEventListener("message",function(event){
-    if(!event.data)return;
-    if(event.data.type==="conglobal-excel-color-rules-restore"){
-      var restored=Array.isArray(event.data.rules)?event.data.rules.filter(function(rule){return rule&&String(rule.terms||"").trim()}):[];
-      if(!restored.length)return;
-      state.colorRules=restored.map(function(rule){return {color:String(rule.color||"gray"),terms:String(rule.terms||"")}});
-      persistColorRules();
-      renderAll();
-      requestAnimationFrame(recolorSecondaryTables);
-      try{window.parent.postMessage({type:"conglobal-excel-color-rules-restored",rules:state.colorRules},"*")}catch(error){}
-      return;
-    }
-    if(event.data.type!=="conglobal-excel-color-rules-flush-request")return;
-    var rules=Array.isArray(state.colorRules)?state.colorRules.map(function(rule){return {color:String(rule&&rule.color||"gray"),terms:String(rule&&rule.terms||"")}}):[];
-    persistColorRules();
-    try{window.parent.postMessage({type:"conglobal-excel-color-rules-flush-response",requestId:String(event.data.requestId||""),rules:rules},"*")}catch(error){}
-  });
   recolorSecondaryTables();
 })();
 </scr${""}ipt>`;
@@ -10294,6 +10404,470 @@ document.addEventListener("DOMContentLoaded",function(){
       return updated.replace("</head>", '<meta name="' + marker + '" content="1"></head>');
     }
 
+    function withExcelPrimaryPasteMirror(html) {
+      const marker = "excel-primary-paste-mirror-v1";
+      if (!html || typeof html !== "string" || html.includes(marker)) return html;
+      const anchors = [
+        '  const TOMORROW_INBOUND_INDEX = INBOUND_SEQUENCE_INDEX + 1;',
+        '    const out = new Array(TOMORROW_INBOUND_INDEX + 1).fill("");',
+        '  function sourceRowsForSecondaryBlock(gridId, blockId) {',
+        '      title:String(cell.title || clean(cell.textContent)),\n      sourceRows',
+        '    const row = new Array(TOMORROW_INBOUND_INDEX + 1).fill("");',
+        '        while (row.length <= BLOCK_SHOW_TRACK_INDEX) row.push("");',
+        '      group.tomorrowInbound = group.rows.some(row => ["1", "true", "yes"].includes(clean(row[TOMORROW_INBOUND_INDEX]).toLowerCase()));\n      group.baseDisplay = buildCurrentDisplay(group);',
+        '        const cls = classifyCell(text, view);\n        const ruleStyle = view === "CURRENT RAMP BLOCKING" ? styleWithCurrentColorRule(text) : "";\n        const group = trackGroups[i] || null;',
+        '          ${displayText ? escapeHtml(displayText) : (text ? "" : "0")}'
+      ];
+      if (!anchors.every(anchor => html.includes(anchor))) return html;
+      let updated = html
+        .replace(anchors[0], anchors[0] + '\n  const PASTED_BLOCK_MIRROR_INDEX = TOMORROW_INBOUND_INDEX + 1;')
+        .replace(anchors[1], '    const out = new Array(PASTED_BLOCK_MIRROR_INDEX + 1).fill("");')
+        .replace(anchors[2], `  function cleanBlockCellStyle(cell) {
+    const clone = cell.cloneNode(false);
+    ["grid-row", "grid-column", "display", "position", "z-index", "width", "min-width", "max-width", "height", "min-height", "max-height"].forEach(property => clone.style.removeProperty(property));
+    return String(clone.getAttribute("style") || "");
+  }
+
+` + anchors[2])
+        .replace(anchors[3], '      title:String(cell.title || clean(cell.textContent)),\n      style:cleanBlockCellStyle(cell),\n      sourceRows')
+        .replace(anchors[4], '    const row = new Array(PASTED_BLOCK_MIRROR_INDEX + 1).fill("");')
+        .replace(anchors[5], `        while (row.length <= PASTED_BLOCK_MIRROR_INDEX) row.push("");`)
+        .replace(
+          '        row[BLOCK_SHOW_TRACK_INDEX] = block.showTrack ? "1" : "";\n      });\n      return {track, sourceRows:rows};',
+          `        row[BLOCK_SHOW_TRACK_INDEX] = "";
+        row[INBOUND_SHOVE_ORDER_INDEX] = Math.max(0, Number(block.shoveOrder) || 0);
+        row[INBOUND_SEQUENCE_INDEX] = Math.max(0, Number(block.inboundSequence) || 0);
+        row[PASTED_BLOCK_MIRROR_INDEX] = JSON.stringify({
+          footage:Math.max(0, Number(block.footage) || 0),
+          className:String(block.className || "cut-cell gray"),
+          content:blockContentForDisplay(String(block.content || ""), false),
+          title:stripBlockTrackIds(String(block.title || "")),
+          style:String(block.style || ""),
+          isPierceInbound:block.isPierceInbound === true
+        });
+      });
+      rows.forEach((row, rowIndex) => { row[4] = rowIndex === 0 ? Math.max(0, Number(block.footage) || 0) : 0; });
+      return {track, sourceRows:rows};`
+        )
+        .replace(
+          anchors[6],
+          `      group.tomorrowInbound = group.rows.some(row => ["1", "true", "yes"].includes(clean(row[TOMORROW_INBOUND_INDEX]).toLowerCase()));
+      group.mirrorBlock = null;
+      try {
+        const mirror = JSON.parse(String(first[PASTED_BLOCK_MIRROR_INDEX] || "null"));
+        if (mirror && typeof mirror === "object") group.mirrorBlock = mirror;
+      } catch (_) {}
+      if (group.mirrorBlock && Number(group.mirrorBlock.footage) >= 0) group.footage = Number(group.mirrorBlock.footage);
+      group.baseDisplay = buildCurrentDisplay(group);`
+        )
+        .replace(
+          anchors[7],
+          `        const group = trackGroups[i] || null;
+        const mirror = group && group.mirrorBlock && typeof group.mirrorBlock === "object" ? group.mirrorBlock : null;
+        const cls = mirror
+          ? String(mirror.className || "gray").replace(/\\b(?:cut-cell|block-reorderable|block-selected|block-paste-target|block-drag-target)\\b/g, "").replace(/\\s+/g, " ").trim()
+          : classifyCell(text, view);
+        const ruleStyle = mirror ? String(mirror.style || "") : (view === "CURRENT RAMP BLOCKING" ? styleWithCurrentColorRule(text) : "");`
+        )
+        .replace(
+          '        cells.push(`<div class="cut-cell ${cls}${interactiveClass}" ${moveAttrs} style="${escapeAttr(ruleStyle)}" title="${escapeHtml(displayText || (blockReorderingAvailable() ? "Place selected blocks at end of Track " + track : ""))}">',
+          '        const displayTitle = mirror ? String(mirror.title || clean(textFromCellHtml(`<div>${mirror.content || ""}</div>`))) : displayText;\n        cells.push(`<div class="cut-cell ${cls}${interactiveClass}" ${moveAttrs} style="${escapeAttr(ruleStyle)}" title="${escapeHtml(displayTitle || (blockReorderingAvailable() ? "Place selected blocks at end of Track " + track : ""))}">'
+        )
+        .replace(anchors[8], '          ${mirror ? String(mirror.content || "") : (displayText ? escapeHtml(displayText) : (text ? "" : "0"))}');
+      if (updated === html || !updated.includes("PASTED_BLOCK_MIRROR_INDEX") || !updated.includes("group.mirrorBlock")) return html;
+      return updated.replace("</head>", '<meta name="' + marker + '" content="1"></head>');
+    }
+
+    function withExcelPrimarySplitPasteMirrorV2(html) {
+      const marker = "excel-primary-split-paste-mirror-v2";
+      if (!html || typeof html !== "string" || html.includes(marker)) return html;
+      const indexAnchor = "  const BLOCK_COPY_ORIGINAL_TRACK_INDEX = MANUAL_BLOCK_SEGMENT_INDEX + 2;";
+      const pasteAnchor = `        while (row.length <= BLOCK_COPY_ORIGINAL_TRACK_INDEX) row.push("");
+        row[BLOCK_COPY_ORIGINAL_TRACK_INDEX] = Number(block.originalTrack) || Number(row[BLOCK_COPY_ORIGINAL_TRACK_INDEX]) || Number(row[0]) || Number(track);
+        row[0] = track;
+        row[MANUAL_BLOCK_SEGMENT_INDEX] = stamp;`;
+      const groupAnchor = `      group.originalTrack = Number((group.rows.find(row => Number(row[BLOCK_COPY_ORIGINAL_TRACK_INDEX])) || [])[BLOCK_COPY_ORIGINAL_TRACK_INDEX]) || 0;
+      group.baseDisplay = buildCurrentDisplay(group);`;
+      const renderAnchor = `        const cls = classifyCell(text, view);
+        const ruleVisualStyle = window.__excelRuleVisualStyle ? window.__excelRuleVisualStyle(text) : "";
+        const baseDisplayText = state.hideTrackIds ? stripBlockTrackIds(text) : text;
+        const group = trackGroups[i] || null;`;
+      if (![indexAnchor, pasteAnchor, groupAnchor, renderAnchor].every(anchor => html.includes(anchor))) return html;
+      let updated = html
+        .replace(indexAnchor, indexAnchor + '\n  const PASTED_BLOCK_VISUAL_INDEX = BLOCK_COPY_ORIGINAL_TRACK_INDEX + 1;')
+        .replaceAll("new Array(BLOCK_COPY_ORIGINAL_TRACK_INDEX + 1)", "new Array(PASTED_BLOCK_VISUAL_INDEX + 1)")
+        .replace('  function clipboardBlockFromCell(gridId, cell) {', `  function cleanBlockCellStyle(cell) {
+    const clone = cell.cloneNode(false);
+    ["grid-row", "grid-column", "display", "position", "z-index", "width", "min-width", "max-width", "height", "min-height", "max-height"].forEach(property => clone.style.removeProperty(property));
+    return String(clone.getAttribute("style") || "");
+  }
+
+  function clipboardBlockFromCell(gridId, cell) {`)
+        .replace(
+          '      title:String(cell.title || clean(cell.textContent)),\n      sourceRows',
+          '      title:String(cell.title || clean(cell.textContent)),\n      style:cleanBlockCellStyle(cell),\n      sourceRows'
+        )
+        .replace(pasteAnchor, `        while (row.length <= PASTED_BLOCK_VISUAL_INDEX) row.push("");
+        row[BLOCK_COPY_ORIGINAL_TRACK_INDEX] = "";
+        row[0] = track;
+        row[MANUAL_BLOCK_SEGMENT_INDEX] = stamp;
+        row[PASTED_BLOCK_VISUAL_INDEX] = JSON.stringify({
+          footage:Math.max(0, Number(block.footage) || 0),
+          className:String(block.className || "cut-cell gray"),
+          content:blockContentForDisplay(String(block.content || ""), false),
+          title:stripBlockTrackIds(String(block.title || "")),
+          style:String(block.style || "")
+        });`)
+        .replace(groupAnchor, `      group.originalTrack = 0;
+      group.pastedVisual = null;
+      try {
+        const pastedVisual = JSON.parse(String(first[PASTED_BLOCK_VISUAL_INDEX] || "null"));
+        if (pastedVisual && typeof pastedVisual === "object") group.pastedVisual = pastedVisual;
+      } catch (_) {}
+      if (group.pastedVisual && Number(group.pastedVisual.footage) >= 0) group.footage = Number(group.pastedVisual.footage);
+      group.baseDisplay = buildCurrentDisplay(group);`)
+        .replace(renderAnchor, `        const group = trackGroups[i] || null;
+        const pastedVisual = group && group.pastedVisual && typeof group.pastedVisual === "object" ? group.pastedVisual : null;
+        const cls = pastedVisual
+          ? String(pastedVisual.className || "gray").replace(/\\b(?:cut-cell|block-reorderable|block-selected|block-paste-target|block-drag-target)\\b/g, "").replace(/\\s+/g, " ").trim()
+          : classifyCell(text, view);
+        const ruleVisualStyle = pastedVisual ? String(pastedVisual.style || "") : (window.__excelRuleVisualStyle ? window.__excelRuleVisualStyle(text) : "");
+        const baseDisplayText = state.hideTrackIds ? stripBlockTrackIds(text) : text;`)
+        .replace(
+          '          ${displayText ? escapeHtml(displayText) : (text ? "" : "0")}',
+          '          ${pastedVisual ? String(pastedVisual.content || "") : (displayText ? escapeHtml(displayText) : (text ? "" : "0"))}'
+        );
+      if (updated === html || !updated.includes("PASTED_BLOCK_VISUAL_INDEX") || !updated.includes("group.pastedVisual")) return html;
+      return updated.replace("</head>", '<meta name="' + marker + '" content="1"></head>');
+    }
+
+    function withExcelRefreshPersistenceGuard(html) {
+      const marker = "excel-refresh-persistence-guard-v1";
+      if (!html || typeof html !== "string" || html.includes(marker)) return html;
+      let updated = html;
+      const rowHelperAnchor = "  function parsePersistedRampTables(raw) {";
+      if (updated.includes(rowHelperAnchor) && !updated.includes("function persistedRowsHaveData(rows)")) {
+        updated = updated.replace(rowHelperAnchor, '  function persistedRowsHaveData(rows) {\n    return Array.isArray(rows) && rows.some(row => Array.isArray(row) && row.some(value => String(value ?? "").trim()));\n  }\n\n' + rowHelperAnchor);
+      }
+      updated = updated.replace(
+        '      if (!parsed || !Array.isArray(parsed.rows)) return null;',
+        '      if (!parsed || !Array.isArray(parsed.rows) || !persistedRowsHaveData(parsed.rows)) return null;'
+      );
+      updated = updated.replace(
+        '    target.rows = bundle.rows.map(row => Array.isArray(row) ? row.slice() : row);',
+        '    if (persistedRowsHaveData(bundle.rows) || !persistedRowsHaveData(target.rows)) target.rows = bundle.rows.map(row => Array.isArray(row) ? row.slice() : row);'
+      );
+      const tableLoadStart = updated.indexOf("  function loadPersistedTableState() {");
+      const tableLoadEnd = tableLoadStart >= 0 ? updated.indexOf("\n  }\n\n  function ", tableLoadStart) : -1;
+      if (tableLoadStart >= 0 && tableLoadEnd > tableLoadStart) {
+        const tableLoadBlock = updated.slice(tableLoadStart, tableLoadEnd + 4).replace(
+          '        if (!candidate || !Array.isArray(candidate.rows)) return;',
+          '        if (!candidate || !Array.isArray(candidate.rows) || !persistedRowsHaveData(candidate.rows)) return;'
+        );
+        updated = updated.slice(0, tableLoadStart) + tableLoadBlock + updated.slice(tableLoadEnd + 4);
+      }
+      updated = updated.replace(
+        '      secondaryGridFour: null,\n      fourthRampTableVisible: false,',
+        '      secondaryGridFour: null,\n      fourthRampTableVisible: false,\n      followUpLabels: {},\n      followUpLabelsUpdatedAt: "",\n      tomorrowInboundMarkers: {},\n      tomorrowInboundMarkersUpdatedAt: "",'
+      );
+      const applyStart = updated.indexOf("  function applyPersistedRampTables(target, bundle) {");
+      const applyEnd = applyStart >= 0 ? updated.indexOf("\n  }", applyStart) : -1;
+      if (applyStart >= 0 && applyEnd > applyStart) {
+        const body = updated.slice(applyStart, applyEnd);
+        if (!body.includes("bundle.followUpLabels")) {
+          const restore = `    if (bundle.followUpLabels && typeof bundle.followUpLabels === "object" && !Array.isArray(bundle.followUpLabels)) target.followUpLabels = JSON.parse(JSON.stringify(bundle.followUpLabels));
+    if (typeof bundle.followUpLabelsUpdatedAt === "string") target.followUpLabelsUpdatedAt = bundle.followUpLabelsUpdatedAt;
+    if (bundle.tomorrowInboundMarkers && typeof bundle.tomorrowInboundMarkers === "object" && !Array.isArray(bundle.tomorrowInboundMarkers)) target.tomorrowInboundMarkers = JSON.parse(JSON.stringify(bundle.tomorrowInboundMarkers));
+    if (typeof bundle.tomorrowInboundMarkersUpdatedAt === "string") target.tomorrowInboundMarkersUpdatedAt = bundle.tomorrowInboundMarkersUpdatedAt;
+`;
+          const nextBody = body.replace("    return target;", restore + "    return target;");
+          updated = updated.slice(0, applyStart) + nextBody + updated.slice(applyEnd);
+        }
+      }
+      updated = updated.replace(
+        '      fourthRampTableVisible: state.fourthRampTableVisible === true\n    });',
+        '      fourthRampTableVisible: state.fourthRampTableVisible === true,\n      followUpLabels: state.followUpLabels && typeof state.followUpLabels === "object" ? state.followUpLabels : {},\n      followUpLabelsUpdatedAt: String(state.followUpLabelsUpdatedAt || ""),\n      tomorrowInboundMarkers: state.tomorrowInboundMarkers && typeof state.tomorrowInboundMarkers === "object" ? state.tomorrowInboundMarkers : {},\n      tomorrowInboundMarkersUpdatedAt: String(state.tomorrowInboundMarkersUpdatedAt || "")\n    });'
+      );
+      updated = updated.replace(
+        '      if (recovered.sourceName === state.sourceName && JSON.stringify(recovered.rows) === JSON.stringify(state.rows)) return;',
+        `      if (erRecoveryPendingSerialized) return;
+      if (JSON.stringify(recovered) === JSON.stringify(state)) return;
+      const recoveredHasRows = recovered.rows.some(row => Array.isArray(row) && row.some(value => String(value ?? "").trim()));
+      if (!recoveredHasRows) return;`
+      );
+      updated = updated.replace(
+        '      if (recoveryAt <= persistedTableStateSavedAt && recovered.sourceName === state.sourceName) return;',
+        '      if (persistedTableStateSavedAt > 0 && recoveryAt <= persistedTableStateSavedAt) return;'
+      );
+      updated = updated.replace(
+        '  let erRecoveryPending = true;\n  let erRecoveryWrite = Promise.resolve();',
+        '  let erRecoveryPending = true;\n  let erRecoveryPendingSerialized = "";\n  let erRecoveryWrite = Promise.resolve();'
+      );
+      updated = updated.replace(
+        '      state = { ...defaultState(), ...recovered };',
+        `      const currentState = state;
+      const recoveredState = { ...defaultState(), ...currentState, ...recovered };
+      ["secondaryGridTwo", "secondaryGridThree", "secondaryGridFour"].forEach(key => {
+        if (validSecondaryModel(currentState[key]) && !validSecondaryModel(recovered[key])) recoveredState[key] = JSON.parse(JSON.stringify(currentState[key]));
+      });
+      if (validSecondaryModel(currentState.secondaryGridFour) && !validSecondaryModel(recovered.secondaryGridFour)) recoveredState.fourthRampTableVisible = currentState.fourthRampTableVisible === true;
+      [["followUpLabels", "followUpLabelsUpdatedAt"], ["tomorrowInboundMarkers", "tomorrowInboundMarkersUpdatedAt"]].forEach(([valueKey, updatedAtKey]) => {
+        const currentValue = currentState[valueKey] && typeof currentState[valueKey] === "object" && !Array.isArray(currentState[valueKey]) ? currentState[valueKey] : {};
+        const recoveredValue = recovered[valueKey] && typeof recovered[valueKey] === "object" && !Array.isArray(recovered[valueKey]) ? recovered[valueKey] : {};
+        const currentAt = Date.parse(currentState[updatedAtKey] || "") || 0;
+        const recoveredValueAt = Date.parse(recovered[updatedAtKey] || "") || 0;
+        if (currentAt > recoveredValueAt || (!recoveredValueAt && Object.keys(currentValue).length && !Object.keys(recoveredValue).length)) {
+          recoveredState[valueKey] = JSON.parse(JSON.stringify(currentValue));
+          recoveredState[updatedAtKey] = currentState[updatedAtKey] || "";
+        }
+      });
+      const persistedFourth = typeof loadPersistedFourthRampTable === "function" ? loadPersistedFourthRampTable() : null;
+      const persistedFourthAt = Date.parse(persistedFourth && persistedFourth.updatedAt || "") || 0;
+      if (persistedFourth && (persistedFourthAt >= recoveryAt || !Object.prototype.hasOwnProperty.call(recovered, "secondaryGridFour"))) applyPersistedFourthRampTable(recoveredState, persistedFourth, recoveryAt);
+      state = recoveredState;`
+      );
+      updated = updated.replace(
+        '    } finally { erRecoveryPending = false; }',
+        `    } finally {
+      erRecoveryPending = false;
+      if (erRecoveryPendingSerialized) {
+        const pending = erRecoveryPendingSerialized;
+        erRecoveryPendingSerialized = "";
+        void writeErRecoverySnapshot(pending).catch(error => console.warn("ER recovery save failed.", error));
+      }
+    }`
+      );
+      updated = updated.replace(
+        '    if (changed && !erRecoveryPending) void writeErRecoverySnapshot(serialized).catch(error => console.warn("ER recovery save failed.", error));',
+        '    if (changed) {\n      if (erRecoveryPending) erRecoveryPendingSerialized = serialized;\n      void writeErRecoverySnapshot(serialized).catch(error => console.warn("ER recovery save failed.", error));\n    }'
+      );
+      const guardedSaveStart = updated.indexOf("  function saveState() {");
+      const guardedSaveEnd = guardedSaveStart >= 0 ? updated.indexOf("\n  }\n\n  function ", guardedSaveStart) : -1;
+      if (guardedSaveStart >= 0 && guardedSaveEnd > guardedSaveStart) {
+        let guardedSave = updated.slice(guardedSaveStart, guardedSaveEnd + 4);
+        if (!guardedSave.includes("if (changed || !erRecoveryPending)")) {
+          guardedSave = guardedSave
+            .replace('    try {\n      storageCandidates().forEach((store) => {', '    if (changed || !erRecoveryPending) {\n      try {\n        storageCandidates().forEach((store) => {')
+            .replace('    } catch (error) {\n      // The dashboard still works when a browser blocks local file storage.\n    }\n    persistInboundState();', '      } catch (error) {\n        // The dashboard still works when a browser blocks local file storage.\n      }\n    }\n    persistInboundState();')
+            .replace('    } catch (error) {\n      // The dashboard still works when a browser blocks local file storage.\n    }\n    lastCommittedExcelViewState = serialized;', '      } catch (error) {\n        // The dashboard still works when a browser blocks local file storage.\n      }\n    }\n    lastCommittedExcelViewState = serialized;');
+          updated = updated.slice(0, guardedSaveStart) + guardedSave + updated.slice(guardedSaveEnd + 4);
+        }
+      }
+      updated = updated.replace(
+        'var targetGridId="",targetBlockId="",targetLabel="";',
+        'var targetGridId="",targetBlockId="",targetLabel="",directMemory=null,directMemoryUpdatedAt="";'
+      );
+      updated = updated.replace(
+        'function directRead(){try{var value=JSON.parse(localStorage.getItem(directKey)||"{}");return value&&typeof value==="object"&&!Array.isArray(value)?value:{}}catch(_){return{}}}',
+        'function directRead(){var candidates=[];function add(value,updatedAt,priority){if(!value||typeof value!=="object"||Array.isArray(value))return;candidates.push({value:value,updatedAt:String(updatedAt||""),time:Date.parse(updatedAt||"")||0,priority:priority})}try{var raw=localStorage.getItem(directKey);if(raw!==null)add(JSON.parse(raw||"{}"),localStorage.getItem(directKey+".updatedAt")||"",2)}catch(_){}try{var lastRaw=localStorage.getItem(directKey+".lastKnownGood");if(lastRaw!==null)add(JSON.parse(lastRaw||"{}"),localStorage.getItem(directKey+".lastKnownGood.updatedAt")||"",1)}catch(_){}try{var bridge=window.conglobalExcelFollowUpLabelsBridge&&window.conglobalExcelFollowUpLabelsBridge.read();if(bridge)add(bridge.value,bridge.updatedAt,3)}catch(_){}if(directMemory&&typeof directMemory==="object")add(directMemory,directMemoryUpdatedAt,4);candidates.sort(function(a,b){return b.time-a.time||b.priority-a.priority});var nonempty=candidates.find(function(item){return Object.keys(item.value).length}),bridgeEmpty=candidates.find(function(item){return item.priority===3&&item.updatedAt&&!Object.keys(item.value).length}),selected=bridgeEmpty&&(!nonempty||bridgeEmpty.time>=nonempty.time)?bridgeEmpty:(nonempty||candidates[0]||{value:{},updatedAt:""});directMemory=selected.value;directMemoryUpdatedAt=selected.updatedAt;if(Object.keys(directMemory).length){var encoded=JSON.stringify(directMemory);try{localStorage.setItem(directKey,encoded)}catch(_){}try{if(directMemoryUpdatedAt)localStorage.setItem(directKey+".updatedAt",directMemoryUpdatedAt)}catch(_){}try{localStorage.setItem(directKey+".lastKnownGood",encoded)}catch(_){}try{if(directMemoryUpdatedAt)localStorage.setItem(directKey+".lastKnownGood.updatedAt",directMemoryUpdatedAt)}catch(_){}}return directMemory}'
+      );
+      updated = updated.replace(
+        'function writeDirect(value){var previous=localStorage.getItem(directKey),next=JSON.stringify(value&&typeof value==="object"?value:{});if(previous===next)return false;pushDirectUndo(previous);localStorage.setItem(directKey,next);localStorage.setItem(directKey+".updatedAt",new Date().toISOString());syncUndoButton();return true}',
+        'function writeDirect(value){var normalized=value&&typeof value==="object"&&!Array.isArray(value)?value:{},previous=null,next=JSON.stringify(normalized),stamp=new Date().toISOString(),changed=false;try{previous=localStorage.getItem(directKey)}catch(_){}changed=previous!==next;if(changed)pushDirectUndo(previous);directMemory=normalized;directMemoryUpdatedAt=stamp;try{localStorage.setItem(directKey,next)}catch(_){}try{localStorage.setItem(directKey+".updatedAt",stamp)}catch(_){}if(Object.keys(normalized).length){try{localStorage.setItem(directKey+".lastKnownGood",next)}catch(_){}try{localStorage.setItem(directKey+".lastKnownGood.updatedAt",stamp)}catch(_){}}try{var bridge=window.conglobalExcelFollowUpLabelsBridge;if(bridge&&typeof bridge.write==="function")changed=bridge.write(normalized,stamp)||changed}catch(_){}syncUndoButton();return changed}'
+      );
+      const followUpBridgeAnchor = "\n  function undoExcelViewChange() {";
+      if (updated.includes(followUpBridgeAnchor) && !updated.includes("window.conglobalExcelFollowUpLabelsBridge =")) {
+        const followUpBridge = `
+  window.conglobalExcelFollowUpLabelsBridge = {
+    read() {
+      const value = state.followUpLabels && typeof state.followUpLabels === "object" && !Array.isArray(state.followUpLabels) ? state.followUpLabels : {};
+      return { value: JSON.parse(JSON.stringify(value)), updatedAt: String(state.followUpLabelsUpdatedAt || "") };
+    },
+    write(value, updatedAt) {
+      const normalized = value && typeof value === "object" && !Array.isArray(value) ? JSON.parse(JSON.stringify(value)) : {};
+      const nextSerialized = JSON.stringify(normalized);
+      const currentSerialized = JSON.stringify(state.followUpLabels && typeof state.followUpLabels === "object" && !Array.isArray(state.followUpLabels) ? state.followUpLabels : {});
+      const stamp = String(updatedAt || new Date().toISOString());
+      if (nextSerialized === currentSerialized && stamp === String(state.followUpLabelsUpdatedAt || "")) return false;
+      state.followUpLabels = normalized;
+      state.followUpLabelsUpdatedAt = stamp;
+      saveState();
+      return true;
+    }
+  };
+`;
+        updated = updated.replace(followUpBridgeAnchor, followUpBridge + followUpBridgeAnchor);
+      }
+      if (updated.includes(followUpBridgeAnchor) && !updated.includes("window.conglobalExcelTomorrowInboundBridge =")) {
+        const tomorrowBridge = `
+  window.conglobalExcelTomorrowInboundBridge = {
+    read() {
+      const value = state.tomorrowInboundMarkers && typeof state.tomorrowInboundMarkers === "object" && !Array.isArray(state.tomorrowInboundMarkers) ? state.tomorrowInboundMarkers : {};
+      return { value: JSON.parse(JSON.stringify(value)), updatedAt: String(state.tomorrowInboundMarkersUpdatedAt || "") };
+    },
+    write(value, updatedAt) {
+      const normalized = value && typeof value === "object" && !Array.isArray(value) ? JSON.parse(JSON.stringify(value)) : {};
+      const nextSerialized = JSON.stringify(normalized);
+      const currentSerialized = JSON.stringify(state.tomorrowInboundMarkers && typeof state.tomorrowInboundMarkers === "object" && !Array.isArray(state.tomorrowInboundMarkers) ? state.tomorrowInboundMarkers : {});
+      const stamp = String(updatedAt || new Date().toISOString());
+      if (nextSerialized === currentSerialized && stamp === String(state.tomorrowInboundMarkersUpdatedAt || "")) return false;
+      state.tomorrowInboundMarkers = normalized;
+      state.tomorrowInboundMarkersUpdatedAt = stamp;
+      saveState();
+      return true;
+    }
+  };
+`;
+        updated = updated.replace(followUpBridgeAnchor, tomorrowBridge + followUpBridgeAnchor);
+      }
+      updated = updated.replace(
+        'function read(){try{var value=JSON.parse(localStorage.getItem(storageKey)||"{}");return value&&typeof value==="object"&&!Array.isArray(value)?value:{}}catch(_){return{}}}',
+        'function read(){var localValue=null,localStamp="",bridgeValue=null,bridgeStamp="";try{var raw=localStorage.getItem(storageKey);if(raw!==null){localValue=JSON.parse(raw||"{}");localStamp=localStorage.getItem(storageKey+".updatedAt")||""}}catch(_){}try{var saved=window.conglobalExcelTomorrowInboundBridge&&window.conglobalExcelTomorrowInboundBridge.read();if(saved){bridgeValue=saved.value;bridgeStamp=String(saved.updatedAt||"")}}catch(_){}var localValid=localValue&&typeof localValue==="object"&&!Array.isArray(localValue),bridgeValid=bridgeValue&&typeof bridgeValue==="object"&&!Array.isArray(bridgeValue),localTime=Date.parse(localStamp)||0,bridgeTime=Date.parse(bridgeStamp)||0;if(bridgeValid&&(bridgeTime>localTime||(bridgeTime===localTime&&Object.keys(bridgeValue).length>=Object.keys(localValid?localValue:{}).length)))return bridgeValue;return localValid?localValue:(bridgeValid?bridgeValue:{})}'
+      );
+      updated = updated.replace(
+        'localStorage.setItem(storageKey,JSON.stringify(records));var menu=document.getElementById("blockContextMenu");if(menu)menu.hidden=true;decorate()',
+        'var stamp=new Date().toISOString();try{localStorage.setItem(storageKey,JSON.stringify(records))}catch(_){}try{localStorage.setItem(storageKey+".updatedAt",stamp)}catch(_){}try{var bridge=window.conglobalExcelTomorrowInboundBridge;if(bridge&&typeof bridge.write==="function")bridge.write(records,stamp)}catch(_){}var menu=document.getElementById("blockContextMenu");if(menu)menu.hidden=true;decorate()'
+      );
+      updated = updated.replace(
+        'try{localStorage.setItem(storageKey,JSON.stringify(records))}catch(_){}var menu=document.getElementById("blockContextMenu");if(menu)menu.hidden=true;decorate()',
+        'var stamp=new Date().toISOString();try{localStorage.setItem(storageKey,JSON.stringify(records))}catch(_){}try{localStorage.setItem(storageKey+".updatedAt",stamp)}catch(_){}try{var bridge=window.conglobalExcelTomorrowInboundBridge;if(bridge&&typeof bridge.write==="function")bridge.write(records,stamp)}catch(_){}var menu=document.getElementById("blockContextMenu");if(menu)menu.hidden=true;decorate()'
+      );
+      updated = updated.replace(
+        'addEventListener("scroll",schedule,true);addEventListener("resize",schedule);document.addEventListener("excel-followup-label-position-change",schedule);',
+        'addEventListener("scroll",schedule,true);addEventListener("resize",schedule);document.addEventListener("excel-followup-label-position-change",schedule);document.addEventListener("excel-persisted-state-restored",schedule);window.addEventListener("storage",function(event){if(event.key===storageKey||event.key===storageKey+".updatedAt")schedule()});'
+      );
+      updated = updated.replace(
+        'window.addEventListener("storage",function(event){if(event.key===directKey)scheduleDirect()});var savedDirect=backfillFollowUpLocators()',
+        'window.addEventListener("storage",function(event){if(event.key===directKey||event.key===directKey+".updatedAt"){directMemory=null;directMemoryUpdatedAt="";scheduleDirect()}});document.addEventListener("excel-persisted-state-restored",function(){directMemory=null;directMemoryUpdatedAt="";scheduleDirect()});var savedDirect=backfillFollowUpLocators()'
+      );
+      updated = updated.replace(
+        'var savedDirect=backfillFollowUpLocators(),savedIds=',
+        'var savedDirect=backfillFollowUpLocators();try{var startupBridge=window.conglobalExcelFollowUpLabelsBridge;if((Object.keys(savedDirect).length||directMemoryUpdatedAt)&&startupBridge&&typeof startupBridge.write==="function")startupBridge.write(savedDirect,directMemoryUpdatedAt)}catch(_){}var savedIds='
+      );
+      updated = updated.replace(
+        'if(changed){localStorage.setItem(directKey,JSON.stringify(direct));localStorage.setItem(directKey+".updatedAt",new Date().toISOString())}renderDirect()',
+        'if(changed)writeDirect(direct);renderDirect()'
+      );
+      updated = updated.replace(
+        'if(parsed.value===null||typeof parsed.value==="undefined")localStorage.removeItem(directKey);else localStorage.setItem(directKey,String(parsed.value));localStorage.setItem(directKey+".updatedAt",new Date().toISOString());renderDirect();syncUndoButton()',
+        'var restoredValue={};try{restoredValue=parsed.value===null||typeof parsed.value==="undefined"?{}:JSON.parse(String(parsed.value));if(!restoredValue||typeof restoredValue!=="object"||Array.isArray(restoredValue))restoredValue={}}catch(_){restoredValue={}}var restoredStamp=new Date().toISOString();directMemory=restoredValue;directMemoryUpdatedAt=restoredStamp;try{localStorage.setItem(directKey,JSON.stringify(restoredValue))}catch(_){}try{localStorage.setItem(directKey+".updatedAt",restoredStamp)}catch(_){}try{var undoBridge=window.conglobalExcelFollowUpLabelsBridge;if(undoBridge&&typeof undoBridge.write==="function")undoBridge.write(restoredValue,restoredStamp)}catch(_){}renderDirect();syncUndoButton()'
+      );
+      updated = updated.replace(
+        'localStorage.setItem(storageKey,JSON.stringify(records));var menu=document.getElementById("blockContextMenu");',
+        'try{localStorage.setItem(storageKey,JSON.stringify(records))}catch(_){}var menu=document.getElementById("blockContextMenu");'
+      );
+      const tomorrowReadStart = updated.indexOf("  function readTomorrowInboundMarkers() {");
+      const tomorrowReadEnd = tomorrowReadStart >= 0 ? updated.indexOf("\n  function contextBlockIsTomorrowInbound", tomorrowReadStart) : -1;
+      if (tomorrowReadStart >= 0 && tomorrowReadEnd > tomorrowReadStart) {
+        const tomorrowRead = `  function readTomorrowInboundMarkers() {
+    const stateMarkers = state.tomorrowInboundMarkers && typeof state.tomorrowInboundMarkers === "object" && !Array.isArray(state.tomorrowInboundMarkers) ? state.tomorrowInboundMarkers : {};
+    const stateAt = Date.parse(state.tomorrowInboundMarkersUpdatedAt || "") || 0;
+    try {
+      const raw = localStorage.getItem(TOMORROW_INBOUND_MARKERS_KEY);
+      if (raw !== null) {
+        const saved = JSON.parse(raw || "{}");
+        const savedStamp = localStorage.getItem(TOMORROW_INBOUND_MARKERS_KEY + ".updatedAt") || "";
+        const savedAt = Date.parse(savedStamp) || 0;
+        if (saved && typeof saved === "object" && !Array.isArray(saved) && (savedAt > stateAt || (savedAt === stateAt && (Object.keys(saved).length || !Object.keys(stateMarkers).length)))) {
+          state.tomorrowInboundMarkers = saved;
+          state.tomorrowInboundMarkersUpdatedAt = savedStamp;
+          return saved;
+        }
+      }
+    } catch (_) {}
+    return stateMarkers;
+  }
+`;
+        updated = updated.slice(0, tomorrowReadStart) + tomorrowRead + updated.slice(tomorrowReadEnd);
+      }
+      const tomorrowSetStart = updated.indexOf("  function setContextBlockTomorrowInbound(gridId, blockId, marked) {");
+      const tomorrowSetEnd = tomorrowSetStart >= 0 ? updated.indexOf("\n  function decorateTomorrowInboundBlocks", tomorrowSetStart) : -1;
+      if (tomorrowSetStart >= 0 && tomorrowSetEnd > tomorrowSetStart) {
+        const tomorrowSet = `  function setContextBlockTomorrowInbound(gridId, blockId, marked) {
+    if (!gridId || !blockId || !document.querySelector(\`#\${CSS.escape(gridId)} .cut-cell[data-block-id="\${CSS.escape(String(blockId))}"]\`)) return false;
+    const markers = readTomorrowInboundMarkers();
+    const id = tomorrowInboundMarkerId(gridId, blockId);
+    if (marked) markers[id] = true;
+    else delete markers[id];
+    const updatedAt = new Date().toISOString();
+    state.tomorrowInboundMarkers = markers;
+    state.tomorrowInboundMarkersUpdatedAt = updatedAt;
+    try { localStorage.setItem(TOMORROW_INBOUND_MARKERS_KEY, JSON.stringify(markers)); } catch (_) {}
+    try { localStorage.setItem(TOMORROW_INBOUND_MARKERS_KEY + ".updatedAt", updatedAt); } catch (_) {}
+    saveState();
+    return true;
+  }
+`;
+        updated = updated.slice(0, tomorrowSetStart) + tomorrowSet + updated.slice(tomorrowSetEnd);
+      }
+      if (updated === html || !updated.includes("followUpLabels") || !updated.includes("tomorrowInboundMarkers")) return html;
+      return updated.replace("</head>", '<meta name="' + marker + '" content="1"></head>');
+    }
+
+    function withExcelFourthRampDedicatedPersistence(html) {
+      const marker = "excel-fourth-ramp-dedicated-persistence-v1";
+      if (!html || typeof html !== "string" || html.includes(marker)) return html;
+      const rampKey = '  const RAMP_TABLES_STORAGE_KEY = "rampBlockingControl.tables.v1";';
+      const applyAnchor = "  function applyPersistedRampTables(target, bundle) {";
+      if (!html.includes(rampKey) || !html.includes(applyAnchor)) return html;
+      const helpers = `  function loadPersistedFourthRampTable() {
+    let selected = null;
+    let selectedAt = -1;
+    storageCandidates().forEach((store) => {
+      try {
+        const candidate = JSON.parse(store.getItem(FOURTH_RAMP_TABLE_STORAGE_KEY) || "null");
+        if (!candidate || typeof candidate !== "object") return;
+        if (candidate.deleted !== true && (!candidate.model || typeof candidate.model !== "object")) return;
+        const savedAt = Date.parse(candidate.updatedAt || "") || 0;
+        if (!selected || savedAt >= selectedAt) { selected = candidate; selectedAt = savedAt; }
+      } catch (error) {}
+    });
+    return selected;
+  }
+
+  function applyPersistedFourthRampTable(target, saved, baselineUpdatedAt = 0) {
+    if (!target || !saved || typeof saved !== "object") return target;
+    const savedAt = Date.parse(saved.updatedAt || "") || 0;
+    const baselineAt = Math.max(0, Number(baselineUpdatedAt) || 0);
+    if (savedAt < baselineAt) return target;
+    if (saved.deleted === true || saved.model == null) {
+      target.secondaryGridFour = null;
+      target.fourthRampTableVisible = false;
+      return target;
+    }
+    if (typeof saved.model !== "object") return target;
+    target.secondaryGridFour = JSON.parse(JSON.stringify(saved.model));
+    target.fourthRampTableVisible = saved.visible !== false;
+    return target;
+  }
+
+`;
+      let updated = html;
+      if (!updated.includes('const FOURTH_RAMP_TABLE_STORAGE_KEY = "rampBlockingControl.tableFour.v1";')) {
+        updated = updated.replace(rampKey, rampKey + '\n  const FOURTH_RAMP_TABLE_STORAGE_KEY = "rampBlockingControl.tableFour.v1";');
+      }
+      if (!updated.includes("function loadPersistedFourthRampTable()")) updated = updated.replace(applyAnchor, helpers + applyAnchor);
+      const loadStart = updated.indexOf("  function loadState() {");
+      const loadEnd = loadStart >= 0 ? updated.indexOf("\n  }\n\n  function ", loadStart) : -1;
+      if (loadStart < 0 || loadEnd < 0) return html;
+      let loadBlock = updated.slice(loadStart, loadEnd + 4);
+      if (!loadBlock.includes("const persistedFourthRampTable")) loadBlock = loadBlock.replace('    const persistedRampTables = loadPersistedRampTables();', '    const persistedRampTables = loadPersistedRampTables();\n    const persistedFourthRampTable = loadPersistedFourthRampTable();');
+      if (!loadBlock.includes("applyPersistedFourthRampTable(restored")) {
+        loadBlock = loadBlock
+          .replace('        return restored;', '        const selectedStateAt = Math.max(persistedTableStateSavedAt, newerTables ? (Date.parse(persistedRampTables.updatedAt || "") || 0) : 0);\n        return applyPersistedFourthRampTable(restored, persistedFourthRampTable, selectedStateAt);')
+          .replace('        return applyGridDisplayBaseline(applyColorKeyBaseline(merged, saved), saved);', '        const selectedStateAt = Math.max(persistedTableStateSavedAt, newerTables ? (Date.parse(persistedRampTables.updatedAt || "") || 0) : 0);\n        return applyPersistedFourthRampTable(applyGridDisplayBaseline(applyColorKeyBaseline(merged, saved), saved), persistedFourthRampTable, selectedStateAt);');
+      }
+      if (!loadBlock.includes("applyPersistedFourthRampTable(fallback")) loadBlock = loadBlock.replace('    return fallback;', '    return applyPersistedFourthRampTable(fallback, persistedFourthRampTable, Date.parse(persistedRampTables && persistedRampTables.updatedAt || "") || 0);');
+      if (!loadBlock.includes("const persistedFourthRampTable") || !loadBlock.includes("applyPersistedFourthRampTable(fallback")) return html;
+      updated = updated.slice(0, loadStart) + loadBlock + updated.slice(loadEnd + 4);
+      const saveStart = updated.indexOf("  function saveState() {");
+      const saveEnd = saveStart >= 0 ? updated.indexOf("\n  }\n\n  function ", saveStart) : -1;
+      if (saveStart < 0 || saveEnd < 0) return html;
+      let saveBlock = updated.slice(saveStart, saveEnd + 4);
+      if (!saveBlock.includes("const fourthTableSerialized")) saveBlock = saveBlock.replace('    try {\n      storageCandidates().forEach((store) => {\n        try {\n          store.setItem(STORAGE_KEY, serialized);', '    const fourthTableSerialized = JSON.stringify({version:1, updatedAt:tablesUpdatedAt, visible:!!(state.secondaryGridFour && state.fourthRampTableVisible !== false), deleted:!(state.secondaryGridFour && typeof state.secondaryGridFour === "object"), model:state.secondaryGridFour && typeof state.secondaryGridFour === "object" ? state.secondaryGridFour : null});\n    try {\n      storageCandidates().forEach((store) => {\n        try { store.setItem(FOURTH_RAMP_TABLE_STORAGE_KEY, fourthTableSerialized); } catch (error) {}\n        try {\n          store.setItem(STORAGE_KEY, serialized);');
+      if (!saveBlock.includes("fourthTableSerialized")) return html;
+      updated = updated.slice(0, saveStart) + saveBlock + updated.slice(saveEnd + 4);
+      updated = updated
+        .replace('      let nextState = { ...defaultState(), ...restored };', '      let nextState = { ...defaultState(), ...restored };\n      let incomingTablesAt = Date.parse(data.updatedAt || "") || 0;')
+        .replace('        const tableBundle = JSON.parse(data.tables);\n        nextState = applyPersistedRampTables(nextState, tableBundle);', '        const tableBundle = JSON.parse(data.tables);\n        incomingTablesAt = Math.max(incomingTablesAt, Date.parse(tableBundle && tableBundle.updatedAt || "") || 0);\n        nextState = applyPersistedRampTables(nextState, tableBundle);')
+        .replace(
+          '      nextState = applyGridDisplayBaseline(applyColorKeyBaseline(nextState, restored), restored);\n      state = nextState;',
+          '      nextState = applyGridDisplayBaseline(applyColorKeyBaseline(nextState, restored), restored);\n      nextState = applyPersistedFourthRampTable(nextState, loadPersistedFourthRampTable(), incomingTablesAt);\n      state = nextState;'
+        );
+      if (updated === html || !updated.includes("loadPersistedFourthRampTable") || !updated.includes("fourthTableSerialized")) return html;
+      return updated.replace("</head>", '<meta name="' + marker + '" content="1"></head>');
+    }
+
     function withExcelConsolidationArrowExplanations(html) {
       const marker = "excel-consolidation-arrow-explanations-v1";
       if (!html || typeof html !== "string" || html.includes(`<style id="${marker}-styles">`)) return html;
@@ -10467,6 +11041,8 @@ document.addEventListener("DOMContentLoaded",function(){
   }
   function schedule(){if(scheduled)return;scheduled=true;requestAnimationFrame(apply)}
   function selectedCells(){return Array.from(document.querySelectorAll(".yard-grid .cut-cell.block-selected[data-block-id]"))}
+  var contextCells=[];
+  document.addEventListener("contextmenu",function(event){var cell=event.target.closest&&event.target.closest(".yard-grid .cut-cell[data-block-id]");contextCells=cell?[cell]:[]},true);
   function closeDeleteMenu(){deleteMenu.hidden=true;deleteId="";deleteButton.textContent="Delete assigned arrow";deleteButton.dataset.confirming="false";moveTracks.hidden=true;moveButton.setAttribute("aria-expanded","false");if(deleteTimer){clearTimeout(deleteTimer);deleteTimer=0}}
   function positionDeleteMenu(clientX,clientY){
     var visibleLeft=0,visibleTop=0,visibleRight=innerWidth,visibleBottom=innerHeight;
@@ -10498,8 +11074,8 @@ document.addEventListener("DOMContentLoaded",function(){
     return changed;
   }
   window.conglobalExcelSetSelectedFollowUp=setSelectedFollowUp;
-  function add(label){
-    var cells=selectedCells();if(!cells.length)return;
+  function add(label,suppliedCells){
+    var cells=Array.isArray(suppliedCells)&&suppliedCells.length?suppliedCells:selectedCells();if(!cells.length)return;
     var grid=cells[0].closest(".yard-grid");if(!grid||!grid.id)return;
     cells=cells.filter(function(cell){return cell.closest(".yard-grid")===grid});
     var track=String(cells[0].dataset.track||"").trim();
@@ -10554,7 +11130,7 @@ document.addEventListener("DOMContentLoaded",function(){
     });
     return model;
   };
-  document.querySelectorAll("[data-consolidation-arrow-label]").forEach(function(button){button.addEventListener("click",function(){add(button.dataset.consolidationArrowLabel)})});
+  document.querySelectorAll("[data-consolidation-arrow-label]").forEach(function(button){var pendingCells=[];button.addEventListener("pointerdown",function(){pendingCells=selectedCells();if(!pendingCells.length)pendingCells=contextCells.slice()},true);button.addEventListener("click",function(){var label=String(button.dataset.consolidationArrowLabel||"").toUpperCase();add(label,pendingCells.length?pendingCells:contextCells);pendingCells=[]})});
   document.addEventListener("contextmenu",function(event){var target=event.target.closest&&event.target.closest(".consolidation-explanation-arrow,.consolidation-explanation-target");if(!target)return;event.preventDefault();event.stopImmediatePropagation();openDeleteMenu(target,event)},true);
   deleteMenu.querySelector('[data-action="swing"]').addEventListener("click",function(){setFollowUp({type:"swing"})});
   deleteMenu.querySelector('[data-action="departing"]').addEventListener("click",function(){setFollowUp({type:"departing"})});
@@ -10614,12 +11190,38 @@ document.addEventListener("DOMContentLoaded",function(){
       const marker = "excel-newest-er-restore-v1";
       if (!html || typeof html !== "string" || html.includes(marker)) return html;
       const loadAnchor = "  function loadPersistedTableState() {";
-      const returnAnchor = "    return selected;\n  }\n\n  function loadState() {";
+      const stateAnchor = "  let state = loadState();";
+      const cleanAnchor = '  const clean = value => String(value ?? "").replace(/\\u00a0/g, " ").trim();';
+      const cleanReplacement = '  function clean(value) {\n    return String(value ?? "").replace(/\\u00a0/g, " ").trim();\n  }';
       const mergeAnchor = "        const merged = applyPersistedRampTables({ ...defaultState(), ...saved }, persistedRampTables);";
-      if (!html.includes(loadAnchor) || !html.includes(returnAnchor) || !html.includes(mergeAnchor)) return html;
-      let updated = html.replace(loadAnchor, "  let persistedTableStateSavedAt = 0;\n" + loadAnchor)
-        .replace(returnAnchor, "    persistedTableStateSavedAt = selectedAt;\n" + returnAnchor)
-        .replace(mergeAnchor, "        const newerTables = persistedRampTables && (Date.parse(persistedRampTables.updatedAt || \"\") || 0) > persistedTableStateSavedAt;\n        const merged = newerTables\n          ? applyPersistedRampTables({ ...defaultState(), ...saved }, persistedRampTables)\n          : { ...defaultState(), ...saved };");
+      const tableLoadStart = html.indexOf(loadAnchor);
+      const tableLoadEnd = tableLoadStart >= 0 ? html.indexOf("\n  }\n\n  function ", tableLoadStart) : -1;
+      if (tableLoadStart < 0 || tableLoadEnd < 0 || !html.includes(stateAnchor) || !html.includes(mergeAnchor)) return html;
+      let tableLoadBlock = html.slice(tableLoadStart, tableLoadEnd + 4);
+      tableLoadBlock = tableLoadBlock.replace("    return selected;", "    persistedTableStateSavedAt = selectedAt;\n    return selected;");
+      if (!tableLoadBlock.includes("persistedTableStateSavedAt = selectedAt")) return html;
+      let updated = html.slice(0, tableLoadStart) + tableLoadBlock + html.slice(tableLoadEnd + 4);
+      updated = updated.replace(cleanAnchor, cleanReplacement);
+      if (!updated.includes(cleanReplacement)) return html;
+      if (!updated.includes("let persistedTableStateSavedAt = 0;")) {
+        updated = updated.replace(stateAnchor, "  let persistedTableStateSavedAt = 0;\n" + stateAnchor);
+      }
+      if (updated.indexOf("let persistedTableStateSavedAt = 0;") > updated.indexOf(stateAnchor)) return html;
+      const stateLoadStart = updated.indexOf("  function loadState() {", tableLoadStart);
+      const stateLoadEnd = stateLoadStart >= 0 ? updated.indexOf("\n  }\n\n  function ", stateLoadStart) : -1;
+      if (stateLoadStart < 0 || stateLoadEnd < 0) return html;
+      let stateLoadBlock = updated.slice(stateLoadStart, stateLoadEnd + 4);
+      stateLoadBlock = stateLoadBlock.replace(mergeAnchor, "        const persistedRampTablesAt = Date.parse(persistedRampTables && persistedRampTables.updatedAt || \"\") || 0;\n        const newerTables = persistedRampTables && persistedRampTablesAt > persistedTableStateSavedAt;\n        persistedTableStateSavedAt = Math.max(persistedTableStateSavedAt, newerTables ? persistedRampTablesAt : 0);\n        const merged = newerTables\n          ? applyPersistedRampTables({ ...defaultState(), ...saved }, persistedRampTables)\n          : { ...defaultState(), ...saved };");
+      stateLoadBlock = stateLoadBlock.replace(
+        '    const fallback = applyPersistedRampTables(defaultState(), persistedRampTables);',
+        '    const fallback = applyPersistedRampTables(defaultState(), persistedRampTables);\n    const fallbackTablesAt = Date.parse(persistedRampTables && persistedRampTables.updatedAt || "") || 0;\n    persistedTableStateSavedAt = Math.max(persistedTableStateSavedAt, fallbackTablesAt);'
+      );
+      stateLoadBlock = stateLoadBlock.replace(
+        '    } catch (error) {}\n    const fallback = applyPersistedRampTables(defaultState(), persistedRampTables);',
+        '    } catch (error) {\n      console.warn("Excel saved main state could not load.", error);\n    }\n    const fallback = applyPersistedRampTables(defaultState(), persistedRampTables);'
+      );
+      if (!stateLoadBlock.includes("const newerTables")) return html;
+      updated = updated.slice(0, stateLoadStart) + stateLoadBlock + updated.slice(stateLoadEnd + 4);
       return updated.replace("</head>", '<meta name="' + marker + '" content="enabled">\n</head>');
     }
 
@@ -10630,11 +11232,11 @@ document.addEventListener("DOMContentLoaded",function(){
       const saveAnchor = "  function saveState() {";
       const committedAnchor = "    lastCommittedExcelViewState = serialized;\n    updateExcelViewUndoButton();";
       const importStart = html.indexOf('  $("#inventoryFileTop").addEventListener("change", async e => {');
-      const endAnchor = "  lastCommittedExcelViewState = JSON.stringify(state);\n  updateExcelViewUndoButton();\n})();";
-      if (!html.includes(saveAnchor) || !html.includes(committedAnchor) || importStart < 0 || !html.includes(endAnchor)) return html;
+      const startupAnchor = "  lastCommittedExcelViewState = JSON.stringify(state);\n  updateExcelViewUndoButton();";
+      if (!html.includes(saveAnchor) || !html.includes(committedAnchor) || importStart < 0 || !html.includes(startupAnchor)) return html;
       let updated = html.replace(saveAnchor, recoveryCode + saveAnchor)
         .replace(committedAnchor, "    lastCommittedExcelViewState = serialized;\n    if (changed && !erRecoveryPending) void writeErRecoverySnapshot(serialized).catch(error => console.warn(\"ER recovery save failed.\", error));\n    updateExcelViewUndoButton();")
-        .replace(endAnchor, "  lastCommittedExcelViewState = JSON.stringify(state);\n  updateExcelViewUndoButton();\n  void restoreErRecoverySnapshot();\n})();");
+        .replace(startupAnchor, startupAnchor + "\n  void restoreErRecoverySnapshot();");
       const importEnd = updated.indexOf('  function selectGridView(view) {', importStart);
       if (importEnd < 0) return html;
       const importCode = updated.slice(importStart, importEnd).replace('      renderAll();\n      ssShowToast(', '      renderAll();\n      await writeErRecoverySnapshot(JSON.stringify(state));\n      ssShowToast(');
@@ -12134,7 +12736,7 @@ document.addEventListener('click',function(event){
       '<div class="third-summary-head">Track</div>',
       \`<div class="third-summary-head">\${fmtInt(total)}</div>\`,
       '<div class="third-summary-head third-summary-span">Outbound Departures</div>',
-      '<div class="third-summary-head">Dwell Wt Average</div>',
+      '<div class="third-summary-head third-summary-edge">Dwell Wt Average</div>',
       '<div class="third-summary-label">IHOSA [Final]</div>',
       \`<div class="third-summary-total">\${fmtInt(ihosaTotal)}</div>\`,
       finalSummaryZoneHtml("ihosa", ihosaFinal),
@@ -12218,11 +12820,13 @@ body.excel-page-2 #excelWorkspace .excel-page2-secondary-grid.outbound-departure
 body.excel-page-2 #excelWorkspace .excel-page2-secondary-grid.outbound-departures-visible>.third-summary-span{grid-column:3/14!important}
 body.excel-page-2 #excelWorkspace .excel-page2-secondary-grid.outbound-departures-visible>.third-summary-head.third-summary-span{grid-column:3/14!important}
 body.excel-page-2 #excelWorkspace .excel-page2-secondary-grid.outbound-departures-visible>.third-summary-average{grid-column:14!important;position:sticky!important;right:0!important;z-index:12!important;width:98px!important;min-width:98px!important;max-width:98px!important;justify-self:end!important;box-shadow:-1px 0 0 #c7d0d6,-7px 0 12px rgba(15,23,32,.12)!important}
+body.excel-page-2 #excelWorkspace .excel-page2-secondary-grid.outbound-departures-visible>.third-summary-head.third-summary-edge,
+body.excel-page-2 #excelWorkspace .excel-page2-secondary-grid.outbound-departures-visible>.third-summary-head.excel-page2-summary-edge{display:flex!important;grid-column:14!important;position:sticky!important;right:0!important;z-index:13!important;width:98px!important;min-width:98px!important;max-width:98px!important;justify-self:end!important;background:#050505!important;border-color:#303030!important;color:#fff!important;box-shadow:none!important}
 body.excel-page-2 #excelWorkspace .excel-page2-secondary-grid.outbound-departures-visible>.third-summary-total{position:relative!important;display:block!important;min-height:44px!important;padding:0!important;overflow:hidden!important;background-color:#f6f8f9!important;background-image:linear-gradient(90deg,#dec48b 0 var(--excel-page2-summary-fill,0%),#91a0aa var(--excel-page2-summary-fill,0%) 100%)!important;background-position:16px calc(100% - 5px)!important;background-size:calc(100% - 32px) 10px!important;background-repeat:no-repeat!important;color:transparent!important;font-size:0!important}
 body.excel-page-2 #excelWorkspace .excel-page2-secondary-grid.outbound-departures-visible>.third-summary-total:before{content:attr(data-page2-used) " / " attr(data-page2-capacity) " ft";position:absolute;left:16px;top:8px;color:#17232c;font:900 10px/1 Consolas,"Courier New",monospace;white-space:nowrap}
 body.excel-page-2 #excelWorkspace .excel-page2-secondary-grid.outbound-departures-visible>.third-summary-total:after{content:attr(data-page2-percent) "%";position:absolute;right:12px;top:8px;color:#17232c;font:900 10px/1 Consolas,"Courier New",monospace}
 body.excel-page-2 #excelWorkspace .excel-page2-secondary-grid.outbound-departures-visible>.excel-page2-final-track,
-body.excel-page-2 #excelWorkspace .excel-page2-secondary-grid.outbound-departures-visible>.third-summary-total.excel-page2-final-track{background-color:#fff1bd!important}
+body.excel-page-2 #excelWorkspace .excel-page2-secondary-grid.outbound-departures-visible>.third-summary-total.excel-page2-final-track{background-color:#e5e7eb!important}
 body.excel-page-2 #excelWorkspace .excel-page2-secondary-grid.outbound-departures-visible .final-summary-block{height:30px!important;min-height:30px!important;max-height:30px!important;box-sizing:border-box!important}
 body.excel-page-2 #excelWorkspace .excel-page2-secondary-grid.outbound-departures-visible>.third-summary-blank.final-paste-zone{width:var(--excel-page2-final-zone-width,calc(100vw - 397px))!important;min-width:0!important;max-width:100%!important;justify-self:start!important;box-sizing:border-box!important}
 body.excel-page-2 #excelWorkspace .excel-page2-secondary-grid.outbound-departures-visible .final-block-list{width:100%!important;grid-template-columns:repeat(auto-fill,var(--excel-page2-block-width,140.5536px))!important;grid-auto-rows:30px!important;min-width:0!important;max-width:100%!important;justify-self:stretch!important}
@@ -18139,15 +18743,18 @@ function duplicateForecastTrainDay(train,day){
     }
     function withExcelTrackCarImport(html) {
       const marker = "excel-track-car-import-v1";
-      if (!html || typeof html !== "string" || html.includes(marker)) return html;
+      if (!html || typeof html !== "string" || html.includes(marker) || html.includes('id="trackImportPaste"')) return html;
       const css = "\n<style id=\"excel-track-car-import-v1\">\n.track-import-backdrop { z-index: 2450; place-items: start center; padding-top: 42px; background: rgba(4,10,22,.82); }\n  .track-import-dialog { width: min(980px, calc(100vw - 24px)); max-height: calc(100vh - 70px); overflow: auto; border: 1px solid #3b82f6; border-radius: 14px; background: #071226; color: #e8f0ff; box-shadow: 0 30px 90px rgba(0,0,0,.62); }\n  .track-import-head { position: sticky; top: 0; z-index: 2; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:13px 16px; border-bottom:1px solid #31537d; background:#10213d; }\n  .track-import-head h3 { margin:0; color:#93c5fd; font-size:15px; letter-spacing:.08em; text-transform:uppercase; }\n  .track-import-close { width:32px; height:32px; border:1px solid #f87171; border-radius:50%; background:#7f1d1d; color:#fff; font-size:19px; }\n  .track-import-body { display:grid; gap:12px; padding:15px; }\n  .track-import-note { color:#b9c9df; font-size:11px; line-height:1.45; }\n  .track-import-paste { width:100%; min-height:190px; resize:vertical; padding:10px; border:1px solid #426286; border-radius:8px; background:#020817; color:#e5eefc; font:700 12px/1.35 Consolas,monospace; }\n  .track-import-toolbar,.track-import-actions { display:flex; align-items:center; justify-content:flex-end; gap:8px; flex-wrap:wrap; }\n  .track-import-btn { min-height:33px; padding:7px 12px; border:1px solid #64748b; border-radius:7px; background:#e2e8f0; color:#172033; font-weight:900; }\n  .track-import-btn.parse { border-color:#60a5fa; background:#1d4ed8; color:#fff; }\n  .track-import-btn.confirm { border-color:#4ade80; background:#15803d; color:#fff; }\n  .track-import-btn:disabled { opacity:.45; cursor:default; }\n  .track-import-status { flex:1; color:#bfdbfe; font-size:11px; font-weight:800; }\n  .track-import-preview { display:grid; gap:7px; }\n  .track-import-preview.empty { min-height:68px; place-items:center; border:1px dashed #3b526f; border-radius:8px; color:#7f95b2; }\n  .track-import-row { display:grid; grid-template-columns:42px minmax(170px,1fr) 120px 92px 100px; gap:7px; align-items:center; padding:8px; border:1px solid #2f4869; border-radius:8px; background:#0c1a30; }\n  .track-import-row input { width:100%; min-width:0; height:31px; padding:5px 8px; border:1px solid #57759b; border-radius:6px; background:#f8fafc; color:#172033; font-weight:850; }\n  .track-import-row .seq { color:#93c5fd; font-weight:950; text-align:center; }\n  .track-import-row .meta { color:#cbd5e1; font-size:10px; font-weight:800; text-align:center; }\n  .track-label[data-track] { cursor:pointer; }\n  .track-label[data-track]:hover { background:#dbeafe; color:#1d4ed8; box-shadow:inset 0 0 0 2px #60a5fa; }\n</style>\n";
       const modal = "<div class=\"modal-backdrop track-import-backdrop\" id=\"trackImportModal\" role=\"dialog\" aria-modal=\"true\" aria-labelledby=\"trackImportTitle\" hidden>\n  <section class=\"track-import-dialog\">\n    <header class=\"track-import-head\"><h3 id=\"trackImportTitle\">Import Cars to Track</h3><button class=\"track-import-close\" id=\"closeTrackImport\" type=\"button\" aria-label=\"Close\">&times;</button></header>\n    <div class=\"track-import-body\">\n      <div class=\"track-import-note\">Paste the UP car table. Adjacent cars with the same Train ID become one block. Review and edit each block name and footage before replacing the selected track.</div>\n      <textarea class=\"track-import-paste\" id=\"trackImportPaste\" placeholder=\"Paste car sequence table here...\"></textarea>\n      <div class=\"track-import-toolbar\"><span class=\"track-import-status\" id=\"trackImportStatus\">Waiting for pasted data.</span><button class=\"track-import-btn\" id=\"readTrackClipboard\" type=\"button\">Paste Clipboard</button><button class=\"track-import-btn parse\" id=\"parseTrackImport\" type=\"button\">Parse &amp; Preview</button></div>\n      <div class=\"track-import-preview empty\" id=\"trackImportPreview\">No blocks parsed yet.</div>\n      <div class=\"track-import-actions\"><button class=\"track-import-btn\" id=\"cancelTrackImport\" type=\"button\">Cancel</button><button class=\"track-import-btn confirm\" id=\"confirmTrackImport\" type=\"button\" disabled>Replace Track with Preview</button></div>\n    </div>\n  </section>\n</div>\n\n";
       const script = "/* excel-track-car-import-v1 */\nlet trackImportTarget=0;\nlet trackImportBlocks=[];\nfunction trackImportCells(line) {\n    const trimmed = String(line || \"\").trim();\n    if (!trimmed) return [];\n    if (trimmed.includes(\"|\")) return trimmed.split(\"|\").map(clean).filter(Boolean);\n    if (trimmed.includes(\"\\t\")) return trimmed.split(\"\\t\").map(clean);\n    return [];\n  }\n\n  function parseTrackImportText(text) {\n    const lines = String(text || \"\").replace(/\\r/g, \"\").split(\"\\n\").filter(line => line.trim());\n    let header = null;\n    const cars = [];\n    for (const line of lines) {\n      const cells = trackImportCells(line);\n      if (!cells.length) continue;\n      const normalized = cells.map(value => value.toLowerCase().replace(/[^a-z0-9]+/g, \"\"));\n      if (normalized.some(value => value.includes(\"equipmentid\")) && normalized.some(value => value.includes(\"trainid\"))) {\n        header = cells.length >= 11 ? normalized : null;\n        continue;\n      }\n      if (/^-+$/.test(cells.join(\"\"))) continue;\n      let seq,equipment,platform,aar,carKind,length,totalLength,weight,totalWeight,trainId,yardBlock;\n      if (header) {\n        const find = (...names) => { const i=header.findIndex(value => names.some(name => value === name || value.includes(name)));return i >= 0 ? cells[i] : \"\"; };\n        seq=find(\"carseq\");equipment=find(\"equipmentid\");platform=find(\"platformwellcount\");aar=find(\"aarkind\");carKind=find(\"carkind\");length=find(\"lengthft\");totalLength=find(\"totallengthft\");weight=find(\"weighttons\");totalWeight=find(\"totalweighttons\");trainId=find(\"trainid\");yardBlock=find(\"yardblock\");\n      } else if (cells.length >= 11 && /^\\d+$/.test(cells[0])) {\n        [seq,equipment,platform,aar,carKind,length,totalLength,weight,totalWeight,trainId,yardBlock] = cells;\n      } else {\n        const match=line.trim().match(/^(\\d+)\\s+([A-Z]{2,5}\\s+\\d+)\\s+(\\d+)\\s+(\\S+)\\s+(\\S+)\\s+(\\d+)\\s+(\\d+)\\s+([\\d.]+)\\s+([\\d.]+)\\s+(.+?)\\s+([A-Z]{2,6})(?:\\s+.*)?$/i);\n        if (!match) continue;\n        [,seq,equipment,platform,aar,carKind,length,totalLength,weight,totalWeight,trainId,yardBlock]=match;\n      }\n      const footage=Number(String(length||\"\").replace(/,/g,\"\"));\n      if (!/^\\d+$/.test(String(seq||\"\")) || !equipment || !Number.isFinite(footage) || footage <= 0 || !trainId) continue;\n      cars.push({seq:Number(seq),equipment:clean(equipment),platform:clean(platform),aar:clean(aar),carKind:clean(carKind),length:footage,totalLength:Number(totalLength)||0,weight:Number(weight)||0,totalWeight:Number(totalWeight)||0,trainId:clean(trainId),yardBlock:clean(yardBlock)});\n    }\n    if (!cars.length) {\n      const tokens=lines.map(value=>clean(value.replace(/^\\|?|\\|?$/g,\"\").replace(/\\*\\*/g,\"\"))).filter(Boolean);\n      for (let i=0;i+10<tokens.length;i++) {\n        if (!/^\\d+$/.test(tokens[i]) || !/^[A-Z]{2,5}\\s+\\d+$/i.test(tokens[i+1])) continue;\n        const footage=Number(tokens[i+5].replace(/,/g,\"\"));\n        if (!Number.isFinite(footage) || footage<=0) continue;\n        cars.push({seq:Number(tokens[i]),equipment:tokens[i+1],platform:tokens[i+2],aar:tokens[i+3],carKind:tokens[i+4],length:footage,totalLength:Number(tokens[i+6])||0,weight:Number(tokens[i+7])||0,totalWeight:Number(tokens[i+8])||0,trainId:tokens[i+9],yardBlock:tokens[i+10]});\n        i+=10;\n      }\n    }\n    const blocks=[];\n    cars.forEach(car => {\n      let block=blocks[blocks.length-1];\n      if (!block || block.originalName !== car.trainId) { block={originalName:car.trainId,name:car.trainId,footage:0,cars:[]};blocks.push(block); }\n      block.cars.push(car);block.footage += car.length;\n    });\n    return {cars,blocks};\n  }\n\n  function renderTrackImportPreview() {\n    const host=$(\"#trackImportPreview\"),confirm=$(\"#confirmTrackImport\");\n    if (!trackImportBlocks.length) { host.className=\"track-import-preview empty\";host.textContent=\"No valid blocks found. Include Equipment Id, Length(ft), Train Id, and Yard-Block columns.\";confirm.disabled=true;return; }\n    host.className=\"track-import-preview\";\n    host.innerHTML=trackImportBlocks.map((block,index)=>`<div class=\"track-import-row\" data-track-import-index=\"${index}\"><div class=\"seq\">${index+1}</div><input data-field=\"name\" value=\"${escapeAttr(block.name)}\" aria-label=\"Block ${index+1} name\"><input data-field=\"footage\" value=\"${fmtInt(block.footage)}\" inputmode=\"numeric\" aria-label=\"Block ${index+1} footage\"><div class=\"meta\">${block.cars.length} car${block.cars.length===1?\"\":\"s\"}</div><div class=\"meta\">${escapeHtml([...new Set(block.cars.map(car=>car.yardBlock).filter(Boolean))].join(\", \")||\"No yard block\")}</div></div>`).join(\"\");\n    confirm.disabled=false;\n  }\n\n  function openTrackImport(track) {\n    if (!TRACKS.includes(Number(track))) return;\n    trackImportTarget=Number(track);trackImportBlocks=[];\n    $(\"#trackImportTitle\").textContent=`Import Cars to Track 6-${trackImportTarget}`;\n    $(\"#trackImportPaste\").value=\"\";$(\"#trackImportStatus\").textContent=\"Waiting for pasted data.\";\n    renderTrackImportPreview();\n    const modal=$(\"#trackImportModal\");modal.hidden=false;modal.classList.add(\"open\");document.body.classList.add(\"modal-open\");\n    setTimeout(()=>$(\"#trackImportPaste\").focus(),0);\n  }\n  function closeTrackImport() { const modal=$(\"#trackImportModal\");modal.classList.remove(\"open\");modal.hidden=true;trackImportTarget=0;trackImportBlocks=[];if(!document.querySelector(\".modal-backdrop.open\"))document.body.classList.remove(\"modal-open\"); }\n  function parseTrackImportPreview() { const parsed=parseTrackImportText($(\"#trackImportPaste\").value);trackImportBlocks=parsed.blocks;$(\"#trackImportStatus\").textContent=`${parsed.cars.length} cars parsed into ${parsed.blocks.length} block${parsed.blocks.length===1?\"\":\"s\"}.`;renderTrackImportPreview(); }\n  function confirmTrackImport() {\n    if (!TRACKS.includes(trackImportTarget) || !trackImportBlocks.length) return;\n    const newRows=[];let seq=1;\n    trackImportBlocks.forEach((block,blockIndex)=>{\n      const desired=Math.max(1,Number(block.footage)||block.cars.reduce((sum,car)=>sum+car.length,0));\n      const original=Math.max(1,block.cars.reduce((sum,car)=>sum+car.length,0));let assigned=0;\n      block.cars.forEach((car,carIndex)=>{\n        const length=carIndex===block.cars.length-1?Math.max(1,desired-assigned):Math.max(1,Math.round(car.length/original*desired));assigned+=length;\n        newRows.push([trackImportTarget,seq++,car.equipment,car.weight,length,block.name,\"\",\"\",0,0,\"\",\"\",car.yardBlock,`track-import-${Date.now()}-${blockIndex}`]);\n      });\n    });\n    state.rows=state.rows.filter(row=>Number(normalizeTrackValue(row[0]))!==trackImportTarget).concat(newRows);\n    state.sourceName=`Track 6-${trackImportTarget} pasted car table`;closeTrackImport();renderAll();\n  }\ndocument.addEventListener(\"click\", event => {\n    const label=event.target.closest(\".track-label\");\n    if (!label) return;\n    const textMatch=clean(label.textContent).match(/6\\s*-\\s*(80[1-9])/i);\n    const track=Number(label.dataset.track||(textMatch&&textMatch[1]));\n    if (!TRACKS.includes(track)) return;\n    event.preventDefault();event.stopImmediatePropagation();openTrackImport(track);\n  }, true);\n  $(\"#trackImportPaste\").addEventListener(\"paste\", event => {\n    const text=event.clipboardData && event.clipboardData.getData(\"text/plain\");\n    if (text) {\n      event.preventDefault();\n      const input=event.currentTarget,start=input.selectionStart??input.value.length,end=input.selectionEnd??start;\n      input.setRangeText(text,start,end,\"end\");\n    }\n    setTimeout(parseTrackImportPreview,0);\n  }, true);\n  $(\"#readTrackClipboard\").addEventListener(\"click\", async () => {\n    try {\n      const text=await navigator.clipboard.readText();\n      if (!text) throw new Error(\"Clipboard is empty.\");\n      $(\"#trackImportPaste\").value=text;\n      parseTrackImportPreview();\n    } catch (error) {\n      $(\"#trackImportStatus\").textContent=(error&&error.message)||\"Clipboard access was blocked. Click inside the box and press Ctrl+V.\";\n    }\n  });\n  $(\"#parseTrackImport\").addEventListener(\"click\", parseTrackImportPreview);\n  $(\"#trackImportPreview\").addEventListener(\"input\", event => {\n    const row=event.target.closest(\"[data-track-import-index]\");if(!row)return;\n    const block=trackImportBlocks[Number(row.dataset.trackImportIndex)];if(!block)return;\n    if(event.target.dataset.field===\"name\")block.name=clean(event.target.value)||block.originalName;\n    if(event.target.dataset.field===\"footage\")block.footage=Math.max(1,Number(String(event.target.value).replace(/,/g,\"\"))||block.footage);\n  });\n  $(\"#closeTrackImport\").addEventListener(\"click\", closeTrackImport);\n  $(\"#cancelTrackImport\").addEventListener(\"click\", closeTrackImport);\n  $(\"#confirmTrackImport\").addEventListener(\"click\", confirmTrackImport);\n  $(\"#trackImportModal\").addEventListener(\"click\", event=>{if(event.target===$(\"#trackImportModal\"))closeTrackImport();});\n";
       let next = html.replace("</head>", css + "</head>");
       next = next.replace('<div class="inbound-train-backdrop"', modal + '<div class="inbound-train-backdrop"');
-      const scriptAt = next.lastIndexOf("<\/script>");
-      if (scriptAt < 0) return html;
-      return next.slice(0, scriptAt) + script + "\n" + next.slice(scriptAt);
+      const scopeAnchorAt = next.indexOf("const $ = selector => document.querySelector(selector);");
+      const scriptAt = scopeAnchorAt >= 0 ? next.indexOf("<\/script>", scopeAnchorAt) : -1;
+      const mainIifeCloseAt = scriptAt >= 0 ? next.lastIndexOf("\n})();", scriptAt) : -1;
+      const insertAt = mainIifeCloseAt > scopeAnchorAt ? mainIifeCloseAt : scriptAt;
+      if (insertAt < 0) return html;
+      return next.slice(0, insertAt) + "\n" + script + next.slice(insertAt);
     }
     function withBillingDuplicateFirstSortFix(html) {
       if (!html || typeof html !== "string" || html.includes("billing-duplicate-first-sort-v1")) return html;
@@ -19149,6 +19756,7 @@ $("#inboundTrainSource").addEventListener("change",function(){reset();renderInbo
     function withExcelTomorrowInboundMarker(html) {
       const marker = "excel-tomorrow-inbound-marker-v1";
       if (!html || typeof html !== "string" || html.includes(marker)) return html;
+      if (html.includes("const TOMORROW_INBOUND_MARKERS_KEY") && html.includes("function setContextBlockTomorrowInbound") && html.includes('id="markTomorrowInbound"')) return html;
       if (!html.includes('id="blockContextMenu"') || !html.includes('id="yardGrid"')) return html;
       const styles = `<meta name="${marker}" content="enabled">
 <style>
@@ -19167,7 +19775,7 @@ function decorate(){frame=0;var records=read(),rowOffsets={},existingLabels=new 
 function schedule(){if(!frame)frame=requestAnimationFrame(decorate)}
 document.addEventListener("contextmenu",function(event){var cell=event.target.closest(".yard-grid .cut-cell[data-block-id]"),grid=cell&&cell.closest(".yard-grid");targetGridId=grid?String(grid.id||""):"";targetBlockId=cell?String(cell.dataset.blockId||""):"";setTimeout(function(){button.hidden=!targetGridId||!targetBlockId;if(targetGridId&&targetBlockId)button.textContent=marked(targetGridId,targetBlockId)?"Remove Tomorrow's Inbound":"Mark Tomorrow's Inbound"},0)});
 button.addEventListener("click",function(event){event.preventDefault();event.stopImmediatePropagation();var gridId=targetGridId,id=targetBlockId;if(!gridId||!id)return;var records=read(),recordKey=key(gridId,id);if(records[recordKey])delete records[recordKey];else records[recordKey]=true;localStorage.setItem(storageKey,JSON.stringify(records));var menu=document.getElementById("blockContextMenu");if(menu)menu.hidden=true;decorate()},true);
-document.querySelectorAll(".yard-grid").forEach(function(grid){new MutationObserver(schedule).observe(grid,{childList:true})});schedule();
+document.querySelectorAll(".yard-grid").forEach(function(grid){new MutationObserver(schedule).observe(grid,{childList:true,subtree:true,attributes:true,attributeFilter:["class"]})});schedule();
 addEventListener("scroll",schedule,true);addEventListener("resize",schedule);document.addEventListener("excel-followup-label-position-change",schedule);try{if(parent!==window)parent.addEventListener("scroll",schedule,true)}catch(_){}
 })();`;
       html = html.replace(/<\/head>/i, styles + "\n</head>");
@@ -19224,7 +19832,7 @@ function pushDirectUndo(raw){try{var stack=window.excelViewUndoStackBridge;if(!A
 function writeDirect(value){var previous=localStorage.getItem(directKey),next=JSON.stringify(value&&typeof value==="object"?value:{});if(previous===next)return false;pushDirectUndo(previous);localStorage.setItem(directKey,next);localStorage.setItem(directKey+".updatedAt",new Date().toISOString());syncUndoButton();return true}
 function directRecordKey(gridId,blockId){return String(gridId||"")+"::"+String(blockId||"")}
 /* excel-followup-stable-refresh-locator-v1 */
-function followUpSignature(cell){var raw=String(cell&&cell.getAttribute("data-page2-primary")||cell&&cell.dataset&&cell.dataset.assignmentOriginalTitle||cell&&cell.title||cell&&cell.textContent||"").toUpperCase();return raw.split("→")[0].replace(/\[[^\]]*\]/g,"").replace(/\([^)]*\)/g,"").replace(/\b(IHOSA|MHOAS|PIERCE)\b/g,"").replace(/[^A-Z0-9]+/g," ").trim()}
+function followUpSignature(cell){var raw=String(cell&&cell.getAttribute("data-page2-primary")||cell&&cell.dataset&&cell.dataset.assignmentOriginalTitle||cell&&cell.title||cell&&cell.textContent||"").toUpperCase();return raw.split("→")[0].replace(/\\[[^\\]]*\\]/g,"").replace(/\\([^)]*\\)/g,"").replace(/\\b(IHOSA|MHOAS|PIERCE)\\b/g,"").replace(/[^A-Z0-9]+/g," ").trim()}
 function followUpLocator(cell){if(!cell)return null;var grid=cell.closest(".yard-grid"),track=String(cell.dataset.track||"").trim(),footage=String(Number(cell.dataset.footage)||0),signature=followUpSignature(cell);if(!track){var host=cell.closest("[data-track]");track=String(host&&host.dataset.track||"").trim()}var peers=grid?Array.from(grid.querySelectorAll(".cut-cell[data-block-id]")).filter(function(peer){var peerTrack=String(peer.dataset.track||"").trim();if(!peerTrack){var peerHost=peer.closest("[data-track]");peerTrack=String(peerHost&&peerHost.dataset.track||"").trim()}return peerTrack===track&&String(Number(peer.dataset.footage)||0)===footage&&followUpSignature(peer)===signature}):[];return {track:track,footage:footage,signature:signature,occurrence:Math.max(0,peers.indexOf(cell))}}
 function locateFollowUpCell(grid,blockId,value){var cells=Array.from(grid.querySelectorAll(".cut-cell[data-block-id]")),exact=cells.find(function(item){return String(item.dataset.blockId||"")===blockId}),locator=value&&value._locator;if(!locator)return exact||null;var matchesLocator=function(cell){var current=followUpLocator(cell);return current&&current.track===String(locator.track||"")&&current.footage===String(locator.footage||"")&&current.signature===String(locator.signature||"")};if(exact&&matchesLocator(exact))return exact;var matches=cells.filter(matchesLocator);return matches[Math.max(0,Number(locator.occurrence)||0)]||matches[0]||null}
 function directDetail(value){return value.type==="swing"?"SWING TO YARD":value.type==="today"?"TODAY'S INBOUND":value.type==="pierce"?"FROM PIERCE":value.type==="departing"?"DEPARTING FROM HERE":value.type==="move"?"MOVING TO "+String(value.track||""):""}
@@ -19437,6 +20045,86 @@ document.addEventListener("excel-followup-label-position-change",schedule);docum
         document.addEventListener("keydown", function(event) { if (event.key === "Escape") hideDeleteMenu(); });
       };
       const patch = `<style id="${marker}-styles">#excelFinalBlockDeleteMenu{position:fixed;z-index:2147483647;min-width:150px;padding:5px;border:1px solid #475569;border-radius:7px;background:#0f172a;box-shadow:0 12px 28px rgba(15,23,42,.45)}#excelFinalBlockDeleteMenu[hidden]{display:none!important}#excelFinalBlockDeleteMenu button{width:100%;min-height:30px;padding:7px 10px;border:1px solid #ef4444;border-radius:5px;background:#991b1b;color:#fff;font:900 11px/1 "Segoe UI",Arial,sans-serif;text-align:left}#excelFinalBlockDeleteMenu button.pending{background:#dc2626}.final-summary-block[data-final-block-id]{cursor:context-menu}</style><scr${""}ipt id="${marker}">(${runtime.toString()})();</scr${""}ipt>`;
+      const close = html.toLowerCase().lastIndexOf("</body>");
+      return close >= 0 ? html.slice(0, close) + patch + "\n" + html.slice(close) : html + patch;
+    }
+
+    function withExcelFinalBlockDeleteInMainMenu(html) {
+      const marker = "excel-final-block-delete-main-menu-v1";
+      if (!html || typeof html !== "string" || html.includes(marker) || !html.includes('id="blockContextMenu"')) return html;
+      const clearAnchor = "  function clearFinalZoneTrack() {";
+      if (!html.includes(clearAnchor)) return html;
+      if (!html.includes("window.conglobalExcelDeleteFinalBlock = function")) {
+        const bridge = `  window.conglobalExcelDeleteFinalBlock = function(gridId, zone, blockId) {
+    if (!["blankYardGrid", "blankYardGridTwo"].includes(gridId) || !["ihosa", "mhoas"].includes(zone) || !blockId) return false;
+    const key = secondaryGridStateKey(gridId);
+    const model = state[key];
+    if (!validSecondaryModel(model)) return false;
+    model.finalBlocks = normalizeFinalBlocks(model.finalBlocks);
+    const list = Array.isArray(model.finalBlocks[zone]) ? model.finalBlocks[zone] : [];
+    const next = list.filter(block => String(block && block.id || "") !== String(blockId));
+    if (next.length === list.length) return false;
+    model.finalBlocks[zone] = next;
+    renderAll();
+    return true;
+  };
+
+`;
+        html = html.replace(clearAnchor, bridge + clearAnchor);
+      }
+      const runtime = function() {
+        const menu = document.getElementById("blockContextMenu");
+        const clearTrack = document.getElementById("clearFinalZoneBtn");
+        if (!menu || !clearTrack || document.getElementById("deleteSingleFinalBlockBtn")) return;
+        const button = document.createElement("button");
+        button.id = "deleteSingleFinalBlockBtn";
+        button.type = "button";
+        button.className = "danger-menu-action";
+        button.textContent = "Delete This Block";
+        button.hidden = true;
+        menu.insertBefore(button, clearTrack);
+        let target = null;
+        let confirmTimer = 0;
+        function reset() {
+          clearTimeout(confirmTimer);
+          delete button.dataset.confirming;
+          button.textContent = "Delete This Block";
+        }
+        document.addEventListener("contextmenu", function(event) {
+          const block = event.target.closest && event.target.closest(".final-summary-block[data-final-block-id]");
+          if (!block) { target = null; button.hidden = true; reset(); return; }
+          const zoneHost = block.closest("[data-summary-paste-zone]");
+          const grid = block.closest(".yard-grid");
+          const zone = String(zoneHost && zoneHost.dataset.summaryPasteZone || "").toLowerCase();
+          if (!grid || ["ihosa", "mhoas"].indexOf(zone) < 0) return;
+          target = {gridId:grid.id, zone:zone, id:String(block.dataset.finalBlockId || "")};
+          reset();
+          window.setTimeout(function() {
+            const oldMenu = document.getElementById("excelFinalBlockDeleteMenu");
+            if (oldMenu) oldMenu.hidden = true;
+            button.hidden = false;
+          }, 0);
+        }, true);
+        button.addEventListener("click", function(event) {
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          if (!target || !target.id) return;
+          if (button.dataset.confirming !== "true") {
+            button.dataset.confirming = "true";
+            button.textContent = "Confirm Delete Block";
+            confirmTimer = window.setTimeout(reset, 3500);
+            return;
+          }
+          if (typeof window.conglobalExcelDeleteFinalBlock === "function") {
+            window.conglobalExcelDeleteFinalBlock(target.gridId, target.zone, target.id);
+          }
+          target = null;
+          button.hidden = true;
+          menu.hidden = true;
+          reset();
+        }, true);
+      };
+      const patch = `<style id="${marker}-styles">#deleteSingleFinalBlockBtn{margin-top:4px!important;border-color:#ef4444!important;background:#991b1b!important;color:#fff!important}#deleteSingleFinalBlockBtn:hover,#deleteSingleFinalBlockBtn[data-confirming="true"]{background:#dc2626!important}</style><scr${""}ipt id="${marker}">(${runtime.toString()})();</scr${""}ipt>`;
       const close = html.toLowerCase().lastIndexOf("</body>");
       return close >= 0 ? html.slice(0, close) + patch + "\n" + html.slice(close) : html + patch;
     }
@@ -19682,9 +20370,9 @@ document.addEventListener("excel-followup-label-position-change",schedule);docum
         });
       };
       html = html.slice(0, legacyStart) + "var positionLegacy=" + positionLegacy.toString() + ";\n" + html.slice(legacyEnd);
-      html = html.replace(moveButton, moveButton + '\n            <button class="btn btn-white btn-small" id="hideFollowUpLabels" type="button" aria-pressed="false">Hide Labels</button>');
-      html = html.replace('{id:"moveFollowUpLabels"},', '{id:"moveFollowUpLabels"},\n      {id:"hideFollowUpLabels"},');
-      const style = '<style id="excel-followup-label-visibility-style-v1">#hideFollowUpLabels{width:auto;min-width:91px;white-space:nowrap}.excel-followup-labels-right .consolidation-explanation-followup-label:not(.selected-block-followup-edge){visibility:hidden!important}body.excel-followup-labels-hidden .selected-block-departing-label,body.excel-followup-labels-hidden .consolidation-explanation-followup-label{display:none!important}</style>';
+      html = html.replace(moveButton, moveButton + '\n            <button class="btn btn-white btn-small" id="hideFollowUpLabels" type="button" aria-pressed="false">Hide Labels</button>\n            <button class="btn btn-white btn-small" id="hideArrowExplanations" type="button" aria-pressed="false">Hide Arrows</button>');
+      html = html.replace('{id:"moveFollowUpLabels"},', '{id:"moveFollowUpLabels"},\n      {id:"hideFollowUpLabels"},\n      {id:"hideArrowExplanations"},');
+      const style = '<style id="excel-followup-label-visibility-style-v1">#hideFollowUpLabels,#hideArrowExplanations{width:auto;min-width:91px;white-space:nowrap}.excel-followup-labels-right .consolidation-explanation-followup-label:not(.selected-block-followup-edge){visibility:hidden!important}body.excel-followup-labels-hidden .selected-block-departing-label,body.excel-followup-labels-hidden .consolidation-explanation-followup-label{display:none!important}body.excel-arrow-explanations-hidden .consolidation-explanation-arrow,body.excel-arrow-explanations-hidden .consolidation-explanation-target{display:none!important}</style>';
       const runtime = function() {
         const key = "conglobal-excel-followup-labels-hidden-v1";
         const button = document.getElementById("hideFollowUpLabels");
@@ -19706,6 +20394,24 @@ document.addEventListener("excel-followup-label-position-change",schedule);docum
         });
         window.addEventListener("storage", function(event) { if (event.key === key) apply(); });
         apply();
+
+        const arrowKey = "conglobal-excel-arrow-explanations-hidden-v1";
+        const arrowButton = document.getElementById("hideArrowExplanations");
+        if (!arrowButton) return;
+        function applyArrows() {
+          let hidden = false;
+          try { hidden = localStorage.getItem(arrowKey) === "true"; } catch (_) {}
+          document.body.classList.toggle("excel-arrow-explanations-hidden", hidden);
+          arrowButton.setAttribute("aria-pressed", String(hidden));
+          arrowButton.textContent = hidden ? "Show Arrows" : "Hide Arrows";
+        }
+        arrowButton.addEventListener("click", function() {
+          const hidden = !document.body.classList.contains("excel-arrow-explanations-hidden");
+          try { localStorage.setItem(arrowKey, String(hidden)); } catch (_) {}
+          applyArrows();
+        });
+        window.addEventListener("storage", function(event) { if (event.key === arrowKey) applyArrows(); });
+        applyArrows();
       };
       const close = html.toLowerCase().lastIndexOf("</body>");
       const patch = `${style}<scr${""}ipt id="${marker}">(${runtime.toString()})();</scr${""}ipt>`;
@@ -20055,6 +20761,7 @@ body.excel-page-2 .excel-page2-secondary-buttons-right>.copy-grid-actions>.outbo
           pageHtml = withAmReportDataImport(pageHtml);
         }
         if (id === "reading") pageHtml = withReadingArchiveBotImport(pageHtml);
+        if (id === "chassisStatus") pageHtml = withChassisAznuDcliOwnerRule(pageHtml);
         if (id === "stackingGrid") pageHtml = withStackingToolbarContrast(withStackingGridSmallerSideLoader(pageHtml));
         if (id === "timeMd") pageHtml = withTimeMdScheduleSourceRepair(withTimeMdResponsiveWidth(pageHtml));
         if (["timeMd", "timeOff", "roster"].includes(id)) pageHtml = withTimeMdMovableQuickActionsV3(pageHtml);
@@ -20158,6 +20865,9 @@ body.excel-page-2 .excel-page2-secondary-buttons-right>.copy-grid-actions>.outbo
           pageHtml = withExcelInboundBetweenRowInsert(pageHtml);
           pageHtml = withExcelInboundDpuInsert(pageHtml);
           pageHtml = withExcelVisualSettingsPersistenceV2(pageHtml);
+          const visualSettingsMarkerAt = pageHtml.indexOf('id="excel-visual-settings-persistence-v2"');
+          const malformedVisualSettingsClose = visualSettingsMarkerAt >= 0 ? pageHtml.indexOf("<" + String.fromCharCode(92) + "/script>", visualSettingsMarkerAt) : -1;
+          if (malformedVisualSettingsClose >= 0) pageHtml = pageHtml.slice(0, malformedVisualSettingsClose) + "<" + "/script>" + pageHtml.slice(malformedVisualSettingsClose + 10);
           pageHtml = withExcelDisplayTogglesAllTablesV2(pageHtml);
           pageHtml = withExcelInboundLiftOverridesV1(pageHtml);
           pageHtml = withExcelAddNewInbound(pageHtml);
@@ -20169,6 +20879,7 @@ body.excel-page-2 .excel-page2-secondary-buttons-right>.copy-grid-actions>.outbo
           pageHtml = withExcelPage2ThreeTables(pageHtml);
           pageHtml = withExcelCopyAssignedFinalBlocks(pageHtml);
           pageHtml = withExcelFinalBlockControls(pageHtml);
+          pageHtml = withExcelFinalBlockDeleteInMainMenu(pageHtml);
           pageHtml = withExcelContextActionFlyouts(pageHtml);
           pageHtml = withExcelOutsideTableBlockDeselect(pageHtml);
           pageHtml = withExcelBlockShowTrack(pageHtml);
@@ -20179,6 +20890,10 @@ body.excel-page-2 .excel-page2-secondary-buttons-right>.copy-grid-actions>.outbo
           pageHtml = withExcelInboundPaletteAndPierceMarkers(pageHtml);
           pageHtml = withExcelSsColorPrecedence(pageHtml);
           pageHtml = withExcelTomorrowInboundMarker(pageHtml);
+          pageHtml = withExcelPrimaryPasteMirror(pageHtml);
+          pageHtml = withExcelPrimarySplitPasteMirrorV2(pageHtml);
+          pageHtml = withExcelFourthRampDedicatedPersistence(pageHtml);
+          pageHtml = withExcelRefreshPersistenceGuard(pageHtml);
           pageHtml = withExcelBlockNameFootageEditor(pageHtml);
           pageHtml = withExcelFollowUpLabelVisibilityAndAlignment(pageHtml);
           pageHtml = withExcelRampHeaderFootage(pageHtml);
@@ -20234,6 +20949,14 @@ body.excel-page-2 .excel-page2-secondary-buttons-right>.copy-grid-actions>.outbo
 <\/script>`;
       const close = html.toLowerCase().lastIndexOf("</body>");
       return close >= 0 ? html.slice(0, close) + patch + "\n" + html.slice(close) : html + patch;
+    }
+
+    function withChassisAznuDcliOwnerRule(html) {
+      const marker = "chassis-aznu-dcli-owner-rule-v1";
+      if (!html || typeof html !== "string" || html.includes(marker)) return html;
+      const target = 'unit.startsWith("HGIU") || unit.startsWith("STTU") || unit.startsWith("SWRU") || unit.startsWith("XPOU")';
+      if (!html.includes(target)) return html;
+      return html.replace(target, target + ' || unit.startsWith("AZNU")/* ' + marker + ' */');
     }
 
     function withChassisCleanInboundNameEditor(html) {
@@ -21101,12 +21824,13 @@ body.excel-page-2 .excel-page2-secondary-buttons-right>.copy-grid-actions>.outbo
         return;
       }
       if (event.data && event.data.type === "conglobal-excel-table-state-save") {
-        try {
-          const serialized = String(event.data.state || "");
-          const parsed = JSON.parse(serialized);
-          if (parsed && Array.isArray(parsed.rows)) {
-            localStorage.setItem(EXCEL_TABLE_STATE_KEY, serialized);
-            localStorage.setItem(EXCEL_TABLE_UPDATED_AT_KEY, String(event.data.updatedAt || new Date().toISOString()));
+        const serialized = String(event.data.state || "");
+        let parsed = null;
+        try { parsed = JSON.parse(serialized); } catch (error) {}
+        if (parsed && Array.isArray(parsed.rows)) {
+          try { localStorage.setItem(EXCEL_TABLE_STATE_KEY, serialized); } catch (error) {}
+          try { localStorage.setItem(EXCEL_TABLE_UPDATED_AT_KEY, String(event.data.updatedAt || new Date().toISOString())); } catch (error) {}
+          try {
             localStorage.setItem(EXCEL_INBOUND_STATE_KEY, JSON.stringify({
               version: 1,
               updatedAt: new Date().toISOString(),
@@ -21114,13 +21838,23 @@ body.excel-page-2 .excel-page2-secondary-buttons-right>.copy-grid-actions>.outbo
               inboundArchive: Array.isArray(parsed.inboundArchive) ? parsed.inboundArchive : [],
               lastDeletedInboundArchiveId: String(parsed.lastDeletedInboundArchiveId || "")
             }));
-          }
-          const tablesSerialized = String(event.data.tables || "");
-          const tables = tablesSerialized ? JSON.parse(tablesSerialized) : null;
-          if (tables && Array.isArray(tables.rows)) {
-            localStorage.setItem(EXCEL_RAMP_TABLES_KEY, tablesSerialized);
-          }
-        } catch (error) {}
+          } catch (error) {}
+        }
+        const tablesSerialized = String(event.data.tables || "");
+        let tables = null;
+        try { tables = tablesSerialized ? JSON.parse(tablesSerialized) : null; } catch (error) {}
+        if (tables && Array.isArray(tables.rows)) {
+          try { localStorage.setItem(EXCEL_RAMP_TABLES_KEY, tablesSerialized); } catch (error) {}
+          try {
+            localStorage.setItem("rampBlockingControl.tableFour.v1", JSON.stringify({
+              version: 1,
+              updatedAt: String(tables.updatedAt || event.data.updatedAt || new Date().toISOString()),
+              visible: !!(tables.secondaryGridFour && tables.fourthRampTableVisible !== false),
+              deleted: !(tables.secondaryGridFour && typeof tables.secondaryGridFour === "object"),
+              model: tables.secondaryGridFour && typeof tables.secondaryGridFour === "object" ? tables.secondaryGridFour : null
+            }));
+          } catch (error) {}
+        }
         return;
       }
       if (event.data && event.data.type === "conglobal-excel-handoff-imported" && excelFrame && event.source === excelFrame.contentWindow && isExcelRoute(activePage)) {

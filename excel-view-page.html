@@ -1844,7 +1844,7 @@
     text-transform: uppercase;
   }
   .third-summary-total {
-    background: #fff1c7;
+    background: #e5e7eb;
     color: #111827;
   }
   .third-summary-blank {
@@ -1889,7 +1889,7 @@
     text-transform: uppercase;
   }
   .third-summary-average {
-    background: #ffed9c;
+    background: #e5e7eb;
     color: #14532d;
     flex-direction: column;
     gap: 2px;
@@ -4705,6 +4705,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   const TABLE_STATE_UPDATED_AT_KEY = "rampBlockingControl.v2.updatedAt";
   const GRID_TYPOGRAPHY_STORAGE_KEY = "settegast-excel-grid-typography-v1";
   const RAMP_TABLES_STORAGE_KEY = "rampBlockingControl.tables.v1";
+  const FOURTH_RAMP_TABLE_STORAGE_KEY = "rampBlockingControl.tableFour.v1";
   const COLOR_RULES_STORAGE_KEY = "rampBlockingControl.colorRules.v2";
   const COLOR_RULES_LEGACY_STORAGE_KEY = "rampBlockingControl.colorRules.v1";
   const LIVE_STORAGE_KEY = "rampBlockingLive.v1";
@@ -4738,6 +4739,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   const INBOUND_SHOVE_ORDER_INDEX = BLOCK_SHOW_TRACK_INDEX + 1;
   const INBOUND_SEQUENCE_INDEX = INBOUND_SHOVE_ORDER_INDEX + 1;
   const TOMORROW_INBOUND_INDEX = INBOUND_SEQUENCE_INDEX + 1;
+  const PASTED_BLOCK_MIRROR_INDEX = TOMORROW_INBOUND_INDEX + 1;
   const TOMORROW_INBOUND_MARKERS_KEY = "settegast-excel-tomorrow-inbound-markers-v1";
   const VIEW_DESCRIPTIONS = {
     "CURRENT RAMP BLOCKING": "Current cut grouping with live dwell and arrival-to-hold tags",
@@ -4920,6 +4922,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     return next;
   }
 
+  let persistedTableStateSavedAt = 0;
   let state = loadState();
   let inventoryColorMode = localStorage.getItem(INVENTORY_COLOR_MODE_KEY) === "track" ? "track" : "default";
   let currentWork = loadCurrentWorkState();
@@ -5119,15 +5122,25 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       dwellDestinations: {ihosa:[], mhoas:[]},
       secondaryGridTwo: null,
       secondaryGridThree: null,
+      secondaryGridFour: null,
+      fourthRampTableVisible: false,
+      followUpLabels: {},
+      followUpLabelsUpdatedAt: "",
+      tomorrowInboundMarkers: {},
+      tomorrowInboundMarkersUpdatedAt: "",
       sourceName: SAMPLE_SOURCE
     };
+  }
+
+  function persistedRowsHaveData(rows) {
+    return Array.isArray(rows) && rows.some(row => Array.isArray(row) && row.some(value => String(value ?? "").trim()));
   }
 
   function parsePersistedRampTables(raw) {
     if (!raw) return null;
     try {
       const parsed = JSON.parse(raw);
-      if (!parsed || !Array.isArray(parsed.rows)) return null;
+      if (!parsed || !Array.isArray(parsed.rows) || !persistedRowsHaveData(parsed.rows)) return null;
       return parsed;
     } catch (error) {
       return null;
@@ -5151,9 +5164,45 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     return selected;
   }
 
+  function loadPersistedFourthRampTable() {
+    let selected = null;
+    let selectedAt = -1;
+    storageCandidates().forEach((store) => {
+      try {
+        const candidate = JSON.parse(store.getItem(FOURTH_RAMP_TABLE_STORAGE_KEY) || "null");
+        if (!candidate || typeof candidate !== "object") return;
+        if (candidate.deleted !== true && (!candidate.model || typeof candidate.model !== "object")) return;
+        const savedAt = Date.parse(candidate.updatedAt || "") || 0;
+        if (!selected || savedAt >= selectedAt) {
+          selected = candidate;
+          selectedAt = savedAt;
+        }
+      } catch (error) {}
+    });
+    return selected;
+  }
+
+  function applyPersistedFourthRampTable(target, saved, baselineUpdatedAt = 0) {
+    if (!target || !saved || typeof saved !== "object") return target;
+    const savedAt = Date.parse(saved.updatedAt || "") || 0;
+    const baselineAt = Math.max(0, Number(baselineUpdatedAt) || 0);
+    if (savedAt < baselineAt) return target;
+    if (saved.deleted === true || saved.model == null) {
+      target.secondaryGridFour = null;
+      target.fourthRampTableVisible = false;
+      return target;
+    }
+    if (typeof saved.model !== "object") return target;
+    target.secondaryGridFour = JSON.parse(JSON.stringify(saved.model));
+    target.fourthRampTableVisible = saved.visible !== false;
+    return target;
+  }
+
   function applyPersistedRampTables(target, bundle) {
     if (!target || !bundle || !Array.isArray(bundle.rows)) return target;
-    target.rows = bundle.rows.map(row => Array.isArray(row) ? row.slice() : row);
+    if (persistedRowsHaveData(bundle.rows) || !persistedRowsHaveData(target.rows)) {
+      target.rows = bundle.rows.map(row => Array.isArray(row) ? row.slice() : row);
+    }
     if (Object.prototype.hasOwnProperty.call(bundle, "secondaryGridTwo")) {
       target.secondaryGridTwo = bundle.secondaryGridTwo == null
         ? null
@@ -5164,10 +5213,29 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         ? null
         : JSON.parse(JSON.stringify(bundle.secondaryGridThree));
     }
+    if (Object.prototype.hasOwnProperty.call(bundle, "secondaryGridFour")) {
+      target.secondaryGridFour = bundle.secondaryGridFour == null
+        ? null
+        : JSON.parse(JSON.stringify(bundle.secondaryGridFour));
+    }
+    if (Object.prototype.hasOwnProperty.call(bundle, "fourthRampTableVisible")) {
+      target.fourthRampTableVisible = bundle.fourthRampTableVisible === true;
+    }
+    if (bundle.followUpLabels && typeof bundle.followUpLabels === "object" && !Array.isArray(bundle.followUpLabels)) {
+      target.followUpLabels = JSON.parse(JSON.stringify(bundle.followUpLabels));
+    }
+    if (typeof bundle.followUpLabelsUpdatedAt === "string") {
+      target.followUpLabelsUpdatedAt = bundle.followUpLabelsUpdatedAt;
+    }
+    if (bundle.tomorrowInboundMarkers && typeof bundle.tomorrowInboundMarkers === "object" && !Array.isArray(bundle.tomorrowInboundMarkers)) {
+      target.tomorrowInboundMarkers = JSON.parse(JSON.stringify(bundle.tomorrowInboundMarkers));
+    }
+    if (typeof bundle.tomorrowInboundMarkersUpdatedAt === "string") {
+      target.tomorrowInboundMarkersUpdatedAt = bundle.tomorrowInboundMarkersUpdatedAt;
+    }
     return target;
   }
 
-  let persistedTableStateSavedAt = 0;
   function loadPersistedTableState() {
     let selected = null;
     let selectedAt = -1;
@@ -5176,7 +5244,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         const raw = store.getItem(STORAGE_KEY);
         if (!raw) return;
         const candidate = JSON.parse(raw);
-        if (!candidate || !Array.isArray(candidate.rows)) return;
+        if (!candidate || !Array.isArray(candidate.rows) || !persistedRowsHaveData(candidate.rows)) return;
         const savedAt = Date.parse(store.getItem(TABLE_STATE_UPDATED_AT_KEY) || "") || 0;
         if (!selected || savedAt >= selectedAt) {
           selected = candidate;
@@ -5191,11 +5259,14 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   function loadState() {
     const persistedColorRules = loadPersistedColorRules();
     const persistedRampTables = loadPersistedRampTables();
+    const persistedFourthRampTable = loadPersistedFourthRampTable();
     const persistedGridTypography = loadPersistedGridTypography();
     try {
       const saved = loadPersistedTableState();
       if (saved && Array.isArray(saved.rows)) {
-        const newerTables = persistedRampTables && (Date.parse(persistedRampTables.updatedAt || "") || 0) > persistedTableStateSavedAt;
+        const persistedRampTablesAt = Date.parse(persistedRampTables && persistedRampTables.updatedAt || "") || 0;
+        const newerTables = persistedRampTables && persistedRampTablesAt > persistedTableStateSavedAt;
+        persistedTableStateSavedAt = Math.max(persistedTableStateSavedAt, newerTables ? persistedRampTablesAt : 0);
         const merged = newerTables
           ? applyPersistedRampTables({ ...defaultState(), ...saved }, persistedRampTables)
           : { ...defaultState(), ...saved };
@@ -5219,9 +5290,11 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         }
         const restored = applyGridDisplayBaseline(applyColorKeyBaseline(merged, saved), saved);
         if (persistedGridTypography) restored.gridTypography = persistedGridTypography;
-        return restored;
+        return applyPersistedFourthRampTable(restored, persistedFourthRampTable, persistedTableStateSavedAt);
       }
-    } catch (error) {}
+    } catch (error) {
+      console.warn("Excel saved main state could not load.", error);
+    }
     const fallback = applyPersistedRampTables(defaultState(), persistedRampTables);
     fallback.inboundPlans = normalizeInboundPlans(fallback.inboundPlans);
     fallback.dwellDestinations = normalizeDwellDestinations(fallback.dwellDestinations);
@@ -5230,7 +5303,9 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     if (persistedGridTypography) fallback.gridTypography = persistedGridTypography;
     fallback.tableDensity = normalizeTableDensity(fallback.tableDensity);
     if (persistedColorRules) fallback.colorRules = persistedColorRules;
-    return fallback;
+    const fallbackTablesAt = Date.parse(persistedRampTables && persistedRampTables.updatedAt || "") || 0;
+    persistedTableStateSavedAt = Math.max(persistedTableStateSavedAt, fallbackTablesAt);
+    return applyPersistedFourthRampTable(fallback, persistedFourthRampTable, persistedTableStateSavedAt);
   }
 
   function updateExcelViewUndoButton() {
@@ -5243,6 +5318,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   // Keep a recoverable copy when the duplicated localStorage table payloads exceed quota.
   const ER_RECOVERY_DB = "conglobal-excel-er-recovery-v1";
   let erRecoveryPending = true;
+  let erRecoveryPendingSerialized = "";
   let erRecoveryWrite = Promise.resolve();
   function openErRecoveryDb() {
     return new Promise((resolve, reject) => {
@@ -5283,17 +5359,57 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       if (!snapshot) return;
       const recovered = JSON.parse(snapshot.state);
       if (!recovered || !Array.isArray(recovered.rows)) return;
-      if (recovered.sourceName === state.sourceName && JSON.stringify(recovered.rows) === JSON.stringify(state.rows)) return;
+      if (erRecoveryPendingSerialized) return;
+      if (JSON.stringify(recovered) === JSON.stringify(state)) return;
+      const recoveredHasRows = recovered.rows.some(row => Array.isArray(row) && row.some(value => String(value ?? "").trim()));
+      if (!recoveredHasRows) return;
       const recoveryAt = Date.parse(snapshot.updatedAt || "") || 0;
-      if (recoveryAt <= persistedTableStateSavedAt && recovered.sourceName === state.sourceName) return;
-      state = { ...defaultState(), ...recovered };
+      if (persistedTableStateSavedAt > 0 && recoveryAt <= persistedTableStateSavedAt) return;
+      const currentState = state;
+      const recoveredState = { ...defaultState(), ...currentState, ...recovered };
+      ["secondaryGridTwo", "secondaryGridThree", "secondaryGridFour"].forEach(key => {
+        if (validSecondaryModel(currentState[key]) && !validSecondaryModel(recovered[key])) {
+          recoveredState[key] = JSON.parse(JSON.stringify(currentState[key]));
+        }
+      });
+      if (recoveredState.secondaryGridFour === currentState.secondaryGridFour ||
+          (validSecondaryModel(currentState.secondaryGridFour) && !validSecondaryModel(recovered.secondaryGridFour))) {
+        recoveredState.fourthRampTableVisible = currentState.fourthRampTableVisible === true;
+      }
+      [
+        ["followUpLabels", "followUpLabelsUpdatedAt"],
+        ["tomorrowInboundMarkers", "tomorrowInboundMarkersUpdatedAt"]
+      ].forEach(([valueKey, updatedAtKey]) => {
+        const currentValue = currentState[valueKey] && typeof currentState[valueKey] === "object" && !Array.isArray(currentState[valueKey]) ? currentState[valueKey] : {};
+        const recoveredValue = recovered[valueKey] && typeof recovered[valueKey] === "object" && !Array.isArray(recovered[valueKey]) ? recovered[valueKey] : {};
+        const currentAt = Date.parse(currentState[updatedAtKey] || "") || 0;
+        const recoveredAt = Date.parse(recovered[updatedAtKey] || "") || 0;
+        if (currentAt > recoveredAt || (!recoveredAt && Object.keys(currentValue).length && !Object.keys(recoveredValue).length)) {
+          recoveredState[valueKey] = JSON.parse(JSON.stringify(currentValue));
+          recoveredState[updatedAtKey] = currentState[updatedAtKey] || "";
+        }
+      });
+      const persistedFourth = loadPersistedFourthRampTable();
+      const persistedFourthAt = Date.parse(persistedFourth && persistedFourth.updatedAt || "") || 0;
+      if (persistedFourth && (persistedFourthAt >= recoveryAt || !Object.prototype.hasOwnProperty.call(recovered, "secondaryGridFour"))) {
+        applyPersistedFourthRampTable(recoveredState, persistedFourth, recoveryAt);
+      }
+      state = recoveredState;
       selectedBlockIds.clear();
       selectedBlockGridId = "";
       renderAll();
-      ssShowToast(`Restored ${recovered.rows.length} ER rows from ${recovered.sourceName || "the latest import"}.`);
+      document.dispatchEvent(new CustomEvent("excel-persisted-state-restored"));
+      ssShowToast(`Restored the latest Excel tables and labels from ${recovered.sourceName || "the saved import"}.`);
     } catch (error) {
       console.warn("ER recovery copy could not be read.", error);
-    } finally { erRecoveryPending = false; }
+    } finally {
+      erRecoveryPending = false;
+      if (erRecoveryPendingSerialized) {
+        const pending = erRecoveryPendingSerialized;
+        erRecoveryPendingSerialized = "";
+        void writeErRecoverySnapshot(pending).catch(error => console.warn("ER recovery save failed.", error));
+      }
+    }
   }
 
   function saveState() {
@@ -5311,33 +5427,70 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       updatedAt: tablesUpdatedAt,
       rows: state.rows,
       secondaryGridTwo: state.secondaryGridTwo,
-      secondaryGridThree: state.secondaryGridThree
+      secondaryGridThree: state.secondaryGridThree,
+      secondaryGridFour: state.secondaryGridFour,
+      fourthRampTableVisible: state.fourthRampTableVisible === true,
+      followUpLabels: state.followUpLabels && typeof state.followUpLabels === "object" ? state.followUpLabels : {},
+      followUpLabelsUpdatedAt: String(state.followUpLabelsUpdatedAt || ""),
+      tomorrowInboundMarkers: state.tomorrowInboundMarkers && typeof state.tomorrowInboundMarkers === "object" ? state.tomorrowInboundMarkers : {},
+      tomorrowInboundMarkersUpdatedAt: String(state.tomorrowInboundMarkersUpdatedAt || "")
     });
-    try {
-      storageCandidates().forEach((store) => {
-        try {
-          store.setItem(STORAGE_KEY, serialized);
-          store.setItem(RAMP_TABLES_STORAGE_KEY, tablesSerialized);
-          if (savedAt) store.setItem(TABLE_STATE_UPDATED_AT_KEY, savedAt);
-        } catch (error) {}
-      });
-      persistColorRules();
-      persistGridTypography();
-      if (window.parent && window.parent !== window) {
-        window.parent.postMessage({
-          type: "conglobal-excel-table-state-save",
-          state: serialized,
-          tables: tablesSerialized,
-          updatedAt: savedAt || tablesUpdatedAt
-        }, "*");
+    const fourthTableSerialized = JSON.stringify({
+      version: 1,
+      updatedAt: tablesUpdatedAt,
+      visible: state.secondaryGridFour && state.fourthRampTableVisible !== false,
+      deleted: !(state.secondaryGridFour && typeof state.secondaryGridFour === "object"),
+      model: state.secondaryGridFour && typeof state.secondaryGridFour === "object" ? state.secondaryGridFour : null
+    });
+    if (changed || !erRecoveryPending) {
+      try {
+        storageCandidates().forEach((store) => {
+          try { store.setItem(FOURTH_RAMP_TABLE_STORAGE_KEY, fourthTableSerialized); } catch (error) {}
+          try { store.setItem(STORAGE_KEY, serialized); } catch (error) {}
+          try { store.setItem(RAMP_TABLES_STORAGE_KEY, tablesSerialized); } catch (error) {}
+          try { if (savedAt) store.setItem(TABLE_STATE_UPDATED_AT_KEY, savedAt); } catch (error) {}
+        });
+        persistColorRules();
+        persistGridTypography();
+        if (window.parent && window.parent !== window) {
+          window.parent.postMessage({
+            type: "conglobal-excel-table-state-save",
+            state: serialized,
+            tables: tablesSerialized,
+            updatedAt: savedAt || tablesUpdatedAt
+          }, "*");
+        }
+      } catch (error) {
+        // The dashboard still works when a browser blocks local file storage.
       }
-    } catch (error) {
-      // The dashboard still works when a browser blocks local file storage.
     }
     lastCommittedExcelViewState = serialized;
-    if (changed && !erRecoveryPending) void writeErRecoverySnapshot(serialized).catch(error => console.warn("ER recovery save failed.", error));
+    if (changed) {
+      if (erRecoveryPending) erRecoveryPendingSerialized = serialized;
+      void writeErRecoverySnapshot(serialized).catch(error => console.warn("ER recovery save failed.", error));
+    }
     updateExcelViewUndoButton();
   }
+
+  window.conglobalExcelFollowUpLabelsBridge = {
+    read() {
+      const value = state.followUpLabels && typeof state.followUpLabels === "object" && !Array.isArray(state.followUpLabels)
+        ? state.followUpLabels : {};
+      return { value: JSON.parse(JSON.stringify(value)), updatedAt: String(state.followUpLabelsUpdatedAt || "") };
+    },
+    write(value, updatedAt) {
+      const normalized = value && typeof value === "object" && !Array.isArray(value)
+        ? JSON.parse(JSON.stringify(value)) : {};
+      const nextSerialized = JSON.stringify(normalized);
+      const currentSerialized = JSON.stringify(state.followUpLabels && typeof state.followUpLabels === "object" && !Array.isArray(state.followUpLabels) ? state.followUpLabels : {});
+      const stamp = String(updatedAt || new Date().toISOString());
+      if (nextSerialized === currentSerialized && stamp === String(state.followUpLabelsUpdatedAt || "")) return false;
+      state.followUpLabels = normalized;
+      state.followUpLabelsUpdatedAt = stamp;
+      saveState();
+      return true;
+    }
+  };
 
   function undoExcelViewChange() {
     if (!excelViewUndoStack.length) return;
@@ -5366,7 +5519,9 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     return rounded.toFixed(1).replace(/\.0$/, "");
   };
   const pad = (n, width) => String(Math.round(Number(n) || 0)).padStart(width, "0");
-  const clean = value => String(value ?? "").replace(/\u00a0/g, " ").trim();
+  function clean(value) {
+    return String(value ?? "").replace(/\u00a0/g, " ").trim();
+  }
   function stripBlockTrackIds(value) {
     return String(value || "")
       .replace(/\s*\[(?:track\s*)?\d{3}\]\s*/gi, " ")
@@ -5612,7 +5767,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   }
 
   function normalizeRow(row) {
-    const out = new Array(TOMORROW_INBOUND_INDEX + 1).fill("");
+    const out = new Array(PASTED_BLOCK_MIRROR_INDEX + 1).fill("");
     for (let i=0; i<out.length; i++) out[i] = row[i] ?? "";
     out[0] = normalizeTrackValue(out[0]);
     out[1] = numberOrBlank(out[1]);
@@ -5709,6 +5864,12 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       group.shoveOrder = Math.max(0, ...group.rows.map(row => Number(row[INBOUND_SHOVE_ORDER_INDEX]) || 0));
       group.inboundSequence = Math.max(0, ...group.rows.map(row => Number(row[INBOUND_SEQUENCE_INDEX]) || 0));
       group.tomorrowInbound = group.rows.some(row => ["1", "true", "yes"].includes(clean(row[TOMORROW_INBOUND_INDEX]).toLowerCase()));
+      group.mirrorBlock = null;
+      try {
+        const mirror = JSON.parse(String(first[PASTED_BLOCK_MIRROR_INDEX] || "null"));
+        if (mirror && typeof mirror === "object") group.mirrorBlock = mirror;
+      } catch (_) {}
+      if (group.mirrorBlock && Number(group.mirrorBlock.footage) >= 0) group.footage = Number(group.mirrorBlock.footage);
       group.baseDisplay = buildCurrentDisplay(group);
     });
 
@@ -7693,6 +7854,12 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     return clone.innerHTML;
   }
 
+  function cleanBlockCellStyle(cell) {
+    const clone = cell.cloneNode(false);
+    ["grid-row", "grid-column", "display", "position", "z-index", "width", "min-width", "max-width", "height", "min-height", "max-height"].forEach(property => clone.style.removeProperty(property));
+    return String(clone.getAttribute("style") || "");
+  }
+
   function sourceRowsForSecondaryBlock(gridId, blockId) {
     const model = state[secondaryGridStateKey(gridId)];
     if (!validSecondaryModel(model)) return [];
@@ -7724,6 +7891,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         .replace(/\s+/g, " ").trim(),
       content:cleanBlockCellContent(cell),
       title:String(cell.title || clean(cell.textContent)),
+      style:cleanBlockCellStyle(cell),
       sourceRows
     };
   }
@@ -8380,7 +8548,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   }
 
   function syntheticPrimaryRow(block, track, stamp) {
-    const row = new Array(TOMORROW_INBOUND_INDEX + 1).fill("");
+    const row = new Array(PASTED_BLOCK_MIRROR_INDEX + 1).fill("");
     const text = clean(block.title || textFromCellHtml(`<div>${block.content || ""}</div>`));
     const trainMatch = text.match(/\bZ[LP]BHO\s+\d+\b/i);
     const statusMatch = text.match(/\b(SS|BO|DB|DK|BBCT|IHOSA|MHOAS|SADS|FXSI|ICTF|SIDS|LDDS|CU|RAMP)\b/i);
@@ -8414,11 +8582,22 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         ? block.sourceRows.map(source => Array.isArray(source) ? source.slice() : [])
         : [syntheticPrimaryRow(block, track, stamp)];
       rows.forEach(row => {
-        while (row.length <= BLOCK_SHOW_TRACK_INDEX) row.push("");
+        while (row.length <= PASTED_BLOCK_MIRROR_INDEX) row.push("");
         row[0] = track;
         row[MANUAL_BLOCK_SEGMENT_INDEX] = stamp;
-        row[BLOCK_SHOW_TRACK_INDEX] = block.showTrack ? "1" : "";
+        row[BLOCK_SHOW_TRACK_INDEX] = "";
+        row[INBOUND_SHOVE_ORDER_INDEX] = Math.max(0, Number(block.shoveOrder) || 0);
+        row[INBOUND_SEQUENCE_INDEX] = Math.max(0, Number(block.inboundSequence) || 0);
+        row[PASTED_BLOCK_MIRROR_INDEX] = JSON.stringify({
+          footage:Math.max(0, Number(block.footage) || 0),
+          className:String(block.className || "cut-cell gray"),
+          content:blockContentForDisplay(String(block.content || ""), false),
+          title:stripBlockTrackIds(String(block.title || "")),
+          style:String(block.style || ""),
+          isPierceInbound:block.isPierceInbound === true
+        });
       });
+      rows.forEach((row, rowIndex) => { row[4] = rowIndex === 0 ? Math.max(0, Number(block.footage) || 0) : 0; });
       return {track, sourceRows:rows};
     }).filter(group => group.sourceRows.length);
     if (!pastedGroups.length) return false;
@@ -8663,10 +8842,23 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     return `${String(gridId || "")}::${String(blockId || "")}`;
   }
   function readTomorrowInboundMarkers() {
+    const stateMarkers = state.tomorrowInboundMarkers && typeof state.tomorrowInboundMarkers === "object" && !Array.isArray(state.tomorrowInboundMarkers)
+      ? state.tomorrowInboundMarkers : {};
+    const stateAt = Date.parse(state.tomorrowInboundMarkersUpdatedAt || "") || 0;
     try {
-      const saved = JSON.parse(localStorage.getItem(TOMORROW_INBOUND_MARKERS_KEY) || "{}");
-      return saved && typeof saved === "object" && !Array.isArray(saved) ? saved : {};
-    } catch (_) { return {}; }
+      const raw = localStorage.getItem(TOMORROW_INBOUND_MARKERS_KEY);
+      if (raw !== null) {
+        const saved = JSON.parse(raw || "{}");
+        const savedAt = Date.parse(localStorage.getItem(TOMORROW_INBOUND_MARKERS_KEY + ".updatedAt") || "") || 0;
+        if (saved && typeof saved === "object" && !Array.isArray(saved) &&
+            (savedAt > stateAt || (savedAt === stateAt && (Object.keys(saved).length || !Object.keys(stateMarkers).length)))) {
+          state.tomorrowInboundMarkers = saved;
+          state.tomorrowInboundMarkersUpdatedAt = localStorage.getItem(TOMORROW_INBOUND_MARKERS_KEY + ".updatedAt") || "";
+          return saved;
+        }
+      }
+    } catch (_) {}
+    return stateMarkers;
   }
   function contextBlockIsTomorrowInbound(gridId, blockId) {
     return Boolean(readTomorrowInboundMarkers()[tomorrowInboundMarkerId(gridId, blockId)]);
@@ -8677,7 +8869,12 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     const id = tomorrowInboundMarkerId(gridId, blockId);
     if (marked) markers[id] = true;
     else delete markers[id];
-    localStorage.setItem(TOMORROW_INBOUND_MARKERS_KEY, JSON.stringify(markers));
+    const updatedAt = new Date().toISOString();
+    state.tomorrowInboundMarkers = markers;
+    state.tomorrowInboundMarkersUpdatedAt = updatedAt;
+    try { localStorage.setItem(TOMORROW_INBOUND_MARKERS_KEY, JSON.stringify(markers)); } catch (_) {}
+    try { localStorage.setItem(TOMORROW_INBOUND_MARKERS_KEY + ".updatedAt", updatedAt); } catch (_) {}
+    saveState();
     return true;
   }
   function decorateTomorrowInboundBlocks() {
@@ -9232,9 +9429,12 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       cells.push(`<div class="track-total ${target && total>target ? "over":""}" data-track="${track}" title="Track target: ${fmtInt(target)} ft">${fmtInt(total)}</div>`);
       for (let i=0;i<8;i++) {
         const text = values[i] || "";
-        const cls = classifyCell(text, view);
-        const ruleStyle = view === "CURRENT RAMP BLOCKING" ? styleWithCurrentColorRule(text) : "";
         const group = trackGroups[i] || null;
+        const mirror = group && group.mirrorBlock && typeof group.mirrorBlock === "object" ? group.mirrorBlock : null;
+        const cls = mirror
+          ? String(mirror.className || "gray").replace(/\b(?:cut-cell|block-reorderable|block-selected|block-paste-target|block-drag-target)\b/g, "").replace(/\s+/g, " ").trim()
+          : classifyCell(text, view);
+        const ruleStyle = mirror ? String(mirror.style || "") : (view === "CURRENT RAMP BLOCKING" ? styleWithCurrentColorRule(text) : "");
         const showTrack = Boolean(group && group.showTrack);
         const shoveOrder = Math.max(0, Number(group && group.shoveOrder) || 0);
         const tomorrowInbound = Boolean(group && group.tomorrowInbound);
@@ -9253,8 +9453,9 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         const moveAttrs = group
           ? `data-block-id="${escapeAttr(group.blockId)}" data-track="${track}" data-footage="${Number(group.footage) || 0}"${showTrack ? ' data-show-track="true"' : ""}${shoveOrder ? ` data-shove-order="${shoveOrder}"` : ""}${group.inboundSequence ? ` data-inbound-sequence="${inboundSequence}"` : ""} role="button" aria-selected="false"`
           : (!text && blockReorderingAvailable() ? `data-drop-end-track="${track}"` : "");
-        cells.push(`<div class="cut-cell ${cls}${interactiveClass}" ${moveAttrs} style="${escapeAttr(ruleStyle)}" title="${escapeHtml(displayText || (blockReorderingAvailable() ? "Place selected blocks at end of Track " + track : ""))}">
-          ${displayText ? escapeHtml(displayText) : (text ? "" : "0")}
+        const displayTitle = mirror ? String(mirror.title || clean(textFromCellHtml(`<div>${mirror.content || ""}</div>`))) : displayText;
+        cells.push(`<div class="cut-cell ${cls}${interactiveClass}" ${moveAttrs} style="${escapeAttr(ruleStyle)}" title="${escapeHtml(displayTitle || (blockReorderingAvailable() ? "Place selected blocks at end of Track " + track : ""))}">
+          ${mirror ? String(mirror.content || "") : (displayText ? escapeHtml(displayText) : (text ? "" : "0"))}
           ${shoveOrder ? `<span class="inbound-shove-flag${inboundSequenceClass}" style="--inbound-shove-hue:${inboundSequenceHue}" aria-label="Shove ${shoveOrder}, inbound ${inboundSequence}">${shoveOrder}</span>` : ""}
           ${tomorrowInbound ? `<span class="tomorrow-inbound-callout" aria-label="Tomorrow's Inbound">Tomorrow's Inbound</span>` : ""}
           ${i===7 && overflow ? `<span class="overflow">+${overflow}</span>` : ""}
@@ -9286,9 +9487,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   function copyAboveHeaderCell(target = "two") {
     const id = target === "three" ? "copyTableTwoToThree" : "copyTableOneToTwo";
     const headerClass = target === "three" ? "third-summary-head copy-grid-head" : "grid-head copy-grid-head";
-    const assignmentCopy = target === "three"
-      ? '<button class="copy-grid-btn" id="copyAssignedFinalBlocks" type="button">COPY IHOSA/MHOAS BLOCKS</button>'
-      : '<button class="copy-grid-btn" id="copyAssignedTableOneToTwo" type="button" title="Copy only IHOSA and MHOAS blocks from Table 1 into Table 2">COPY IHOSA/MHOAS</button>';
+    const assignmentCopy = '<button class="copy-grid-btn" data-copy-assigned-final-blocks="' + target + '" type="button">COPY IHOSA/MHOAS BLOCKS</button>';
     return '<div class="' + headerClass + '"><div class="copy-grid-actions">' + assignmentCopy + '<button class="copy-grid-btn" id="' + id + '" type="button">COPY ABOVE</button><button class="add-inbound-train-btn" data-open-inbound-train="' + target + '" type="button">ADD INBOUND TRAIN</button></div></div>';
   }
 
@@ -9390,12 +9589,16 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     renderAll();
   }
 
-  function copyAssignedBlocksToFinalTracks() {
-    const source = validSecondaryModel(state.secondaryGridTwo) ? state.secondaryGridTwo : null;
+  function copyAssignedBlocksToFinalTracks(targetName = "three") {
+    const copyToTableTwo = targetName === "two";
+    const sourceGridSelector = copyToTableTwo ? "#yardGrid" : "#blankYardGrid";
+    const source = copyToTableTwo
+      ? snapshotGrid($(sourceGridSelector))
+      : validSecondaryModel(state.secondaryGridTwo) ? state.secondaryGridTwo : null;
     let savedAssignments = {};
     try { savedAssignments = JSON.parse(localStorage.getItem("settegast-excel-block-assignments-v1") || "{}"); } catch (_) {}
     const visibleAssignments = {};
-    document.querySelectorAll("#blankYardGrid .cut-cell[data-block-id]").forEach(cell => {
+    document.querySelectorAll(sourceGridSelector + " .cut-cell[data-block-id]").forEach(cell => {
       const text = clean(cell.title || cell.textContent).toLowerCase();
       const assignment = clean(cell.dataset.blockAssignment).toLowerCase();
       visibleAssignments[String(cell.dataset.blockId)] = assignment === "ihosa" || assignment === "mhoas"
@@ -9450,12 +9653,14 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         }));
       });
     }
-    const target = validSecondaryModel(state.secondaryGridThree) ? state.secondaryGridThree : emptySecondaryModel();
+    const targetStateKey = copyToTableTwo ? "secondaryGridTwo" : "secondaryGridThree";
+    const target = validSecondaryModel(state[targetStateKey]) ? state[targetStateKey] : emptySecondaryModel();
     target.finalBlocks = finalBlocks;
-    state.secondaryGridThree = target;
+    state[targetStateKey] = target;
     renderAll();
     const copied = finalBlocks.ihosa.length + finalBlocks.mhoas.length;
-    ssShowToast(copied ? `Copied ${copied} assigned block${copied === 1 ? "" : "s"} to the final tracks.` : "No IHOSA or MHOAS assignments found in Table 2.");
+    const sourceTable = copyToTableTwo ? "Table 1" : "Table 2";
+    ssShowToast(copied ? `Copied ${copied} assigned block${copied === 1 ? "" : "s"} from ${sourceTable} to the final tracks.` : `No IHOSA or MHOAS assignments found in ${sourceTable}.`);
   }
 
   function inboundPlanFootage(plan) {
@@ -9884,7 +10089,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       '<div class="third-summary-head">Track</div>',
       '<div class="third-summary-head">' + fmtInt(finalTrackTotal) + '</div>',
       '<div class="third-summary-head third-summary-span">Outbound Departures</div>',
-      '<div class="third-summary-head">Dwell Wt Average</div>',
+      '<div class="third-summary-head third-summary-edge">Dwell Wt Average</div>',
       '<div class="third-summary-label">IHOSA [Final]</div>',
       '<div class="third-summary-total">' + fmtInt(ihosaTotal) + '</div>',
       finalSummaryZoneHtml("ihosa", ihosaFinal),
@@ -11084,7 +11289,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     if (e.target.closest("#copyAssignedTableOneToTwo")) copyAssignedTableOneToTwo();
     if (e.target.closest("#copyTableOneToTwo")) copyTableOneToTwo();
     if (e.target.closest("#copyTableTwoToThree")) copyTableTwoToThree();
-    if (e.target.closest("#copyAssignedFinalBlocks")) copyAssignedBlocksToFinalTracks();
+    const copyAssignedFinalBlocks = e.target.closest("[data-copy-assigned-final-blocks]");
+    if (copyAssignedFinalBlocks) copyAssignedBlocksToFinalTracks(copyAssignedFinalBlocks.dataset.copyAssignedFinalBlocks);
     if (e.target.closest("#toggleInboundPlanner")) {
       state.inboundPlannerVisible = state.inboundPlannerVisible === false;
       renderAll();
@@ -11940,8 +12146,10 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       const restored = JSON.parse(data.state);
       if (!restored || !Array.isArray(restored.rows)) return;
       let nextState = { ...defaultState(), ...restored };
+      let incomingTablesAt = Date.parse(data.updatedAt || "") || 0;
       if (typeof data.tables === "string" && data.tables) {
         const tableBundle = JSON.parse(data.tables);
+        incomingTablesAt = Math.max(incomingTablesAt, Date.parse(tableBundle && tableBundle.updatedAt || "") || 0);
         nextState = applyPersistedRampTables(nextState, tableBundle);
       }
       nextState.dwellOverrides = nextState.dwellOverrides && typeof nextState.dwellOverrides === "object" && !Array.isArray(nextState.dwellOverrides) ? nextState.dwellOverrides : {};
@@ -11950,6 +12158,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       nextState.gridTypography = normalizeGridTypography(nextState.gridTypography);
       nextState.colorRules = normalizeColorRules(nextState.colorRules);
       nextState = applyGridDisplayBaseline(applyColorKeyBaseline(nextState, restored), restored);
+      nextState = applyPersistedFourthRampTable(nextState, loadPersistedFourthRampTable(), incomingTablesAt);
       state = nextState;
       lastCommittedExcelViewState = JSON.stringify(state);
       selectedBlockIds.clear();
