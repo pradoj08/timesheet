@@ -27529,6 +27529,47 @@ body #forecastExcelView :is(.forecast-excel-block.hours24,.forecast-excel-block.
   refreshDates();
 })();
 </script>
+<style id="chassis-forecast-notes-resize-border-v1-styles">
+#forecastExcelView .forecast-excel-page.modern-table-view .forecast-excel-notes{
+  box-sizing:border-box!important;
+  overflow:hidden!important;
+}
+#forecastExcelView .forecast-excel-page.modern-table-view .forecast-excel-notes .forecast-excel-notes-grid{
+  box-sizing:border-box!important;
+  height:var(--forecast-excel-notes-height,90px)!important;
+  min-height:0!important;
+  max-height:var(--forecast-excel-notes-height,90px)!important;
+  grid-template-rows:repeat(2,minmax(0,1fr))!important;
+  overflow:hidden!important;
+}
+#forecastExcelView .forecast-excel-page.modern-table-view .forecast-excel-notes .forecast-excel-notes-row,
+#forecastExcelView .forecast-excel-page.modern-table-view .forecast-excel-notes .forecast-excel-notes-row > *{
+  min-height:0!important;
+  overflow:hidden!important;
+  box-sizing:border-box!important;
+}
+#forecastExcelView .forecast-excel-page.modern-table-view .forecast-excel-notes .forecast-excel-notes-row > *{
+  padding-block:min(5px,calc(var(--forecast-excel-notes-height,90px) / 18))!important;
+}
+#forecastExcelView .forecast-excel-page.modern-table-view .forecast-excel-notes .forecast-excel-notes-shortages{
+  align-items:stretch!important;
+  padding:0!important;
+  contain:paint;
+}
+#forecastExcelView .forecast-excel-page.modern-table-view .forecast-excel-notes .forecast-excel-notes-message-text{
+  display:block!important;
+  width:100%!important;
+  height:100%!important;
+  min-height:0!important;
+  max-height:100%!important;
+  padding:min(5px,calc(var(--forecast-excel-notes-height,90px) / 18))!important;
+  overflow-x:hidden!important;
+  overflow-y:auto!important;
+  transform:none!important;
+  font-size:calc(14px * var(--forecast-excel-notes-text-scale,1))!important;
+  scrollbar-width:thin;
+}
+</style>
 <style id="chassis-forecast-shortage-x-v1-styles">
 #forecastExcelView .forecast-excel-main-table td:has(.forecast-excel-demand-value){position:relative}
 #forecastExcelView .forecast-excel-main-table .forecast-excel-demand-value{position:relative;display:block;width:100%;min-width:0;text-align:center}
