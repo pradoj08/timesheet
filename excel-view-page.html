@@ -1537,6 +1537,23 @@
   body.excel-page-2 .yard-grid > [data-track-row-highlight="yellow"] { --excel-page2-row:#fef3c7!important; }
   body.excel-page-2 .yard-grid > [data-track-row-highlight="purple"] { --excel-page2-row:#e9d5ff!important; }
   body.excel-page-2 .yard-grid > [data-track-row-highlight="green"] { --excel-page2-row:#bbf7d0!important; }
+  body.excel-page-2 #excelWorkspace > .dashboard-panel > .panel-head :is(#undoExcelView,#toggleSplitView,#importFileBtnTop,#addInboundTableOneBtn) {
+    width:auto!important; max-width:none!important; min-height:25px!important; height:25px!important; padding:0 9px!important;
+    border:1px solid #cbd5e1!important; border-radius:3px!important; background:#f8fafc!important; color:#17233b!important;
+    box-shadow:none!important; font:950 8px/1 "Arial Narrow","Segoe UI",Arial,sans-serif!important; letter-spacing:.04em!important;
+    text-transform:uppercase!important; white-space:nowrap!important; transform:none!important;
+  }
+  body.excel-page-2 #excelWorkspace > .dashboard-panel > .panel-head #addInboundTableOneBtn {
+    border-color:#f6c447!important; background:#fff3bd!important; color:#6c4100!important;
+  }
+  body.excel-page-2 #excelWorkspace > .dashboard-panel > .panel-head :is(#undoExcelView,#toggleSplitView,#importFileBtnTop):hover,
+  body.excel-page-2 #excelWorkspace > .dashboard-panel > .panel-head :is(#undoExcelView,#toggleSplitView,#importFileBtnTop):focus-visible {
+    border-color:#94a3b8!important; background:#e8edf2!important; outline:0!important;
+  }
+  body.excel-page-2 #excelWorkspace > .dashboard-panel > .panel-head #addInboundTableOneBtn:hover,
+  body.excel-page-2 #excelWorkspace > .dashboard-panel > .panel-head #addInboundTableOneBtn:focus-visible {
+    border-color:#d99200!important; background:#ffdf78!important; outline:0!important;
+  }
   body:not(.excel-page-2) .yard-grid > [data-track-row-highlight]:not(.cut-cell),
   body:not(.excel-page-2) .yard-grid > .cut-cell[data-track-row-highlight]:not([data-block-id]) { background:var(--track-row-highlight-color)!important; }
   .yard-grid > [data-track-row-highlight="blue"] { --track-row-highlight-color:#bfdbfe; }
@@ -4341,7 +4358,7 @@
             <button class="btn btn-white btn-small grid-color-tab-btn" id="colorTabBtn" type="button">Block Font &amp; Colors</button>
             <button class="btn btn-white btn-small" id="removeAllBlockTags" type="button" title="Clear all IHOSA and MHOAS Final assignments">Remove Tags</button>
             <button class="btn btn-white btn-small" id="importFileBtnTop" type="button" onclick="document.getElementById('inventoryFileTop').click()">IMPORT ER</button>
-            <button class="btn btn-white btn-small" id="addInboundTableOneBtn" data-open-inbound-train="one" type="button">ADD INBOUND TRAIN</button>
+            <button class="btn btn-white btn-small" id="addInboundTableOneBtn" data-open-inbound-train="one" type="button">ADD INBOUND</button>
             <div class="panel-subtitle" id="viewDescription"></div>
           </div>
           <div class="dashboard-controls">
@@ -9488,7 +9505,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     const id = target === "three" ? "copyTableTwoToThree" : "copyTableOneToTwo";
     const headerClass = target === "three" ? "third-summary-head copy-grid-head" : "grid-head copy-grid-head";
     const assignmentCopy = '<button class="copy-grid-btn" data-copy-assigned-final-blocks="' + target + '" type="button">COPY IHOSA/MHOAS BLOCKS</button>';
-    return '<div class="' + headerClass + '"><div class="copy-grid-actions">' + assignmentCopy + '<button class="copy-grid-btn" id="' + id + '" type="button">COPY ABOVE</button><button class="add-inbound-train-btn" data-open-inbound-train="' + target + '" type="button">ADD INBOUND TRAIN</button></div></div>';
+    return '<div class="' + headerClass + '"><div class="copy-grid-actions">' + assignmentCopy + '<button class="copy-grid-btn" id="' + id + '" type="button">COPY ABOVE</button><button class="add-inbound-train-btn" data-open-inbound-train="' + target + '" type="button">ADD INBOUND</button></div></div>';
   }
 
   function copyAssignedTableOneToTwo() {
@@ -9496,6 +9513,9 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     if (!grid) return;
     let savedAssignments = {};
     try { savedAssignments = JSON.parse(localStorage.getItem("settegast-excel-block-assignments-v1") || "{}"); } catch (_) {}
+    let directFollowUps = {};
+    try { directFollowUps = JSON.parse(localStorage.getItem("conglobal-excel-selected-block-followups-v1") || "{}"); } catch (_) {}
+    if (!directFollowUps || typeof directFollowUps !== "object" || Array.isArray(directFollowUps)) directFollowUps = {};
     const assigned = new Map();
     grid.querySelectorAll(".cut-cell[data-block-id]").forEach(cell => {
       const id = String(cell.dataset.blockId || "");
@@ -9510,7 +9530,11 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       (Array.isArray(source.tracks[track]) ? source.tracks[track] : []).forEach(block => {
         const id = String(block && block.id || "");
         const blockText = clean(`${block && block.title || ""} ${textFromCellHtml(`<div>${block && block.content || ""}</div>`)}`);
-        let zone = String(block && block.assignment || assigned.get(id) || "").toLowerCase();
+        const directRecord = directFollowUps[`${grid.id}::${id}`];
+        const directZone = String(directRecord && directRecord.label || "").toLowerCase();
+        let zone = directZone === "ihosa" || directZone === "mhoas"
+          ? directZone
+          : String(block && block.assignment || assigned.get(id) || "").toLowerCase();
         if (zone !== "ihosa" && zone !== "mhoas") zone = /\bIHOSA\b/i.test(blockText) ? "ihosa" : /\bMHOAS\b/i.test(blockText) ? "mhoas" : "";
         if (!zone) return;
         let inbound = clean(block && block.inboundTrain);
@@ -9597,6 +9621,9 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       : validSecondaryModel(state.secondaryGridTwo) ? state.secondaryGridTwo : null;
     let savedAssignments = {};
     try { savedAssignments = JSON.parse(localStorage.getItem("settegast-excel-block-assignments-v1") || "{}"); } catch (_) {}
+    let directFollowUps = {};
+    try { directFollowUps = JSON.parse(localStorage.getItem("conglobal-excel-selected-block-followups-v1") || "{}"); } catch (_) {}
+    if (!directFollowUps || typeof directFollowUps !== "object" || Array.isArray(directFollowUps)) directFollowUps = {};
     const visibleAssignments = {};
     document.querySelectorAll(sourceGridSelector + " .cut-cell[data-block-id]").forEach(cell => {
       const text = clean(cell.title || cell.textContent).toLowerCase();
@@ -9610,8 +9637,12 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       TRACKS.forEach(track => {
         (Array.isArray(source.tracks[track]) ? source.tracks[track] : []).forEach(block => {
           const blockText = clean(`${block.title || ""} ${textFromCellHtml(`<div>${block.content || ""}</div>`)}`).toLowerCase();
+          const directRecord = directFollowUps[`${sourceGridSelector.slice(1)}::${String(block.id || "")}`];
+          const directZone = clean(directRecord && directRecord.label).toLowerCase();
           const storedZone = clean(savedAssignments[String(block.id)]).toLowerCase();
-          const zone = storedZone === "ihosa" || storedZone === "mhoas"
+          const zone = directZone === "ihosa" || directZone === "mhoas"
+            ? directZone
+            : storedZone === "ihosa" || storedZone === "mhoas"
             ? storedZone
             : visibleAssignments[String(block.id)] || (/\bihosa\b/.test(blockText) ? "ihosa" : /\bmhoas\b/.test(blockText) ? "mhoas" : "");
           if (zone !== "ihosa" && zone !== "mhoas") return;
@@ -9635,7 +9666,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       let arrowAssignments = [];
       try { arrowAssignments = JSON.parse(localStorage.getItem("conglobal-excel-consolidation-arrow-explanations-v1") || "[]"); } catch (_) {}
       if (Array.isArray(arrowAssignments)) arrowAssignments.forEach(item => {
-        if (!item || String(item.gridId || "") !== "blankYardGrid" || sourceBlocks.has("arrow-copy-" + String(item.id || ""))) return;
+        if (!item || String(item.gridId || "") !== sourceGridSelector.slice(1) || sourceBlocks.has("arrow-copy-" + String(item.id || ""))) return;
         const zone = String(item.label || "").toLowerCase();
         const track = Number(String(item.track || "").replace(/[^0-9]/g, "").slice(-3));
         const footage = Number(item.footage) || 0;
@@ -9988,7 +10019,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     return [
       '<div class="grid-head">Track</div>',
       '<div class="grid-head">Current</div>',
-      '<div class="grid-head grid-head-action"><button class="grid-head-button" id="openOutboundUnits" type="button">Outbound Units</button></div>',
+      '<div class="grid-head" aria-label="Blank cut column"></div>',
       ...Array.from({length:6},()=>'<div class="grid-head" aria-label="Blank cut column"></div>'),
       copyTarget ? copyAboveHeaderCell(copyTarget) : '<div class="grid-head" aria-label="Blank cut column"></div>',
       '<div class="grid-head" title="Track capacity minus current footage">&Delta; Remaining</div>'
@@ -11141,6 +11172,13 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     document.addEventListener("excel-er-imported", () => {
       state = {};
       try { localStorage.removeItem(STORAGE_KEY); } catch (_) {}
+      applyHighlights();
+    });
+    document.addEventListener("excel-secondary-table-cleared", event => {
+      const gridId = String(event.detail?.gridId || "");
+      if (!GRID_IDS.includes(gridId)) return;
+      delete state[gridId];
+      saveState();
       applyHighlights();
     });
     GRID_IDS.forEach(gridId => {
