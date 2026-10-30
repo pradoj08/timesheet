@@ -4952,6 +4952,21 @@ body.forecast-view .forecast-bottom-controls {
   border-color:rgba(251,113,133,.38) !important;
   color:#ffe4e6 !important;
 }
+.forecast-demand-factor-toggle {
+  background:rgba(14,165,233,.18) !important;
+  border-color:rgba(56,189,248,.42) !important;
+  color:#e0f2fe !important;
+}
+.forecast-demand-factor-toggle.is-excluded {
+  background:rgba(245,158,11,.2) !important;
+  border-color:rgba(251,191,36,.62) !important;
+  color:#fef3c7 !important;
+}
+#forecastExcelView .forecast-demand-factor-toggle.is-excluded {
+  background:#fff3cd !important;
+  border-color:#d99000 !important;
+  color:#713f12 !important;
+}
 @media(max-width:1180px){
   #forecastModal .forecast-controls{
     grid-template-columns:1fr !important;
@@ -6617,6 +6632,8 @@ body.forecast-view .forecast-bottom-controls {
         <button id="forecastExcelTrainTotalsToggle" class="forecast-excel-empty-toggle" type="button" aria-pressed="false">Show Train Totals</button>
         <button id="forecastExcelPreviousSubmissionToggle" class="forecast-excel-empty-toggle" type="button" aria-pressed="false">Show Previous Submission</button>
         <button id="forecastExcelUnplannedColumnToggle" class="forecast-excel-empty-toggle" type="button" aria-pressed="false">Show Unplanned</button>
+        <button class="forecast-excel-empty-toggle forecast-demand-factor-toggle" data-forecast-demand-factor="mismatch" type="button" aria-pressed="true">Mismatches: Counted</button>
+        <button class="forecast-excel-empty-toggle forecast-demand-factor-toggle" data-forecast-demand-factor="stacked" type="button" aria-pressed="true">Stacked: Counted</button>
         <button id="forecastExcelResetRequestsBtn" class="forecast-excel-empty-toggle forecast-excel-reset-requests" type="button">Reset Requests to 0</button>
         <div id="forecastExcelFontControls" class="forecast-excel-font-controls" hidden>
           <label for="forecastExcelTableFont"><span>Table Font</span></label>
@@ -10455,11 +10472,50 @@ function getForecastSpecialDemandUnits(){
     ...forecastMismatchUnits.map(unit=>normalizeForecastSpecialDemandUnit(unit,"MISMATCH"))
   ];
 }
+const FORECAST_COUNT_MISMATCH_DEMAND_KEY="conglobal-chassis-count-mismatch-demand-v1";
+const FORECAST_COUNT_STACKED_DEMAND_KEY="conglobal-chassis-count-stacked-demand-v1";
+let forecastCountMismatchDemand=localStorage.getItem(FORECAST_COUNT_MISMATCH_DEMAND_KEY)!=="0";
+let forecastCountStackedDemand=localStorage.getItem(FORECAST_COUNT_STACKED_DEMAND_KEY)!=="0";
+function getForecastCountedSpecialDemandUnits(){
+  return [
+    ...(forecastCountStackedDemand?forecastStackedUnits.map(unit=>normalizeForecastSpecialDemandUnit(unit,"STACKED")):[]),
+    ...(forecastCountMismatchDemand?forecastMismatchUnits.map(unit=>normalizeForecastSpecialDemandUnit(unit,"MISMATCH")):[])
+  ];
+}
 function getForecastVisibleDemandUnits(){
-  return [...getVisibleForecastUnits(),...getForecastSpecialDemandUnits()];
+  return [...getVisibleForecastUnits(),...getForecastCountedSpecialDemandUnits()];
 }
 function getForecastExcelWindowDemandUnits(days){
-  return [...getForecastExcelWindowUnits(days),...getForecastSpecialDemandUnits()];
+  return [...getForecastExcelWindowUnits(days),...getForecastCountedSpecialDemandUnits()];
+}
+function updateForecastDemandFactorToggles(){
+  document.querySelectorAll("[data-forecast-demand-factor]").forEach(button=>{
+    const kind=button.dataset.forecastDemandFactor;
+    const counted=kind==="mismatch"?forecastCountMismatchDemand:forecastCountStackedDemand;
+    const label=kind==="mismatch"?"Mismatches":"Stacked";
+    button.setAttribute("aria-pressed",String(counted));
+    button.textContent=`${label}: ${counted?"Counted":"Shown, Not Counted"}`;
+    button.classList.toggle("is-excluded",!counted);
+    button.classList.toggle("is-active",!counted&&button.classList.contains("forecast-excel-empty-toggle"));
+  });
+}
+function setupForecastDemandFactorToggles(){
+  updateForecastDemandFactorToggles();
+  document.querySelectorAll("[data-forecast-demand-factor]").forEach(button=>{
+    button.onclick=()=>{
+      if(button.dataset.forecastDemandFactor==="mismatch"){
+        forecastCountMismatchDemand=!forecastCountMismatchDemand;
+        localStorage.setItem(FORECAST_COUNT_MISMATCH_DEMAND_KEY,forecastCountMismatchDemand?"1":"0");
+      }else{
+        forecastCountStackedDemand=!forecastCountStackedDemand;
+        localStorage.setItem(FORECAST_COUNT_STACKED_DEMAND_KEY,forecastCountStackedDemand?"1":"0");
+      }
+      updateForecastDemandFactorToggles();
+      renderForecastImportedUnits({visibilityOnly:true});
+      const excelView=$("forecastExcelView");
+      if(excelView&&!excelView.hidden)renderForecastExcelView();
+    };
+  });
 }
 function getForecastExcelArrivalLabel(day){
   const arrival=forecastDateFromEtaDay(day);
@@ -10603,14 +10659,14 @@ function applyForecastExcelCoverageFlags(rows,calculatorRows){
     if(!column)return;
     remaining.set(`${column}|${row.size}`,Math.max(0,(Number(row.onHand)||0)-(Number(row.badOrder)||0)));
   });
-  const mismatchRows=rows.filter(row=>row.groupClass==="excel-mismatch-row");
+  const mismatchRows=forecastCountMismatchDemand?rows.filter(row=>row.groupClass==="excel-mismatch-row"):[];
   const inboundRows=rows.filter(row=>
     !row.placeholder &&
     !row.totalRow &&
     row.groupClass!=="excel-mismatch-row" &&
     row.groupClass!=="excel-stacked-row"
   );
-  const stackedRows=rows.filter(row=>row.groupClass==="excel-stacked-row");
+  const stackedRows=forecastCountStackedDemand?rows.filter(row=>row.groupClass==="excel-stacked-row"):[];
   [...mismatchRows,...inboundRows,...stackedRows].forEach(row=>{
     row.shortages={};
     ["TRAC","FGCP","SNCZ","DCLI"].forEach(column=>{
@@ -15642,6 +15698,7 @@ async function init(){
   const closeForecastExcelViewBtn=$("closeForecastExcelViewBtn"); if(closeForecastExcelViewBtn)closeForecastExcelViewBtn.onclick=closeForecastExcelView;
   setupForecastExcelViewSettings();
   setupForecastExcelFontControls();
+  setupForecastDemandFactorToggles();
   setupForecastSummaryVisibility();
   setupForecastRequestBoardVisibility();
   const forecastTrainSummaryCard=$("forecastTrainSummaryCard");
@@ -22649,10 +22706,12 @@ body.forecast-excel-view-open{
   display:grid;
   gap:8px;
   width:300px;
-  max-height:none;
-  padding-bottom:0;
-  overflow-y:visible;
+  max-height:calc(100vh - 20px);
+  padding:0 4px 10px 0;
+  overflow-y:auto;
   overflow-x:hidden;
+  overscroll-behavior:contain;
+  scrollbar-gutter:stable;
 }
 .forecast-excel-toolbar h2{display:none}
 .forecast-excel-toolbar button,.forecast-excel-open-btn{
